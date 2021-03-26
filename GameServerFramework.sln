@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DetourTileCache", "DetourTi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Recast", "Recast\Recast.vcxproj", "{A7A881CE-934A-ACA4-7C05-C0F8684633F5}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dep", "dep", "{6758BA44-FFF9-4738-905F-28CBED34DCC8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug Win64|x64 = Debug Win64|x64
@@ -108,6 +110,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{18FEE2AD-04A0-0D84-ED5A-21D8D99B94D4} = {6758BA44-FFF9-4738-905F-28CBED34DCC8}
+		{F7616A66-6317-E35B-EC0B-DD3258C0D95F} = {6758BA44-FFF9-4738-905F-28CBED34DCC8}
+		{1AB411D3-863F-7F97-8F50-028CFB5ADB97} = {6758BA44-FFF9-4738-905F-28CBED34DCC8}
+		{A7A881CE-934A-ACA4-7C05-C0F8684633F5} = {6758BA44-FFF9-4738-905F-28CBED34DCC8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {47226FB8-C018-4AD9-B30B-544481141105}

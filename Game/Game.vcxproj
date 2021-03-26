@@ -140,9 +140,29 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Map.cpp" />
+    <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DetourCrowd\DetourCrowd.vcxproj">
+      <Project>{f7616a66-6317-e35b-ec0b-dd3258c0d95f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\DetourTileCache\DetourTileCache.vcxproj">
+      <Project>{1ab411d3-863f-7f97-8f50-028cfb5adb97}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Detour\Detour.vcxproj">
+      <Project>{18fee2ad-04a0-0d84-ed5a-21d8d99b94d4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Recast\Recast.vcxproj">
+      <Project>{a7a881ce-934a-aca4-7c05-c0f8684633f5}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Map.h" />
+    <ClInclude Include="World.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
