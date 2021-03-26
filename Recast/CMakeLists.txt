@@ -12,7 +12,7 @@ target_include_directories(Recast PUBLIC
 
 set_target_properties(Recast PROPERTIES
         SOVERSION ${SOVERSION}
-        VERSION ${VERSION}
+        VERSION ${LIB_VERSION}
         COMPILE_PDB_OUTPUT_DIRECTORY .
         COMPILE_PDB_NAME "Recast-d"
         )
@@ -27,4 +27,6 @@ install(TARGETS Recast
 file(GLOB INCLUDES Include/*.h)
 install(FILES ${INCLUDES} DESTINATION
     ${CMAKE_INSTALL_INCLUDEDIR}/recastnavigation)
-install(FILES "$<TARGET_FILE_DIR:Recast>/Recast-d.pdb" CONFIGURATIONS "Debug" DESTINATION "lib") 
+if(MSVC)
+    install(FILES "$<TARGET_FILE_DIR:Recast>/Recast-d.pdb" CONFIGURATIONS "Debug" DESTINATION "lib")
+endif()
