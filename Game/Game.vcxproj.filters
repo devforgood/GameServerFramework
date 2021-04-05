@@ -16,6 +16,9 @@
     <Filter Include="소스 파일\Movement">
       <UniqueIdentifier>{d086abd8-6fcb-4c40-839c-0cd112f5c97c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="data">
+      <UniqueIdentifier>{1a7c02d5-19f9-48c5-a05e-602577b7e49d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp">
@@ -44,5 +47,10 @@
     <ClInclude Include="Walker.h">
       <Filter>소스 파일\Movement</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="solo_navmesh.bin">
+      <Filter>data</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
 </Project>

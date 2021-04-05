@@ -1,6 +1,15 @@
 #pragma once
+#include "Map.h"
+
 class World
 {
-	void update();
+private:
+
+	Map* m_map;
+
+public:
+
+	void Init();
+	void update(float deltaTime);
 };
 

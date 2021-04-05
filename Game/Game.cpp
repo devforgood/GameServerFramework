@@ -33,6 +33,7 @@ using boost::asio::ip::tcp;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include "World.h"
 
 class chat_message
 {
@@ -308,6 +309,8 @@ int main(int argc, char* argv[])
 
 		boost::asio::io_context io_context;
 
+		World world;
+		world.Init();
 		std::list<chat_server> servers;
 		for (int i = 1; i < argc; ++i)
 		{
