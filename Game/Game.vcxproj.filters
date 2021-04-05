@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="소스 파일\Movement">
+      <UniqueIdentifier>{d086abd8-6fcb-4c40-839c-0cd112f5c97c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp">
@@ -24,6 +27,9 @@
     <ClCompile Include="Map.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="WalkerTest.cpp">
+      <Filter>소스 파일\Movement</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -34,6 +40,9 @@
     </ClInclude>
     <ClInclude Include="Map.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Walker.h">
+      <Filter>소스 파일\Movement</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
