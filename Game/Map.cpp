@@ -122,7 +122,7 @@ void Map::Init()
 	dtNavMesh* nav = m_navMesh;
 	dtCrowd* crowd = m_crowd;
 
-	if (nav && crowd && (m_navMesh != nav || m_crowd != crowd))
+	//if (nav && crowd && (m_navMesh != nav || m_crowd != crowd))
 	{
 		m_navMesh = nav;
 		m_crowd = crowd;
@@ -174,11 +174,11 @@ void Map::update(float dt)
 	dtCrowd* crowd = m_crowd;
 	if (!nav || !crowd) return;
 
-	TimeVal startTime = getPerfTime();
+	//TimeVal startTime = getPerfTime();
 
 	crowd->update(dt, nullptr);
 
-	TimeVal endTime = getPerfTime();
+	//TimeVal endTime = getPerfTime();
 }
 
 

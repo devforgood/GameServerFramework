@@ -16,7 +16,9 @@
 #endif  
 
 #include <boost/asio.hpp>
+#include <boost/bind.hpp>
 #include "Message.h"
+#include "PerfTimer.h"
 
 using boost::asio::ip::tcp;
 
@@ -39,35 +41,24 @@ typedef std::shared_ptr<game_participant> game_participant_ptr;
 
 //----------------------------------------------------------------------
 
+class World;
 class game_room
 {
 public:
-	void join(game_participant_ptr participant)
-	{
-		participants_.insert(participant);
-		//for (auto msg : recent_msgs_)
-		//	participant->deliver(msg);
-	}
+	void join(game_participant_ptr participant);
 
-	void leave(game_participant_ptr participant)
-	{
-		participants_.erase(participant);
-	}
+	void leave(game_participant_ptr participant);
 
-	void deliver(const game_message& msg)
-	{
-		recent_msgs_.push_back(msg);
-		while (recent_msgs_.size() > max_recent_msgs)
-			recent_msgs_.pop_front();
+	void deliver(const game_message& msg);
 
-		for (auto participant : participants_)
-			participant->deliver(msg);
-	}
+	game_room();
 
+	World* world() { return world_; }
 private:
 	std::set<game_participant_ptr> participants_;
 	enum { max_recent_msgs = 100 };
 	game_message_queue recent_msgs_;
+	World * world_;
 };
 
 //----------------------------------------------------------------------
@@ -83,88 +74,16 @@ public:
 	{
 	}
 
-	void start()
-	{
-		room_.join(shared_from_this());
-		do_read_header();
-	}
+	void start();
 
-	void deliver(const game_message& msg)
-	{
-		bool write_in_progress = !write_msgs_.empty();
-		write_msgs_.push_back(msg);
-		if (!write_in_progress)
-		{
-			do_write();
-		}
-	}
+	void deliver(const game_message& msg);
 
 private:
-	void do_read_header()
-	{
-		auto self(shared_from_this());
-		boost::asio::async_read(socket_,
-			boost::asio::buffer(read_msg_.data(), game_message::header_length),
-			[this, self](boost::system::error_code ec, std::size_t /*length*/)
-			{
-				std::cout << "recv header" << std::endl;
+	void do_read_header();
 
-				if (!ec && read_msg_.decode_header())
-				{
-					do_read_body();
-				}
-				else
-				{
-					room_.leave(shared_from_this());
-				}
-			});
-	}
+	void do_read_body();
 
-	void do_read_body()
-	{
-		auto self(shared_from_this());
-		boost::asio::async_read(socket_,
-			boost::asio::buffer(read_msg_.body(), read_msg_.body_length()),
-			[this, self](boost::system::error_code ec, std::size_t /*length*/)
-			{
-				if (!ec)
-				{
-					//room_.deliver(read_msg_);
-					read_msg_.body()[read_msg_.body_length()] = 0;
-					std::cout << read_msg_.body() << std::endl;
-
-
-					do_read_header();
-				}
-				else
-				{
-					room_.leave(shared_from_this());
-				}
-			});
-	}
-
-	void do_write()
-	{
-		auto self(shared_from_this());
-		boost::asio::async_write(socket_,
-			boost::asio::buffer(write_msgs_.front().data(),
-				write_msgs_.front().length()),
-			[this, self](boost::system::error_code ec, std::size_t /*length*/)
-			{
-				if (!ec)
-				{
-					write_msgs_.pop_front();
-					if (!write_msgs_.empty())
-					{
-						do_write();
-					}
-				}
-				else
-				{
-					room_.leave(shared_from_this());
-				}
-			});
-	}
+	void do_write();
 
 	tcp::socket socket_;
 	game_room& room_;
@@ -180,27 +99,19 @@ public:
 	game_server(boost::asio::io_context& io_context,
 		const tcp::endpoint& endpoint)
 		: acceptor_(io_context, endpoint)
+		, timer_(io_context, boost::posix_time::milliseconds(16)) // 60 ÇÁ·¹ÀÓ
 	{
 		do_accept();
+		lastTime_ = getPerfTime();
+		timer_.async_wait(boost::bind(&game_server::tick, this, boost::asio::placeholders::error));
 	}
 
 private:
-	void do_accept()
-	{
-		acceptor_.async_accept(
-			[this](boost::system::error_code ec, tcp::socket socket)
-			{
-				if (!ec)
-				{
-					std::cout << "connected" << std::endl;
-
-					std::make_shared<game_session>(std::move(socket), room_)->start();
-				}
-
-				do_accept();
-			});
-	}
+	void do_accept();
+	void tick(const boost::system::error_code& e);
 
 	tcp::acceptor acceptor_;
 	game_room room_;
+	boost::asio::deadline_timer timer_;
+	TimeVal lastTime_;
 };
