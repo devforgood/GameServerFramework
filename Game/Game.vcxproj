@@ -144,6 +144,7 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
+    <ClCompile Include="Server.cpp" />
     <ClCompile Include="WalkerTest.cpp" />
     <ClCompile Include="World.cpp" />
   </ItemGroup>
@@ -169,7 +170,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Map.h" />
+    <ClInclude Include="Message.h" />
     <ClInclude Include="PerfTimer.h" />
+    <ClInclude Include="Server.h" />
     <ClInclude Include="Walker.h" />
     <ClInclude Include="World.h" />
   </ItemGroup>

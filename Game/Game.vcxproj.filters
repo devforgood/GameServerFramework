@@ -13,11 +13,14 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="소스 파일\Movement">
-      <UniqueIdentifier>{d086abd8-6fcb-4c40-839c-0cd112f5c97c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="data">
       <UniqueIdentifier>{1a7c02d5-19f9-48c5-a05e-602577b7e49d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Message">
+      <UniqueIdentifier>{7a6adc4d-e897-419a-b670-37105ece92be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Movement">
+      <UniqueIdentifier>{d086abd8-6fcb-4c40-839c-0cd112f5c97c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -31,9 +34,12 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="WalkerTest.cpp">
-      <Filter>소스 파일\Movement</Filter>
+      <Filter>Movement</Filter>
     </ClCompile>
     <ClCompile Include="PerfTimer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Server.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -48,10 +54,16 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Walker.h">
-      <Filter>소스 파일\Movement</Filter>
+      <Filter>Movement</Filter>
     </ClInclude>
     <ClInclude Include="PerfTimer.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Server.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Message.h">
+      <Filter>Message</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
