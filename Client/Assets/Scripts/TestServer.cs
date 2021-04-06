@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -20,8 +21,7 @@ public class TestServer : MonoBehaviour
 
 	System.Threading.Thread SocketThread;
 	volatile bool keepReading = false;
-	Socket listener;
-	Socket handler;
+	Socket socket;
 
 	Vector3[] agent_pos = new Vector3[100];
 	int agent_count = 0;
@@ -64,10 +64,10 @@ public class TestServer : MonoBehaviour
 		// host running the application.
 		Debug.Log("Ip " + getIPAddress().ToString());
 		IPAddress[] ipArray = Dns.GetHostAddresses(getIPAddress());
-		IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, 60001);
+		IPEndPoint endPoint = core.NetworkHelper.CreateIPEndPoint("127.0.0.1:60001");
 
 		// Create a TCP/IP socket.
-		listener = new Socket(ipArray[0].AddressFamily,
+		socket = new Socket(ipArray[0].AddressFamily,
 			SocketType.Stream, ProtocolType.Tcp);
 
 		// Bind the socket to the local endpoint and 
@@ -75,18 +75,19 @@ public class TestServer : MonoBehaviour
 
 		try
 		{
-			listener.Bind(localEndPoint);
-			listener.Listen(10);
+			socket.Connect(endPoint);
+			Debug.Log("Client Connected");     //It doesn't work
+
+
 
 			// Start listening for connections.
 			while (true)
-			{
-				keepReading = true;
+            {
+                keepReading = true;
 
 				// Program is suspended while waiting for an incoming connection.
 				Debug.Log("Waiting for Connection");     //It works
 
-				handler = listener.Accept();
 				Debug.Log("Client Connected");     //It doesn't work
 				data = null;
 
@@ -94,21 +95,27 @@ public class TestServer : MonoBehaviour
 				while (keepReading)
 				{
 					bytes = new byte[1024];
-					int bytesRec = handler.Receive(bytes, 4, SocketFlags.None);
+					
+
+					//socket.Send(memStream.ToArray());
+
+
+
+					int bytesRec = socket.Receive(bytes, 4, SocketFlags.None);
 					int length = BitConverter.ToInt32(bytes, 0);
 					Debug.Log("Received from Server");
 					if (bytesRec <= 0)
 					{
 						keepReading = false;
-						handler.Disconnect(true);
+						socket.Disconnect(true);
 						break;
 					}
 
-					bytesRec = handler.Receive(bytes, length, SocketFlags.None);
+					bytesRec = socket.Receive(bytes, length, SocketFlags.None);
 					if (bytesRec <= 0)
 					{
 						keepReading = false;
-						handler.Disconnect(true);
+						socket.Disconnect(true);
 						break;
 					}
 
@@ -150,9 +157,9 @@ public class TestServer : MonoBehaviour
 			SocketThread.Abort();
 		}
 
-		if (handler != null && handler.Connected)
+		if (socket != null && socket.Connected)
 		{
-			handler.Disconnect(false);
+			socket.Disconnect(false);
 			Debug.Log("Disconnected!");
 		}
 	}

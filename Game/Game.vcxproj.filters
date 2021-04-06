@@ -14,6 +14,9 @@
     <Filter Include="Movement">
       <UniqueIdentifier>{d086abd8-6fcb-4c40-839c-0cd112f5c97c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="flatbuffers">
+      <UniqueIdentifier>{dd7a7d75-0d93-450e-834c-8e053449af7d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -39,6 +42,9 @@
     <ClInclude Include="PerfTimer.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="World.h" />
+    <ClInclude Include="syncnet_generated.h">
+      <Filter>flatbuffers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">
