@@ -15,6 +15,8 @@
 //#include "ConvexVolumeTool.h"
 //#include "CrowdTool.h"
 #include "DetourCrowd.h"
+#include "PerfTimer.h"
+#include "DetourCommon.h"
 
 static const int NAVMESHSET_MAGIC = 'M' << 24 | 'S' << 16 | 'E' << 8 | 'T'; //'MSET';
 static const int NAVMESHSET_VERSION = 1;
@@ -116,8 +118,169 @@ void Map::Init()
 	dtFreeNavMesh(m_navMesh);
 	m_navMesh = loadAll("solo_navmesh.bin");
 	m_navQuery->init(m_navMesh, 2048);
+
+	dtNavMesh* nav = m_navMesh;
+	dtCrowd* crowd = m_crowd;
+
+	if (nav && crowd && (m_navMesh != nav || m_crowd != crowd))
+	{
+		m_navMesh = nav;
+		m_crowd = crowd;
+
+		crowd->init(MAX_AGENTS, m_agentRadius, nav);
+
+		// Make polygons with 'disabled' flag invalid.
+		crowd->getEditableFilter(0)->setExcludeFlags(SAMPLE_POLYFLAGS_DISABLED);
+
+		// Setup local avoidance params to different qualities.
+		dtObstacleAvoidanceParams params;
+		// Use mostly default settings, copy from dtCrowd.
+		memcpy(&params, crowd->getObstacleAvoidanceParams(0), sizeof(dtObstacleAvoidanceParams));
+
+		// Low (11)
+		params.velBias = 0.5f;
+		params.adaptiveDivs = 5;
+		params.adaptiveRings = 2;
+		params.adaptiveDepth = 1;
+		crowd->setObstacleAvoidanceParams(0, &params);
+
+		// Medium (22)
+		params.velBias = 0.5f;
+		params.adaptiveDivs = 5;
+		params.adaptiveRings = 2;
+		params.adaptiveDepth = 2;
+		crowd->setObstacleAvoidanceParams(1, &params);
+
+		// Good (45)
+		params.velBias = 0.5f;
+		params.adaptiveDivs = 7;
+		params.adaptiveRings = 2;
+		params.adaptiveDepth = 3;
+		crowd->setObstacleAvoidanceParams(2, &params);
+
+		// High (66)
+		params.velBias = 0.5f;
+		params.adaptiveDivs = 7;
+		params.adaptiveRings = 3;
+		params.adaptiveDepth = 3;
+
+		crowd->setObstacleAvoidanceParams(3, &params);
+	}
 }
 
-void Map::update(float deltaTime)
+void Map::update(float dt)
 {
+	dtNavMesh* nav = m_navMesh;
+	dtCrowd* crowd = m_crowd;
+	if (!nav || !crowd) return;
+
+	TimeVal startTime = getPerfTime();
+
+	crowd->update(dt, nullptr);
+
+	TimeVal endTime = getPerfTime();
+}
+
+
+void Map::addAgent(const float* p)
+{
+	dtCrowd* crowd = m_crowd;
+
+	dtCrowdAgentParams ap;
+	memset(&ap, 0, sizeof(ap));
+	ap.radius = m_agentRadius;
+	ap.height = m_agentHeight;
+	ap.maxAcceleration = 8.0f;
+	ap.maxSpeed = 3.5f;
+	ap.collisionQueryRange = ap.radius * 12.0f;
+	ap.pathOptimizationRange = ap.radius * 30.0f;
+	ap.updateFlags = 0;
+	if (m_toolParams.m_anticipateTurns)
+		ap.updateFlags |= DT_CROWD_ANTICIPATE_TURNS;
+	if (m_toolParams.m_optimizeVis)
+		ap.updateFlags |= DT_CROWD_OPTIMIZE_VIS;
+	if (m_toolParams.m_optimizeTopo)
+		ap.updateFlags |= DT_CROWD_OPTIMIZE_TOPO;
+	if (m_toolParams.m_obstacleAvoidance)
+		ap.updateFlags |= DT_CROWD_OBSTACLE_AVOIDANCE;
+	if (m_toolParams.m_separation)
+		ap.updateFlags |= DT_CROWD_SEPARATION;
+	ap.obstacleAvoidanceType = (unsigned char)m_toolParams.m_obstacleAvoidanceType;
+	ap.separationWeight = m_toolParams.m_separationWeight;
+
+	int idx = crowd->addAgent(p, &ap);
+	if (idx != -1)
+	{
+		if (m_targetRef)
+			crowd->requestMoveTarget(idx, m_targetRef, m_targetPos);
+
+	}
+}
+
+void Map::removeAgent(const int idx)
+{
+	m_crowd->removeAgent(idx);
+}
+
+static void calcVel(float* vel, const float* pos, const float* tgt, const float speed)
+{
+	dtVsub(vel, tgt, pos);
+	vel[1] = 0.0;
+	dtVnormalize(vel);
+	dtVscale(vel, vel, speed);
+}
+
+void Map::setMoveTarget(const float* p, bool adjust)
+{
+
+	// Find nearest point on navmesh and set move request to that location.
+	dtNavMeshQuery* navquery = m_navQuery;
+	dtCrowd* crowd = m_crowd;
+	const dtQueryFilter* filter = crowd->getFilter(0);
+	const float* halfExtents = crowd->getQueryExtents();
+
+	if (adjust)
+	{
+		float vel[3];
+		// Request velocity
+		//if (m_agentDebug.idx != -1)
+		//{
+		//	const dtCrowdAgent* ag = crowd->getAgent(m_agentDebug.idx);
+		//	if (ag && ag->active)
+		//	{
+		//		calcVel(vel, ag->npos, p, ag->params.maxSpeed);
+		//		crowd->requestMoveVelocity(m_agentDebug.idx, vel);
+		//	}
+		//}
+		//else
+		{
+			for (int i = 0; i < crowd->getAgentCount(); ++i)
+			{
+				const dtCrowdAgent* ag = crowd->getAgent(i);
+				if (!ag->active) continue;
+				calcVel(vel, ag->npos, p, ag->params.maxSpeed);
+				crowd->requestMoveVelocity(i, vel);
+			}
+		}
+	}
+	else
+	{
+		navquery->findNearestPoly(p, halfExtents, filter, &m_targetRef, m_targetPos);
+
+		//if (m_agentDebug.idx != -1)
+		//{
+		//	const dtCrowdAgent* ag = crowd->getAgent(m_agentDebug.idx);
+		//	if (ag && ag->active)
+		//		crowd->requestMoveTarget(m_agentDebug.idx, m_targetRef, m_targetPos);
+		//}
+		//else
+		{
+			for (int i = 0; i < crowd->getAgentCount(); ++i)
+			{
+				const dtCrowdAgent* ag = crowd->getAgent(i);
+				if (!ag->active) continue;
+				crowd->requestMoveTarget(i, m_targetRef, m_targetPos);
+			}
+		}
+	}
 }

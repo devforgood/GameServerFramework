@@ -33,6 +33,9 @@
     <ClCompile Include="WalkerTest.cpp">
       <Filter>소스 파일\Movement</Filter>
     </ClCompile>
+    <ClCompile Include="PerfTimer.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -46,6 +49,9 @@
     </ClInclude>
     <ClInclude Include="Walker.h">
       <Filter>소스 파일\Movement</Filter>
+    </ClInclude>
+    <ClInclude Include="PerfTimer.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
