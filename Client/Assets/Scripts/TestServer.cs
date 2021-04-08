@@ -213,7 +213,7 @@ public class TestServer : MonoBehaviour
 
 
 
-					System.Threading.Thread.Sleep(100);
+					System.Threading.Thread.Sleep(1000);
 				}
 
 				System.Threading.Thread.Sleep(1);

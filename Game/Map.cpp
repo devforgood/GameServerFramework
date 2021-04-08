@@ -17,6 +17,7 @@
 #include "DetourCrowd.h"
 #include "PerfTimer.h"
 #include "DetourCommon.h"
+#include <iostream>
 
 static const int NAVMESHSET_MAGIC = 'M' << 24 | 'S' << 16 | 'E' << 8 | 'T'; //'MSET';
 static const int NAVMESHSET_VERSION = 1;
@@ -215,6 +216,10 @@ void Map::addAgent(const float* p)
 			crowd->requestMoveTarget(idx, m_targetRef, m_targetPos);
 
 	}
+
+	auto agent = crowd->getAgent(idx);
+	std::cout << "add agent " << idx << " pos (" << -1* agent->npos[0] << "," << agent->npos[1] << "," << agent->npos[2] << ")" << std::endl;
+
 }
 
 void Map::removeAgent(const int idx)

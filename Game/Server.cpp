@@ -126,7 +126,7 @@ inline void game_session::do_read_body()
 				if (agent != nullptr)
 				{
 					syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
-					std::cout << "agent pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
+					std::cout << "agent "<< agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
 
 					agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
 				}
