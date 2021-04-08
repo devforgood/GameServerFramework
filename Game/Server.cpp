@@ -1,5 +1,7 @@
 #include "Server.h"
 #include "World.h"
+#include "flatbuffers/flatbuffers.h"
+#include "syncnet_generated.h"
 
 game_room::game_room()
 {
@@ -77,8 +79,16 @@ inline void game_session::do_read_body()
 			if (!ec)
 			{
 				//room_.deliver(read_msg_);
-				read_msg_.body()[read_msg_.body_length()] = 0;
-				std::cout << read_msg_.body() << std::endl;
+
+				auto monster = MyGame::Sample::GetMonster(read_msg_.body());
+				std::cout << "hp : " << monster->hp() << std::endl;
+				std::cout << "mana : " << monster->mana() << std::endl;
+				std::cout << "name : " << monster->name()->str() << std::endl;
+
+				//read_msg_.body()[read_msg_.body_length()] = 0;
+				//std::cout << read_msg_.body() << std::endl;
+
+
 
 
 				do_read_header();
