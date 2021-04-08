@@ -11,5 +11,7 @@ public:
 
 	void Init();
 	void update(float deltaTime);
+
+	Map* map() { return m_map; }
 };
 

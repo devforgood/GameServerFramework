@@ -86,10 +86,18 @@ inline void game_session::do_read_body()
 				switch (msg->msg_type())
 				{
 				case syncnet::GameMessages::GameMessages_AddAgent:
+				{
 					std::cout << "x : " << msg->msg_as_AddAgent()->pos()->x() << std::endl;
 					std::cout << "y : " << msg->msg_as_AddAgent()->pos()->y() << std::endl;
 					std::cout << "z : " << msg->msg_as_AddAgent()->pos()->z() << std::endl;
+
+					float* v = new float[3];
+					v[0] = msg->msg_as_AddAgent()->pos()->x() * -1;
+					v[1] = msg->msg_as_AddAgent()->pos()->y();
+					v[2] = msg->msg_as_AddAgent()->pos()->z();
+					room_.world()->map()->addAgent(v);
 					break;
+				}
 				case syncnet::GameMessages::GameMessages_RemoveAgent:
 					std::cout << "agent id : " << msg->msg_as_RemoveAgent()->agentId() << std::endl;
 					break;
