@@ -80,10 +80,28 @@ inline void game_session::do_read_body()
 			{
 				//room_.deliver(read_msg_);
 
-				auto monster = MyGame::Sample::GetMonster(read_msg_.body());
-				std::cout << "hp : " << monster->hp() << std::endl;
-				std::cout << "mana : " << monster->mana() << std::endl;
-				std::cout << "name : " << monster->name()->str() << std::endl;
+				auto msg = syncnet::GetGameMessage(read_msg_.body());
+				std::cout << "recv message type : " << msg->msg_type() << std::endl;
+
+				switch (msg->msg_type())
+				{
+				case syncnet::GameMessages::GameMessages_AddAgent:
+					std::cout << "x : " << msg->msg_as_AddAgent()->pos()->x() << std::endl;
+					std::cout << "y : " << msg->msg_as_AddAgent()->pos()->y() << std::endl;
+					std::cout << "z : " << msg->msg_as_AddAgent()->pos()->z() << std::endl;
+					break;
+				case syncnet::GameMessages::GameMessages_RemoveAgent:
+					std::cout << "agent id : " << msg->msg_as_RemoveAgent()->agentId() << std::endl;
+					break;
+				case syncnet::GameMessages::GameMessages_SetMoveTarget:
+					std::cout << "agent id : " << msg->msg_as_SetMoveTarget()->agentId() << std::endl;
+					std::cout << "x : " << msg->msg_as_SetMoveTarget()->pos()->x() << std::endl;
+					std::cout << "y : " << msg->msg_as_SetMoveTarget()->pos()->y() << std::endl;
+					std::cout << "z : " << msg->msg_as_SetMoveTarget()->pos()->z() << std::endl;
+					break;
+				}
+
+
 
 				//read_msg_.body()[read_msg_.body_length()] = 0;
 				//std::cout << read_msg_.body() << std::endl;
