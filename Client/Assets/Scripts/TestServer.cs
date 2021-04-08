@@ -10,12 +10,12 @@ using FlatBuffers;
 using syncnet;
 
 
-[Serializable]
-public class AgentInfo
-{
-	public int agent;
-	public Vector3 pos;
-}
+//[Serializable]
+//public class AgentInfo
+//{
+//	public int agent;
+//	public Vector3 pos;
+//}
 
 public class TestServer : MonoBehaviour
 {
@@ -160,38 +160,34 @@ public class TestServer : MonoBehaviour
 
 
 
-					//int bytesRec = socket.Receive(bytes, 4, SocketFlags.None);
-					//int length = BitConverter.ToInt32(bytes, 0);
-					//Debug.Log("Received from Server");
-					//if (bytesRec <= 0)
-					//{
-					//	keepReading = false;
-					//	socket.Disconnect(true);
-					//	break;
-					//}
+                    int bytesRec = socket.Receive(bytes, 4, SocketFlags.None);
+                    int length = BitConverter.ToInt32(bytes, 0);
+                    Debug.Log("Received from Server");
+                    if (bytesRec <= 0)
+                    {
+                        keepReading = false;
+                        socket.Disconnect(true);
+                        break;
+                    }
 
-					//bytesRec = socket.Receive(bytes, length, SocketFlags.None);
-					//if (bytesRec <= 0)
-					//{
-					//	keepReading = false;
-					//	socket.Disconnect(true);
-					//	break;
-					//}
+                    bytesRec = socket.Receive(bytes, length, SocketFlags.None);
+                    if (bytesRec <= 0)
+                    {
+                        keepReading = false;
+                        socket.Disconnect(true);
+                        break;
+                    }
 
-					//var str = Encoding.Default.GetString(bytes);
-					//Debug.Log($"recv : {str}");
-					//var agent_info = JsonUtility.FromJson<AgentInfo>(str);
-					//agent_pos[agent_info.agent] = agent_info.pos;
-					//if (agent_count < (agent_info.agent+1))
-					//	agent_count = (agent_info.agent+1);
+					var recv_msg = GameMessage.GetRootAsGameMessage(new ByteBuffer(bytes));
+					if (recv_msg.MsgType == GameMessages.AgentInfo)
+					{
+                        AgentInfo agnetInfo = recv_msg.Msg<AgentInfo>().Value;
+						Vec3 pos = agnetInfo.Pos.Value;
+						Debug.Log($"recv id : {agnetInfo.AgentId}, pos({pos.X}, {pos.Y}, {pos.Z} )");
+					}
 
 
-					//data += Encoding.ASCII.GetString(bytes, 0, bytesRec);
 
-					//if (data.IndexOf("<EOF>") > -1)
-					//{
-					//	break;
-					//}
 					System.Threading.Thread.Sleep(1);
 				}
 

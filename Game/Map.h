@@ -128,5 +128,7 @@ public:
 	void addAgent(const float* p);
 	void removeAgent(const int idx);
 	void setMoveTarget(const float* p, bool adjust);
+
+	dtCrowd* crowd() { return m_crowd; }
 };
 

@@ -34,7 +34,7 @@ class game_participant
 {
 public:
 	virtual ~game_participant() {}
-	virtual void deliver(const game_message& msg) = 0;
+	virtual void send(const game_message& msg) = 0;
 };
 
 typedef std::shared_ptr<game_participant> game_participant_ptr;
@@ -76,7 +76,7 @@ public:
 
 	void start();
 
-	void deliver(const game_message& msg);
+	void send(const game_message& msg);
 
 private:
 	void do_read_header();
@@ -87,6 +87,7 @@ private:
 
 	tcp::socket socket_;
 	game_room& room_;
+	game_message send_msg_;
 	game_message read_msg_;
 	game_message_queue write_msgs_;
 };

@@ -2,6 +2,7 @@
 #include "World.h"
 #include "flatbuffers/flatbuffers.h"
 #include "syncnet_generated.h"
+#include "DetourCrowd.h"
 
 game_room::game_room()
 {
@@ -28,7 +29,7 @@ inline void game_room::deliver(const game_message& msg)
 		recent_msgs_.pop_front();
 
 	for (auto participant : participants_)
-		participant->deliver(msg);
+		participant->send(msg);
 }
 
 //----------------------------------------------------------------------
@@ -39,7 +40,7 @@ inline void game_session::start()
 	do_read_header();
 }
 
-inline void game_session::deliver(const game_message& msg)
+inline void game_session::send(const game_message& msg)
 {
 	bool write_in_progress = !write_msgs_.empty();
 	write_msgs_.push_back(msg);
@@ -106,10 +107,41 @@ inline void game_session::do_read_body()
 					std::cout << "x : " << msg->msg_as_SetMoveTarget()->pos()->x() << std::endl;
 					std::cout << "y : " << msg->msg_as_SetMoveTarget()->pos()->y() << std::endl;
 					std::cout << "z : " << msg->msg_as_SetMoveTarget()->pos()->z() << std::endl;
+
+					float* v = new float[3];
+					v[0] = msg->msg_as_AddAgent()->pos()->x() * -1;
+					v[1] = msg->msg_as_AddAgent()->pos()->y();
+					v[2] = msg->msg_as_AddAgent()->pos()->z();
+					room_.world()->map()->setMoveTarget(v, false);
 					break;
 				}
 
 
+
+
+				flatbuffers::FlatBufferBuilder builder(1024);
+				syncnet::Vec3 pos(4.0f, 5.0f, 6.0f);
+				flatbuffers::Offset<syncnet::AgentInfo> agent_info;
+
+				auto agent = room_.world()->map()->crowd()->getAgent(1);
+				if (agent != nullptr)
+				{
+					syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
+					agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
+				}
+				else
+				{
+					syncnet::Vec3 pos(0, 0, 0);
+					agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
+				}
+
+				auto send_msg = syncnet::CreateGameMessage(builder, syncnet::GameMessages::GameMessages_AgentInfo, agent_info.Union());
+				builder.Finish(send_msg);
+
+				memcpy(send_msg_.body(), builder.GetBufferPointer(), builder.GetSize());
+				send_msg_.body_length(builder.GetSize());
+				send_msg_.encode_header();
+				send(send_msg_);
 
 				//read_msg_.body()[read_msg_.body_length()] = 0;
 				//std::cout << read_msg_.body() << std::endl;
