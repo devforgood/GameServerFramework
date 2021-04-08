@@ -109,9 +109,9 @@ inline void game_session::do_read_body()
 					std::cout << "z : " << msg->msg_as_SetMoveTarget()->pos()->z() << std::endl;
 
 					float* v = new float[3];
-					v[0] = msg->msg_as_AddAgent()->pos()->x() * -1;
-					v[1] = msg->msg_as_AddAgent()->pos()->y();
-					v[2] = msg->msg_as_AddAgent()->pos()->z();
+					v[0] = msg->msg_as_SetMoveTarget()->pos()->x() * -1;
+					v[1] = msg->msg_as_SetMoveTarget()->pos()->y();
+					v[2] = msg->msg_as_SetMoveTarget()->pos()->z();
 					room_.world()->map()->setMoveTarget(v, false);
 					break;
 				}
@@ -120,13 +120,14 @@ inline void game_session::do_read_body()
 
 
 				flatbuffers::FlatBufferBuilder builder(1024);
-				syncnet::Vec3 pos(4.0f, 5.0f, 6.0f);
 				flatbuffers::Offset<syncnet::AgentInfo> agent_info;
 
-				auto agent = room_.world()->map()->crowd()->getAgent(1);
+				auto agent = room_.world()->map()->crowd()->getAgent(0);
 				if (agent != nullptr)
 				{
 					syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
+					std::cout << "agent pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
+
 					agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
 				}
 				else

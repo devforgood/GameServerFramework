@@ -77,10 +77,27 @@ public class TestServer : MonoBehaviour
 		var builder = new FlatBufferBuilder(1024);
 
 		RemoveAgent.StartRemoveAgent(builder);
-		RemoveAgent.AddAgentId(builder, 1);
+		RemoveAgent.AddAgentId(builder, 9);
 		var removeagnet = RemoveAgent.EndRemoveAgent(builder);
 
 		var msg = GameMessage.CreateGameMessage(builder, GameMessages.RemoveAgent, removeagnet.Value);
+		builder.Finish(msg.Value);
+
+		byte[] body = builder.SizedByteArray();
+		byte[] header = BitConverter.GetBytes(body.Length);
+		return (header, body);
+	}
+
+	(byte[], byte[]) MakeSetMoveTarget()
+	{
+		var builder = new FlatBufferBuilder(1024);
+
+		SetMoveTarget.StartSetMoveTarget(builder);
+		SetMoveTarget.AddAgentId(builder, 1);
+		SetMoveTarget.AddPos(builder, Vec3.CreateVec3(builder, 1.0f, 2.0f, 7.0f));
+		var removeagnet = SetMoveTarget.EndSetMoveTarget(builder);
+
+		var msg = GameMessage.CreateGameMessage(builder, GameMessages.SetMoveTarget, removeagnet.Value);
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
@@ -133,15 +150,19 @@ public class TestServer : MonoBehaviour
 				// An incoming connection needs to be processed.
 				while (keepReading)
 				{
-					if(cnt++ % 2 == 0)
+					if(cnt == 0)
                     {
 						(header, body) = MakeAddAgent();
                     }
+					else if(cnt == 1)
+                    {
+						(header, body) = MakeSetMoveTarget();
+					}
 					else
                     {
 						(header, body) = MakeRemoveAgent();
 					}
-
+					++cnt;
 
 					if (socket.Send(header) <= 0)
                     {
@@ -184,11 +205,15 @@ public class TestServer : MonoBehaviour
                         AgentInfo agnetInfo = recv_msg.Msg<AgentInfo>().Value;
 						Vec3 pos = agnetInfo.Pos.Value;
 						Debug.Log($"recv id : {agnetInfo.AgentId}, pos({pos.X}, {pos.Y}, {pos.Z} )");
+						agent_pos[0].x = pos.X;
+						agent_pos[0].y = pos.Y;
+						agent_pos[0].z = pos.Z;
+						agent_count = 1;
 					}
 
 
 
-					System.Threading.Thread.Sleep(1);
+					System.Threading.Thread.Sleep(100);
 				}
 
 				System.Threading.Thread.Sleep(1);
