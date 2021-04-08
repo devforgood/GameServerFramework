@@ -103,6 +103,8 @@ public:
 		, timer_(io_context, boost::posix_time::milliseconds(16)) // 60 «¡∑π¿”
 	{
 		do_accept();
+
+		timeAcc = 0.0f;
 		lastTime_ = getPerfTime();
 		timer_.async_wait(boost::bind(&game_server::tick, this, boost::asio::placeholders::error));
 	}
@@ -115,4 +117,6 @@ private:
 	game_room room_;
 	boost::asio::deadline_timer timer_;
 	TimeVal lastTime_;
+	float timeAcc;
+
 };

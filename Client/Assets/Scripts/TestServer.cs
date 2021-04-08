@@ -62,7 +62,7 @@ public class TestServer : MonoBehaviour
 		var builder = new FlatBufferBuilder(1024);
 
 		AddAgent.StartAddAgent(builder);
-		AddAgent.AddPos(builder, Vec3.CreateVec3(builder, 1.0f, 1.0f, 3.0f));
+		AddAgent.AddPos(builder, Vec3.CreateVec3(builder, -1.4f, 0.69f, 2.68f));
 		var addagent = AddAgent.EndAddAgent(builder);
 
 		var msg = GameMessage.CreateGameMessage(builder, GameMessages.AddAgent, addagent.Value);
@@ -94,7 +94,7 @@ public class TestServer : MonoBehaviour
 
 		SetMoveTarget.StartSetMoveTarget(builder);
 		SetMoveTarget.AddAgentId(builder, 1);
-		SetMoveTarget.AddPos(builder, Vec3.CreateVec3(builder, 1.0f, 1.0f, 10.0f));
+		SetMoveTarget.AddPos(builder, Vec3.CreateVec3(builder, 0.73f, 0.69f, 11.5f));
 		var removeagnet = SetMoveTarget.EndSetMoveTarget(builder);
 
 		var msg = GameMessage.CreateGameMessage(builder, GameMessages.SetMoveTarget, removeagnet.Value);
@@ -213,7 +213,7 @@ public class TestServer : MonoBehaviour
 
 
 
-					System.Threading.Thread.Sleep(1000);
+					System.Threading.Thread.Sleep(10);
 				}
 
 				System.Threading.Thread.Sleep(1);

@@ -204,10 +204,31 @@ void game_server::do_accept()
 void game_server::tick(const boost::system::error_code& e) 
 {
 	TimeVal curTime = getPerfTime();
-	float dt = getPerfTimeUsec(curTime - lastTime_) / 1000.0f;
+	float dt = getPerfTimeUsec(curTime - lastTime_) / 1000000.0f;
 
-	//std::cout << "tick " << dt << std::endl;
-	room_.world()->update(dt);
+	std::cout << "tick " << dt << std::endl;
+
+	// Update sample simulation.
+	const float SIM_RATE = 20;
+	const float DELTA_TIME = 1.0f / SIM_RATE;
+	timeAcc = rcClamp(timeAcc + dt, -1.0f, 1.0f);
+	int simIter = 0;
+	while (timeAcc > DELTA_TIME)
+	{
+		timeAcc -= DELTA_TIME;
+		if (simIter < 5)
+		{
+			room_.world()->update(DELTA_TIME);
+
+			auto agent = room_.world()->map()->crowd()->getAgent(0);
+			if (agent != nullptr)
+			{
+				std::cout << "update agent " << agent->active << " pos (" << agent->npos[0] * -1 << "," << agent->npos[1] << "," << agent->npos[2] << ")" << std::endl;
+
+			}
+		}
+		simIter++;
+	}
 
 	lastTime_ = curTime;
 	// Reschedule the timer for 1 second in the future:
