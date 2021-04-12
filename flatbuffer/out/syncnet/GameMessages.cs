@@ -12,6 +12,8 @@ public enum GameMessages : byte
   RemoveAgent = 2,
   SetMoveTarget = 3,
   AgentInfo = 4,
+  GetAgents = 5,
+  Ping = 6,
 };
 
 

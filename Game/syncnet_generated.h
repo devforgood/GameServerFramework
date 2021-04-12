@@ -25,41 +25,53 @@ struct SetMoveTargetBuilder;
 struct AgentInfo;
 struct AgentInfoBuilder;
 
+struct GetAgents;
+struct GetAgentsBuilder;
+
+struct Ping;
+struct PingBuilder;
+
 enum GameMessages {
   GameMessages_NONE = 0,
   GameMessages_AddAgent = 1,
   GameMessages_RemoveAgent = 2,
   GameMessages_SetMoveTarget = 3,
   GameMessages_AgentInfo = 4,
+  GameMessages_GetAgents = 5,
+  GameMessages_Ping = 6,
   GameMessages_MIN = GameMessages_NONE,
-  GameMessages_MAX = GameMessages_AgentInfo
+  GameMessages_MAX = GameMessages_Ping
 };
 
-inline const GameMessages (&EnumValuesGameMessages())[5] {
+inline const GameMessages (&EnumValuesGameMessages())[7] {
   static const GameMessages values[] = {
     GameMessages_NONE,
     GameMessages_AddAgent,
     GameMessages_RemoveAgent,
     GameMessages_SetMoveTarget,
-    GameMessages_AgentInfo
+    GameMessages_AgentInfo,
+    GameMessages_GetAgents,
+    GameMessages_Ping
   };
   return values;
 }
 
 inline const char * const *EnumNamesGameMessages() {
-  static const char * const names[6] = {
+  static const char * const names[8] = {
     "NONE",
     "AddAgent",
     "RemoveAgent",
     "SetMoveTarget",
     "AgentInfo",
+    "GetAgents",
+    "Ping",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameGameMessages(GameMessages e) {
-  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_AgentInfo)) return "";
+  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_Ping)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesGameMessages()[index];
 }
@@ -82,6 +94,14 @@ template<> struct GameMessagesTraits<syncnet::SetMoveTarget> {
 
 template<> struct GameMessagesTraits<syncnet::AgentInfo> {
   static const GameMessages enum_value = GameMessages_AgentInfo;
+};
+
+template<> struct GameMessagesTraits<syncnet::GetAgents> {
+  static const GameMessages enum_value = GameMessages_GetAgents;
+};
+
+template<> struct GameMessagesTraits<syncnet::Ping> {
+  static const GameMessages enum_value = GameMessages_Ping;
 };
 
 bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type);
@@ -139,6 +159,12 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::AgentInfo *msg_as_AgentInfo() const {
     return msg_type() == syncnet::GameMessages_AgentInfo ? static_cast<const syncnet::AgentInfo *>(msg()) : nullptr;
   }
+  const syncnet::GetAgents *msg_as_GetAgents() const {
+    return msg_type() == syncnet::GameMessages_GetAgents ? static_cast<const syncnet::GetAgents *>(msg()) : nullptr;
+  }
+  const syncnet::Ping *msg_as_Ping() const {
+    return msg_type() == syncnet::GameMessages_Ping ? static_cast<const syncnet::Ping *>(msg()) : nullptr;
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_MSG_TYPE) &&
@@ -162,6 +188,14 @@ template<> inline const syncnet::SetMoveTarget *GameMessage::msg_as<syncnet::Set
 
 template<> inline const syncnet::AgentInfo *GameMessage::msg_as<syncnet::AgentInfo>() const {
   return msg_as_AgentInfo();
+}
+
+template<> inline const syncnet::GetAgents *GameMessage::msg_as<syncnet::GetAgents>() const {
+  return msg_as_GetAgents();
+}
+
+template<> inline const syncnet::Ping *GameMessage::msg_as<syncnet::Ping>() const {
+  return msg_as_Ping();
 }
 
 struct GameMessageBuilder {
@@ -384,6 +418,101 @@ inline flatbuffers::Offset<AgentInfo> CreateAgentInfo(
   return builder_.Finish();
 }
 
+struct GetAgents FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef GetAgentsBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_AGENTS = 4
+  };
+  const flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>> *agents() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>> *>(VT_AGENTS);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_AGENTS) &&
+           verifier.VerifyVector(agents()) &&
+           verifier.VerifyVectorOfTables(agents()) &&
+           verifier.EndTable();
+  }
+};
+
+struct GetAgentsBuilder {
+  typedef GetAgents Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_agents(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>>> agents) {
+    fbb_.AddOffset(GetAgents::VT_AGENTS, agents);
+  }
+  explicit GetAgentsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  GetAgentsBuilder &operator=(const GetAgentsBuilder &);
+  flatbuffers::Offset<GetAgents> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<GetAgents>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<GetAgents> CreateGetAgents(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>>> agents = 0) {
+  GetAgentsBuilder builder_(_fbb);
+  builder_.add_agents(agents);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<GetAgents> CreateGetAgentsDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<flatbuffers::Offset<syncnet::AgentInfo>> *agents = nullptr) {
+  auto agents__ = agents ? _fbb.CreateVector<flatbuffers::Offset<syncnet::AgentInfo>>(*agents) : 0;
+  return syncnet::CreateGetAgents(
+      _fbb,
+      agents__);
+}
+
+struct Ping FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PingBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_SEQ = 4
+  };
+  int32_t seq() const {
+    return GetField<int32_t>(VT_SEQ, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_SEQ) &&
+           verifier.EndTable();
+  }
+};
+
+struct PingBuilder {
+  typedef Ping Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_seq(int32_t seq) {
+    fbb_.AddElement<int32_t>(Ping::VT_SEQ, seq, 0);
+  }
+  explicit PingBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  PingBuilder &operator=(const PingBuilder &);
+  flatbuffers::Offset<Ping> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Ping>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Ping> CreatePing(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t seq = 0) {
+  PingBuilder builder_(_fbb);
+  builder_.add_seq(seq);
+  return builder_.Finish();
+}
+
 inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type) {
   switch (type) {
     case GameMessages_NONE: {
@@ -403,6 +532,14 @@ inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj,
     }
     case GameMessages_AgentInfo: {
       auto ptr = reinterpret_cast<const syncnet::AgentInfo *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_GetAgents: {
+      auto ptr = reinterpret_cast<const syncnet::GetAgents *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_Ping: {
+      auto ptr = reinterpret_cast<const syncnet::Ping *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;

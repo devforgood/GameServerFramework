@@ -103,6 +103,7 @@ inline void game_session::do_read_body()
 					std::cout << "agent id : " << msg->msg_as_RemoveAgent()->agentId() << std::endl;
 					break;
 				case syncnet::GameMessages::GameMessages_SetMoveTarget:
+				{
 					std::cout << "agent id : " << msg->msg_as_SetMoveTarget()->agentId() << std::endl;
 					std::cout << "x : " << msg->msg_as_SetMoveTarget()->pos()->x() << std::endl;
 					std::cout << "y : " << msg->msg_as_SetMoveTarget()->pos()->y() << std::endl;
@@ -115,28 +116,47 @@ inline void game_session::do_read_body()
 					room_.world()->map()->setMoveTarget(v, false);
 					break;
 				}
+				case syncnet::GameMessages::GameMessages_Ping:
+					std::cout << "ping seq : " << msg->msg_as_Ping()->seq() << std::endl;
+					break;
+				}
 
 
 
 
 				flatbuffers::FlatBufferBuilder builder(1024);
 				flatbuffers::Offset<syncnet::AgentInfo> agent_info;
-
-				auto agent = room_.world()->map()->crowd()->getAgent(0);
-				if (agent != nullptr)
+				std::vector<flatbuffers::Offset<syncnet::AgentInfo>> agent_info_vector;
+				for (int i = 0; i < room_.world()->map()->crowd()->getAgentCount(); ++i)
 				{
+					const dtCrowdAgent* agent = room_.world()->map()->crowd()->getAgent(i);
+					if (agent->active == false)
+						continue;
+
 					syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
-					std::cout << "agent "<< agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
+					std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
 
-					agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
+					agent_info = syncnet::CreateAgentInfo(builder, i, &pos);
+					agent_info_vector.push_back(agent_info);
 				}
-				else
-				{
-					syncnet::Vec3 pos(0, 0, 0);
-					agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
-				}
+				auto agents = builder.CreateVector(agent_info_vector);
+				auto getAgents = syncnet::CreateGetAgents(builder, agents);
 
-				auto send_msg = syncnet::CreateGameMessage(builder, syncnet::GameMessages::GameMessages_AgentInfo, agent_info.Union());
+				//auto agent = room_.world()->map()->crowd()->getAgent(0);
+				//if (agent != nullptr)
+				//{
+				//	syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
+				//	std::cout << "agent "<< agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
+
+				//	agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
+				//}
+				//else
+				//{
+				//	syncnet::Vec3 pos(0, 0, 0);
+				//	agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
+				//}
+
+				auto send_msg = syncnet::CreateGameMessage(builder, syncnet::GameMessages::GameMessages_GetAgents, getAgents.Union());
 				builder.Finish(send_msg);
 
 				memcpy(send_msg_.body(), builder.GetBufferPointer(), builder.GetSize());

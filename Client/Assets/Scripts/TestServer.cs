@@ -129,15 +129,33 @@ public class TestServer : MonoBehaviour
 	void OnReceive(byte[] bytes)
     {
 		var recv_msg = GameMessage.GetRootAsGameMessage(new ByteBuffer(bytes));
-		if (recv_msg.MsgType == GameMessages.AgentInfo)
+		switch (recv_msg.MsgType)
 		{
-			AgentInfo agnetInfo = recv_msg.Msg<AgentInfo>().Value;
-			Vec3 pos = agnetInfo.Pos.Value;
-			Debug.Log($"recv id : {agnetInfo.AgentId}, pos({pos.X}, {pos.Y}, {pos.Z} )");
-			agent_pos[0].x = pos.X;
-			agent_pos[0].y = pos.Y;
-			agent_pos[0].z = pos.Z;
-			agent_count = 1;
+			case GameMessages.AgentInfo:
+				{
+					AgentInfo agnetInfo = recv_msg.Msg<AgentInfo>().Value;
+					Vec3 pos = agnetInfo.Pos.Value;
+					Debug.Log($"recv id : {agnetInfo.AgentId}, pos({pos.X}, {pos.Y}, {pos.Z} )");
+					agent_pos[0].x = pos.X;
+					agent_pos[0].y = pos.Y;
+					agent_pos[0].z = pos.Z;
+					agent_count = 1;
+				}
+				break;
+			case GameMessages.GetAgents:
+                {
+					GetAgents getAgents = recv_msg.Msg<GetAgents>().Value;
+					for(int i=0;i<getAgents.AgentsLength;++i)
+                    {
+						Vec3 pos = getAgents.Agents(i).Value.Pos.Value;
+						Debug.Log($"recv id : {getAgents.Agents(i).Value.AgentId}, pos({pos.X}, {pos.Y}, {pos.Z} )");
+						agent_pos[getAgents.Agents(i).Value.AgentId].x = pos.X;
+						agent_pos[getAgents.Agents(i).Value.AgentId].y = pos.Y;
+						agent_pos[getAgents.Agents(i).Value.AgentId].z = pos.Z;
+					}
+					agent_count = getAgents.AgentsLength;
+				}
+				break;
 		}
 	}
 
@@ -168,7 +186,7 @@ public class TestServer : MonoBehaviour
 			}
 		}
 
-		if (Input.GetMouseButton(0))  // 마우스가 클릭 되면
+		if (Input.GetMouseButton(0) && Input.GetKey(KeyCode.LeftControl))  // 마우스가 클릭 되면
 		{
 			Vector3 mos = Input.mousePosition;
 			mos.z = camera.farClipPlane; // 카메라가 보는 방향과, 시야를 가져온다.
@@ -184,6 +202,25 @@ public class TestServer : MonoBehaviour
                 {
 
                 }
+			}
+		}
+
+		if (Input.GetMouseButton(0) && Input.GetKey(KeyCode.LeftAlt))  // 마우스가 클릭 되면
+		{
+			Vector3 mos = Input.mousePosition;
+			mos.z = camera.farClipPlane; // 카메라가 보는 방향과, 시야를 가져온다.
+
+			Vector3 dir = camera.ScreenToWorldPoint(mos);
+			// 월드의 좌표를 클릭했을 때 화면에 자신이 보고있는 화면에 맞춰 좌표를 바꿔준다.
+
+			RaycastHit hit;
+			if (Physics.Raycast(camera.transform.position, dir, out hit, mos.z))
+			{
+				//target.position = hit.point; // 타겟을 레이캐스트가 충돌된 곳으로 옮긴다.
+				if (hit.transform.gameObject.tag == "floor")
+				{
+
+				}
 			}
 		}
 	}

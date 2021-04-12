@@ -3,10 +3,12 @@ namespace syncnet;
 
 union GameMessages
 { 
-	AddAgent,
-	RemoveAgent,
-	SetMoveTarget,
-	AgentInfo,
+  AddAgent,
+  RemoveAgent,
+  SetMoveTarget,
+  AgentInfo,
+  GetAgents,
+  Ping,
 } // Optionally add more tables.
 
 struct Vec3 {
@@ -35,6 +37,14 @@ table SetMoveTarget {
 table AgentInfo {
   agentId:int;
   pos:Vec3;
+}
+
+table GetAgents {
+  agents:[AgentInfo];
+}
+
+table Ping {
+  seq:int;
 }
 
 root_type GameMessage;
