@@ -28,6 +28,10 @@ public class TestServer : MonoBehaviour
 	TcpConnection session;
 	int message_count = 0;
 	float lastSendTime = 0f;
+	int seq = 1;
+	bool clickOn = false;
+	bool clickCtrlOn = false;
+	bool clickAltOn = false;
 
 	// Start is called before the first frame update
 	void Start()
@@ -49,30 +53,31 @@ public class TestServer : MonoBehaviour
 		return BitConverter.GetBytes(body.Length);
 	}
 
-	byte[] MakeAddAgent()
+	byte[] MakeAddAgent(Vector3 pos)
     {
 		var builder = new FlatBufferBuilder(1024);
 
 		AddAgent.StartAddAgent(builder);
-		AddAgent.AddPos(builder, Vec3.CreateVec3(builder, -1.4f, 0.69f, 2.68f));
-		var addagent = AddAgent.EndAddAgent(builder);
+		//AddAgent.AddPos(builder, Vec3.CreateVec3(builder, -1.4f, 0.69f, 2.68f));
+		AddAgent.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
+		var offset = AddAgent.EndAddAgent(builder);
 
-		var msg = GameMessage.CreateGameMessage(builder, GameMessages.AddAgent, addagent.Value);
+		var msg = GameMessage.CreateGameMessage(builder, GameMessages.AddAgent, offset.Value);
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
 
 		return body;
 	}
-	byte[] MakeRemoveAgent()
+	byte[] MakeRemoveAgent(int agentId)
 	{
 		var builder = new FlatBufferBuilder(1024);
 
 		RemoveAgent.StartRemoveAgent(builder);
-		RemoveAgent.AddAgentId(builder, 9);
-		var removeagnet = RemoveAgent.EndRemoveAgent(builder);
+		RemoveAgent.AddAgentId(builder, agentId);
+		var offset = RemoveAgent.EndRemoveAgent(builder);
 
-		var msg = GameMessage.CreateGameMessage(builder, GameMessages.RemoveAgent, removeagnet.Value);
+		var msg = GameMessage.CreateGameMessage(builder, GameMessages.RemoveAgent, offset.Value);
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
@@ -80,16 +85,18 @@ public class TestServer : MonoBehaviour
 		return body;
 	}
 
-	byte[] MakeSetMoveTarget()
+	byte[] MakeSetMoveTarget(int agentId, Vector3 pos)
 	{
 		var builder = new FlatBufferBuilder(1024);
 
 		SetMoveTarget.StartSetMoveTarget(builder);
-		SetMoveTarget.AddAgentId(builder, 1);
-		SetMoveTarget.AddPos(builder, Vec3.CreateVec3(builder, 0.73f, 0.69f, 11.5f));
-		var removeagnet = SetMoveTarget.EndSetMoveTarget(builder);
+		//SetMoveTarget.AddAgentId(builder, 1);
+		//SetMoveTarget.AddPos(builder, Vec3.CreateVec3(builder, 0.73f, 0.69f, 11.5f));
+		SetMoveTarget.AddAgentId(builder, agentId);
+		SetMoveTarget.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
+		var offset = SetMoveTarget.EndSetMoveTarget(builder);
 
-		var msg = GameMessage.CreateGameMessage(builder, GameMessages.SetMoveTarget, removeagnet.Value);
+		var msg = GameMessage.CreateGameMessage(builder, GameMessages.SetMoveTarget, offset.Value);
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
@@ -97,34 +104,42 @@ public class TestServer : MonoBehaviour
 		return body;
 	}
 
-	void SendMessage(float deltaTime)
+	byte[] MakePing()
+	{
+		var builder = new FlatBufferBuilder(1024);
+
+        syncnet.Ping.StartPing(builder);
+		syncnet.Ping.AddSeq(builder, seq++);
+		var offset = syncnet.Ping.EndPing(builder);
+
+		var msg = GameMessage.CreateGameMessage(builder, GameMessages.Ping, offset.Value);
+		builder.Finish(msg.Value);
+
+		byte[] body = builder.SizedByteArray();
+
+		return body;
+	}
+
+	void SendPing(float deltaTime)
     {
 		lastSendTime += deltaTime;
 		if(lastSendTime >= 0.01f)
         {
-			byte[] body;
+			byte[] body = MakePing();
 
-			if (message_count == 0)
-			{
-				body = MakeAddAgent();
-			}
-			else if (message_count == 1)
-			{
-				body = MakeSetMoveTarget();
-			}
-			else
-			{
-				body = MakeRemoveAgent();
-			}
-			++message_count;
-
-			session.SendBytes(MakeHeader(body));
+            session.SendBytes(MakeHeader(body));
 			session.SendBytes(body);
 
 			lastSendTime = 0f;
 		}
-
 	}
+
+	void SendMessage(byte[] msg)
+    {
+		session.SendBytes(MakeHeader(msg));
+		session.SendBytes(msg);
+	}
+
 
 	void OnReceive(byte[] bytes)
     {
@@ -166,7 +181,7 @@ public class TestServer : MonoBehaviour
 	// Update is called once per frame
 	void Update()
     {
-		SendMessage(Time.deltaTime);
+		SendPing(Time.deltaTime);
 		byte[] result;
 		while(session.queue.TryDequeue(out result))
         {
@@ -186,42 +201,82 @@ public class TestServer : MonoBehaviour
 			}
 		}
 
-		if (Input.GetMouseButton(0) && Input.GetKey(KeyCode.LeftControl))  // 마우스가 클릭 되면
+		if(Input.GetMouseButtonUp(0))
+        {
+			clickOn = false;
+			clickCtrlOn = false;
+			clickAltOn = false;
+        }
+
+		if (Input.GetMouseButton(0))  // 마우스가 클릭 되면
 		{
-			Vector3 mos = Input.mousePosition;
-			mos.z = camera.farClipPlane; // 카메라가 보는 방향과, 시야를 가져온다.
-
-			Vector3 dir = camera.ScreenToWorldPoint(mos);
-			// 월드의 좌표를 클릭했을 때 화면에 자신이 보고있는 화면에 맞춰 좌표를 바꿔준다.
-
-			RaycastHit hit;
-			if (Physics.Raycast(camera.transform.position, dir, out hit, mos.z))
+			if (clickOn == false)
 			{
-				//target.position = hit.point; // 타겟을 레이캐스트가 충돌된 곳으로 옮긴다.
-				if(hit.transform.gameObject.tag == "floor")
-                {
+				Vector3 mos = Input.mousePosition;
+				mos.z = camera.farClipPlane; // 카메라가 보는 방향과, 시야를 가져온다.
 
-                }
+				Vector3 dir = camera.ScreenToWorldPoint(mos);
+				// 월드의 좌표를 클릭했을 때 화면에 자신이 보고있는 화면에 맞춰 좌표를 바꿔준다.
+
+				RaycastHit hit;
+				if (Physics.Raycast(camera.transform.position, dir, out hit, mos.z))
+				{
+					//target.position = hit.point; // 타겟을 레이캐스트가 충돌된 곳으로 옮긴다.
+					if (hit.transform.gameObject.tag == "floor")
+					{
+						SendMessage(MakeSetMoveTarget(-1, hit.point));
+					}
+				}
+
+				clickOn = true;
 			}
 		}
+
+		if (Input.GetMouseButton(0) && Input.GetKey(KeyCode.LeftControl))  // 마우스가 클릭 되면
+		{
+			if (clickCtrlOn == false)
+			{
+                Vector3 mos = Input.mousePosition;
+                mos.z = camera.farClipPlane; // 카메라가 보는 방향과, 시야를 가져온다.
+
+                Vector3 dir = camera.ScreenToWorldPoint(mos);
+                // 월드의 좌표를 클릭했을 때 화면에 자신이 보고있는 화면에 맞춰 좌표를 바꿔준다.
+
+                RaycastHit hit;
+                if (Physics.Raycast(camera.transform.position, dir, out hit, mos.z))
+                {
+                    //target.position = hit.point; // 타겟을 레이캐스트가 충돌된 곳으로 옮긴다.
+                    if (hit.transform.gameObject.tag == "floor")
+                    {
+                        SendMessage(MakeAddAgent(hit.point));
+                    }
+                }
+
+				clickCtrlOn = true;
+            }
+        }
 
 		if (Input.GetMouseButton(0) && Input.GetKey(KeyCode.LeftAlt))  // 마우스가 클릭 되면
 		{
-			Vector3 mos = Input.mousePosition;
-			mos.z = camera.farClipPlane; // 카메라가 보는 방향과, 시야를 가져온다.
-
-			Vector3 dir = camera.ScreenToWorldPoint(mos);
-			// 월드의 좌표를 클릭했을 때 화면에 자신이 보고있는 화면에 맞춰 좌표를 바꿔준다.
-
-			RaycastHit hit;
-			if (Physics.Raycast(camera.transform.position, dir, out hit, mos.z))
+			if (clickAltOn == false)
 			{
-				//target.position = hit.point; // 타겟을 레이캐스트가 충돌된 곳으로 옮긴다.
-				if (hit.transform.gameObject.tag == "floor")
-				{
+                Vector3 mos = Input.mousePosition;
+                mos.z = camera.farClipPlane; // 카메라가 보는 방향과, 시야를 가져온다.
 
-				}
-			}
-		}
+                Vector3 dir = camera.ScreenToWorldPoint(mos);
+                // 월드의 좌표를 클릭했을 때 화면에 자신이 보고있는 화면에 맞춰 좌표를 바꿔준다.
+
+                RaycastHit hit;
+                if (Physics.Raycast(camera.transform.position, dir, out hit, mos.z))
+                {
+                    //target.position = hit.point; // 타겟을 레이캐스트가 충돌된 곳으로 옮긴다.
+                    if (hit.transform.gameObject.tag == "floor")
+                    {
+
+                    }
+                }
+				clickAltOn = true;
+            }
+        }
 	}
 }
