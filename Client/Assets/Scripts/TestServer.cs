@@ -37,21 +37,6 @@ public class TestServer : MonoBehaviour
 		startServer();
 	}
 
-	private string getIPAddress()
-	{
-		IPHostEntry host;
-		string localIP = "";
-		host = Dns.GetHostEntry(Dns.GetHostName());
-		foreach (IPAddress ip in host.AddressList)
-		{
-			if (ip.AddressFamily == AddressFamily.InterNetwork)
-			{
-				localIP = ip.ToString();
-			}
-
-		}
-		return localIP;
-	}
 	void startServer()
 	{
 		SocketThread = new System.Threading.Thread(networkCode);
@@ -59,7 +44,12 @@ public class TestServer : MonoBehaviour
 		SocketThread.Start();
 	}
 
-	(byte[], byte[]) MakeAddAgent()
+	byte[] MakeHeader(byte[] body)
+    {
+		return BitConverter.GetBytes(body.Length);
+	}
+
+	byte[] MakeAddAgent()
     {
 		var builder = new FlatBufferBuilder(1024);
 
@@ -71,10 +61,10 @@ public class TestServer : MonoBehaviour
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
-		byte[] header = BitConverter.GetBytes(body.Length);
-		return (header, body);
+
+		return body;
 	}
-	(byte[], byte[]) MakeRemoveAgent()
+	byte[] MakeRemoveAgent()
 	{
 		var builder = new FlatBufferBuilder(1024);
 
@@ -86,11 +76,11 @@ public class TestServer : MonoBehaviour
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
-		byte[] header = BitConverter.GetBytes(body.Length);
-		return (header, body);
+
+		return body;
 	}
 
-	(byte[], byte[]) MakeSetMoveTarget()
+	byte[] MakeSetMoveTarget()
 	{
 		var builder = new FlatBufferBuilder(1024);
 
@@ -103,8 +93,8 @@ public class TestServer : MonoBehaviour
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
-		byte[] header = BitConverter.GetBytes(body.Length);
-		return (header, body);
+
+		return body;
 	}
 
 	void networkCode()
@@ -115,21 +105,19 @@ public class TestServer : MonoBehaviour
 		byte[] bytes = new Byte[1024];
 
 		// host running the application.
-		Debug.Log("Ip " + getIPAddress().ToString());
-		IPAddress[] ipArray = Dns.GetHostAddresses(getIPAddress());
+
 		IPEndPoint endPoint = core.NetworkHelper.CreateIPEndPoint("127.0.0.1:60001");
 
 		// Create a TCP/IP socket.
-		socket = new Socket(ipArray[0].AddressFamily,
+		socket = new Socket(endPoint.AddressFamily,
 			SocketType.Stream, ProtocolType.Tcp);
 
 		// Bind the socket to the local endpoint and 
 		// listen for incoming connections.
 
 
-
-		byte[] header;
 		byte[] body;
+		int message_length;
 		try
 		{
 			socket.Connect(endPoint);
@@ -154,36 +142,33 @@ public class TestServer : MonoBehaviour
 				{
 					if(cnt == 0)
                     {
-						(header, body) = MakeAddAgent();
+						body = MakeAddAgent();
                     }
 					else if(cnt == 1)
                     {
-						(header, body) = MakeSetMoveTarget();
+						body = MakeSetMoveTarget();
 					}
 					else
                     {
-						(header, body) = MakeRemoveAgent();
+						body = MakeRemoveAgent();
 					}
 					++cnt;
 
-					if (socket.Send(header) <= 0)
+					if (socket.Send(MakeHeader(body)) <= 0)
                     {
 						keepReading = false;
 						socket.Disconnect(true);
 						break;
 					}
 
-					if(socket.Send(body) <= 0)
-                    {
+					if (socket.Send(body) <= 0)
+					{
 						keepReading = false;
 						socket.Disconnect(true);
 						break;
 					}
 
-
-
-
-                    int bytesRec = socket.Receive(bytes, 4, SocketFlags.None);
+					int bytesRec = socket.Receive(bytes, 4, SocketFlags.None);
                     int length = BitConverter.ToInt32(bytes, 0);
                     Debug.Log("Received from Server");
                     if (bytesRec <= 0)
