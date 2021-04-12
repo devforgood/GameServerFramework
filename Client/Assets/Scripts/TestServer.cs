@@ -22,13 +22,12 @@ public class TestServer : MonoBehaviour
 	public GameObject[] mob;
 	public Camera camera;
 
-	System.Threading.Thread SocketThread;
-	volatile bool keepReading = false;
-	Socket socket;
-
 	Vector3[] agent_pos = new Vector3[100];
 	int agent_count = 0;
 
+	TcpConnection session;
+	int message_count = 0;
+	float lastSendTime = 0f;
 
 	// Start is called before the first frame update
 	void Start()
@@ -39,9 +38,10 @@ public class TestServer : MonoBehaviour
 
 	void startServer()
 	{
-		SocketThread = new System.Threading.Thread(networkCode);
-		SocketThread.IsBackground = true;
-		SocketThread.Start();
+		session = new TcpConnection(core.NetworkHelper.CreateIPEndPoint("127.0.0.1:60001"));
+		session.Receiver = this;
+		session.Connect();
+
 	}
 
 	byte[] MakeHeader(byte[] body)
@@ -97,146 +97,64 @@ public class TestServer : MonoBehaviour
 		return body;
 	}
 
-	void networkCode()
-	{
-		string data;
+	void SendMessage(float deltaTime)
+    {
+		lastSendTime += deltaTime;
+		if(lastSendTime >= 0.01f)
+        {
+			byte[] body;
 
-		// Data buffer for incoming data.
-		byte[] bytes = new Byte[1024];
-
-		// host running the application.
-
-		IPEndPoint endPoint = core.NetworkHelper.CreateIPEndPoint("127.0.0.1:60001");
-
-		// Create a TCP/IP socket.
-		socket = new Socket(endPoint.AddressFamily,
-			SocketType.Stream, ProtocolType.Tcp);
-
-		// Bind the socket to the local endpoint and 
-		// listen for incoming connections.
-
-
-		byte[] body;
-		int message_length;
-		try
-		{
-			socket.Connect(endPoint);
-			Debug.Log("Client Connected");     //It doesn't work
-
-
-
-			int cnt = 0;
-			// Start listening for connections.
-			while (true)
-            {
-                keepReading = true;
-
-				// Program is suspended while waiting for an incoming connection.
-				Debug.Log("Waiting for Connection");     //It works
-
-				Debug.Log("Client Connected");     //It doesn't work
-				data = null;
-
-				// An incoming connection needs to be processed.
-				while (keepReading)
-				{
-					if(cnt == 0)
-                    {
-						body = MakeAddAgent();
-                    }
-					else if(cnt == 1)
-                    {
-						body = MakeSetMoveTarget();
-					}
-					else
-                    {
-						body = MakeRemoveAgent();
-					}
-					++cnt;
-
-					if (socket.Send(MakeHeader(body)) <= 0)
-                    {
-						keepReading = false;
-						socket.Disconnect(true);
-						break;
-					}
-
-					if (socket.Send(body) <= 0)
-					{
-						keepReading = false;
-						socket.Disconnect(true);
-						break;
-					}
-
-					int bytesRec = socket.Receive(bytes, 4, SocketFlags.None);
-                    int length = BitConverter.ToInt32(bytes, 0);
-                    Debug.Log("Received from Server");
-                    if (bytesRec <= 0)
-                    {
-                        keepReading = false;
-                        socket.Disconnect(true);
-                        break;
-                    }
-
-                    bytesRec = socket.Receive(bytes, length, SocketFlags.None);
-                    if (bytesRec <= 0)
-                    {
-                        keepReading = false;
-                        socket.Disconnect(true);
-                        break;
-                    }
-
-					var recv_msg = GameMessage.GetRootAsGameMessage(new ByteBuffer(bytes));
-					if (recv_msg.MsgType == GameMessages.AgentInfo)
-					{
-                        AgentInfo agnetInfo = recv_msg.Msg<AgentInfo>().Value;
-						Vec3 pos = agnetInfo.Pos.Value;
-						Debug.Log($"recv id : {agnetInfo.AgentId}, pos({pos.X}, {pos.Y}, {pos.Z} )");
-						agent_pos[0].x = pos.X;
-						agent_pos[0].y = pos.Y;
-						agent_pos[0].z = pos.Z;
-						agent_count = 1;
-					}
-
-
-
-					System.Threading.Thread.Sleep(10);
-				}
-
-				System.Threading.Thread.Sleep(1);
+			if (message_count == 0)
+			{
+				body = MakeAddAgent();
 			}
+			else if (message_count == 1)
+			{
+				body = MakeSetMoveTarget();
+			}
+			else
+			{
+				body = MakeRemoveAgent();
+			}
+			++message_count;
+
+			session.SendBytes(MakeHeader(body));
+			session.SendBytes(body);
+
+			lastSendTime = 0f;
 		}
-		catch (Exception e)
-		{
-			Debug.Log(e.ToString());
-		}
+
 	}
 
-	void stopServer()
-	{
-		keepReading = false;
-
-		//stop thread
-		if (SocketThread != null)
+	void OnReceive(byte[] bytes)
+    {
+		var recv_msg = GameMessage.GetRootAsGameMessage(new ByteBuffer(bytes));
+		if (recv_msg.MsgType == GameMessages.AgentInfo)
 		{
-			SocketThread.Abort();
-		}
-
-		if (socket != null && socket.Connected)
-		{
-			socket.Disconnect(false);
-			Debug.Log("Disconnected!");
+			AgentInfo agnetInfo = recv_msg.Msg<AgentInfo>().Value;
+			Vec3 pos = agnetInfo.Pos.Value;
+			Debug.Log($"recv id : {agnetInfo.AgentId}, pos({pos.X}, {pos.Y}, {pos.Z} )");
+			agent_pos[0].x = pos.X;
+			agent_pos[0].y = pos.Y;
+			agent_pos[0].z = pos.Z;
+			agent_count = 1;
 		}
 	}
 
 	void OnDisable()
 	{
-		stopServer();
 	}
 
 	// Update is called once per frame
 	void Update()
     {
+		SendMessage(Time.deltaTime);
+		byte[] result;
+		while(session.queue.TryDequeue(out result))
+        {
+			OnReceive(result);
+        }
+
 		for (int i = 0; i < agent_count ; ++i)
 		{
 			try

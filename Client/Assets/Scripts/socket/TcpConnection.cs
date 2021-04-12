@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -24,6 +25,9 @@ public class TcpConnection : IDisposable
 
 
     IPEndPoint RemoteEndPoint;
+    public Component Receiver;
+
+    public ConcurrentQueue<byte[]> queue = new ConcurrentQueue<byte[]>();
 
 
     /// <summary>
@@ -109,7 +113,7 @@ public class TcpConnection : IDisposable
     ///         communication, specifying anything else will have no effect.
     ///     </para>
     /// </remarks>
-    public void SendBytes(byte[] bytes, int lengthBits)
+    public void SendBytes(byte[] bytes)
     {
         //Write the bytes to the socket
         lock (socketLock)
@@ -165,7 +169,7 @@ public class TcpConnection : IDisposable
 
 
         //Fire DataReceived event
-        // todo :
+        queue.Enqueue(bytes);
     }
 
 
@@ -276,7 +280,7 @@ public class TcpConnection : IDisposable
         if (bytes.Length < 4)
             throw new IndexOutOfRangeException("Not enough bytes passed to calculate length.");
 
-        return (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
+        return BitConverter.ToInt32(bytes, 0);
     }
 
     /// <inheritdoc />
