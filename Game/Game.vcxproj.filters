@@ -47,6 +47,9 @@
       <Filter>flatbuffers</Filter>
     </ClInclude>
     <ClInclude Include="MessageDispatcher.h" />
+    <ClInclude Include="SendMessage.h">
+      <Filter>Message</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

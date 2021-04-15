@@ -20,6 +20,7 @@
 #include "Message.h"
 #include "PerfTimer.h"
 #include "MessageDispatcher.h"
+#include "SendMessage.h"
 
 using boost::asio::ip::tcp;
 

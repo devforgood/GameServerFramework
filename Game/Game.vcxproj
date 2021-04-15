@@ -178,6 +178,7 @@
     <ClInclude Include="Message.h" />
     <ClInclude Include="MessageDispatcher.h" />
     <ClInclude Include="PerfTimer.h" />
+    <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="syncnet_generated.h" />
     <ClInclude Include="Walker.h" />
