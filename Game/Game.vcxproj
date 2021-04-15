@@ -147,6 +147,7 @@
   <ItemGroup>
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Map.cpp" />
+    <ClCompile Include="MessageDispatcher.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="WalkerTest.cpp" />
@@ -175,6 +176,7 @@
   <ItemGroup>
     <ClInclude Include="Map.h" />
     <ClInclude Include="Message.h" />
+    <ClInclude Include="MessageDispatcher.h" />
     <ClInclude Include="PerfTimer.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="syncnet_generated.h" />

@@ -1,6 +1,7 @@
 #pragma once
 #include "Map.h"
 
+class game_session;
 class World
 {
 private:
@@ -13,5 +14,7 @@ public:
 	void update(float deltaTime);
 
 	Map* map() { return m_map; }
+
+	void SendWorldState(game_session* session);
 };
 

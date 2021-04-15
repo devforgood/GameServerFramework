@@ -19,6 +19,7 @@
 #include <boost/bind.hpp>
 #include "Message.h"
 #include "PerfTimer.h"
+#include "MessageDispatcher.h"
 
 using boost::asio::ip::tcp;
 
@@ -62,7 +63,7 @@ private:
 };
 
 //----------------------------------------------------------------------
-
+class MessageDispatcher;
 class game_session
 	: public game_participant,
 	public std::enable_shared_from_this<game_session>
@@ -77,6 +78,7 @@ public:
 	void start();
 
 	void send(const game_message& msg);
+	void send(void* msg, int size);
 
 private:
 	void do_read_header();
@@ -90,6 +92,7 @@ private:
 	game_message send_msg_;
 	game_message read_msg_;
 	game_message_queue write_msgs_;
+	MessageDispatcher* dispatcher_;
 };
 
 //----------------------------------------------------------------------
@@ -98,16 +101,7 @@ class game_server
 {
 public:
 	game_server(boost::asio::io_context& io_context,
-		const tcp::endpoint& endpoint)
-		: acceptor_(io_context, endpoint)
-		, timer_(io_context, boost::posix_time::milliseconds(16)) // 60 «¡∑π¿”
-	{
-		do_accept();
-
-		timeAcc = 0.0f;
-		lastTime_ = getPerfTime();
-		timer_.async_wait(boost::bind(&game_server::tick, this, boost::asio::placeholders::error));
-	}
+		const tcp::endpoint& endpoint);
 
 private:
 	void do_accept();
@@ -118,5 +112,4 @@ private:
 	boost::asio::deadline_timer timer_;
 	TimeVal lastTime_;
 	float timeAcc;
-
 };

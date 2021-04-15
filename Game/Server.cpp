@@ -36,6 +36,9 @@ inline void game_room::deliver(const game_message& msg)
 
 inline void game_session::start()
 {
+	dispatcher_ = new MessageDispatcher();
+	dispatcher_->world_ = room_.world();
+
 	room_.join(shared_from_this());
 	do_read_header();
 }
@@ -49,6 +52,15 @@ inline void game_session::send(const game_message& msg)
 		do_write();
 	}
 }
+
+void game_session::send(void* msg, int size)
+{
+	memcpy(send_msg_.body(), msg, size);
+	send_msg_.body_length(size);
+	send_msg_.encode_header();
+	send(send_msg_);
+}
+
 
 inline void game_session::do_read_header()
 {
@@ -86,88 +98,13 @@ inline void game_session::do_read_body()
 
 				switch (msg->msg_type())
 				{
-				case syncnet::GameMessages::GameMessages_AddAgent:
-				{
-					std::cout << "x : " << msg->msg_as_AddAgent()->pos()->x() << std::endl;
-					std::cout << "y : " << msg->msg_as_AddAgent()->pos()->y() << std::endl;
-					std::cout << "z : " << msg->msg_as_AddAgent()->pos()->z() << std::endl;
-
-					float* v = new float[3];
-					v[0] = msg->msg_as_AddAgent()->pos()->x() * -1;
-					v[1] = msg->msg_as_AddAgent()->pos()->y();
-					v[2] = msg->msg_as_AddAgent()->pos()->z();
-					room_.world()->map()->addAgent(v);
-					break;
-				}
-				case syncnet::GameMessages::GameMessages_RemoveAgent:
-					std::cout << "agent id : " << msg->msg_as_RemoveAgent()->agentId() << std::endl;
-					break;
-				case syncnet::GameMessages::GameMessages_SetMoveTarget:
-				{
-					std::cout << "agent id : " << msg->msg_as_SetMoveTarget()->agentId() << std::endl;
-					std::cout << "x : " << msg->msg_as_SetMoveTarget()->pos()->x() << std::endl;
-					std::cout << "y : " << msg->msg_as_SetMoveTarget()->pos()->y() << std::endl;
-					std::cout << "z : " << msg->msg_as_SetMoveTarget()->pos()->z() << std::endl;
-
-					float* v = new float[3];
-					v[0] = msg->msg_as_SetMoveTarget()->pos()->x() * -1;
-					v[1] = msg->msg_as_SetMoveTarget()->pos()->y();
-					v[2] = msg->msg_as_SetMoveTarget()->pos()->z();
-					room_.world()->map()->setMoveTarget(v, false);
-					break;
-				}
-				case syncnet::GameMessages::GameMessages_Ping:
-					std::cout << "ping seq : " << msg->msg_as_Ping()->seq() << std::endl;
-					break;
+				case syncnet::GameMessages::GameMessages_AddAgent:			dispatcher_->dispatch(msg->msg_as_AddAgent()); break;
+				case syncnet::GameMessages::GameMessages_RemoveAgent:		dispatcher_->dispatch(msg->msg_as_RemoveAgent()); break;
+				case syncnet::GameMessages::GameMessages_SetMoveTarget:		dispatcher_->dispatch(msg->msg_as_SetMoveTarget()); break;
+				case syncnet::GameMessages::GameMessages_Ping:				dispatcher_->dispatch(msg->msg_as_Ping()); break;
 				}
 
-
-
-
-				flatbuffers::FlatBufferBuilder builder(1024);
-				flatbuffers::Offset<syncnet::AgentInfo> agent_info;
-				std::vector<flatbuffers::Offset<syncnet::AgentInfo>> agent_info_vector;
-				for (int i = 0; i < room_.world()->map()->crowd()->getAgentCount(); ++i)
-				{
-					const dtCrowdAgent* agent = room_.world()->map()->crowd()->getAgent(i);
-					if (agent->active == false)
-						continue;
-
-					syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
-					std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
-
-					agent_info = syncnet::CreateAgentInfo(builder, i, &pos);
-					agent_info_vector.push_back(agent_info);
-				}
-				auto agents = builder.CreateVector(agent_info_vector);
-				auto getAgents = syncnet::CreateGetAgents(builder, agents);
-
-				//auto agent = room_.world()->map()->crowd()->getAgent(0);
-				//if (agent != nullptr)
-				//{
-				//	syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
-				//	std::cout << "agent "<< agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
-
-				//	agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
-				//}
-				//else
-				//{
-				//	syncnet::Vec3 pos(0, 0, 0);
-				//	agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
-				//}
-
-				auto send_msg = syncnet::CreateGameMessage(builder, syncnet::GameMessages::GameMessages_GetAgents, getAgents.Union());
-				builder.Finish(send_msg);
-
-				memcpy(send_msg_.body(), builder.GetBufferPointer(), builder.GetSize());
-				send_msg_.body_length(builder.GetSize());
-				send_msg_.encode_header();
-				send(send_msg_);
-
-				//read_msg_.body()[read_msg_.body_length()] = 0;
-				//std::cout << read_msg_.body() << std::endl;
-
-
+				room_.world()->SendWorldState(this);
 
 
 				do_read_header();
@@ -204,6 +141,17 @@ inline void game_session::do_write()
 }
 
 //----------------------------------------------------------------------
+
+game_server::game_server(boost::asio::io_context& io_context, const tcp::endpoint& endpoint)
+	: acceptor_(io_context, endpoint)
+	, timer_(io_context, boost::posix_time::milliseconds(16)) // 60 «¡∑π¿”
+{
+	do_accept();
+
+	timeAcc = 0.0f;
+	lastTime_ = getPerfTime();
+	timer_.async_wait(boost::bind(&game_server::tick, this, boost::asio::placeholders::error));
+}
 
 void game_server::do_accept()
 {

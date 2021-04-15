@@ -27,6 +27,7 @@
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="World.cpp" />
+    <ClCompile Include="MessageDispatcher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -45,6 +46,7 @@
     <ClInclude Include="syncnet_generated.h">
       <Filter>flatbuffers</Filter>
     </ClInclude>
+    <ClInclude Include="MessageDispatcher.h" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">
