@@ -13,6 +13,7 @@
 
 ## Server Architecture
 ![severArchitecture](https://user-images.githubusercontent.com/17477292/115057890-8e971280-9f1f-11eb-8043-6dbc64521900.png)
+# 서버 구성
 1) 로비서버
 * 유저 인증, 매칭등 기타 인게임을 제외한 모든 기능을 담당한다.
 * 주기적 매칭 시도 방식 :
@@ -34,6 +35,19 @@
 3) AI 서버
 * AI 상태 관리, 길찾기를 담당한다.
 * 에이전트 생성, 삭제, 목표지점 이동
+
+# 프로토콜
+1) gRPC
+* 모바일 환경(빈번한 접속 종료)에서는 stateless protocol이 적합
+* Server side Push
+* Load balance 가 용이
+* Google 신뢰도
+
+2) RUDP
+* TCP의 불필요한 처리(흐름제어, 혼잡제어)가 없어 latency 확보 용이
+* Multiplexing : 한 소켓을 용도별 요청 가능 (채널)
+* QoS : 패킷 유실 보장
+
 
 ## Sequence Diagram
 ### 1. Login sequence diagram
