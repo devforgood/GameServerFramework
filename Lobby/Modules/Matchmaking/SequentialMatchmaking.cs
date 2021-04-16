@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-/*
+
 namespace Lobby
 {
     /// <summary>
@@ -186,7 +186,7 @@ namespace Lobby
         {
             // 매칭에 필요한 인원을 모두 찾았을때
             // 전투 가능한 서버를 찾아 세팅
-            (bool ret, string server_addr, byte worldId, string channel_key, string channel_id) = await Channel.GetAvailableServer();
+            (bool ret, string server_addr, byte worldId, string channel_key, string channel_id) = await Channel.GetAvailableServer(request.MapId);
             if (ret == false)
             {
                 // 전투 가능한 서버가 없다
@@ -372,11 +372,11 @@ namespace Lobby
             }
 
             // 게임 시작 요청 정보를 캐싱
-            await session.UpdateSession(request.SelectedCharacter, request.MapId, true);
+            await session.UpdateSessionLock(request.SelectedCharacter, request.MapId, true);
 
             if (request.IsImmediatelyJoin)
             {
-                (bool ret, string server_addr, byte worldId, string channel_key, string channel_id) = await Channel.GetAvailableServer();
+                (bool ret, string server_addr, byte worldId, string channel_key, string channel_id) = await Channel.GetAvailableServer(request.MapId);
                 if (ret == false)
                 {
                     // 전투 가능한 서버가 없다
@@ -451,4 +451,3 @@ namespace Lobby
 
     }
 }
-*/
