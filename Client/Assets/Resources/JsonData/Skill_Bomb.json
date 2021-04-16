@@ -1,0 +1,1 @@
+[{"skillId":1,"skillName":"FireBomb","skillDesc":"던져서폭발","skillType":1,"skillRange":4.5,"explosionType":1,"explosionRange":[2.0],"BombImage":"0","Exp_Effect":"0"},{"skillId":2,"skillName":"ElectricityBomb","skillDesc":"밀어서폭발","skillType":2,"skillRange":6.0,"explosionType":2,"explosionRange":[1.0,2.0],"BombImage":"0","Exp_Effect":"0"}]

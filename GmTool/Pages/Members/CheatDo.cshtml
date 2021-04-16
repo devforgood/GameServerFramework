@@ -1,0 +1,71 @@
+﻿@page
+@model GmTool.Pages.Members.CheatDoModel
+
+@{
+    ViewData["Title"] = "Cheat Detail";
+}
+
+<h1>Edit</h1>
+
+<h4>Member</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="member_no" />
+            <input type="hidden" asp-for="CommandString" />
+            <input type="hidden" asp-for="Target" />
+
+            <div class="form-group">
+                <label asp-for="PlayerId" class="control-label"></label>
+                <input asp-for="PlayerId" class="form-control" />
+                <span asp-validation-for="PlayerId" class="text-danger"></span>
+            </div>
+
+
+            <div class="form-group">
+                <label asp-for="Command.Description" class="control-label"></label>
+                <input asp-for="Command.Description" class="form-control" />
+                <span asp-validation-for="Command.Description" class="text-danger"></span>
+            </div>
+
+
+            <div class="form-group">
+                @Html.DisplayFor(modelItem => Model.Command.Param1)
+                <input asp-for="Param1" class="form-control" />
+                <span asp-validation-for="Param1" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                @Html.DisplayFor(modelItem => Model.Command.Param2)
+                <input asp-for="Param2" class="form-control" />
+                <span asp-validation-for="Param2" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                @Html.DisplayFor(modelItem => Model.Command.Param3)
+                <input asp-for="Param3" class="form-control" />
+                <span asp-validation-for="Param3" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                @Html.DisplayFor(modelItem => Model.Command.Param4)
+                <input asp-for="Param4" class="form-control" />
+                <span asp-validation-for="Param4" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <input type="submit" value="Execute" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="./Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

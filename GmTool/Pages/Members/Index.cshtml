@@ -1,0 +1,94 @@
+﻿@page
+@model GmTool.Pages.Members.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+@*<p>
+    <a asp-page="Create">Create New</a>
+</p>*@
+
+<form>
+    <p>
+        User Name (nickname): <input type="text" asp-for="SearchString" />
+        <input type="submit" value="Filter" />
+    </p>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Member[0].user_no)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Member[0].player_id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Member[0].game_token)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Member[0].language_code)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Member[0].nation_code)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Member[0].os_version)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Member[0].device_model_name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Member[0].last_play_time)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Member[0].user_name)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Member)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.user_no)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.player_id)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.game_token)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.language_code)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.nation_code)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.os_version)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.device_model_name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.last_play_time)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.user_name)
+                </td>
+                <td>
+                    <a asp-page="./Cheat" asp-route-id="@item.member_no">Cheat</a> |
+                    @*<a asp-page="./Edit" asp-route-id="@item.member_no">Edit</a> |
+                    <a asp-page="./Details" asp-route-id="@item.member_no">Details</a> |
+                    <a asp-page="./Delete" asp-route-id="@item.member_no">Delete</a>*@
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

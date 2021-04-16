@@ -1,0 +1,88 @@
+﻿@page
+@model GmTool.Pages.Users.DeleteModel
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h1>Delete</h1>
+
+<h3>Are you sure you want to delete this?</h3>
+<div>
+    <h4>User</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.User.character_no)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User.character_no)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.User.play_point)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User.play_point)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.User.user_grade)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User.user_grade)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.User.battle_score)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User.battle_score)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.User.gem)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User.gem)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.User.coin)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User.coin)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.User.battle_coin)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User.battle_coin)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.User.medal)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User.medal)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.User.upgrade_stone)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User.upgrade_stone)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.User.medal_charge)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User.medal_charge)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.User.medal_charge_time)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.User.medal_charge_time)
+        </dd>
+    </dl>
+    
+    <form method="post">
+        <input type="hidden" asp-for="User.user_no" />
+        <input type="submit" value="Delete" class="btn btn-danger" /> |
+        <a asp-page="./Index">Back to List</a>
+    </form>
+</div>

@@ -1,0 +1,19 @@
+[Unit]
+Description=AceStudio GM Tool
+
+[Service]
+WorkingDirectory=/var/www/gmtool
+ExecStart=/usr/bin/dotnet /var/www/gmtool/GmTool.dll
+Restart=always
+# Restart service after 10 seconds if the dotnet service crashes:
+RestartSec=10
+# The default value is 90 seconds for most distributions.
+TimeoutStopSec=90
+KillSignal=SIGINT
+SyslogIdentifier=gmtool
+User=apache
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ConnectionStrings__DefaultConnection={Connection String}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,74 @@
+﻿@page
+@model GmTool.Pages.HistoryLogs.CreateModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>HistoryLog</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="HistoryLog.submit_time" class="control-label"></label>
+                <input asp-for="HistoryLog.submit_time" class="form-control" />
+                <span asp-validation-for="HistoryLog.submit_time" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HistoryLog.user_no" class="control-label"></label>
+                <input asp-for="HistoryLog.user_no" class="form-control" />
+                <span asp-validation-for="HistoryLog.user_no" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HistoryLog.character_no" class="control-label"></label>
+                <input asp-for="HistoryLog.character_no" class="form-control" />
+                <span asp-validation-for="HistoryLog.character_no" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HistoryLog.action" class="control-label"></label>
+                <input asp-for="HistoryLog.action" class="form-control" />
+                <span asp-validation-for="HistoryLog.action" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HistoryLog.reason" class="control-label"></label>
+                <input asp-for="HistoryLog.reason" class="form-control" />
+                <span asp-validation-for="HistoryLog.reason" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HistoryLog.param1" class="control-label"></label>
+                <input asp-for="HistoryLog.param1" class="form-control" />
+                <span asp-validation-for="HistoryLog.param1" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HistoryLog.param2" class="control-label"></label>
+                <input asp-for="HistoryLog.param2" class="form-control" />
+                <span asp-validation-for="HistoryLog.param2" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HistoryLog.param3" class="control-label"></label>
+                <input asp-for="HistoryLog.param3" class="form-control" />
+                <span asp-validation-for="HistoryLog.param3" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="HistoryLog.param4" class="control-label"></label>
+                <input asp-for="HistoryLog.param4" class="form-control" />
+                <span asp-validation-for="HistoryLog.param4" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

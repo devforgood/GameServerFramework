@@ -1,0 +1,69 @@
+﻿@page
+@model GmTool.Pages.Mailbox.SearchMail.CreateModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Mail</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Mail.user_no" class="control-label"></label>
+                <input asp-for="Mail.user_no" class="form-control" />
+                <span asp-validation-for="Mail.user_no" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Mail.sender" class="control-label"></label>
+                <input asp-for="Mail.sender" class="form-control" />
+                <span asp-validation-for="Mail.sender" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Mail.title" class="control-label"></label>
+                <input asp-for="Mail.title" class="form-control" />
+                <span asp-validation-for="Mail.title" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Mail.body" class="control-label"></label>
+                <input asp-for="Mail.body" class="form-control" />
+                <span asp-validation-for="Mail.body" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Mail.item_id" class="control-label"></label>
+                <input asp-for="Mail.item_id" class="form-control" />
+                <span asp-validation-for="Mail.item_id" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Mail.item_count" class="control-label"></label>
+                <input asp-for="Mail.item_count" class="form-control" />
+                <span asp-validation-for="Mail.item_count" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Mail.expiry_time" class="control-label"></label>
+                <input asp-for="Mail.expiry_time" class="form-control" />
+                <span asp-validation-for="Mail.expiry_time" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Mail.send_time" class="control-label"></label>
+                <input asp-for="Mail.send_time" class="form-control" />
+                <span asp-validation-for="Mail.send_time" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

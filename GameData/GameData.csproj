@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Platforms>x64</Platforms>
+    <Configurations>Debug;Release;DebugDummyClient;ReleaseDummyClient</Configurations>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Content Include="..\Client\Assets\Resources\JsonData\*.json" LinkBase="JsonData">
+	<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+   </ItemGroup>
+  
+
+</Project>

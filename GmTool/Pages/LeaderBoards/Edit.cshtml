@@ -1,0 +1,61 @@
+﻿@page
+@model GmTool.Pages.LeaderBoards.EditModel
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>LeaderBoard</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="LeaderBoard.leader_board_no" />
+            <div class="form-group">
+                <label asp-for="LeaderBoard.leader_board_name" class="control-label"></label>
+                <input asp-for="LeaderBoard.leader_board_name" class="form-control" />
+                <span asp-validation-for="LeaderBoard.leader_board_name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LeaderBoard.season_period" class="control-label"></label>
+                <select asp-for="LeaderBoard.season_period" asp-items="Html.GetEnumSelectList<Lobby.SeasonPeriod>()">
+                    <option selected="selected" value="">Please select</option>
+                </select>
+                <span asp-validation-for="LeaderBoard.season_period" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LeaderBoard.score_update_type" class="control-label"></label>
+                <select asp-for="LeaderBoard.score_update_type" asp-items="Html.GetEnumSelectList<Lobby.ScoreUpdateType>()">
+                    <option selected="selected" value="">Please select</option>
+                </select>
+                <span asp-validation-for="LeaderBoard.score_update_type" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LeaderBoard.score_order" class="control-label"></label>
+                <select asp-for="LeaderBoard.score_order" asp-items="Html.GetEnumSelectList<StackExchange.Redis.Order>()">
+                    <option selected="selected" value="">Please select</option>
+                </select>
+                <span asp-validation-for="LeaderBoard.score_order" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LeaderBoard.submit_time" class="control-label"></label>
+                <input asp-for="LeaderBoard.submit_time" class="form-control" />
+                <span asp-validation-for="LeaderBoard.submit_time" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="./Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,0 +1,86 @@
+﻿@page
+@model GmTool.Pages.GameServerState.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Game Server State</h1>
+
+@*<p>
+    <a asp-page="Create">Create New</a>
+</p>*@
+
+@*<form>
+    <p>
+        User Name (nickname): <input type="text" asp-for="SearchString" />
+        <input type="submit" value="Filter" />
+    </p>
+</form>*@
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Channels[0].channel_id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Channels[0].server_addr)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Channels[0].channel_state)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Channels[0].world_id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Channels[0].user_count)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Channels[0].submit_time)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Channels[0].map_id)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Channels)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.channel_id)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.server_addr)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.channel_state)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.world_id)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.user_count)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.submit_time)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.map_id)
+                </td>
+                <td>
+                    @if (item.channel_state != ServerCommon.ChannelState.CHL_SUSPEND)
+                    {
+                        <a asp-page="./SuspendChannel" asp-route-id="@item.channel_id" asp-route-action="true" >Suspend</a>
+                    }
+                    else
+                    {
+                        <a asp-page="./SuspendChannel" asp-route-id="@item.channel_id" asp-route-action="false" >Resume</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

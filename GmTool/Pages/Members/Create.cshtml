@@ -1,0 +1,74 @@
+﻿@page
+@model GmTool.Pages.Members.CreateModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>Member</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Member.user_no" class="control-label"></label>
+                <input asp-for="Member.user_no" class="form-control" />
+                <span asp-validation-for="Member.user_no" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Member.player_id" class="control-label"></label>
+                <input asp-for="Member.player_id" class="form-control" />
+                <span asp-validation-for="Member.player_id" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Member.game_token" class="control-label"></label>
+                <input asp-for="Member.game_token" class="form-control" />
+                <span asp-validation-for="Member.game_token" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Member.language_code" class="control-label"></label>
+                <input asp-for="Member.language_code" class="form-control" />
+                <span asp-validation-for="Member.language_code" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Member.nation_code" class="control-label"></label>
+                <input asp-for="Member.nation_code" class="form-control" />
+                <span asp-validation-for="Member.nation_code" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Member.os_version" class="control-label"></label>
+                <input asp-for="Member.os_version" class="form-control" />
+                <span asp-validation-for="Member.os_version" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Member.device_model_name" class="control-label"></label>
+                <input asp-for="Member.device_model_name" class="form-control" />
+                <span asp-validation-for="Member.device_model_name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Member.last_play_time" class="control-label"></label>
+                <input asp-for="Member.last_play_time" class="form-control" />
+                <span asp-validation-for="Member.last_play_time" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Member.user_name" class="control-label"></label>
+                <input asp-for="Member.user_name" class="form-control" />
+                <span asp-validation-for="Member.user_name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

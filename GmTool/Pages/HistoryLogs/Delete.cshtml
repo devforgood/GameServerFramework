@@ -1,0 +1,76 @@
+﻿@page
+@model GmTool.Pages.HistoryLogs.DeleteModel
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h1>Delete</h1>
+
+<h3>Are you sure you want to delete this?</h3>
+<div>
+    <h4>HistoryLog</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.submit_time)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.submit_time)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.user_no)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.user_no)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.character_no)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.character_no)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.action)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.action)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.reason)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.reason)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.param1)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.param1)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.param2)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.param2)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.param3)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.param3)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.param4)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.param4)
+        </dd>
+    </dl>
+    
+    <form method="post">
+        <input type="hidden" asp-for="HistoryLog.idx" />
+        <input type="submit" value="Delete" class="btn btn-danger" /> |
+        <a asp-page="./Index">Back to List</a>
+    </form>
+</div>

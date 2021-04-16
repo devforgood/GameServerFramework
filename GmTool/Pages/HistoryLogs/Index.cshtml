@@ -1,0 +1,102 @@
+﻿@page
+@model GmTool.Pages.HistoryLogs.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+@*<p>
+    <a asp-page="Create">Create New</a>
+</p>*@
+
+<form>
+    <p>
+        User Name (nickname): <input type="text" asp-for="SearchString" />
+        <div class="form-group">
+            <label asp-for="StartDate" class="control-label"></label>
+            <input asp-for="StartDate" class="form-control" />
+            <span asp-validation-for="StartDate" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="EndDate" class="control-label"></label>
+            <input asp-for="EndDate" class="form-control" />
+            <span asp-validation-for="EndDate" class="text-danger"></span>
+        </div>
+        <input type="submit" value="Filter" />
+    </p>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.HistoryLog[0].submit_time)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.HistoryLog[0].user_no)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.HistoryLog[0].character_no)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.HistoryLog[0].action)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.HistoryLog[0].reason)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.HistoryLog[0].param1)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.HistoryLog[0].param2)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.HistoryLog[0].param3)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.HistoryLog[0].param4)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.HistoryLog) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.submit_time)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.user_no)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.character_no)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.action)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.reason)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.param1)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.param2)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.param3)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.param4)
+            </td>
+            <td>
+                @*<a asp-page="./Edit" asp-route-id="@item.idx">Edit</a> |
+                <a asp-page="./Details" asp-route-id="@item.idx">Details</a> |
+                <a asp-page="./Delete" asp-route-id="@item.idx">Delete</a>*@
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

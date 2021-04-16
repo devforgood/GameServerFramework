@@ -1,0 +1,73 @@
+﻿@page
+@model GmTool.Pages.HistoryLogs.DetailsModel
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>HistoryLog</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.submit_time)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.submit_time)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.user_no)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.user_no)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.character_no)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.character_no)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.action)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.action)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.reason)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.reason)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.param1)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.param1)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.param2)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.param2)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.param3)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.param3)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.HistoryLog.param4)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.HistoryLog.param4)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-page="./Edit" asp-route-id="@Model.HistoryLog.idx">Edit</a> |
+    <a asp-page="./Index">Back to List</a>
+</div>

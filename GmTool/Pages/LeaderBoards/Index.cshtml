@@ -1,0 +1,64 @@
+﻿@page
+@model GmTool.Pages.LeaderBoards.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>리더보드>리더보드 등록</h1>
+ 리더보드란 경쟁 요소가 있는 게임에서 사용자간의 기록 비교를 통한 순위를 제공합니다.<br>
+ 리더보드 생성 및 리더보드별로 순위 조회 및 관리를 할 수 있습니다. (단, 친구 랭킹은 순위 조회 불가)<br>
+ 리더보드 등록 정보를 수정하는 기능은 지원하지 않습니다. 수정이 필요 시 기존 정보 삭제 후 신규 생성해 주세요.<br>
+ 스낵게임 리더보드 조회/관리는 H5 리더보드 탭을 사용해주세요.<br>
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.LeaderBoard[0].leader_board_name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LeaderBoard[0].season_period)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LeaderBoard[0].score_update_type)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LeaderBoard[0].score_order)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LeaderBoard[0].submit_time)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.LeaderBoard)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.leader_board_name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.season_period)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.score_update_type)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.score_order)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.submit_time)
+                </td>
+                <td>
+                    <a asp-page="./Edit" asp-route-id="@item.leader_board_no">Edit</a> |
+                    <a asp-page="./Details" asp-route-id="@item.leader_board_no">Details</a> |
+                    <a asp-page="./Delete" asp-route-id="@item.leader_board_no">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

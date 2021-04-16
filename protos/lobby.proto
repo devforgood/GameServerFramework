@@ -1,0 +1,527 @@
+// Copyright 2015 gRPC authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.examples.helloworld";
+option java_outer_classname = "HelloWorldProto";
+option objc_class_prefix = "HLW";
+
+//import "google/protobuf/timestamp.proto"; // unity error
+import "timestamp.proto";
+
+package GameService;
+
+// The greeting service definition.
+service Lobby {
+    rpc Login(LoginRequest) returns (stream LoginReply) {}
+    rpc StartPlay(StartPlayRequest) returns (stream StartPlayReply) {}
+    rpc CancelStartPlay(CancelStartPlayRequest) returns (stream CancelStartPlayReply) {}
+    rpc SelectCharacter(SelectCharacterRequest) returns (stream SelectCharacterReply) {}
+    rpc SelectMap(SelectMapRequest) returns (SelectMapReply) {}
+    rpc GetUserInfo(GetUserInfoRequest) returns (stream GetUserInfoReply) {}
+    rpc ChangeUserName(ChangeUserNameRequest) returns (stream ChangeUserNameReply) {}
+    rpc DebugCommand(DebugCommandRequest) returns (DebugCommandReply) {}
+    rpc GetShop(GetShopRequest) returns (stream GetShopReply) {}
+    rpc BuyItem(BuyItemRequest) returns (stream BuyItemReply) {}
+    rpc GetMission(GetMissionRequest) returns (stream GetMissionReply) {}
+    rpc GetRewardMission(GetRewardMissionRequest) returns (stream GetRewardMissionReply) {}
+    rpc GetRewardMissionBase(GetRewardMissionBaseRequest) returns (stream GetRewardMissionBaseReply) {}
+    rpc UpgradePowerLevel(UpgradePowerLevelRequest) returns (stream UpgradePowerLevelReply) {}
+    rpc SelectFirstCharacter(SelectFirstCharacterRequest) returns (stream SelectFirstCharacterReply) {}
+    rpc GetGameEvents(GetGameEventsRequest) returns (GetGameEventsReply) {}
+    rpc GetRewardEvent(GetRewardEventRequest) returns (GetRewardEventReply) {}
+    rpc GetAdvertisementRewards(GetAdvertisementRewardsRequest) returns (GetAdvertisementRewardsReply) {}
+    rpc RewardAdvertisement(RewardAdvertisementRequest) returns (RewardAdvertisementReply) {}
+    rpc GetMailItems(GetMailItemsRequest) returns (GetMailItemsReply) {}
+    rpc GetMails(GetMailsRequest) returns (GetMailsReply) {}
+    rpc MarkAsReadMails(MarkAsReadMailsRequest) returns (MarkAsReadMailsReply) {}
+    rpc PurchaseInApp(PurchaseInAppRequest) returns (PurchaseInAppReplay) {}
+    rpc GetLeaderboard(GetLeaderboardRequest) returns (GetLeaderboardReply) {}
+    rpc GetRank(GetRankRequest) returns (GetRankReply) {}
+    rpc GetRankList(GetRankListRequest) returns (GetRankListReply) {}
+    rpc GetScoreList(GetScoreListRequest) returns (GetScoreListReply) {}
+}
+
+enum ErrorCode
+{
+    Success = 0;
+    LostSession = 1;
+    BusyServer = 2;
+    Timeout = 3;
+    WrongLetters = 4;
+    AlreadyMatch = 5;
+    Duplicate = 6;
+    TryCountOver = 7;
+    NotEnough = 8;
+    WrongParam = 9;
+    Auth = 10;
+    Cancel = 11;
+    NotExist = 12;
+    OverLimit = 13;
+    AlreadyReward = 14;
+    NotAvailable = 15;
+    DuplicateLogin = 16;
+}
+
+
+enum StartPlayTime
+{
+    StartPlayTimeNone = 0;
+    StartPlayTimeTimeout = 60000;
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+    string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+    string message = 1;
+}
+
+message LoginRequest {
+    string PlayerId = 1;
+    string AccessToken = 2;
+    string DeviceUniqueIdentifier = 3;
+}
+
+message Goods {
+    int32 BattleCoin = 1;
+    int32 Gem = 2;
+    int32 Coin = 3;
+    int32 Medal = 4;
+    int32 UpgradeStone = 5;
+    int32 MedalCharge = 6;// 메달 충전 제한값
+    int32 MedalChargeRemainTime = 7; // 메달 충전 시간까지 남은 시간 (초)
+}
+
+message CharacterInfo {
+    int32 CharacterId = 1;
+    int32 CharacterBattleScore = 2;
+    int32 CharacterRank = 3; // 케릭터 등급과 비슷
+    int32 CharacterLevel = 4; // 파워 레벨
+    int32 CharacterPiece = 5;
+    int32 StrikingPower = 6; // 공격력
+    int32 HP = 7; // Health Point
+    int32 RareLabel = 8; // 희귀도
+    int32 UnionType = 9; // 히어로, 빌런
+    bool IsPowerLevelUp = 10; //파워레벨 업 가능 여부
+}
+
+message MissionInfo {
+    int32 MissionId = 1;
+    int32 MissionProgress = 2;
+    bool MissionReward = 3;
+}
+
+message MissionBaseInfo {
+    int32 MissionBaseId = 1;
+    bool MissionBaseReward = 2;
+    repeated MissionInfo Missions = 3;
+}
+
+message UserMissions {
+    repeated MissionBaseInfo MissionBaseList = 1;
+}
+
+message UserInfo {
+    string UserName = 1; // 유저이름
+    int32 AccountBattleScore = 2;// 배틀 스코어(ABS)
+    string Thumbnail = 3;// 썸네일(유저 프로필 url)
+    Goods AccountGoods = 4;// 재화( 배틀코인, 젬, 코인) - 소프트런칭 제외
+    int32 SelectedCharacterId = 5;// 현재 케릭터 정보 - 선택된 케릭터 인덱스, Rank, 캐릭터 배틀 스코어(CBS), 다음 배틀 스코어? 이부분은 등급으로 테이블에서 읽어서 처리해도 될듯.)
+    int32 SelectedMapId = 6;// 선택된 맵 인덱스, 소프트런칭은 맵 하나.
+    repeated CharacterInfo characterList = 7;// 가지고 있는 캐릭터 리스트 - 캐릭터인덱스, 등급, CBS
+}
+
+message LoginReply {
+    ErrorCode code = 1;
+    string SessionId = 2;
+    string userId = 3;
+
+    bool IsPlaying = 4; // 게임 중인지
+    StartPlayReply reloadStartPlay = 5; // 재접속 이후 게임중이라면 해당 정보를 참조
+    string UserName = 6;
+    map<string, string> jsonData = 7; // 테이블 변조 방지
+    google.protobuf.Timestamp ServerTime = 8;
+}
+
+message StartPlayRequest {
+    int32 SelectedCharacter = 1;
+    int32 mapId = 2;
+    bool IsImmediatelyJoin = 3;
+    bool IsCancel = 4;
+}
+
+message StartPlayCharacterInfo
+{
+    int32 SelectedCharacter = 1;
+    string UserId = 2;
+    int32 Team = 3;
+    int32 PlayerId = 4; // 인게임용 플레이어 아이디
+    int32 SpawnIndex = 5; // 스폰 위치 0부터 시작
+}
+
+message StartPlayReply {
+    ErrorCode code = 1;
+    bool IsStart = 2;
+    string BattleServerAddr = 3;
+    int32 WorldId = 4;
+    repeated StartPlayCharacterInfo characterList = 5;
+    int32 MapId = 6;
+
+    KillTheKingInfo killTheKingInfo = 7;
+}
+
+message KillTheKingInfo
+{
+    int32 KingPlayerIdForTeamA = 1;
+    int32 KingPlayerIdForTeamB = 2;
+}
+
+message CancelStartPlayRequest {
+}
+
+message CancelStartPlayReply {
+    ErrorCode code = 1;
+}
+
+message SelectCharacterRequest {
+    int32 CharacterId = 1;
+}
+
+message SelectCharacterReply {
+    ErrorCode code = 1;
+}
+
+message SelectMapRequest {
+    int32 MapId = 1;
+}
+
+message SelectMapReply {
+    ErrorCode code = 1;
+}
+
+message GetUserInfoRequest {
+}
+
+message GetUserInfoReply {
+    ErrorCode code = 1;
+    UserInfo user = 2;
+}
+
+message ChangeUserNameRequest {
+    string UserName = 1;
+}
+
+message ChangeUserNameReply {
+    ErrorCode code = 1;
+}
+
+message DebugCommandRequest {
+    string cmd = 1;
+    string Param1 = 2;
+    string Param2 = 3;
+    string Param3 = 4;
+    string Param4 = 5;
+}
+
+message DebugCommandReply {
+    ErrorCode code = 1;
+    string result  = 2;
+}
+
+message ShopItemInfo{
+    int32 ShopItemId = 1;
+    int32 Quantity = 2;
+    int32 PurchaseCount = 3;
+}
+
+message ShopInfo{
+    int32 ShopId = 1;
+    repeated ShopItemInfo items = 2;
+}
+
+message UserShops{
+    repeated ShopInfo shops = 1;
+}
+
+message GetShopRequest {
+}
+
+message GetShopReply {
+    ErrorCode code = 1;
+    UserShops userShops = 2;
+}
+
+
+message ItemInfo{
+    int32 ItemId = 1;
+    int32 ItemCount = 2;
+    bool IsBonus = 3;
+}
+
+message ItemList{
+    repeated ItemInfo items = 1;
+
+}
+
+message BuyItemRequest {
+    int32 ShopId = 1;
+    int32 ShopItemId = 2;
+}
+
+message BuyItemReply {
+    ErrorCode code = 1;
+    ItemList item = 2;
+    Goods AccountGoods = 3;
+}
+
+message GetMissionRequest{
+}
+
+message GetMissionReply{
+    ErrorCode code = 1;
+    UserMissions userMissions = 2;
+}
+
+message GetRewardMissionRequest {
+    int32 MissonId = 1;
+}
+
+message GetRewardMissionReply {
+    ErrorCode code = 1;
+}
+
+message GetRewardMissionBaseRequest {
+    int32 MissonBaseId = 1;
+}
+
+message GetRewardMissionBaseReply {
+    ErrorCode code = 1;
+    ItemList item = 2;
+    Goods AccountGoods = 3;
+}
+
+message UpgradePowerLevelRequest {
+    int32 CharacterId = 1;
+}
+
+message UpgradePowerLevelReply {
+    ErrorCode code = 1;
+    Goods AccountGoods = 2;
+    int32 CharacterLevel = 3; // 파워 레벨
+    int32 CharacterPiece = 4;
+}
+
+message SelectFirstCharacterRequest{
+    int32 CharacterId = 1;
+}
+
+message SelectFirstCharacterReply{
+    ErrorCode code = 1;
+    CharacterInfo characterInfo = 2;
+}
+
+//////////////////////////////////////////////
+// event
+message EventInfo{
+    int32 EventId = 1;
+    google.protobuf.Timestamp RewardStartTime = 2;
+    int32 RewardItemId = 3;
+    bool IsReward = 4;
+}
+
+message GetGameEventsRequest{
+ }
+
+message GetGameEventsReply{
+    ErrorCode code = 1;
+    repeated EventInfo events = 2;
+}
+
+message GetRewardEventRequest{
+    int32 EventId = 1;
+}
+
+message GetRewardEventReply{
+    ErrorCode code = 1;
+    ItemList item = 2;
+    Goods AccountGoods = 3;
+}
+
+
+//////////////////////////////////////////////
+// advertisement reward
+message AdvertisementRewardInfo{
+    int32 AdvertisementId = 1;
+    int32 RewardCount = 2;
+}
+
+message GetAdvertisementRewardsRequest{
+ }
+
+message GetAdvertisementRewardsReply{
+    ErrorCode code = 1;
+    repeated AdvertisementRewardInfo AdvertisementRewards = 2;
+}
+
+message RewardAdvertisementRequest{
+    int32 AdvertisementId = 1;
+}
+
+message RewardAdvertisementReply{
+    ErrorCode code = 1;
+    ItemList item = 2;
+    Goods AccountGoods = 3;
+
+    int32 AdvertisementId = 4;
+    int32 RewardCount = 5;
+}
+/////////////////////////////////////////////
+/// Mail
+
+message GetMailItemsRequest {
+    repeated string messageIds  = 1;
+    int32 CharacterId = 2;
+}
+
+message GetMailItemsReply {
+    ErrorCode code = 1;
+    ItemList item = 2;
+    Goods AccountGoods = 3;
+}
+message GetMailsRequest{
+    int32 count = 1;
+    string nextPageKey = 2;
+    repeated string states = 3;
+}
+
+message GetMailsReply {
+    ErrorCode code = 1;
+    string mails = 2;
+}
+message MarkAsReadMailsRequest {
+    repeated string messageIds  = 1;
+}
+
+message MarkAsReadMailsReply {
+    ErrorCode code = 1;
+}
+
+/////////////////////////////////////////////
+/// In App Purchase
+
+enum MarketType
+{
+    None = 0;
+    AppStore = 1;
+    GooglePlay = 2;
+}
+
+message PurchaseInAppRequest {
+    string signature = 1;
+    string receipt = 2;// 결제 유효성을 확인하기 위한 영수증 정보 (GooglePlay 용)
+    MarketType market = 3;
+}
+
+message PurchaseInAppReplay {
+    ErrorCode code = 1;
+    ItemList item = 2;
+    Goods AccountGoods = 3;
+}
+
+
+//////////////////////////////////////////////
+/// Ranking
+
+message Season {
+    string type = 1;
+    int32 resetDay = 2;
+    int32 resetHour = 3;
+    int64 beginTime = 4;
+    int64 endTime = 5;
+    int64 nextResetTime = 6;
+    int32 seq = 7;
+}
+
+message ScoreInfo{
+    int32 rank = 1;
+    int64 score = 2;
+    string name = 3;
+}
+
+message LeaderboardInfo
+{
+    string id = 1;
+    int32 seasonSeq = 2;
+}
+
+message GetLeaderboardRequest{
+    LeaderboardInfo info = 1;
+}
+
+message GetLeaderboardReply{
+    ErrorCode code = 1;
+    Season season = 2;
+}
+
+message GetRankRequest{
+    LeaderboardInfo info = 1;
+    int32 characterId = 2;
+}
+
+message GetRankReply{
+    ErrorCode code = 1;
+    int32 rank = 2;
+    int64 score = 3;
+    int64 highscore = 4;
+    int32 cardinality = 5;
+}
+
+message GetRankListRequest {
+    LeaderboardInfo info = 1;
+    int32 from = 2;
+    int32 to = 3;
+    bool readMy = 4;
+    int32 characterId = 5;
+    bool withoutProperty = 6;
+}
+
+message GetRankListReply{
+    ErrorCode code = 1;
+    int32 cardinality = 2;
+    int64 nextResetTime = 3;
+    int32 myRank = 4;
+    int64 myScore = 5;
+    repeated ScoreInfo scores = 6;
+}
+
+message GetScoreListRequest{
+    LeaderboardInfo info = 1;
+    bool withoutProperty = 2;
+    repeated string playerIds = 3;
+}
+
+message GetScoreListReply{
+    ErrorCode code = 1;
+    int32 cardinality = 2;
+    string sortingType = 3;
+    repeated ScoreInfo scores = 4;
+}
+
+//////////////////////////////////////////////

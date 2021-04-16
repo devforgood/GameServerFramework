@@ -1,0 +1,96 @@
+﻿@page
+@model GmTool.Pages.Mailbox.SendMail.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.SystemMail[0].sender)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SystemMail[0].send_reason)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SystemMail[0].recipient)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SystemMail[0].title_en)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SystemMail[0].title_ko)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SystemMail[0].body_en)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SystemMail[0].body_ko)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SystemMail[0].item_id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SystemMail[0].item_count)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SystemMail[0].expiry_days)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.SystemMail[0].submit_time)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.SystemMail) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.sender)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.send_reason)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.recipient)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.title_en)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.title_ko)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.body_en)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.body_ko)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.item_id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.item_count)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.expiry_days)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.submit_time)
+            </td>
+            <td>
+                <a asp-page="./Edit" asp-route-id="@item.system_mail_no">Edit</a> |
+                <a asp-page="./Details" asp-route-id="@item.system_mail_no">Details</a> |
+                <a asp-page="./Delete" asp-route-id="@item.system_mail_no">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

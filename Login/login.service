@@ -1,0 +1,19 @@
+[Unit]
+Description=AceStudio Login Server
+
+[Service]
+WorkingDirectory=/var/www/login
+ExecStart=/usr/bin/dotnet /var/www/login/Login.dll
+Restart=always
+# Restart service after 10 seconds if the dotnet service crashes:
+RestartSec=10
+# The default value is 90 seconds for most distributions.
+TimeoutStopSec=90
+KillSignal=SIGINT
+SyslogIdentifier=login
+User=apache
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ConnectionStrings__DefaultConnection={Connection String}
+
+[Install]
+WantedBy=multi-user.target

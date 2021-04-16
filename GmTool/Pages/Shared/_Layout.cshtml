@@ -1,0 +1,127 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - GmTool</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        .dropbtn {
+            background-color: white;
+            color: black;
+            padding: 16px;
+            font-size: 16px;
+            border: none;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f1f1f1;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #ddd;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown:hover .dropbtn {
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-page="/Contacts/Index">GmTool</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row-reverse">
+                    <partial name="_LoginPartial" />
+                    <ul class="navbar-nav flex-grow-1">
+
+                        <li class="dropdown">
+                            <button class="dropbtn">Mailbox</button>
+                            <div class="dropdown-content">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Mailbox/SendMail/Index">SendMail</a>
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Mailbox/SearchMail/Index">SearchMail</a>
+                            </div>
+                        </li>
+
+                        <li class="dropdown">
+                            <button class="dropbtn">Monitoring</button>
+                            <div class="dropdown-content">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Chart/LineChart/Index">CCU</a>
+                                <a class="nav-link text-dark" asp-area="" asp-page="/HistoryLogs/Index">History Logs</a>
+                                <a class="nav-link text-dark" asp-area="" asp-page="/GameServerState/Index">Game Server State</a>
+
+                            </div>
+                        </li>
+
+                        <li class="dropdown">
+                            <button class="dropbtn">User Manager</button>
+                            <div class="dropdown-content">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Members/Index">Members</a>
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Members/Cheat">Cheat</a>
+                                <a class="nav-link text-dark" asp-area="" asp-page="/Users/Index">Users</a>
+
+                            </div>
+                        </li>
+
+                        <li class="dropdown">
+                            <button class="dropbtn">Leader Board</button>
+                            <div class="dropdown-content">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/LeaderBoards/Index">Leader Board Create</a>
+                                <a class="nav-link text-dark" asp-area="" asp-page="/LeaderBoards/LeaderBoardRewards/Index">Leader Board Reward</a>
+
+                            </div>
+                        </li>
+
+
+
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2019 - GmTool - <a asp-area="" asp-page="/Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

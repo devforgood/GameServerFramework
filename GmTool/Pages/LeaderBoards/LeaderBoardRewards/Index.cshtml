@@ -1,0 +1,48 @@
+﻿@page
+@model GmTool.Pages.LeaderBoards.LeaderBoardRewards.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.LeaderBoardReward[0].leader_board_no)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LeaderBoardReward[0].item_id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.LeaderBoardReward[0].item_count)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.LeaderBoardReward) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.leader_board_no)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.item_id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.item_count)
+            </td>
+            <td>
+                <a asp-page="./Edit" asp-route-id="@item.leader_board_reward_no">Edit</a> |
+                <a asp-page="./Details" asp-route-id="@item.leader_board_reward_no">Details</a> |
+                <a asp-page="./Delete" asp-route-id="@item.leader_board_reward_no">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

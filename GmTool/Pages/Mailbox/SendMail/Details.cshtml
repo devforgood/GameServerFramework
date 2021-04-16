@@ -1,0 +1,85 @@
+﻿@page
+@model GmTool.Pages.Mailbox.SendMail.DetailsModel
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>SystemMail</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.SystemMail.sender)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.SystemMail.sender)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.SystemMail.send_reason)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.SystemMail.send_reason)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.SystemMail.recipient)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.SystemMail.recipient)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.SystemMail.title_en)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.SystemMail.title_en)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.SystemMail.title_ko)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.SystemMail.title_ko)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.SystemMail.body_en)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.SystemMail.body_en)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.SystemMail.body_ko)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.SystemMail.body_ko)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.SystemMail.item_id)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.SystemMail.item_id)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.SystemMail.item_count)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.SystemMail.item_count)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.SystemMail.expiry_days)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.SystemMail.expiry_days)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.SystemMail.submit_time)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.SystemMail.submit_time)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-page="./Edit" asp-route-id="@Model.SystemMail.system_mail_no">Edit</a> |
+    <a asp-page="./Index">Back to List</a>
+</div>

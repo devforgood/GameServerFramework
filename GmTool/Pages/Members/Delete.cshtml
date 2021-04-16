@@ -1,0 +1,76 @@
+﻿@page
+@model GmTool.Pages.Members.DeleteModel
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h1>Delete</h1>
+
+<h3>Are you sure you want to delete this?</h3>
+<div>
+    <h4>Member</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.user_no)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.user_no)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.player_id)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.player_id)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.game_token)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.game_token)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.language_code)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.language_code)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.nation_code)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.nation_code)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.os_version)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.os_version)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.device_model_name)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.device_model_name)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.last_play_time)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.last_play_time)
+        </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Member.user_name)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Member.user_name)
+        </dd>
+    </dl>
+    
+    <form method="post">
+        <input type="hidden" asp-for="Member.member_no" />
+        <input type="submit" value="Delete" class="btn btn-danger" /> |
+        <a asp-page="./Index">Back to List</a>
+    </form>
+</div>

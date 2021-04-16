@@ -1,0 +1,86 @@
+﻿@page
+@model GmTool.Pages.Mailbox.SearchMail.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+
+<form>
+    <p>
+        User Name (nickname): <input type="text" asp-for="SearchString" />
+        <input type="submit" value="Filter" />
+    </p>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Mail[0].user_no)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Mail[0].sender)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Mail[0].title)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Mail[0].body)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Mail[0].item_id)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Mail[0].item_count)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Mail[0].expiry_time)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Mail[0].send_time)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.Mail) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.user_no)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.sender)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.title)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.body)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.item_id)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.item_count)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.expiry_time)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.send_time)
+            </td>
+            <td>
+                <a asp-page="./Edit" asp-route-id="@item.mail_no">Edit</a> |
+                <a asp-page="./Details" asp-route-id="@item.mail_no">Details</a> |
+                <a asp-page="./Delete" asp-route-id="@item.mail_no">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

@@ -1,0 +1,84 @@
+﻿@page
+@model GmTool.Pages.Mailbox.SendMail.CreateModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Create</h1>
+
+<h4>SystemMail</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="SystemMail.sender" class="control-label"></label>
+                <input asp-for="SystemMail.sender" class="form-control" />
+                <span asp-validation-for="SystemMail.sender" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SystemMail.send_reason" class="control-label"></label>
+                <input asp-for="SystemMail.send_reason" class="form-control" />
+                <span asp-validation-for="SystemMail.send_reason" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SystemMail.recipient" class="control-label"></label>
+                <input asp-for="SystemMail.recipient" class="form-control" />
+                <span asp-validation-for="SystemMail.recipient" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SystemMail.title_en" class="control-label"></label>
+                <input asp-for="SystemMail.title_en" class="form-control" />
+                <span asp-validation-for="SystemMail.title_en" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SystemMail.title_ko" class="control-label"></label>
+                <input asp-for="SystemMail.title_ko" class="form-control" />
+                <span asp-validation-for="SystemMail.title_ko" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SystemMail.body_en" class="control-label"></label>
+                <input asp-for="SystemMail.body_en" class="form-control" />
+                <span asp-validation-for="SystemMail.body_en" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SystemMail.body_ko" class="control-label"></label>
+                <input asp-for="SystemMail.body_ko" class="form-control" />
+                <span asp-validation-for="SystemMail.body_ko" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SystemMail.item_id" class="control-label"></label>
+                <input asp-for="SystemMail.item_id" class="form-control" />
+                <span asp-validation-for="SystemMail.item_id" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SystemMail.item_count" class="control-label"></label>
+                <input asp-for="SystemMail.item_count" class="form-control" />
+                <span asp-validation-for="SystemMail.item_count" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SystemMail.expiry_days" class="control-label"></label>
+                <input asp-for="SystemMail.expiry_days" class="form-control" />
+                <span asp-validation-for="SystemMail.expiry_days" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SystemMail.submit_time" class="control-label"></label>
+                <input asp-for="SystemMail.submit_time" class="form-control" />
+                <span asp-validation-for="SystemMail.submit_time" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

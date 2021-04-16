@@ -1,0 +1,104 @@
+﻿@page
+@model GmTool.Pages.Users.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+@*<p>
+    <a asp-page="Create">Create New</a>
+</p>*@
+
+<form>
+    <p>
+        User Name (nickname): <input type="text" asp-for="SearchString" />
+        <input type="submit" value="Filter" />
+    </p>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.User[0].character_no)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User[0].play_point)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User[0].user_grade)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User[0].battle_score)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User[0].gem)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User[0].coin)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User[0].battle_coin)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User[0].medal)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User[0].upgrade_stone)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User[0].medal_charge)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.User[0].medal_charge_time)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.User) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.character_no)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.play_point)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.user_grade)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.battle_score)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.gem)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.coin)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.battle_coin)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.medal)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.upgrade_stone)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.medal_charge)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.medal_charge_time)
+            </td>
+            <td>
+                @*<a asp-page="./Edit" asp-route-id="@item.user_no">Edit</a> |
+                <a asp-page="./Details" asp-route-id="@item.user_no">Details</a> |
+                <a asp-page="./Delete" asp-route-id="@item.user_no">Delete</a>*@
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
