@@ -7,7 +7,9 @@
 * [gRPC](https://github.com/grpc/grpc)
 * [flatbuffers](https://github.com/google/flatbuffers)
 * [recastnavigation](https://github.com/recastnavigation/recastnavigation)
-
+* [lidgren](https://github.com/lidgren/lidgren-network-gen3)
+* [Hazel-Networking](https://github.com/DarkRiftNetworking/Hazel-Networking)
+* [BEPUPhysics](https://github.com/bepu/bepuphysics1)
 
 
 ## Sequence Diagram
