@@ -163,7 +163,7 @@ public class TestServer : MonoBehaviour
 					for(int i=0;i<getAgents.AgentsLength;++i)
                     {
 						Vec3 pos = getAgents.Agents(i).Value.Pos.Value;
-						Debug.Log($"recv id : {getAgents.Agents(i).Value.AgentId}, pos({pos.X}, {pos.Y}, {pos.Z} )");
+						//Debug.Log($"recv id : {getAgents.Agents(i).Value.AgentId}, pos({pos.X}, {pos.Y}, {pos.Z} )");
 						agent_pos[getAgents.Agents(i).Value.AgentId].x = pos.X;
 						agent_pos[getAgents.Agents(i).Value.AgentId].y = pos.Y;
 						agent_pos[getAgents.Agents(i).Value.AgentId].z = pos.Z;

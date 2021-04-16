@@ -18,8 +18,7 @@ void World::update(float deltaTime)
 
 void World::SendWorldState(game_session* session)
 {
-
-	flatbuffers::FlatBufferBuilder builder(1024);
+	auto builder_ptr = std::make_shared<send_message>();
 	flatbuffers::Offset<syncnet::AgentInfo> agent_info;
 	std::vector<flatbuffers::Offset<syncnet::AgentInfo>> agent_info_vector;
 	for (int i = 0; i < this->map()->crowd()->getAgentCount(); ++i)
@@ -29,33 +28,16 @@ void World::SendWorldState(game_session* session)
 			continue;
 
 		syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
-		std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
+		//std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
 
-		agent_info = syncnet::CreateAgentInfo(builder, i, &pos);
+		agent_info = syncnet::CreateAgentInfo(*builder_ptr, i, &pos);
 		agent_info_vector.push_back(agent_info);
 	}
-	auto agents = builder.CreateVector(agent_info_vector);
-	auto getAgents = syncnet::CreateGetAgents(builder, agents);
+	auto agents = builder_ptr->CreateVector(agent_info_vector);
+	auto getAgents = syncnet::CreateGetAgents(*builder_ptr, agents);
 
-	//auto agent = room_.world()->map()->crowd()->getAgent(0);
-	//if (agent != nullptr)
-	//{
-	//	syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
-	//	std::cout << "agent "<< agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
+	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_GetAgents, getAgents.Union());
+	builder_ptr->Finish(send_msg);
 
-	//	agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
-	//}
-	//else
-	//{
-	//	syncnet::Vec3 pos(0, 0, 0);
-	//	agent_info = syncnet::CreateAgentInfo(builder, 1, &pos);
-	//}
-
-	auto send_msg = syncnet::CreateGameMessage(builder, syncnet::GameMessages::GameMessages_GetAgents, getAgents.Union());
-	builder.Finish(send_msg);
-
-	session->send(builder.GetBufferPointer(), builder.GetSize());
-
-	//read_msg_.body()[read_msg_.body_length()] = 0;
-	//std::cout << read_msg_.body() << std::endl;
+	session->send(builder_ptr);
 }

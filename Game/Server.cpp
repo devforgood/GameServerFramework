@@ -10,19 +10,19 @@ game_room::game_room()
 	world_->Init();
 }
 
-inline void game_room::join(game_participant_ptr participant)
+void game_room::join(game_participant_ptr participant)
 {
 	participants_.insert(participant);
 	//for (auto msg : recent_msgs_)
 	//	participant->deliver(msg);
 }
 
-inline void game_room::leave(game_participant_ptr participant)
+void game_room::leave(game_participant_ptr participant)
 {
 	participants_.erase(participant);
 }
 
-inline void game_room::deliver(const game_message& msg)
+void game_room::deliver(std::shared_ptr<send_message> msg)
 {
 	recent_msgs_.push_back(msg);
 	while (recent_msgs_.size() > max_recent_msgs)
@@ -34,7 +34,7 @@ inline void game_room::deliver(const game_message& msg)
 
 //----------------------------------------------------------------------
 
-inline void game_session::start()
+void game_session::start()
 {
 	dispatcher_ = new MessageDispatcher();
 	dispatcher_->world_ = room_.world();
@@ -43,7 +43,7 @@ inline void game_session::start()
 	do_read_header();
 }
 
-inline void game_session::send(const game_message& msg)
+void game_session::send(std::shared_ptr<send_message> msg)
 {
 	bool write_in_progress = !write_msgs_.empty();
 	write_msgs_.push_back(msg);
@@ -53,23 +53,15 @@ inline void game_session::send(const game_message& msg)
 	}
 }
 
-void game_session::send(void* msg, int size)
-{
-	memcpy(send_msg_.body(), msg, size);
-	send_msg_.body_length(size);
-	send_msg_.encode_header();
-	send(send_msg_);
-}
 
-
-inline void game_session::do_read_header()
+void game_session::do_read_header()
 {
 	auto self(shared_from_this());
 	boost::asio::async_read(socket_,
 		boost::asio::buffer(read_msg_.data(), game_message::header_length),
 		[this, self](boost::system::error_code ec, std::size_t /*length*/)
 		{
-			std::cout << "recv header" << std::endl;
+			//std::cout << "recv header" << std::endl;
 
 			if (!ec && read_msg_.decode_header())
 			{
@@ -82,7 +74,7 @@ inline void game_session::do_read_header()
 		});
 }
 
-inline void game_session::do_read_body()
+void game_session::do_read_body()
 {
 	auto self(shared_from_this());
 	boost::asio::async_read(socket_,
@@ -94,7 +86,7 @@ inline void game_session::do_read_body()
 				//room_.deliver(read_msg_);
 
 				auto msg = syncnet::GetGameMessage(read_msg_.body());
-				std::cout << "recv message type : " << msg->msg_type() << std::endl;
+				//std::cout << "recv message type : " << msg->msg_type() << std::endl;
 
 				switch (msg->msg_type())
 				{
@@ -117,12 +109,10 @@ inline void game_session::do_read_body()
 }
 
 
-inline void game_session::do_write()
+void game_session::do_write()
 {
 	auto self(shared_from_this());
-	boost::asio::async_write(socket_,
-		boost::asio::buffer(write_msgs_.front().data(),
-			write_msgs_.front().length()),
+	boost::asio::async_write(socket_, write_msgs_.front()->to_buffers(),
 		[this, self](boost::system::error_code ec, std::size_t /*length*/)
 		{
 			if (!ec)
@@ -174,7 +164,7 @@ void game_server::tick(const boost::system::error_code& e)
 	TimeVal curTime = getPerfTime();
 	float dt = getPerfTimeUsec(curTime - lastTime_) / 1000000.0f;
 
-	std::cout << "tick " << dt << std::endl;
+	//std::cout << "tick " << dt << std::endl;
 
 	// Update sample simulation.
 	const float SIM_RATE = 20;
@@ -191,7 +181,7 @@ void game_server::tick(const boost::system::error_code& e)
 			auto agent = room_.world()->map()->crowd()->getAgent(0);
 			if (agent != nullptr)
 			{
-				std::cout << "update agent " << agent->active << " pos (" << agent->npos[0] * -1 << "," << agent->npos[1] << "," << agent->npos[2] << ")" << std::endl;
+				//std::cout << "update agent " << agent->active << " pos (" << agent->npos[0] * -1 << "," << agent->npos[1] << "," << agent->npos[2] << ")" << std::endl;
 
 			}
 		}

@@ -17,7 +17,7 @@ void MessageDispatcher::dispatch(const syncnet::AddAgent* msg)
 
 void MessageDispatcher::dispatch(const syncnet::RemoveAgent* msg)
 {
-	std::cout << "agent id : " << msg->agentId() << std::endl;
+	//std::cout << "agent id : " << msg->agentId() << std::endl;
 }
 
 void MessageDispatcher::dispatch(const syncnet::SetMoveTarget* msg)
@@ -40,5 +40,5 @@ void MessageDispatcher::dispatch(const syncnet::GetAgents* msg)
 
 void MessageDispatcher::dispatch(const syncnet::Ping* msg)
 {
-	std::cout << "ping seq : " << msg->seq() << std::endl;
+	//std::cout << "ping seq : " << msg->seq() << std::endl;
 }
