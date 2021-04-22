@@ -120,6 +120,22 @@ public class TestServer : MonoBehaviour
 		return body;
 	}
 
+	byte[] MakeSetRaycast(Vector3 pos)
+	{
+		var builder = new FlatBufferBuilder(1024);
+
+		SetRaycast.StartSetRaycast(builder);
+		SetRaycast.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
+		var offset = SetRaycast.EndSetRaycast(builder);
+
+		var msg = GameMessage.CreateGameMessage(builder, GameMessages.SetRaycast, offset.Value);
+		builder.Finish(msg.Value);
+
+		byte[] body = builder.SizedByteArray();
+
+		return body;
+	}
+
 	void SendPing(float deltaTime)
     {
 		lastSendTime += deltaTime;
@@ -169,6 +185,16 @@ public class TestServer : MonoBehaviour
 						agent_pos[getAgents.Agents(i).Value.AgentId].z = pos.Z;
 					}
 					agent_count = getAgents.AgentsLength;
+
+
+					for(int i=0;i<getAgents.DebugsLength;++i)
+                    {
+						Vector3 pos;
+						pos.x = getAgents.Debugs(i).Value.EndPos.Value.X;
+						pos.y = getAgents.Debugs(i).Value.EndPos.Value.Y;
+						pos.z = getAgents.Debugs(i).Value.EndPos.Value.Z;
+						var obj = (GameObject)Instantiate(Resources.Load("DebugTarget"), pos, Quaternion.identity);
+					}
 				}
 				break;
 		}
@@ -255,6 +281,30 @@ public class TestServer : MonoBehaviour
 				clickCtrlOn = true;
             }
         }
+
+		if (Input.GetMouseButton(1))  // 마우스가 클릭 되면
+		{
+			if (clickCtrlOn == false)
+			{
+				Vector3 mos = Input.mousePosition;
+				mos.z = camera.farClipPlane; // 카메라가 보는 방향과, 시야를 가져온다.
+
+				Vector3 dir = camera.ScreenToWorldPoint(mos);
+				// 월드의 좌표를 클릭했을 때 화면에 자신이 보고있는 화면에 맞춰 좌표를 바꿔준다.
+
+				RaycastHit hit;
+				if (Physics.Raycast(camera.transform.position, dir, out hit, mos.z))
+				{
+					//target.position = hit.point; // 타겟을 레이캐스트가 충돌된 곳으로 옮긴다.
+					if (hit.transform.gameObject.tag == "floor")
+					{
+						SendMessage(MakeSetRaycast(hit.point));
+					}
+				}
+
+				clickCtrlOn = true;
+			}
+		}
 
 		if (Input.GetMouseButton(0) && Input.GetKey(KeyCode.LeftAlt))  // 마우스가 클릭 되면
 		{

@@ -10,6 +10,7 @@ public:
 	void dispatch(const syncnet::SetMoveTarget* msg);
 	void dispatch(const syncnet::GetAgents* msg);
 	void dispatch(const syncnet::Ping* msg);
+	void dispatch(const syncnet::SetRaycast* msg);
 
 	World * world_;
 };

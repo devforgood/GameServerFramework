@@ -186,6 +186,7 @@
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="syncnet_generated.h" />
+    <ClInclude Include="Vector3Converter.h" />
     <ClInclude Include="Walker.h" />
     <ClInclude Include="World.h" />
   </ItemGroup>

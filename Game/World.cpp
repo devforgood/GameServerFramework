@@ -37,7 +37,20 @@ void World::SendWorldState(game_session* session)
 		agent_info_vector.push_back(agent_info);
 	}
 	auto agents = builder_ptr->CreateVector(agent_info_vector);
-	auto getAgents = syncnet::CreateGetAgents(*builder_ptr, agents);
+
+	// ----------------------------
+	flatbuffers::Offset<syncnet::DebugRaycast> debug_raycast;
+	std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> debug_raycast_vector;
+	for (int i = 0; i < this->raycasts.size(); ++i)
+	{
+		debug_raycast = syncnet::CreateDebugRaycast(*builder_ptr, 0, &this->raycasts[i]);
+		debug_raycast_vector.push_back(debug_raycast);
+	}
+	this->raycasts.clear();
+	auto debug_raycasts = builder_ptr->CreateVector(debug_raycast_vector);
+	// ----------------------------
+
+	auto getAgents = syncnet::CreateGetAgents(*builder_ptr, agents, debug_raycasts);
 
 	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_GetAgents, getAgents.Union());
 	builder_ptr->Finish(send_msg);

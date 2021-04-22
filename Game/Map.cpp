@@ -289,3 +289,28 @@ void Map::setMoveTarget(const float* p, bool adjust)
 		}
 	}
 }
+
+bool Map::raycast(int agent_idx, const float* endPos, float * hitPoint)
+{
+	auto agent = m_crowd->getAgent(agent_idx);
+	auto filter = m_crowd->getFilter(agent->params.queryFilterType);
+
+	const float* startPos = agent->npos;
+	dtPolyRef startRef = agent->corridor.getPath()[0];
+
+	dtRaycastHit rayHit;
+	rayHit.maxPath = 0;
+	m_navQuery->raycast(startRef, startPos, endPos, filter, DT_RAYCAST_USE_COSTS, &rayHit);
+
+	if (rayHit.t > 0.0f && rayHit.t < 1.0f)
+	{
+		// hitPoint = startPos + (endPos - startPos) * t
+		dtVsub(hitPoint, endPos, startPos);
+		dtVscale(hitPoint, hitPoint, rayHit.t);
+		dtVadd(hitPoint, startPos, hitPoint);
+		return true;
+	}
+
+	return false;
+}
+

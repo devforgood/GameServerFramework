@@ -94,6 +94,7 @@ void game_session::do_read_body()
 				case syncnet::GameMessages::GameMessages_RemoveAgent:		dispatcher_->dispatch(msg->msg_as_RemoveAgent()); break;
 				case syncnet::GameMessages::GameMessages_SetMoveTarget:		dispatcher_->dispatch(msg->msg_as_SetMoveTarget()); break;
 				case syncnet::GameMessages::GameMessages_Ping:				dispatcher_->dispatch(msg->msg_as_Ping()); break;
+				case syncnet::GameMessages::GameMessages_SetRaycast:				dispatcher_->dispatch(msg->msg_as_SetRaycast()); break;
 				}
 
 				room_.world()->SendWorldState(this);

@@ -52,6 +52,7 @@
       <Filter>Message</Filter>
     </ClInclude>
     <ClInclude Include="Monster.h" />
+    <ClInclude Include="Vector3Converter.h" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

@@ -14,6 +14,7 @@ public enum GameMessages : byte
   AgentInfo = 4,
   GetAgents = 5,
   Ping = 6,
+  SetRaycast = 7,
 };
 
 

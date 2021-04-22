@@ -47,6 +47,8 @@ struct CrowdToolParams
 	float m_separationWeight;
 };
 
+
+struct dtRaycastHit;
 class Map
 {
 protected:
@@ -130,5 +132,8 @@ public:
 	void setMoveTarget(const float* p, bool adjust);
 
 	dtCrowd* crowd() { return m_crowd; }
+
+	bool raycast(int agent_idx, const float* endPos, float* hitPoint);
+
 };
 

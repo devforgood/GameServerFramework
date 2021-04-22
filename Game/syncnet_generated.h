@@ -25,11 +25,17 @@ struct SetMoveTargetBuilder;
 struct AgentInfo;
 struct AgentInfoBuilder;
 
+struct DebugRaycast;
+struct DebugRaycastBuilder;
+
 struct GetAgents;
 struct GetAgentsBuilder;
 
 struct Ping;
 struct PingBuilder;
+
+struct SetRaycast;
+struct SetRaycastBuilder;
 
 enum GameMessages {
   GameMessages_NONE = 0,
@@ -39,11 +45,12 @@ enum GameMessages {
   GameMessages_AgentInfo = 4,
   GameMessages_GetAgents = 5,
   GameMessages_Ping = 6,
+  GameMessages_SetRaycast = 7,
   GameMessages_MIN = GameMessages_NONE,
-  GameMessages_MAX = GameMessages_Ping
+  GameMessages_MAX = GameMessages_SetRaycast
 };
 
-inline const GameMessages (&EnumValuesGameMessages())[7] {
+inline const GameMessages (&EnumValuesGameMessages())[8] {
   static const GameMessages values[] = {
     GameMessages_NONE,
     GameMessages_AddAgent,
@@ -51,13 +58,14 @@ inline const GameMessages (&EnumValuesGameMessages())[7] {
     GameMessages_SetMoveTarget,
     GameMessages_AgentInfo,
     GameMessages_GetAgents,
-    GameMessages_Ping
+    GameMessages_Ping,
+    GameMessages_SetRaycast
   };
   return values;
 }
 
 inline const char * const *EnumNamesGameMessages() {
-  static const char * const names[8] = {
+  static const char * const names[9] = {
     "NONE",
     "AddAgent",
     "RemoveAgent",
@@ -65,13 +73,14 @@ inline const char * const *EnumNamesGameMessages() {
     "AgentInfo",
     "GetAgents",
     "Ping",
+    "SetRaycast",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameGameMessages(GameMessages e) {
-  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_Ping)) return "";
+  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_SetRaycast)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesGameMessages()[index];
 }
@@ -102,6 +111,10 @@ template<> struct GameMessagesTraits<syncnet::GetAgents> {
 
 template<> struct GameMessagesTraits<syncnet::Ping> {
   static const GameMessages enum_value = GameMessages_Ping;
+};
+
+template<> struct GameMessagesTraits<syncnet::SetRaycast> {
+  static const GameMessages enum_value = GameMessages_SetRaycast;
 };
 
 bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type);
@@ -165,6 +178,9 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::Ping *msg_as_Ping() const {
     return msg_type() == syncnet::GameMessages_Ping ? static_cast<const syncnet::Ping *>(msg()) : nullptr;
   }
+  const syncnet::SetRaycast *msg_as_SetRaycast() const {
+    return msg_type() == syncnet::GameMessages_SetRaycast ? static_cast<const syncnet::SetRaycast *>(msg()) : nullptr;
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_MSG_TYPE) &&
@@ -196,6 +212,10 @@ template<> inline const syncnet::GetAgents *GameMessage::msg_as<syncnet::GetAgen
 
 template<> inline const syncnet::Ping *GameMessage::msg_as<syncnet::Ping>() const {
   return msg_as_Ping();
+}
+
+template<> inline const syncnet::SetRaycast *GameMessage::msg_as<syncnet::SetRaycast>() const {
+  return msg_as_SetRaycast();
 }
 
 struct GameMessageBuilder {
@@ -418,19 +438,78 @@ inline flatbuffers::Offset<AgentInfo> CreateAgentInfo(
   return builder_.Finish();
 }
 
+struct DebugRaycast FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef DebugRaycastBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_STARTPOS = 4,
+    VT_ENDPOS = 6
+  };
+  const syncnet::Vec3 *startPos() const {
+    return GetStruct<const syncnet::Vec3 *>(VT_STARTPOS);
+  }
+  const syncnet::Vec3 *endPos() const {
+    return GetStruct<const syncnet::Vec3 *>(VT_ENDPOS);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<syncnet::Vec3>(verifier, VT_STARTPOS) &&
+           VerifyField<syncnet::Vec3>(verifier, VT_ENDPOS) &&
+           verifier.EndTable();
+  }
+};
+
+struct DebugRaycastBuilder {
+  typedef DebugRaycast Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_startPos(const syncnet::Vec3 *startPos) {
+    fbb_.AddStruct(DebugRaycast::VT_STARTPOS, startPos);
+  }
+  void add_endPos(const syncnet::Vec3 *endPos) {
+    fbb_.AddStruct(DebugRaycast::VT_ENDPOS, endPos);
+  }
+  explicit DebugRaycastBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  DebugRaycastBuilder &operator=(const DebugRaycastBuilder &);
+  flatbuffers::Offset<DebugRaycast> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<DebugRaycast>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<DebugRaycast> CreateDebugRaycast(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const syncnet::Vec3 *startPos = 0,
+    const syncnet::Vec3 *endPos = 0) {
+  DebugRaycastBuilder builder_(_fbb);
+  builder_.add_endPos(endPos);
+  builder_.add_startPos(startPos);
+  return builder_.Finish();
+}
+
 struct GetAgents FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef GetAgentsBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_AGENTS = 4
+    VT_AGENTS = 4,
+    VT_DEBUGS = 6
   };
   const flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>> *agents() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>> *>(VT_AGENTS);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>> *debugs() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>> *>(VT_DEBUGS);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_AGENTS) &&
            verifier.VerifyVector(agents()) &&
            verifier.VerifyVectorOfTables(agents()) &&
+           VerifyOffset(verifier, VT_DEBUGS) &&
+           verifier.VerifyVector(debugs()) &&
+           verifier.VerifyVectorOfTables(debugs()) &&
            verifier.EndTable();
   }
 };
@@ -441,6 +520,9 @@ struct GetAgentsBuilder {
   flatbuffers::uoffset_t start_;
   void add_agents(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>>> agents) {
     fbb_.AddOffset(GetAgents::VT_AGENTS, agents);
+  }
+  void add_debugs(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>>> debugs) {
+    fbb_.AddOffset(GetAgents::VT_DEBUGS, debugs);
   }
   explicit GetAgentsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -456,19 +538,24 @@ struct GetAgentsBuilder {
 
 inline flatbuffers::Offset<GetAgents> CreateGetAgents(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>>> agents = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>>> agents = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>>> debugs = 0) {
   GetAgentsBuilder builder_(_fbb);
+  builder_.add_debugs(debugs);
   builder_.add_agents(agents);
   return builder_.Finish();
 }
 
 inline flatbuffers::Offset<GetAgents> CreateGetAgentsDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<syncnet::AgentInfo>> *agents = nullptr) {
+    const std::vector<flatbuffers::Offset<syncnet::AgentInfo>> *agents = nullptr,
+    const std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> *debugs = nullptr) {
   auto agents__ = agents ? _fbb.CreateVector<flatbuffers::Offset<syncnet::AgentInfo>>(*agents) : 0;
+  auto debugs__ = debugs ? _fbb.CreateVector<flatbuffers::Offset<syncnet::DebugRaycast>>(*debugs) : 0;
   return syncnet::CreateGetAgents(
       _fbb,
-      agents__);
+      agents__,
+      debugs__);
 }
 
 struct Ping FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -513,6 +600,58 @@ inline flatbuffers::Offset<Ping> CreatePing(
   return builder_.Finish();
 }
 
+struct SetRaycast FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef SetRaycastBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_AGENTID = 4,
+    VT_POS = 6
+  };
+  int32_t agentId() const {
+    return GetField<int32_t>(VT_AGENTID, 0);
+  }
+  const syncnet::Vec3 *pos() const {
+    return GetStruct<const syncnet::Vec3 *>(VT_POS);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_AGENTID) &&
+           VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
+           verifier.EndTable();
+  }
+};
+
+struct SetRaycastBuilder {
+  typedef SetRaycast Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_agentId(int32_t agentId) {
+    fbb_.AddElement<int32_t>(SetRaycast::VT_AGENTID, agentId, 0);
+  }
+  void add_pos(const syncnet::Vec3 *pos) {
+    fbb_.AddStruct(SetRaycast::VT_POS, pos);
+  }
+  explicit SetRaycastBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SetRaycastBuilder &operator=(const SetRaycastBuilder &);
+  flatbuffers::Offset<SetRaycast> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<SetRaycast>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SetRaycast> CreateSetRaycast(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t agentId = 0,
+    const syncnet::Vec3 *pos = 0) {
+  SetRaycastBuilder builder_(_fbb);
+  builder_.add_pos(pos);
+  builder_.add_agentId(agentId);
+  return builder_.Finish();
+}
+
 inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type) {
   switch (type) {
     case GameMessages_NONE: {
@@ -540,6 +679,10 @@ inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj,
     }
     case GameMessages_Ping: {
       auto ptr = reinterpret_cast<const syncnet::Ping *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_SetRaycast: {
+      auto ptr = reinterpret_cast<const syncnet::SetRaycast *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;

@@ -9,6 +9,7 @@ union GameMessages
   AgentInfo,
   GetAgents,
   Ping,
+  SetRaycast,
 } // Optionally add more tables.
 
 struct Vec3 {
@@ -39,12 +40,22 @@ table AgentInfo {
   pos:Vec3;
 }
 
+table DebugRaycast {
+  startPos:Vec3;
+  endPos:Vec3;
+}
+
 table GetAgents {
   agents:[AgentInfo];
+  debugs:[DebugRaycast];
 }
 
 table Ping {
   seq:int;
 }
 
+table SetRaycast {
+  agentId:int;
+  pos:Vec3;
+}
 root_type GameMessage;
