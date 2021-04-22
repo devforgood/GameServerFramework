@@ -28,6 +28,7 @@
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="World.cpp" />
     <ClCompile Include="MessageDispatcher.cpp" />
+    <ClCompile Include="Monster.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -50,6 +51,7 @@
     <ClInclude Include="SendMessage.h">
       <Filter>Message</Filter>
     </ClInclude>
+    <ClInclude Include="Monster.h" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

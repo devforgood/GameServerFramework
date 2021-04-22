@@ -148,6 +148,7 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="MessageDispatcher.cpp" />
+    <ClCompile Include="Monster.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="WalkerTest.cpp" />
@@ -160,6 +161,9 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\BehaviorTree\BehaviorTree.vcxproj">
+      <Project>{f441c4b3-58a8-4627-b07c-264c21891861}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\DetourCrowd\DetourCrowd.vcxproj">
       <Project>{f7616a66-6317-e35b-ec0b-dd3258c0d95f}</Project>
     </ProjectReference>
@@ -177,6 +181,7 @@
     <ClInclude Include="Map.h" />
     <ClInclude Include="Message.h" />
     <ClInclude Include="MessageDispatcher.h" />
+    <ClInclude Include="Monster.h" />
     <ClInclude Include="PerfTimer.h" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />

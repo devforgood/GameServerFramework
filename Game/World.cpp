@@ -3,17 +3,20 @@
 #include "DetourCrowd.h"
 #include <iostream>
 #include "Server.h"
+#include "Monster.h"
 
 void World::Init()
 {
-	m_map = new Map();
-	m_map->Init();
+	map_ = new Map();
+	map_->Init();
+	monster_ = new Monster();
 
 }
 
 void World::update(float deltaTime)
 {
-	m_map->update(deltaTime);
+	map_->update(deltaTime);
+	monster_->Update();
 }
 
 void World::SendWorldState(game_session* session)

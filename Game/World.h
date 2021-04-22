@@ -2,18 +2,19 @@
 #include "Map.h"
 
 class game_session;
+class Monster;
 class World
 {
 private:
 
-	Map* m_map;
-
+	Map* map_;
+	Monster* monster_;
 public:
 
 	void Init();
 	void update(float deltaTime);
 
-	Map* map() { return m_map; }
+	Map* map() { return map_; }
 
 	void SendWorldState(game_session* session);
 };
