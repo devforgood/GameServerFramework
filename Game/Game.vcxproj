@@ -234,6 +234,7 @@
     <Import Project="..\packages\boost_stacktrace_windbg_cached-vc142.1.72.0.0\build\boost_stacktrace_windbg_cached-vc142.targets" Condition="Exists('..\packages\boost_stacktrace_windbg_cached-vc142.1.72.0.0\build\boost_stacktrace_windbg_cached-vc142.targets')" />
     <Import Project="..\packages\boost_zlib-vc142.1.72.0.0\build\boost_zlib-vc142.targets" Condition="Exists('..\packages\boost_zlib-vc142.1.72.0.0\build\boost_zlib-vc142.targets')" />
     <Import Project="..\packages\boost-vc142.1.72.0.0\build\boost-vc142.targets" Condition="Exists('..\packages\boost-vc142.1.72.0.0\build\boost-vc142.targets')" />
+    <Import Project="..\packages\spdlog.native.1.0.0\build\native\spdlog.native.targets" Condition="Exists('..\packages\spdlog.native.1.0.0\build\native\spdlog.native.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -281,5 +282,6 @@
     <Error Condition="!Exists('..\packages\boost_stacktrace_windbg_cached-vc142.1.72.0.0\build\boost_stacktrace_windbg_cached-vc142.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost_stacktrace_windbg_cached-vc142.1.72.0.0\build\boost_stacktrace_windbg_cached-vc142.targets'))" />
     <Error Condition="!Exists('..\packages\boost_zlib-vc142.1.72.0.0\build\boost_zlib-vc142.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost_zlib-vc142.1.72.0.0\build\boost_zlib-vc142.targets'))" />
     <Error Condition="!Exists('..\packages\boost-vc142.1.72.0.0\build\boost-vc142.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost-vc142.1.72.0.0\build\boost-vc142.targets'))" />
+    <Error Condition="!Exists('..\packages\spdlog.native.1.0.0\build\native\spdlog.native.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\spdlog.native.1.0.0\build\native\spdlog.native.targets'))" />
   </Target>
 </Project>

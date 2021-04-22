@@ -300,7 +300,7 @@ bool Map::raycast(int agent_idx, const float* endPos, float * hitPoint)
 
 	dtRaycastHit rayHit;
 	rayHit.maxPath = 0;
-	m_navQuery->raycast(startRef, startPos, endPos, filter, DT_RAYCAST_USE_COSTS, &rayHit);
+	auto ret = m_navQuery->raycast(startRef, startPos, endPos, filter, DT_RAYCAST_USE_COSTS, &rayHit);
 
 	if (rayHit.t > 0.0f && rayHit.t < 1.0f)
 	{
@@ -310,6 +310,19 @@ bool Map::raycast(int agent_idx, const float* endPos, float * hitPoint)
 		dtVadd(hitPoint, startPos, hitPoint);
 		return true;
 	}
+	std::cout << "raycast hit t : (" << rayHit.t << ") ret : " << ret << std::endl;
+	std::cout << "raycast dtStatusSucceed " << dtStatusSucceed(ret) << std::endl;
+	std::cout << "raycast dtStatusFailed " << dtStatusFailed(ret) << std::endl;
+	std::cout << "raycast dtStatusInProgress " << dtStatusInProgress(ret) << std::endl;
+
+	std::cout << "raycast dtStatusDetail DT_WRONG_MAGIC " << dtStatusDetail(ret, DT_WRONG_MAGIC) << std::endl;
+	std::cout << "raycast dtStatusDetail DT_WRONG_VERSION " << dtStatusDetail(ret, DT_WRONG_VERSION) << std::endl;
+	std::cout << "raycast dtStatusDetail DT_OUT_OF_MEMORY " << dtStatusDetail(ret, DT_OUT_OF_MEMORY) << std::endl;
+	std::cout << "raycast dtStatusDetail DT_INVALID_PARAM " << dtStatusDetail(ret, DT_INVALID_PARAM) << std::endl;
+	std::cout << "raycast dtStatusDetail DT_BUFFER_TOO_SMALL " << dtStatusDetail(ret, DT_BUFFER_TOO_SMALL) << std::endl;
+	std::cout << "raycast dtStatusDetail DT_OUT_OF_NODES " << dtStatusDetail(ret, DT_OUT_OF_NODES) << std::endl;
+	std::cout << "raycast dtStatusDetail DT_PARTIAL_RESULT " << dtStatusDetail(ret, DT_PARTIAL_RESULT) << std::endl;
+	std::cout << "raycast dtStatusDetail DT_ALREADY_OCCUPIED " << dtStatusDetail(ret, DT_ALREADY_OCCUPIED) << std::endl;
 
 	return false;
 }

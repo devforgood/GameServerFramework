@@ -4,6 +4,10 @@
 
 #include "World.h"
 #include "Server.h"
+#include <boost/filesystem.hpp>
+
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/daily_file_sink.h"
 
 
 //----------------------------------------------------------------------
@@ -11,6 +15,18 @@ int main(int argc, char* argv[])
 {
 	try
 	{
+		if(boost::filesystem::exists("logs")==false)
+			boost::filesystem::create_directory("logs");
+
+		auto daily_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>("logs/logfile.log", 23, 59);
+		// create synchronous  loggers
+		auto net_logger = std::make_shared<spdlog::logger>("net", daily_sink);
+
+		spdlog::register_logger(net_logger);
+
+		spdlog::get("net")->info("Game Server start!!");
+
+
 		if (argc < 2)
 		{
 			std::cerr << "Usage: game_server <port> [<port> ...]\n";
