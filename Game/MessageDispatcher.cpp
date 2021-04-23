@@ -14,7 +14,8 @@ void MessageDispatcher::dispatch(const syncnet::AddAgent* msg)
 
 void MessageDispatcher::dispatch(const syncnet::RemoveAgent* msg)
 {
-	//std::cout << "agent id : " << msg->agentId() << std::endl;
+	LOG.info("remove agent id :{}", msg->agentId());
+	world_->map()->removeAgent(msg->agentId());
 }
 
 void MessageDispatcher::dispatch(const syncnet::SetMoveTarget* msg)

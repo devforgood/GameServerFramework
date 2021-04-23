@@ -153,20 +153,22 @@ public class Session : MonoSingleton<Session>
 						if(monsters.TryGetValue(agent_id, out mob)==false)
                         {
 							mob = (GameObject)Instantiate(Resources.Load("Monster"), pos, Quaternion.identity);
+							mob.GetComponent<Monster>().agnet_id = agent_id;
 							monsters[agent_id] = mob; 
 						}
 					}
 
-					List<int> removes = new List<int>();
+					List<int> removals = new List<int>();
 					foreach(var monster in monsters)
                     {
 						if (agents.ContainsKey(monster.Key) == false)
-							removes.Add(monster.Key);
+							removals.Add(monster.Key);
                     }
 
-					foreach(var m in removes)
+					foreach(var id in removals)
                     {
-						monsters.Remove(m);
+						Destroy(monsters[id]);
+						monsters.Remove(id);
 					}
 
 					for (int i = 0; i < getAgents.DebugsLength; ++i)

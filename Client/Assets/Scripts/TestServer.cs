@@ -43,7 +43,7 @@ public class TestServer : MonoBehaviour
 	{
 	}
 
-	bool GetHitPoint()
+	bool GetHitPoint(string tag)
 	{
 		Vector3 mos = Input.mousePosition;
 		mos.z = camera.farClipPlane; // 카메라가 보는 방향과, 시야를 가져온다.
@@ -54,9 +54,12 @@ public class TestServer : MonoBehaviour
 		if (Physics.Raycast(camera.transform.position, dir, out hit_, mos.z))
 		{
 			//target.position = hit.point; // 타겟을 레이캐스트가 충돌된 곳으로 옮긴다.
-			if (hit_.transform.gameObject.tag == "floor")
+			if (tag != string.Empty)
 			{
-				return true;
+				if (hit_.transform.gameObject.tag == tag)
+				{
+					return true;
+				}
 			}
 		}
 		return false;
@@ -85,7 +88,7 @@ public class TestServer : MonoBehaviour
 		{
 			if (clickCtrlOn == false)
 			{
-				if (GetHitPoint())
+				if (GetHitPoint("floor"))
 				{
 					Session.Instance.SendMessage(Session.Instance.MakeAddAgent(hit_.point)); 
                 }
@@ -97,9 +100,9 @@ public class TestServer : MonoBehaviour
 		{
 			if (clickAltOn == false)
 			{
-				if (GetHitPoint())
+				if (GetHitPoint("monster"))
 				{
-
+					Session.Instance.SendMessage(Session.Instance.MakeRemoveAgent(hit_.transform.gameObject.GetComponent<Monster>().agnet_id));
 				}
 				clickAltOn = true;
 			}
@@ -108,7 +111,7 @@ public class TestServer : MonoBehaviour
 		{
 			if (clickOn == false)
 			{
-				if (GetHitPoint())
+				if (GetHitPoint("floor"))
 				{
 					Session.Instance.SendMessage(Session.Instance.MakeSetMoveTarget(-1, hit_.point));
 				}
@@ -121,7 +124,7 @@ public class TestServer : MonoBehaviour
 		{
 			if (clickLeftOn == false)
 			{
-				if (GetHitPoint())
+				if (GetHitPoint("floor"))
 				{
 					Session.Instance.SendMessage(Session.Instance.MakeSetRaycast(hit_.point));
 				}
