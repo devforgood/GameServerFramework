@@ -127,7 +127,7 @@ public:
 
 	void Init();
 	void update(float dt);
-	void addAgent(const float* p);
+	int addAgent(const float* p);
 	void removeAgent(const int idx);
 	void setMoveTarget(const float* p, bool adjust);
 

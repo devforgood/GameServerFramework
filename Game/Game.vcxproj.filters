@@ -29,6 +29,7 @@
     <ClCompile Include="World.cpp" />
     <ClCompile Include="MessageDispatcher.cpp" />
     <ClCompile Include="Monster.cpp" />
+    <ClCompile Include="Character.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -54,6 +55,7 @@
     <ClInclude Include="Monster.h" />
     <ClInclude Include="Vector3Converter.h" />
     <ClInclude Include="LogHelper.h" />
+    <ClInclude Include="Character.h" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

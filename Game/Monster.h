@@ -7,10 +7,11 @@ namespace BT
 class Monster
 {
 private:
+	int agent_id_;
 	BT::BehaviorTree * bt_;
 
 public:
-	Monster();
+	Monster(int agent_id);
 	void Update();
 };
 

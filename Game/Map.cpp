@@ -184,7 +184,7 @@ void Map::update(float dt)
 }
 
 
-void Map::addAgent(const float* p)
+int Map::addAgent(const float* p)
 {
 	dtCrowd* crowd = m_crowd;
 
@@ -220,7 +220,7 @@ void Map::addAgent(const float* p)
 
 	auto agent = crowd->getAgent(idx);
 	LOG.info("add agent {} pos({}, {}, {})", idx, -1 * agent->npos[0], agent->npos[1], agent->npos[2]);
-
+	return idx;
 }
 
 void Map::removeAgent(const int idx)

@@ -39,7 +39,8 @@ protected:
 };
 
 
-Monster::Monster()
+Monster::Monster(int agent_id)
+	: agent_id_(agent_id)
 {
 	BT::BehaviorTreeBuilder* Builder = new BT::BehaviorTreeBuilder();
 	bt_ = Builder
