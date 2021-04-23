@@ -18,11 +18,18 @@ struct Vec3 {
   z:float;
 }
 
+enum GameObjectType:byte 
+{ 
+  Character = 0, 
+  Monster 
+}
+
 table GameMessage {
   msg:GameMessages;
 }
 
 table AddAgent {
+  gameObjectType:GameObjectType = Monster;
   pos:Vec3;
 }
 
@@ -38,6 +45,7 @@ table SetMoveTarget {
 table AgentInfo {
   agentId:int;
   pos:Vec3;
+  gameObjectType:GameObjectType = Monster;
 }
 
 table DebugRaycast {

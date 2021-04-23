@@ -17,6 +17,9 @@
     <Filter Include="flatbuffers">
       <UniqueIdentifier>{dd7a7d75-0d93-450e-834c-8e053449af7d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameObject">
+      <UniqueIdentifier>{73f233f1-36ab-4c41-8686-2628d242b74f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -28,8 +31,15 @@
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="World.cpp" />
     <ClCompile Include="MessageDispatcher.cpp" />
-    <ClCompile Include="Monster.cpp" />
-    <ClCompile Include="Character.cpp" />
+    <ClCompile Include="GameObject.cpp">
+      <Filter>GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="Character.cpp">
+      <Filter>GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="Monster.cpp">
+      <Filter>GameObject</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -52,10 +62,17 @@
     <ClInclude Include="SendMessage.h">
       <Filter>Message</Filter>
     </ClInclude>
-    <ClInclude Include="Monster.h" />
     <ClInclude Include="Vector3Converter.h" />
     <ClInclude Include="LogHelper.h" />
-    <ClInclude Include="Character.h" />
+    <ClInclude Include="GameObject.h">
+      <Filter>GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="Character.h">
+      <Filter>GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="Monster.h">
+      <Filter>GameObject</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

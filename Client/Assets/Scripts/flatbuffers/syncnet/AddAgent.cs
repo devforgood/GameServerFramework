@@ -19,10 +19,12 @@ public struct AddAgent : IFlatbufferObject
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
   public AddAgent __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public syncnet.Vec3? Pos { get { int o = __p.__offset(4); return o != 0 ? (syncnet.Vec3?)(new syncnet.Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
+  public syncnet.GameObjectType GameObjectType { get { int o = __p.__offset(4); return o != 0 ? (syncnet.GameObjectType)__p.bb.GetSbyte(o + __p.bb_pos) : syncnet.GameObjectType.Monster; } }
+  public syncnet.Vec3? Pos { get { int o = __p.__offset(6); return o != 0 ? (syncnet.Vec3?)(new syncnet.Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
 
-  public static void StartAddAgent(FlatBufferBuilder builder) { builder.StartTable(1); }
-  public static void AddPos(FlatBufferBuilder builder, Offset<syncnet.Vec3> posOffset) { builder.AddStruct(0, posOffset.Value, 0); }
+  public static void StartAddAgent(FlatBufferBuilder builder) { builder.StartTable(2); }
+  public static void AddGameObjectType(FlatBufferBuilder builder, syncnet.GameObjectType gameObjectType) { builder.AddSbyte(0, (sbyte)gameObjectType, 1); }
+  public static void AddPos(FlatBufferBuilder builder, Offset<syncnet.Vec3> posOffset) { builder.AddStruct(1, posOffset.Value, 0); }
   public static Offset<syncnet.AddAgent> EndAddAgent(FlatBufferBuilder builder) {
     int o = builder.EndTable();
     return new Offset<syncnet.AddAgent>(o);

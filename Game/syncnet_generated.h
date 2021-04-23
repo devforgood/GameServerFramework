@@ -120,6 +120,36 @@ template<> struct GameMessagesTraits<syncnet::SetRaycast> {
 bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type);
 bool VerifyGameMessagesVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
 
+enum GameObjectType {
+  GameObjectType_Character = 0,
+  GameObjectType_Monster = 1,
+  GameObjectType_MIN = GameObjectType_Character,
+  GameObjectType_MAX = GameObjectType_Monster
+};
+
+inline const GameObjectType (&EnumValuesGameObjectType())[2] {
+  static const GameObjectType values[] = {
+    GameObjectType_Character,
+    GameObjectType_Monster
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesGameObjectType() {
+  static const char * const names[3] = {
+    "Character",
+    "Monster",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameGameObjectType(GameObjectType e) {
+  if (flatbuffers::IsOutRange(e, GameObjectType_Character, GameObjectType_Monster)) return "";
+  const size_t index = static_cast<size_t>(e);
+  return EnumNamesGameObjectType()[index];
+}
+
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Vec3 FLATBUFFERS_FINAL_CLASS {
  private:
   float x_;
@@ -253,13 +283,18 @@ inline flatbuffers::Offset<GameMessage> CreateGameMessage(
 struct AddAgent FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef AddAgentBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_POS = 4
+    VT_GAMEOBJECTTYPE = 4,
+    VT_POS = 6
   };
+  syncnet::GameObjectType gameObjectType() const {
+    return static_cast<syncnet::GameObjectType>(GetField<int8_t>(VT_GAMEOBJECTTYPE, 1));
+  }
   const syncnet::Vec3 *pos() const {
     return GetStruct<const syncnet::Vec3 *>(VT_POS);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyField<int8_t>(verifier, VT_GAMEOBJECTTYPE) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
            verifier.EndTable();
   }
@@ -269,6 +304,9 @@ struct AddAgentBuilder {
   typedef AddAgent Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
+  void add_gameObjectType(syncnet::GameObjectType gameObjectType) {
+    fbb_.AddElement<int8_t>(AddAgent::VT_GAMEOBJECTTYPE, static_cast<int8_t>(gameObjectType), 1);
+  }
   void add_pos(const syncnet::Vec3 *pos) {
     fbb_.AddStruct(AddAgent::VT_POS, pos);
   }
@@ -286,9 +324,11 @@ struct AddAgentBuilder {
 
 inline flatbuffers::Offset<AddAgent> CreateAddAgent(
     flatbuffers::FlatBufferBuilder &_fbb,
+    syncnet::GameObjectType gameObjectType = syncnet::GameObjectType_Monster,
     const syncnet::Vec3 *pos = 0) {
   AddAgentBuilder builder_(_fbb);
   builder_.add_pos(pos);
+  builder_.add_gameObjectType(gameObjectType);
   return builder_.Finish();
 }
 
@@ -390,7 +430,8 @@ struct AgentInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef AgentInfoBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_AGENTID = 4,
-    VT_POS = 6
+    VT_POS = 6,
+    VT_GAMEOBJECTTYPE = 8
   };
   int32_t agentId() const {
     return GetField<int32_t>(VT_AGENTID, 0);
@@ -398,10 +439,14 @@ struct AgentInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::Vec3 *pos() const {
     return GetStruct<const syncnet::Vec3 *>(VT_POS);
   }
+  syncnet::GameObjectType gameObjectType() const {
+    return static_cast<syncnet::GameObjectType>(GetField<int8_t>(VT_GAMEOBJECTTYPE, 1));
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_AGENTID) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
+           VerifyField<int8_t>(verifier, VT_GAMEOBJECTTYPE) &&
            verifier.EndTable();
   }
 };
@@ -415,6 +460,9 @@ struct AgentInfoBuilder {
   }
   void add_pos(const syncnet::Vec3 *pos) {
     fbb_.AddStruct(AgentInfo::VT_POS, pos);
+  }
+  void add_gameObjectType(syncnet::GameObjectType gameObjectType) {
+    fbb_.AddElement<int8_t>(AgentInfo::VT_GAMEOBJECTTYPE, static_cast<int8_t>(gameObjectType), 1);
   }
   explicit AgentInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -431,10 +479,12 @@ struct AgentInfoBuilder {
 inline flatbuffers::Offset<AgentInfo> CreateAgentInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t agentId = 0,
-    const syncnet::Vec3 *pos = 0) {
+    const syncnet::Vec3 *pos = 0,
+    syncnet::GameObjectType gameObjectType = syncnet::GameObjectType_Monster) {
   AgentInfoBuilder builder_(_fbb);
   builder_.add_pos(pos);
   builder_.add_agentId(agentId);
+  builder_.add_gameObjectType(gameObjectType);
   return builder_.Finish();
 }
 

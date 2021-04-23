@@ -4,6 +4,7 @@
 #include <iostream>
 #include "Server.h"
 #include "Monster.h"
+#include "Character.h"
 #include "Vector3Converter.h"
 #include "LogHelper.h"
 
@@ -18,7 +19,7 @@ void World::Init()
 
 void World::update(float deltaTime)
 {
-	for (std::list<std::shared_ptr<Monster>>::iterator itr = monsters_.begin();itr!=monsters_.end();++itr)
+	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin();itr!= game_object_list_.end();++itr)
 		(*itr)->Update();
 
 	map_->update(deltaTime);
@@ -38,7 +39,12 @@ void World::SendWorldState(game_session* session)
 		syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
 		//std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
 
-		agent_info = syncnet::CreateAgentInfo(*builder_ptr, i, &pos);
+		syncnet::GameObjectType type = syncnet::GameObjectType_Monster;
+		auto itr = game_object_map_.find(i);
+		if (itr != game_object_map_.end())
+			type = itr->second->get()->GetType();
+
+		agent_info = syncnet::CreateAgentInfo(*builder_ptr, i, &pos, type);
 		agent_info_vector.push_back(agent_info);
 	}
 	auto agents = builder_ptr->CreateVector(agent_info_vector);
@@ -63,36 +69,47 @@ void World::SendWorldState(game_session* session)
 	session->send(builder_ptr);
 }
 
-void World::OnAddMonster(const syncnet::Vec3* pos)
+void World::OnAddAgent(syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
 	int agent_id = this->map()->addAgent(Vector3Converter(pos).pos());
 	if (agent_id < 0)
 	{
-		LOG.error("OnAddMonster error in Map.addAgent()");
+		LOG.error("OnAddAgent error in Map.addAgent()");
 		return;
 	}
 
-	if (monsters_map_.find(agent_id) != monsters_map_.end())
+	if (game_object_map_.find(agent_id) != game_object_map_.end())
 	{
-		LOG.error("OnAddMonster error already exist in monsters_map_");
+		LOG.error("OnAddAgent error already exist in monsters_map_");
 		return;
 	}
 	
-	auto monster = std::make_shared<Monster>(agent_id);
-	auto itr = monsters_.insert(monsters_.end(), monster);
-	monsters_map_.insert(std::make_pair(agent_id, itr));
+	std::shared_ptr<GameObject> game_object;
+
+	switch (type)
+	{
+	case syncnet::GameObjectType::GameObjectType_Character:
+		game_object = std::make_shared<Character>(agent_id);
+		break;
+	case syncnet::GameObjectType::GameObjectType_Monster:
+		game_object = std::make_shared<Monster>(agent_id);
+		break;
+	}
+
+	auto itr = game_object_list_.insert(game_object_list_.end(), game_object);
+	game_object_map_.insert(std::make_pair(agent_id, itr));
 }
 
-void World::OnRemoveMonster(int agent_id)
+void World::OnRemoveAgent(int agent_id)
 {
-	auto itr = monsters_map_.find(agent_id);
-	if (itr == monsters_map_.end())
+	auto itr = game_object_map_.find(agent_id);
+	if (itr == game_object_map_.end())
 	{
-		LOG.error("OnRemoveMonster error not exist in monsters_map_");
+		LOG.error("OnRemoveAgent error not exist in monsters_map_");
 		return;
 	}
-	monsters_.erase(itr->second);
-	monsters_map_.erase(itr);
+	game_object_list_.erase(itr->second);
+	game_object_map_.erase(itr);
 
 	this->map()->removeAgent(agent_id);
 

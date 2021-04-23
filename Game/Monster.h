@@ -1,17 +1,20 @@
 #pragma once
+#include "GameObject.h"
 
 namespace BT
 {
 	class BehaviorTree;
 }
-class Monster
+class Monster : public GameObject
 {
 private:
-	int agent_id_;
 	BT::BehaviorTree * bt_;
 
 public:
 	Monster(int agent_id);
-	void Update();
+	virtual ~Monster();
+	virtual void Update();
+	virtual syncnet::GameObjectType GetType() { return syncnet::GameObjectType::GameObjectType_Monster; }
+
 };
 

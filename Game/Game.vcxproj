@@ -147,6 +147,7 @@
   <ItemGroup>
     <ClCompile Include="Character.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="MessageDispatcher.cpp" />
     <ClCompile Include="Monster.cpp" />
@@ -180,6 +181,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Character.h" />
+    <ClInclude Include="GameObject.h" />
     <ClInclude Include="LogHelper.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="Message.h" />

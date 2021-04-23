@@ -40,7 +40,7 @@ protected:
 
 
 Monster::Monster(int agent_id)
-	: agent_id_(agent_id)
+	: GameObject(agent_id), bt_(nullptr)
 {
 	BT::BehaviorTreeBuilder* Builder = new BT::BehaviorTreeBuilder();
 	bt_ = Builder
@@ -66,6 +66,12 @@ Monster::Monster(int agent_id)
 			->Action(BT::EActionMode::Patrol)
 		->End();
 	delete Builder;
+}
+
+Monster::~Monster()
+{
+	if (bt_ != nullptr)
+		delete bt_;
 }
 
 void Monster::Update()
