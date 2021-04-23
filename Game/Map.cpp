@@ -18,6 +18,7 @@
 #include "PerfTimer.h"
 #include "DetourCommon.h"
 #include <iostream>
+#include "LogHelper.h"
 
 static const int NAVMESHSET_MAGIC = 'M' << 24 | 'S' << 16 | 'E' << 8 | 'T'; //'MSET';
 static const int NAVMESHSET_VERSION = 1;
@@ -218,7 +219,7 @@ void Map::addAgent(const float* p)
 	}
 
 	auto agent = crowd->getAgent(idx);
-	std::cout << "add agent " << idx << " pos (" << -1* agent->npos[0] << "," << agent->npos[1] << "," << agent->npos[2] << ")" << std::endl;
+	LOG.info("add agent {} pos({}, {}, {})", idx, -1 * agent->npos[0], agent->npos[1], agent->npos[2]);
 
 }
 
@@ -310,19 +311,19 @@ bool Map::raycast(int agent_idx, const float* endPos, float * hitPoint)
 		dtVadd(hitPoint, startPos, hitPoint);
 		return true;
 	}
-	std::cout << "raycast hit t : (" << rayHit.t << ") ret : " << ret << std::endl;
-	std::cout << "raycast dtStatusSucceed " << dtStatusSucceed(ret) << std::endl;
-	std::cout << "raycast dtStatusFailed " << dtStatusFailed(ret) << std::endl;
-	std::cout << "raycast dtStatusInProgress " << dtStatusInProgress(ret) << std::endl;
+	LOG.info("raycast hit t : {}, ret:{}", rayHit.t, ret);
+	LOG.info("raycast dtStatusSucceed {}", dtStatusSucceed(ret));
+	LOG.info("raycast dtStatusFailed {}", dtStatusFailed(ret));
+	LOG.info("raycast dtStatusInProgress {}", dtStatusInProgress(ret));
 
-	std::cout << "raycast dtStatusDetail DT_WRONG_MAGIC " << dtStatusDetail(ret, DT_WRONG_MAGIC) << std::endl;
-	std::cout << "raycast dtStatusDetail DT_WRONG_VERSION " << dtStatusDetail(ret, DT_WRONG_VERSION) << std::endl;
-	std::cout << "raycast dtStatusDetail DT_OUT_OF_MEMORY " << dtStatusDetail(ret, DT_OUT_OF_MEMORY) << std::endl;
-	std::cout << "raycast dtStatusDetail DT_INVALID_PARAM " << dtStatusDetail(ret, DT_INVALID_PARAM) << std::endl;
-	std::cout << "raycast dtStatusDetail DT_BUFFER_TOO_SMALL " << dtStatusDetail(ret, DT_BUFFER_TOO_SMALL) << std::endl;
-	std::cout << "raycast dtStatusDetail DT_OUT_OF_NODES " << dtStatusDetail(ret, DT_OUT_OF_NODES) << std::endl;
-	std::cout << "raycast dtStatusDetail DT_PARTIAL_RESULT " << dtStatusDetail(ret, DT_PARTIAL_RESULT) << std::endl;
-	std::cout << "raycast dtStatusDetail DT_ALREADY_OCCUPIED " << dtStatusDetail(ret, DT_ALREADY_OCCUPIED) << std::endl;
+	LOG.info("raycast dtStatusDetail DT_WRONG_MAGIC {}", dtStatusDetail(ret, DT_WRONG_MAGIC));
+	LOG.info("raycast dtStatusDetail DT_WRONG_VERSION {}", dtStatusDetail(ret, DT_WRONG_VERSION));
+	LOG.info("raycast dtStatusDetail DT_OUT_OF_MEMORY {}", dtStatusDetail(ret, DT_OUT_OF_MEMORY));
+	LOG.info("raycast dtStatusDetail DT_INVALID_PARAM {}", dtStatusDetail(ret, DT_INVALID_PARAM));
+	LOG.info("raycast dtStatusDetail DT_BUFFER_TOO_SMALL {}", dtStatusDetail(ret, DT_BUFFER_TOO_SMALL));
+	LOG.info("raycast dtStatusDetail DT_OUT_OF_NODES {}", dtStatusDetail(ret, DT_OUT_OF_NODES));
+	LOG.info("raycast dtStatusDetail DT_PARTIAL_RESULT {}", dtStatusDetail(ret, DT_PARTIAL_RESULT));
+	LOG.info("raycast dtStatusDetail DT_ALREADY_OCCUPIED {}", dtStatusDetail(ret, DT_ALREADY_OCCUPIED));
 
 	return false;
 }

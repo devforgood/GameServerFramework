@@ -3,7 +3,7 @@
 #include "flatbuffers/flatbuffers.h"
 #include "syncnet_generated.h"
 #include "DetourCrowd.h"
-#include "spdlog/spdlog.h"
+#include "LogHelper.h"
 
 game_room::game_room()
 {
@@ -147,7 +147,7 @@ game_server::game_server(boost::asio::io_context& io_context, const tcp::endpoin
 
 void game_server::do_accept()
 {
-	spdlog::get("net")->info("Game Server Ready");
+	LOG.info("Game Server Ready");
 
 	acceptor_.async_accept(
 		[this](boost::system::error_code ec, tcp::socket socket)

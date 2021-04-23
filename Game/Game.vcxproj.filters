@@ -53,6 +53,7 @@
     </ClInclude>
     <ClInclude Include="Monster.h" />
     <ClInclude Include="Vector3Converter.h" />
+    <ClInclude Include="LogHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

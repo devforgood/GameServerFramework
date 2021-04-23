@@ -3,12 +3,12 @@
 #include "World.h"
 #include "Vector3Converter.h"
 #include "DetourNavMeshQuery.h"
-
+#include "LogHelper.h"
 
 
 void MessageDispatcher::dispatch(const syncnet::AddAgent* msg)
 {
-	std::cout << "add agent pos : (" << msg->pos()->x() << ", " << msg->pos()->y() << ", " << msg->pos()->z() << ")" << std::endl;
+	LOG.info("add agent pos:({},{},{})", msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 	world_->map()->addAgent(Vector3Converter(msg->pos()).pos());
 }
 
@@ -19,7 +19,7 @@ void MessageDispatcher::dispatch(const syncnet::RemoveAgent* msg)
 
 void MessageDispatcher::dispatch(const syncnet::SetMoveTarget* msg)
 {
-	std::cout << "move target agent id : " << msg->agentId() << " pos : (" << msg->pos()->x() << ", " << msg->pos()->y() << ", " << msg->pos()->z() << ")" << std::endl;
+	LOG.info("move target agent id :{}, pos:({},{},{})", msg->agentId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 	world_->map()->setMoveTarget(Vector3Converter(msg->pos()).pos(), false);
 }
 
@@ -35,7 +35,7 @@ void MessageDispatcher::dispatch(const syncnet::Ping* msg)
 
 void MessageDispatcher::dispatch(const syncnet::SetRaycast* msg)
 {
-	std::cout << "SetRaycast pos : (" << msg->pos()->x() << "," << msg->pos()->y() << "," << msg->pos()->z() << ")" << std::endl;
+	LOG.info("SetRaycast pos:({},{},{})", msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 
 	float hitPoint[3];
 	if (world_->map()->raycast(0, Vector3Converter(msg->pos()).pos(), hitPoint))
