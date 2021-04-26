@@ -12,6 +12,9 @@ private:
 	BT::BehaviorTree * bt_;
 
 public:
+	int target_agent_id_;
+
+public:
 	Monster(int agent_id, World * world);
 	virtual ~Monster();
 	virtual void Update();

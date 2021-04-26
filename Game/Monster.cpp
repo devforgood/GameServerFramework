@@ -14,7 +14,7 @@ private:
 
 public:
 	static Behavior* Create(bool InIsNegation, Monster * monster) { return new Condition_DetectEnemy(InIsNegation, monster); }
-	virtual std::string Name() override { return "Condition_IsSeeEnemy_Monster"; }
+	virtual std::string Name() override { return "Condition_DetectEnemy"; }
 
 protected:
 	Condition_DetectEnemy(bool InIsNegation, Monster* monster)
@@ -26,7 +26,8 @@ protected:
 	virtual ~Condition_DetectEnemy() {}
 	virtual BT::EStatus Update() override
 	{
-		if (monster_->world()->DetectEnemy(monster_->agent_id()))
+		monster_->target_agent_id_ = monster_->world()->DetectEnemy(monster_->agent_id());
+		if (monster_->target_agent_id_ >=0)
 		{
 			monster_->SetState(syncnet::AIState_Detect);
 			std::cout << "See enemy!" << std::endl;
@@ -42,6 +43,27 @@ protected:
 };
 
 
+class Action_Follow :public BT::Action
+{
+private:
+	Monster* monster_;
+
+public:
+	static Behavior* Create(Monster* monster) { return new Action_Follow(monster); }
+	virtual std::string Name() override { return "Action_Follow"; }
+
+protected:
+	Action_Follow(Monster* monster) : monster_(monster){}
+	virtual ~Action_Follow() {}
+	virtual BT::EStatus Update() override
+	{
+		monster_->world()->map()->setMoveTarget(monster_->world()->map()->getPos(monster_->target_agent_id_), false, monster_->agent_id());
+
+		return BT::EStatus::Success;
+	}
+};
+
+
 Monster::Monster(int agent_id, World* world)
 	: GameObject(agent_id, world), bt_(nullptr)
 {
@@ -53,9 +75,9 @@ Monster::Monster(int agent_id, World* world)
 					->Back()
 				->ActiveSelector()
 					->Sequence()
-						->Condition(BT::Condition_IsHealthLow::Create(false))
+						->Condition(BT::Condition_IsHealthLow::Create(true))
 							->Back()
-						->Action(BT::EActionMode::Runaway)
+						->Action(Action_Follow::Create(this))
 							->Back()
 						->Back()
 					->Parallel(BT::EPolicy::RequireAll, BT::EPolicy::RequireOne)

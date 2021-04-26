@@ -67,7 +67,11 @@ void World::SendWorldState(game_session* session)
 
 void World::OnAddAgent(syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
-	int agent_id = this->map()->addAgent(Vector3Converter(pos).pos());
+	float speed = 3.5f;
+	if (type == syncnet::GameObjectType::GameObjectType_Character)
+		speed = 4.5f;
+
+	int agent_id = this->map()->addAgent(Vector3Converter(pos).pos(), speed);
 	if (agent_id < 0)
 	{
 		LOG.error("OnAddAgent error in Map.addAgent()");
@@ -127,7 +131,7 @@ void World::OnSetRaycast(const syncnet::Vec3* pos)
 	}
 }
 
-bool World::DetectEnemy(int agent_id)
+int World::DetectEnemy(int agent_id)
 {
 	const dtCrowdAgent* this_agent = this->map()->crowd()->getAgent(agent_id);
 	float hitPoint[3];
@@ -145,8 +149,8 @@ bool World::DetectEnemy(int agent_id)
 
 		if (this->map()->raycast(agent_id, agent->npos, hitPoint) == false)
 		{
-			return true;
+			return itr->get()->agent_id();
 		}
 	}
-	return false;
+	return -1;
 }

@@ -184,7 +184,7 @@ void Map::update(float dt)
 }
 
 
-int Map::addAgent(const float* p)
+int Map::addAgent(const float* p, float speed = 3.5f)
 {
 	dtCrowd* crowd = m_crowd;
 
@@ -193,7 +193,7 @@ int Map::addAgent(const float* p)
 	ap.radius = m_agentRadius;
 	ap.height = m_agentHeight;
 	ap.maxAcceleration = 8.0f;
-	ap.maxSpeed = 3.5f;
+	ap.maxSpeed = speed;
 	ap.collisionQueryRange = ap.radius * 12.0f;
 	ap.pathOptimizationRange = ap.radius * 30.0f;
 	ap.updateFlags = 0;
@@ -328,3 +328,7 @@ bool Map::raycast(int agent_idx, const float* endPos, float * hitPoint)
 	return false;
 }
 
+const float* Map::getPos(const int agent_idx)
+{
+	return m_crowd->getAgent(agent_idx)->npos;
+}

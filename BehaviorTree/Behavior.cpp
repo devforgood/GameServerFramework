@@ -169,12 +169,11 @@ EStatus Condition_IsSeeEnemy::Update()
 
 EStatus Condition_IsHealthLow::Update()
 {
-	if (dice() > 80)
+	if (false)
 	{
 		std::cout << "Health is low" << std::endl;
 		return !IsNegation? EStatus::Success:EStatus::Failure;
 	}
-
 	else
 	{
 		std::cout << "Health is not low" << std::endl;

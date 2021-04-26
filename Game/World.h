@@ -35,7 +35,7 @@ public:
 	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
 	void OnSetRaycast(const syncnet::Vec3* pos);
 
-	bool DetectEnemy(int agent_id);
+	int DetectEnemy(int agent_id);
 
 };
 
