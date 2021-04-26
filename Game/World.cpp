@@ -7,6 +7,7 @@
 #include "Character.h"
 #include "Vector3Converter.h"
 #include "LogHelper.h"
+#include "DetourCommon.h"
 
 void World::Init()
 {
@@ -39,9 +40,7 @@ void World::SendWorldState(game_session* session)
 		syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
 		//std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
 
-		syncnet::GameObjectType type = itr->get()->GetType();
-
-		agent_info = syncnet::CreateAgentInfo(*builder_ptr, itr->get()->agent_id(), &pos, type);
+		agent_info = syncnet::CreateAgentInfo(*builder_ptr, itr->get()->agent_id(), &pos, itr->get()->GetType(), itr->get()->state());
 		agent_info_vector.push_back(agent_info);
 	}
 	auto agents = builder_ptr->CreateVector(agent_info_vector);
@@ -86,10 +85,10 @@ void World::OnAddAgent(syncnet::GameObjectType type, const syncnet::Vec3* pos)
 	switch (type)
 	{
 	case syncnet::GameObjectType::GameObjectType_Character:
-		game_object = std::make_shared<Character>(agent_id);
+		game_object = std::make_shared<Character>(agent_id, this);
 		break;
 	case syncnet::GameObjectType::GameObjectType_Monster:
-		game_object = std::make_shared<Monster>(agent_id);
+		game_object = std::make_shared<Monster>(agent_id, this);
 		break;
 	}
 
@@ -126,4 +125,28 @@ void World::OnSetRaycast(const syncnet::Vec3* pos)
 		syncnet::Vec3 pos(hitPoint[0] * -1, hitPoint[1], hitPoint[2]);
 		this->raycasts_.push_back(pos);
 	}
+}
+
+bool World::DetectEnemy(int agent_id)
+{
+	const dtCrowdAgent* this_agent = this->map()->crowd()->getAgent(agent_id);
+	float hitPoint[3];
+
+
+	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
+	{
+		if (itr->get()->GetType() != syncnet::GameObjectType_Character)
+			continue;
+
+		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(itr->get()->agent_id());
+
+		if (dtVdistSqr(this_agent->npos, agent->npos) > 100.0f)
+			continue;
+
+		if (this->map()->raycast(agent_id, agent->npos, hitPoint) == false)
+		{
+			return true;
+		}
+	}
+	return false;
 }

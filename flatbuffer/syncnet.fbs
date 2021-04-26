@@ -24,6 +24,12 @@ enum GameObjectType:byte
   Monster 
 }
 
+enum AIState:byte
+{
+  Patrol = 0,
+  Detect,
+}
+
 table GameMessage {
   msg:GameMessages;
 }
@@ -46,6 +52,7 @@ table AgentInfo {
   agentId:int;
   pos:Vec3;
   gameObjectType:GameObjectType = Monster;
+  state:AIState = Patrol;
 }
 
 table DebugRaycast {

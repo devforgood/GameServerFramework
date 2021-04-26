@@ -150,6 +150,36 @@ inline const char *EnumNameGameObjectType(GameObjectType e) {
   return EnumNamesGameObjectType()[index];
 }
 
+enum AIState {
+  AIState_Patrol = 0,
+  AIState_Detect = 1,
+  AIState_MIN = AIState_Patrol,
+  AIState_MAX = AIState_Detect
+};
+
+inline const AIState (&EnumValuesAIState())[2] {
+  static const AIState values[] = {
+    AIState_Patrol,
+    AIState_Detect
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesAIState() {
+  static const char * const names[3] = {
+    "Patrol",
+    "Detect",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameAIState(AIState e) {
+  if (flatbuffers::IsOutRange(e, AIState_Patrol, AIState_Detect)) return "";
+  const size_t index = static_cast<size_t>(e);
+  return EnumNamesAIState()[index];
+}
+
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Vec3 FLATBUFFERS_FINAL_CLASS {
  private:
   float x_;
@@ -431,7 +461,8 @@ struct AgentInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_AGENTID = 4,
     VT_POS = 6,
-    VT_GAMEOBJECTTYPE = 8
+    VT_GAMEOBJECTTYPE = 8,
+    VT_STATE = 10
   };
   int32_t agentId() const {
     return GetField<int32_t>(VT_AGENTID, 0);
@@ -442,11 +473,15 @@ struct AgentInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   syncnet::GameObjectType gameObjectType() const {
     return static_cast<syncnet::GameObjectType>(GetField<int8_t>(VT_GAMEOBJECTTYPE, 1));
   }
+  syncnet::AIState state() const {
+    return static_cast<syncnet::AIState>(GetField<int8_t>(VT_STATE, 0));
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_AGENTID) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
            VerifyField<int8_t>(verifier, VT_GAMEOBJECTTYPE) &&
+           VerifyField<int8_t>(verifier, VT_STATE) &&
            verifier.EndTable();
   }
 };
@@ -464,6 +499,9 @@ struct AgentInfoBuilder {
   void add_gameObjectType(syncnet::GameObjectType gameObjectType) {
     fbb_.AddElement<int8_t>(AgentInfo::VT_GAMEOBJECTTYPE, static_cast<int8_t>(gameObjectType), 1);
   }
+  void add_state(syncnet::AIState state) {
+    fbb_.AddElement<int8_t>(AgentInfo::VT_STATE, static_cast<int8_t>(state), 0);
+  }
   explicit AgentInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -480,10 +518,12 @@ inline flatbuffers::Offset<AgentInfo> CreateAgentInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t agentId = 0,
     const syncnet::Vec3 *pos = 0,
-    syncnet::GameObjectType gameObjectType = syncnet::GameObjectType_Monster) {
+    syncnet::GameObjectType gameObjectType = syncnet::GameObjectType_Monster,
+    syncnet::AIState state = syncnet::AIState_Patrol) {
   AgentInfoBuilder builder_(_fbb);
   builder_.add_pos(pos);
   builder_.add_agentId(agentId);
+  builder_.add_state(state);
   builder_.add_gameObjectType(gameObjectType);
   return builder_.Finish();
 }

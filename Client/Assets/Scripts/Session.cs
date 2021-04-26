@@ -14,7 +14,7 @@ public class Session : MonoSingleton<Session>
 	int message_count = 0;
 	float lastSendTime = 0f;
 
-	public Dictionary<int, Vector3> agents = new Dictionary<int, Vector3>();
+	public Dictionary<int, Agent> agents = new Dictionary<int, Agent>();
 	public Dictionary<int, GameObject> game_objects = new Dictionary<int, GameObject>();
 	public int player_agnet_id = 0;
 
@@ -149,7 +149,7 @@ public class Session : MonoSingleton<Session>
 					{
 						var agent_id = getAgents.Agents(i).Value.AgentId;
 						var pos = new Vector3(getAgents.Agents(i).Value.Pos.Value.X, getAgents.Agents(i).Value.Pos.Value.Y, getAgents.Agents(i).Value.Pos.Value.Z);
-						agents[agent_id] = pos;
+						agents[agent_id] = new Agent() { pos = pos, state = getAgents.Agents(i).Value.State };
 
 						GameObject game_object = null;
 						if(game_objects.TryGetValue(agent_id, out game_object) ==false)
@@ -168,6 +168,19 @@ public class Session : MonoSingleton<Session>
 							}
 
 							game_objects[agent_id] = game_object; 
+						}
+
+						if (getAgents.Agents(i).Value.GameObjectType == GameObjectType.Monster)
+						{
+							switch(getAgents.Agents(i).Value.State)
+                            {
+								case AIState.Detect:
+									game_objects[agent_id].GetComponent<MeshRenderer>().material.color = Color.red;
+									break;
+								case AIState.Patrol:
+									game_objects[agent_id].GetComponent<MeshRenderer>().material.color = Color.white;
+									break;
+                            }
 						}
 					}
 
@@ -211,7 +224,7 @@ public class Session : MonoSingleton<Session>
 			try
 			{
 				//Debug.DrawLine(ExportNavMeshToObj.ToUnityVector(lastPosition[i]), ExportNavMeshToObj.ToUnityVector(crowd.GetAgent(i).Position), Color.green, 1);
-				game_objects[agent.Key].transform.position = Vector3.Lerp(game_objects[agent.Key].transform.position, agent.Value, UnityEngine.Time.deltaTime * 10f);
+				game_objects[agent.Key].transform.position = Vector3.Lerp(game_objects[agent.Key].transform.position, agent.Value.pos, UnityEngine.Time.deltaTime * 10f);
 			}
 			catch
 			{

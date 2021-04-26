@@ -2,6 +2,7 @@
 #include "../BehaviorTree/BehaviorTree.h"
 #include <random>
 #include <functional>
+#include "World.h"
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
 
@@ -25,13 +26,15 @@ protected:
 	virtual ~Condition_DetectEnemy() {}
 	virtual BT::EStatus Update() override
 	{
-		if (dice() > 50)
+		if (monster_->world()->DetectEnemy(monster_->agent_id()))
 		{
+			monster_->SetState(syncnet::AIState_Detect);
 			std::cout << "See enemy!" << std::endl;
 			return !IsNegation ? BT::EStatus::Success : BT::EStatus::Failure;
 		}
 		else
 		{
+			monster_->SetState(syncnet::AIState_Patrol);
 			std::cout << "Not see enemy" << std::endl;
 			return !IsNegation ? BT::EStatus::Failure : BT::EStatus::Success;
 		}
@@ -39,8 +42,8 @@ protected:
 };
 
 
-Monster::Monster(int agent_id)
-	: GameObject(agent_id), bt_(nullptr)
+Monster::Monster(int agent_id, World* world)
+	: GameObject(agent_id, world), bt_(nullptr)
 {
 	BT::BehaviorTreeBuilder* Builder = new BT::BehaviorTreeBuilder();
 	bt_ = Builder
@@ -76,5 +79,5 @@ Monster::~Monster()
 
 void Monster::Update()
 {
-	//bt_->Tick();
+	bt_->Tick();
 }
