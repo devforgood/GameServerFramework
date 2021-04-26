@@ -236,7 +236,7 @@ static void calcVel(float* vel, const float* pos, const float* tgt, const float 
 	dtVscale(vel, vel, speed);
 }
 
-void Map::setMoveTarget(const float* p, bool adjust)
+void Map::setMoveTarget(const float* p, bool adjust, const int agent_idx)
 {
 
 	// Find nearest point on navmesh and set move request to that location.
@@ -249,16 +249,16 @@ void Map::setMoveTarget(const float* p, bool adjust)
 	{
 		float vel[3];
 		// Request velocity
-		//if (m_agentDebug.idx != -1)
-		//{
-		//	const dtCrowdAgent* ag = crowd->getAgent(m_agentDebug.idx);
-		//	if (ag && ag->active)
-		//	{
-		//		calcVel(vel, ag->npos, p, ag->params.maxSpeed);
-		//		crowd->requestMoveVelocity(m_agentDebug.idx, vel);
-		//	}
-		//}
-		//else
+		if (agent_idx != -1)
+		{
+			const dtCrowdAgent* ag = crowd->getAgent(agent_idx);
+			if (ag && ag->active)
+			{
+				calcVel(vel, ag->npos, p, ag->params.maxSpeed);
+				crowd->requestMoveVelocity(agent_idx, vel);
+			}
+		}
+		else
 		{
 			for (int i = 0; i < crowd->getAgentCount(); ++i)
 			{
@@ -273,13 +273,13 @@ void Map::setMoveTarget(const float* p, bool adjust)
 	{
 		navquery->findNearestPoly(p, halfExtents, filter, &m_targetRef, m_targetPos);
 
-		//if (m_agentDebug.idx != -1)
-		//{
-		//	const dtCrowdAgent* ag = crowd->getAgent(m_agentDebug.idx);
-		//	if (ag && ag->active)
-		//		crowd->requestMoveTarget(m_agentDebug.idx, m_targetRef, m_targetPos);
-		//}
-		//else
+		if (agent_idx != -1)
+		{
+			const dtCrowdAgent* ag = crowd->getAgent(agent_idx);
+			if (ag && ag->active)
+				crowd->requestMoveTarget(agent_idx, m_targetRef, m_targetPos);
+		}
+		else
 		{
 			for (int i = 0; i < crowd->getAgentCount(); ++i)
 			{

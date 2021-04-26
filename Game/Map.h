@@ -129,7 +129,7 @@ public:
 	void update(float dt);
 	int addAgent(const float* p);
 	void removeAgent(const int idx);
-	void setMoveTarget(const float* p, bool adjust);
+	void setMoveTarget(const float* p, bool adjust, const int agent_idx);
 
 	dtCrowd* crowd() { return m_crowd; }
 

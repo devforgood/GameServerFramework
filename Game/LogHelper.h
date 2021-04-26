@@ -5,7 +5,7 @@
 #include "spdlog/sinks/daily_file_sink.h"
 #include "spdlog/sinks/stdout_sinks.h"
 
-#define LOG (*spdlog::get("net"))
+#define LOG (*(spdlog::get("net")))
 
 inline void InitLog() 
 {

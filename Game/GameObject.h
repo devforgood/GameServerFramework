@@ -16,5 +16,7 @@ public:
 
 	virtual syncnet::GameObjectType GetType() { return syncnet::GameObjectType::GameObjectType_Monster; }
 
+	int agent_id() { return agent_id_; }
+
 };
 

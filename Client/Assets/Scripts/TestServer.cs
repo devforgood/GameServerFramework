@@ -26,6 +26,9 @@ public class TestServer : MonoBehaviour
 	bool clickOn = false;
 	bool clickCtrlOn = false;
 	bool clickAltOn = false;
+
+	bool clickLeftCtrlOn = false;
+	bool clickLeftAltOn = false;
 	bool clickLeftOn = false;
 
 
@@ -80,6 +83,8 @@ public class TestServer : MonoBehaviour
 		if (Input.GetMouseButtonUp(1))
 		{
 			clickLeftOn = false;
+			clickLeftCtrlOn = false;
+			clickLeftAltOn = false;
 		}
 
 
@@ -120,13 +125,37 @@ public class TestServer : MonoBehaviour
 			}
 		}
 
-		if (Input.GetMouseButton(1))  
+		if (Input.GetMouseButton(1) && Input.GetKey(KeyCode.LeftControl))
+		{
+			if (clickLeftCtrlOn == false)
+			{
+				if (GetHitPoint("floor"))
+				{
+					Session.Instance.SendMessage(Session.Instance.MakeAddAgent(hit_.point, GameObjectType.Character));
+				}
+
+				clickLeftCtrlOn = true;
+			}
+		}
+		else if (Input.GetMouseButton(1) && Input.GetKey(KeyCode.LeftAlt))
+		{
+			if (clickLeftAltOn == false)
+			{
+				if (GetHitPoint("floor"))
+				{
+					Session.Instance.SendMessage(Session.Instance.MakeSetRaycast(hit_.point));
+				}
+
+				clickLeftAltOn = true;
+			}
+		}
+		else if (Input.GetMouseButton(1))  
 		{
 			if (clickLeftOn == false)
 			{
 				if (GetHitPoint("floor"))
 				{
-					Session.Instance.SendMessage(Session.Instance.MakeSetRaycast(hit_.point));
+					Session.Instance.SendMessage(Session.Instance.MakeSetMoveTarget(Session.Instance.player_agnet_id, hit_.point));
 				}
 
 				clickLeftOn = true;

@@ -30,21 +30,18 @@ void World::SendWorldState(game_session* session)
 	auto builder_ptr = std::make_shared<send_message>();
 	flatbuffers::Offset<syncnet::AgentInfo> agent_info;
 	std::vector<flatbuffers::Offset<syncnet::AgentInfo>> agent_info_vector;
-	for (int i = 0; i < this->map()->crowd()->getAgentCount(); ++i)
+	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
 	{
-		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(i);
+		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(itr->get()->agent_id());
 		if (agent->active == false)
 			continue;
 
 		syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
 		//std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
 
-		syncnet::GameObjectType type = syncnet::GameObjectType_Monster;
-		auto itr = game_object_map_.find(i);
-		if (itr != game_object_map_.end())
-			type = itr->second->get()->GetType();
+		syncnet::GameObjectType type = itr->get()->GetType();
 
-		agent_info = syncnet::CreateAgentInfo(*builder_ptr, i, &pos, type);
+		agent_info = syncnet::CreateAgentInfo(*builder_ptr, itr->get()->agent_id(), &pos, type);
 		agent_info_vector.push_back(agent_info);
 	}
 	auto agents = builder_ptr->CreateVector(agent_info_vector);
@@ -117,7 +114,7 @@ void World::OnRemoveAgent(int agent_id)
 
 void World::OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos)
 {
-	this->map()->setMoveTarget(Vector3Converter(pos).pos(), false);
+	this->map()->setMoveTarget(Vector3Converter(pos).pos(), false, agent_id);
 
 }
 

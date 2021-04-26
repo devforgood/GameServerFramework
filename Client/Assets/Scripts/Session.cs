@@ -15,7 +15,8 @@ public class Session : MonoSingleton<Session>
 	float lastSendTime = 0f;
 
 	public Dictionary<int, Vector3> agents = new Dictionary<int, Vector3>();
-	public Dictionary<int, GameObject> monsters = new Dictionary<int, GameObject>(); 
+	public Dictionary<int, GameObject> game_objects = new Dictionary<int, GameObject>();
+	public int player_agnet_id = 0;
 
 	public void startServer()
 	{
@@ -30,13 +31,14 @@ public class Session : MonoSingleton<Session>
 		return BitConverter.GetBytes(body.Length);
 	}
 
-	public byte[] MakeAddAgent(Vector3 pos)
+	public byte[] MakeAddAgent(Vector3 pos, GameObjectType gameObjectType = GameObjectType.Monster)
 	{
 		var builder = new FlatBufferBuilder(1024);
 
 		AddAgent.StartAddAgent(builder);
 		//AddAgent.AddPos(builder, Vec3.CreateVec3(builder, -1.4f, 0.69f, 2.68f));
 		AddAgent.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
+		AddAgent.AddGameObjectType(builder, gameObjectType);
 		var offset = AddAgent.EndAddAgent(builder);
 
 		var msg = GameMessage.CreateGameMessage(builder, GameMessages.AddAgent, offset.Value);
@@ -149,26 +151,37 @@ public class Session : MonoSingleton<Session>
 						var pos = new Vector3(getAgents.Agents(i).Value.Pos.Value.X, getAgents.Agents(i).Value.Pos.Value.Y, getAgents.Agents(i).Value.Pos.Value.Z);
 						agents[agent_id] = pos;
 
-						GameObject mob = null;
-						if(monsters.TryGetValue(agent_id, out mob)==false)
+						GameObject game_object = null;
+						if(game_objects.TryGetValue(agent_id, out game_object) ==false)
                         {
-							mob = (GameObject)Instantiate(Resources.Load("Monster"), pos, Quaternion.identity);
-							mob.GetComponent<Monster>().agnet_id = agent_id;
-							monsters[agent_id] = mob; 
+							switch(getAgents.Agents(i).Value.GameObjectType)
+                            {
+								case GameObjectType.Monster:
+									game_object = (GameObject)Instantiate(Resources.Load("Monster"), pos, Quaternion.identity);
+									game_object.GetComponent<Monster>().agnet_id = agent_id;
+									break;
+								case GameObjectType.Character:
+									game_object = (GameObject)Instantiate(Resources.Load("Character2"), pos, Quaternion.identity);
+									game_object.GetComponent<Character>().agnet_id = agent_id;
+									player_agnet_id = agent_id;
+									break;
+							}
+
+							game_objects[agent_id] = game_object; 
 						}
 					}
 
 					List<int> removals = new List<int>();
-					foreach(var monster in monsters)
+					foreach(var game_object in game_objects)
                     {
-						if (agents.ContainsKey(monster.Key) == false)
-							removals.Add(monster.Key);
+						if (agents.ContainsKey(game_object.Key) == false)
+							removals.Add(game_object.Key);
                     }
 
 					foreach(var id in removals)
                     {
-						Destroy(monsters[id]);
-						monsters.Remove(id);
+						Destroy(game_objects[id]);
+						game_objects.Remove(id);
 					}
 
 					for (int i = 0; i < getAgents.DebugsLength; ++i)
@@ -198,7 +211,7 @@ public class Session : MonoSingleton<Session>
 			try
 			{
 				//Debug.DrawLine(ExportNavMeshToObj.ToUnityVector(lastPosition[i]), ExportNavMeshToObj.ToUnityVector(crowd.GetAgent(i).Position), Color.green, 1);
-				monsters[agent.Key].transform.position = Vector3.Lerp(monsters[agent.Key].transform.position, agent.Value, UnityEngine.Time.deltaTime * 10f);
+				game_objects[agent.Key].transform.position = Vector3.Lerp(game_objects[agent.Key].transform.position, agent.Value, UnityEngine.Time.deltaTime * 10f);
 			}
 			catch
 			{
