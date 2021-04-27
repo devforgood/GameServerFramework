@@ -9,14 +9,15 @@
 #include "LogHelper.h"
 #include "DetourCommon.h"
 
+const float g_fDistance = std::powf(10.0f, 2);
+
+
 void World::Init()
 {
 	map_ = new Map();
 	map_->Init();
 
 }
-
-
 
 void World::update(float deltaTime)
 {
@@ -144,7 +145,7 @@ int World::DetectEnemy(int agent_id)
 
 		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(itr->get()->agent_id());
 
-		if (dtVdistSqr(this_agent->npos, agent->npos) > 100.0f)
+		if (std::abs(dtVdistSqr(this_agent->npos, agent->npos)) > g_fDistance)
 			continue;
 
 		if (this->map()->raycast(agent_id, agent->npos, hitPoint) == false)
