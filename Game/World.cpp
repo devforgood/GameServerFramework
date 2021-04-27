@@ -145,7 +145,7 @@ int World::DetectEnemy(int agent_id)
 
 		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(itr->get()->agent_id());
 
-		if (std::abs(dtVdistSqr(this_agent->npos, agent->npos)) > g_fDistance)
+		if (dtVdistSqr(this_agent->npos, agent->npos) > g_fDistance)
 			continue;
 
 		if (this->map()->raycast(agent_id, agent->npos, hitPoint) == false)
