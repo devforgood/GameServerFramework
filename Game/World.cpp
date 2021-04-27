@@ -8,8 +8,10 @@
 #include "Vector3Converter.h"
 #include "LogHelper.h"
 #include "DetourCommon.h"
+#include "MathHelper.h"
 
-const float g_fDistance = std::powf(10.0f, 2);
+//const float g_fDistance = std::powf(10.0f, 2);
+const float g_fDistance = 10.0f;
 
 
 void World::Init()
@@ -145,7 +147,7 @@ int World::DetectEnemy(int agent_id)
 
 		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(itr->get()->agent_id());
 
-		if (dtVdistSqr(this_agent->npos, agent->npos) > g_fDistance)
+		if (ManhattanDistance(this_agent->npos, agent->npos) > g_fDistance)
 			continue;
 
 		if (this->map()->raycast(agent_id, agent->npos, hitPoint) == false)

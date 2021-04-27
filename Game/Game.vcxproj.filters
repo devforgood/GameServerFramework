@@ -73,6 +73,7 @@
     <ClInclude Include="Monster.h">
       <Filter>GameObject</Filter>
     </ClInclude>
+    <ClInclude Include="MathHelper.h" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

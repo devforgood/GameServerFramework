@@ -184,6 +184,7 @@
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="LogHelper.h" />
     <ClInclude Include="Map.h" />
+    <ClInclude Include="MathHelper.h" />
     <ClInclude Include="Message.h" />
     <ClInclude Include="MessageDispatcher.h" />
     <ClInclude Include="Monster.h" />
