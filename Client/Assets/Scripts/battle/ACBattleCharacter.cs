@@ -9,6 +9,8 @@ public class ACBattleCharacter : MonoBehaviour, INetCharacter
     bool IsLocalCharacter;
 
     public CharacterController m_kCharacterController;
+    public float m_playerSpeed = 5f;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -18,6 +20,8 @@ public class ACBattleCharacter : MonoBehaviour, INetCharacter
         m_kCharacterController.center = new Vector3(0f, 0.75f, 0f);
         m_kCharacterController.height = 1.5f;
         m_kCharacterController.radius = 0.45f;
+
+
     }
 
     // Update is called once per frame
@@ -32,7 +36,7 @@ public class ACBattleCharacter : MonoBehaviour, INetCharacter
             if (InputManager.Instance.GetState().mIsMove)
             {
                 m_kCActor.mDirection = core.MathHelpers.DegreeToVector3Cached((int)InputManager.Instance.GetState().mDirection);
-                m_vMoveDirection = m_kCActor.mDirection;
+                m_vMoveDirection = m_kCActor.mDirection * m_playerSpeed;
                 m_kCActor.is_move = true;
             }
             else
@@ -50,7 +54,7 @@ public class ACBattleCharacter : MonoBehaviour, INetCharacter
         {
             if (transform.position != m_kCActor.GetLocation())
             {
-                transform.position = Vector3.Lerp(transform.position, m_kCActor.GetLocation(), UnityEngine.Time.deltaTime * 10f);
+                transform.position = Vector3.Lerp(transform.position, m_kCActor.GetLocation(), UnityEngine.Time.deltaTime * m_playerSpeed);
             }
         }
     }
