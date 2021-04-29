@@ -269,6 +269,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   camera: {fileID: 119188223}
+  _addAgentChannel: {fileID: 11400000, guid: a6dfb2156d7484f459923920c65a6f81, type: 2}
+  _removeAgentChannel: {fileID: 11400000, guid: 795a0c7ab3c102248a2e3e66cecb71b4,
+    type: 2}
+  _setMoveTargetChannel: {fileID: 11400000, guid: e2326633257725443aea3be8698fbef0,
+    type: 2}
+  _setRaycastChannel: {fileID: 11400000, guid: 6d544c4dcf9e6344f9319bddcd92b9ee, type: 2}
+  _setMoveCharacterChannel: {fileID: 11400000, guid: 3cd41db51fa6be3408fda9464cab95d7,
+    type: 2}
+--- !u!114 &489458940
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489458938}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d6ae1b1381871c478f3b638cd99d5e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player_agnet_id: 0
+  _OnAddAgent: {fileID: 11400000, guid: a6dfb2156d7484f459923920c65a6f81, type: 2}
+  _OnRemoveAgent: {fileID: 11400000, guid: 795a0c7ab3c102248a2e3e66cecb71b4, type: 2}
+  _OnSetMoveTarget: {fileID: 11400000, guid: e2326633257725443aea3be8698fbef0, type: 2}
+  _OnSetRaycast: {fileID: 11400000, guid: 6d544c4dcf9e6344f9319bddcd92b9ee, type: 2}
+  _OnSetMoveCharacter: {fileID: 11400000, guid: 3cd41db51fa6be3408fda9464cab95d7,
+    type: 2}
 --- !u!1001 &1248347624
 PrefabInstance:
   m_ObjectHideFlags: 0

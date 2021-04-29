@@ -31,15 +31,11 @@ public class TestServer : MonoBehaviour
 	bool clickLeftAltOn = false;
 	bool clickLeftOn = false;
 
-
-	// Start is called before the first frame update
-	void Start()
-    {
-		Application.runInBackground = true;
-		Session.Instance.startServer();
-	}
-
-
+	[SerializeField] private SessionChannelSO _addAgentChannel = default;
+	[SerializeField] private SessionChannelSO _removeAgentChannel = default;
+	[SerializeField] private SessionChannelSO _setMoveTargetChannel = default;
+	[SerializeField] private SessionChannelSO _setRaycastChannel = default;
+	[SerializeField] private SessionChannelSO _setMoveCharacterChannel = default;
 
 
 	void OnDisable()
@@ -95,8 +91,9 @@ public class TestServer : MonoBehaviour
 			{
 				if (GetHitPoint("floor"))
 				{
-					Session.Instance.SendMessage(Session.Instance.MakeAddAgent(hit_.point)); 
-                }
+					_addAgentChannel.RaiseEvent(0, hit_.point, (int)GameObjectType.Monster);
+
+				}
 
 				clickCtrlOn = true;
             }
@@ -107,7 +104,7 @@ public class TestServer : MonoBehaviour
 			{
 				if (GetHitPoint("monster"))
 				{
-					Session.Instance.SendMessage(Session.Instance.MakeRemoveAgent(hit_.transform.gameObject.GetComponent<Monster>().agnet_id));
+					_removeAgentChannel.RaiseEvent(hit_.transform.gameObject.GetComponent<Monster>().agnet_id, Vector3.zero, 0);
 				}
 				clickAltOn = true;
 			}
@@ -118,7 +115,7 @@ public class TestServer : MonoBehaviour
 			{
 				if (GetHitPoint("floor"))
 				{
-					Session.Instance.SendMessage(Session.Instance.MakeSetMoveTarget(-1, hit_.point));
+					_setMoveTargetChannel.RaiseEvent(-1, hit_.point, 0);
 				}
 
 				clickOn = true;
@@ -131,7 +128,7 @@ public class TestServer : MonoBehaviour
 			{
 				if (GetHitPoint("floor"))
 				{
-					Session.Instance.SendMessage(Session.Instance.MakeAddAgent(hit_.point, GameObjectType.Character));
+					_addAgentChannel.RaiseEvent(0, hit_.point, (int)GameObjectType.Character);
 				}
 
 				clickLeftCtrlOn = true;
@@ -143,7 +140,7 @@ public class TestServer : MonoBehaviour
 			{
 				if (GetHitPoint("floor"))
 				{
-					Session.Instance.SendMessage(Session.Instance.MakeSetRaycast(hit_.point));
+					_setRaycastChannel.RaiseEvent(0, hit_.point, 0);
 				}
 
 				clickLeftAltOn = true;
@@ -155,7 +152,7 @@ public class TestServer : MonoBehaviour
 			{
 				if (GetHitPoint("floor"))
 				{
-					Session.Instance.SendMessage(Session.Instance.MakeSetMoveTarget(Session.Instance.player_agnet_id, hit_.point));
+					_setMoveCharacterChannel.RaiseEvent(0, hit_.point, 0);
 				}
 
 				clickLeftOn = true;

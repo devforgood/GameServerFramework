@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-public class Session : MonoSingleton<Session>
+public class Session : MonoBehaviour
 {
 	int seq = 1;
 	TcpConnection session;
@@ -17,6 +17,104 @@ public class Session : MonoSingleton<Session>
 	public Dictionary<int, Agent> agents = new Dictionary<int, Agent>();
 	public Dictionary<int, GameObject> game_objects = new Dictionary<int, GameObject>();
 	public int player_agnet_id = 0;
+
+
+	[Header("Add Agent Event")]
+	[SerializeField] private SessionChannelSO _OnAddAgent = default;
+
+	[Header("Remove Agent Event Event")]
+	[SerializeField] private SessionChannelSO _OnRemoveAgent = default;
+
+	[Header("Set Move Target Event")]
+	[SerializeField] private SessionChannelSO _OnSetMoveTarget = default;
+
+	[Header("Set Raycast Event")]
+	[SerializeField] private SessionChannelSO _OnSetRaycast = default;
+
+	[Header("Set Move Character Event")]
+	[SerializeField] private SessionChannelSO _OnSetMoveCharacter = default;
+
+	private void OnEnable()
+	{
+		if (_OnAddAgent != null)
+		{
+			_OnAddAgent.OnEventRaised += OnAddAgent;
+		}
+
+		if (_OnRemoveAgent != null)
+		{
+			_OnRemoveAgent.OnEventRaised += OnRemoveAgent;
+		}
+
+		if (_OnSetMoveTarget != null)
+		{
+			_OnSetMoveTarget.OnEventRaised += OnSetMoveTarget;
+		}
+
+		if (_OnSetRaycast != null)
+		{
+			_OnSetRaycast.OnEventRaised += OnSetRaycast;
+		}
+
+		if (_OnSetMoveCharacter != null)
+		{
+			_OnSetMoveCharacter.OnEventRaised += OnSetMoveCharacter;
+		}
+	}
+
+	private void OnDisable()
+	{
+		if (_OnAddAgent != null)
+		{
+			_OnAddAgent.OnEventRaised -= OnAddAgent;
+		}
+		if (_OnRemoveAgent != null)
+		{
+			_OnRemoveAgent.OnEventRaised -= OnRemoveAgent;
+		}
+		if (_OnSetMoveTarget != null)
+		{
+			_OnSetMoveTarget.OnEventRaised -= OnSetMoveTarget;
+		}
+		if (_OnSetRaycast != null)
+		{
+			_OnSetRaycast.OnEventRaised -= OnSetRaycast;
+		}
+		if (_OnSetMoveCharacter != null)
+		{
+			_OnSetMoveCharacter.OnEventRaised -= OnSetMoveCharacter;
+		}
+	}
+
+	private void OnAddAgent(int agent_id, Vector3 pos, int type)
+	{
+		SendMessage(MakeAddAgent(pos, (GameObjectType)type));
+	}
+
+	private void OnRemoveAgent(int agent_id, Vector3 pos, int type)
+	{
+		SendMessage(MakeRemoveAgent(agent_id));
+	}
+
+	private void OnSetMoveTarget(int agent_id, Vector3 pos, int type)
+	{
+		SendMessage(MakeSetMoveTarget(agent_id, pos));
+	}
+
+	private void OnSetRaycast(int agent_id, Vector3 pos, int type)
+	{
+		SendMessage(MakeSetRaycast(pos));
+	}
+
+	private void OnSetMoveCharacter(int agent_id, Vector3 pos, int type)
+	{
+		SendMessage(MakeSetMoveTarget(player_agnet_id, pos));
+	}
+	void Start()
+	{
+		Application.runInBackground = true;
+		startServer();
+	}
 
 	public void startServer()
 	{
@@ -219,7 +317,7 @@ public class Session : MonoSingleton<Session>
 			OnReceive(result);
 		}
 
-		foreach (var agent in Session.Instance.agents)
+		foreach (var agent in agents)
 		{
 			try
 			{
