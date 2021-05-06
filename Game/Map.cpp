@@ -351,14 +351,8 @@ bool Map::raycast(int agent_idx, const float* endPos, float * hitPoint)
 	return false;
 }
 
-bool Map::patrol(int agent_idx)
+bool Map::patrol(int agent_idx, const float* startPos, dtPolyRef startRef)
 {
-	auto agent = m_crowd->getAgent(agent_idx);
-	const float* startPos = agent->npos;
-	if (agent->corridor.getPath() == nullptr)
-		return false;
-
-	dtPolyRef startRef = agent->corridor.getPath()[0];
 	float epos[3];
 	dtPolyRef endRef;
 	dtStatus status = m_navQuery->findRandomPointAroundCircle(startRef, startPos, m_randomRadius, &m_filter, frand, &endRef, epos);
@@ -372,4 +366,9 @@ bool Map::patrol(int agent_idx)
 const float* Map::getPos(const int agent_idx)
 {
 	return m_crowd->getAgent(agent_idx)->npos;
+}
+
+const dtCrowdAgent* Map::getAgent(const int agent_idx)
+{
+	return m_crowd->getAgent(agent_idx);
 }

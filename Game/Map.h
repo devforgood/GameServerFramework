@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Recast.h"
+#include "DetourCrowd.h"
 #include "DetourNavMesh.h"
 #include "DetourNavMeshQuery.h"
 
@@ -147,9 +148,9 @@ public:
 	dtCrowd* crowd() { return m_crowd; }
 
 	bool raycast(int agent_idx, const float* endPos, float* hitPoint);
-	bool patrol(int agent_idx);
+	bool patrol(int agent_idx, const float* startPos, dtPolyRef startRef);
 
 	const float* getPos(const int agent_idx);
-
+	const dtCrowdAgent* getAgent(const int agent_idx);
 };
 

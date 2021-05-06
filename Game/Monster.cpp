@@ -3,6 +3,7 @@
 #include <random>
 #include <functional>
 #include "World.h"
+#include "DetourCommon.h"
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
 
@@ -76,7 +77,7 @@ protected:
 	virtual ~Action_Patrol() {}
 	virtual BT::EStatus Update() override
 	{
-		monster_->world()->map()->patrol(monster_->agent_id());
+		monster_->world()->map()->patrol(monster_->agent_id(), monster_->spawn_pos_, monster_->spawn_ref_);
 		return BT::EStatus::Success;
 	}
 };
@@ -111,6 +112,14 @@ Monster::Monster(int agent_id, World* world)
 			->Action(Action_Patrol::Create(this))
 		->End();
 	delete Builder;
+
+
+	auto agent = world_->map()->getAgent(agent_id);
+	if (agent != nullptr)
+	{
+		dtVcopy(spawn_pos_, agent->npos);
+		spawn_ref_ = agent->corridor.getPath()[0];
+	}
 }
 
 Monster::~Monster()
