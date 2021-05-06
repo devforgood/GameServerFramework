@@ -28,6 +28,7 @@ enum AIState:byte
 {
   Patrol = 0,
   Detect,
+  Attack,
 }
 
 table GameMessage {

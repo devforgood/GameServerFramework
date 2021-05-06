@@ -25,6 +25,7 @@ public:
 	virtual syncnet::GameObjectType GetType() { return syncnet::GameObjectType::GameObjectType_Monster; }
 
 	void SetState(syncnet::AIState state) { state_ = state; }
+	int AttackRange();
 
 
 	friend Action_Patrol;

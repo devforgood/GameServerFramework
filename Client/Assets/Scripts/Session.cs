@@ -278,7 +278,10 @@ public class Session : MonoBehaviour
 								case AIState.Patrol:
 									game_objects[agent_id].GetComponent<MeshRenderer>().material.color = Color.white;
 									break;
-                            }
+								case AIState.Attack:
+									game_objects[agent_id].GetComponent<MeshRenderer>().material.color = Color.blue;
+									break;
+							}
 						}
 					}
 

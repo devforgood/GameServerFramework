@@ -4,6 +4,7 @@
 #include <functional>
 #include "World.h"
 #include "DetourCommon.h"
+#include "MathHelper.h"
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
 
@@ -83,7 +84,39 @@ protected:
 };
 
 // todo : "Attack" , "Flee"
+class Condition_AttackRange : public BT::Condition
+{
+private:
+	Monster* monster_;
 
+public:
+	static Behavior* Create(bool InIsNegation, Monster* monster) { return new Condition_AttackRange(InIsNegation, monster); }
+	virtual std::string Name() override { return "Condition_AttackRange"; }
+
+protected:
+	Condition_AttackRange(bool InIsNegation, Monster* monster)
+		: Condition(InIsNegation), monster_(monster)
+	{
+
+	}
+
+	virtual ~Condition_AttackRange() {}
+	virtual BT::EStatus Update() override
+	{
+		if (monster_->AttackRange() >= 0)
+		{
+			monster_->SetState(syncnet::AIState_Attack);
+			std::cout << "Attack enemy!" << std::endl;
+			return !IsNegation ? BT::EStatus::Success : BT::EStatus::Failure;
+		}
+		else
+		{
+			monster_->SetState(syncnet::AIState_Detect);
+			std::cout << "Chase enemy" << std::endl;
+			return !IsNegation ? BT::EStatus::Failure : BT::EStatus::Success;
+		}
+	}
+};
 
 Monster::Monster(int agent_id, World* world)
 	: GameObject(agent_id, world), bt_(nullptr)
@@ -100,9 +133,9 @@ Monster::Monster(int agent_id, World* world)
 							->Back()
 						->Action(Action_Chase::Create(this))
 							->Back()
-						->Back()
-					->Parallel(BT::EPolicy::RequireAll, BT::EPolicy::RequireOne)
-						->Condition(BT::Condition_IsEnemyDead::Create(true))
+					//	->Back()
+					//->Parallel(BT::EPolicy::RequireAll, BT::EPolicy::RequireOne)
+						->Condition(Condition_AttackRange::Create(true, this))
 							->Back()
 						->Action(BT::Action_Attack::Create())
 							->Back()
@@ -131,4 +164,20 @@ Monster::~Monster()
 void Monster::Update()
 {
 	bt_->Tick();
+}
+
+int Monster::AttackRange()
+{
+	const dtCrowdAgent* this_agent = world_->map()->crowd()->getAgent(agent_id());
+	const dtCrowdAgent* agent = world_->map()->crowd()->getAgent(target_agent_id_);
+
+	if (ManhattanDistance(this_agent->npos, agent->npos) > 3)
+		return -1;
+
+	float hitPoint[3];
+	if (world_->map()->raycast(agent_id(), agent->npos, hitPoint) == false)
+	{
+		return target_agent_id_;
+	}
+	return -1;
 }
