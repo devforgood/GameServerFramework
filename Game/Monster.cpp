@@ -42,19 +42,18 @@ protected:
 	}
 };
 
-
-class Action_Follow :public BT::Action
+class Action_Chase :public BT::Action
 {
 private:
 	Monster* monster_;
 
 public:
-	static Behavior* Create(Monster* monster) { return new Action_Follow(monster); }
+	static Behavior* Create(Monster* monster) { return new Action_Chase(monster); }
 	virtual std::string Name() override { return "Action_Follow"; }
 
 protected:
-	Action_Follow(Monster* monster) : monster_(monster){}
-	virtual ~Action_Follow() {}
+	Action_Chase(Monster* monster) : monster_(monster){}
+	virtual ~Action_Chase() {}
 	virtual BT::EStatus Update() override
 	{
 		monster_->world()->map()->setMoveTarget(monster_->world()->map()->getPos(monster_->target_agent_id_), false, monster_->agent_id());
@@ -62,6 +61,27 @@ protected:
 		return BT::EStatus::Success;
 	}
 };
+
+class Action_Patrol :public BT::Action
+{
+private:
+	Monster* monster_;
+
+public:
+	static Behavior* Create(Monster* monster) { return new Action_Patrol(monster); }
+	virtual std::string Name() override { return "Action_Patrol"; }
+
+protected:
+	Action_Patrol(Monster* monster) : monster_(monster) {}
+	virtual ~Action_Patrol() {}
+	virtual BT::EStatus Update() override
+	{
+		monster_->world()->map()->patrol(monster_->agent_id());
+		return BT::EStatus::Success;
+	}
+};
+
+// todo : "Attack" , "Flee"
 
 
 Monster::Monster(int agent_id, World* world)
@@ -77,7 +97,7 @@ Monster::Monster(int agent_id, World* world)
 					->Sequence()
 						->Condition(BT::Condition_IsHealthLow::Create(true))
 							->Back()
-						->Action(Action_Follow::Create(this))
+						->Action(Action_Chase::Create(this))
 							->Back()
 						->Back()
 					->Parallel(BT::EPolicy::RequireAll, BT::EPolicy::RequireOne)
@@ -88,7 +108,7 @@ Monster::Monster(int agent_id, World* world)
 						->Back()
 					->Back()
 				->Back()
-			->Action(BT::EActionMode::Patrol)
+			->Action(Action_Patrol::Create(this))
 		->End();
 	delete Builder;
 }

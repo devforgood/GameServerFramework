@@ -37,6 +37,11 @@ struct NavMeshTileHeader
 	int dataSize;
 };
 
+static float frand()
+{
+	//	return ((float)(rand() & 0xffff)/(float)0xffff);
+	return (float)rand() / (float)RAND_MAX;
+}
 
 dtNavMesh* loadAll(const char* path)
 {
@@ -168,6 +173,24 @@ void Map::Init()
 
 		crowd->setObstacleAvoidanceParams(3, &params);
 	}
+
+
+	m_filter.setIncludeFlags(SAMPLE_POLYFLAGS_ALL ^ SAMPLE_POLYFLAGS_DISABLED);
+	m_filter.setExcludeFlags(0);
+
+	if (m_navQuery)
+	{
+		// Change costs.
+		m_filter.setAreaCost(SAMPLE_POLYAREA_GROUND, 1.0f);
+		m_filter.setAreaCost(SAMPLE_POLYAREA_WATER, 10.0f);
+		m_filter.setAreaCost(SAMPLE_POLYAREA_ROAD, 1.0f);
+		m_filter.setAreaCost(SAMPLE_POLYAREA_DOOR, 1.0f);
+		m_filter.setAreaCost(SAMPLE_POLYAREA_GRASS, 2.0f);
+		m_filter.setAreaCost(SAMPLE_POLYAREA_JUMP, 1.5f);
+	}
+
+	m_randomRadius = m_agentRadius * 30.0f;
+
 }
 
 void Map::update(float dt)
@@ -328,6 +351,24 @@ bool Map::raycast(int agent_idx, const float* endPos, float * hitPoint)
 	return false;
 }
 
+bool Map::patrol(int agent_idx)
+{
+	auto agent = m_crowd->getAgent(agent_idx);
+	const float* startPos = agent->npos;
+	if (agent->corridor.getPath() == nullptr)
+		return false;
+
+	dtPolyRef startRef = agent->corridor.getPath()[0];
+	float epos[3];
+	dtPolyRef endRef;
+	dtStatus status = m_navQuery->findRandomPointAroundCircle(startRef, startPos, m_randomRadius, &m_filter, frand, &endRef, epos);
+	if (dtStatusSucceed(status))
+	{
+		setMoveTarget(epos, false, agent_idx);
+		return true;
+	}
+	return false;
+}
 const float* Map::getPos(const int agent_idx)
 {
 	return m_crowd->getAgent(agent_idx)->npos;

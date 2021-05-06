@@ -2,6 +2,7 @@
 
 #include "Recast.h"
 #include "DetourNavMesh.h"
+#include "DetourNavMeshQuery.h"
 
 enum SamplePartitionType
 {
@@ -18,6 +19,16 @@ enum SamplePolyFlags
 	SAMPLE_POLYFLAGS_JUMP = 0x08,		// Ability to jump.
 	SAMPLE_POLYFLAGS_DISABLED = 0x10,		// Disabled polygon
 	SAMPLE_POLYFLAGS_ALL = 0xffff	// All abilities.
+};
+
+enum SamplePolyAreas
+{
+	SAMPLE_POLYAREA_GROUND,
+	SAMPLE_POLYAREA_WATER,
+	SAMPLE_POLYAREA_ROAD,
+	SAMPLE_POLYAREA_DOOR,
+	SAMPLE_POLYAREA_GRASS,
+	SAMPLE_POLYAREA_JUMP,
 };
 
 struct CrowdToolParams
@@ -57,6 +68,8 @@ protected:
 	class dtNavMeshQuery* m_navQuery;
 	class dtCrowd* m_crowd;
 
+	dtQueryFilter m_filter;
+	float m_randomRadius;
 
 	// setting
 	float m_cellSize;
@@ -134,6 +147,7 @@ public:
 	dtCrowd* crowd() { return m_crowd; }
 
 	bool raycast(int agent_idx, const float* endPos, float* hitPoint);
+	bool patrol(int agent_idx);
 
 	const float* getPos(const int agent_idx);
 
