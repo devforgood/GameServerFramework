@@ -153,29 +153,32 @@ inline const char *EnumNameGameObjectType(GameObjectType e) {
 enum AIState {
   AIState_Patrol = 0,
   AIState_Detect = 1,
+  AIState_Attack = 2,
   AIState_MIN = AIState_Patrol,
-  AIState_MAX = AIState_Detect
+  AIState_MAX = AIState_Attack
 };
 
-inline const AIState (&EnumValuesAIState())[2] {
+inline const AIState (&EnumValuesAIState())[3] {
   static const AIState values[] = {
     AIState_Patrol,
-    AIState_Detect
+    AIState_Detect,
+    AIState_Attack
   };
   return values;
 }
 
 inline const char * const *EnumNamesAIState() {
-  static const char * const names[3] = {
+  static const char * const names[4] = {
     "Patrol",
     "Detect",
+    "Attack",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameAIState(AIState e) {
-  if (flatbuffers::IsOutRange(e, AIState_Patrol, AIState_Detect)) return "";
+  if (flatbuffers::IsOutRange(e, AIState_Patrol, AIState_Attack)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesAIState()[index];
 }

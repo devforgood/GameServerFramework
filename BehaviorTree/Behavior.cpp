@@ -20,7 +20,7 @@ EStatus Behavior::Tick()
 	}
 
 	Status = Update();
-	
+
 	if (Status != EStatus::Running)
 	{
 		OnTerminate(Status);
@@ -32,7 +32,7 @@ EStatus Behavior::Tick()
 EStatus Repeat::Update()
 {
 	while (true)
-	{	
+	{
 		Child->Tick();
 		if (Child->IsRunning())return EStatus::Success;
 		if (Child->IsFailuer())return EStatus::Failure;
@@ -61,16 +61,16 @@ EStatus Sequence::Update()
 		if (++CurrChild == Children.end())
 			return EStatus::Success;
 	}
-	return EStatus::Invalid; 
+	return EStatus::Invalid;
 }
 
 EStatus Selector::Update()
 {
 	while (true)
 	{
-        EStatus s = (*CurrChild)->Tick();
+		EStatus s = (*CurrChild)->Tick();
 		if (s != EStatus::Failure)
-			return s;	
+			return s;
 		if (++CurrChild == Children.end())
 			return EStatus::Failure;
 	}
@@ -94,7 +94,7 @@ EStatus Parallel::Update()
 				it->Reset();
 				return EStatus::Success;
 			}
-				
+
 		}
 
 		if (it->IsFailuer())
@@ -104,20 +104,20 @@ EStatus Parallel::Update()
 			{
 				it->Reset();
 				return EStatus::Failure;
-			}		
+			}
 		}
 	}
 
-	if (FailurePolicy == EPolicy::RequireAll&&FailureCount == ChildrenSize)
+	if (FailurePolicy == EPolicy::RequireAll && FailureCount == ChildrenSize)
 	{
 		for (auto it : Children)
 		{
 			it->Reset();
 		}
-		
+
 		return EStatus::Failure;
 	}
-	if (SucessPolicy == EPolicy::RequireAll&&SuccessCount == ChildrenSize)
+	if (SucessPolicy == EPolicy::RequireAll && SuccessCount == ChildrenSize)
 	{
 		for (auto it : Children)
 		{
@@ -128,41 +128,41 @@ EStatus Parallel::Update()
 
 	return EStatus::Running;
 }
-	
+
 void Parallel::OnTerminate(EStatus InStatus)
 {
-	 for (auto it : Children)
+	for (auto it : Children)
 	{
 		if (it->IsRunning())
 			it->Abort();
 	}
 }
 
-	EStatus ActiveSelector::Update()
+EStatus ActiveSelector::Update()
+{
+	Behaviors::iterator Previous = CurrChild;
+	Selector::OnInitialize();
+	EStatus result = Selector::Update();
+	if (Previous != Children.end() && CurrChild != Previous)
 	{
-		Behaviors::iterator Previous = CurrChild;
-		Selector::OnInitialize();
-		EStatus result = Selector::Update();
-		if (Previous != Children.end() && CurrChild != Previous)
-		{
-			(*Previous)->Abort();	
-		}
-
-		return result;
+		(*Previous)->Abort();
 	}
+
+	return result;
+}
 
 EStatus Condition_IsSeeEnemy::Update()
 {
 	if (dice() > 50)
 	{
-		std::cout << "See enemy!"<<std::endl;
-		return !IsNegation? EStatus::Success:EStatus::Failure;
+		std::cout << "See enemy!" << std::endl;
+		return !IsNegation ? EStatus::Success : EStatus::Failure;
 	}
 
 	else
 	{
 		std::cout << "Not see enemy" << std::endl;
-		return !IsNegation? EStatus::Failure:EStatus::Success;
+		return !IsNegation ? EStatus::Failure : EStatus::Success;
 	}
 
 }
@@ -172,12 +172,12 @@ EStatus Condition_IsHealthLow::Update()
 	if (false)
 	{
 		std::cout << "Health is low" << std::endl;
-		return !IsNegation? EStatus::Success:EStatus::Failure;
+		return !IsNegation ? EStatus::Success : EStatus::Failure;
 	}
 	else
 	{
 		std::cout << "Health is not low" << std::endl;
-		return !IsNegation? EStatus::Failure:EStatus::Success;
+		return !IsNegation ? EStatus::Failure : EStatus::Success;
 	}
 }
 
@@ -198,7 +198,7 @@ EStatus Condition_IsEnemyDead::Update()
 
 EStatus Action_Attack::Update()
 {
-    std::cout << "Action_Attack " << std::endl;
+	std::cout << "Action_Attack " << std::endl;
 	return EStatus::Success;
 }
 

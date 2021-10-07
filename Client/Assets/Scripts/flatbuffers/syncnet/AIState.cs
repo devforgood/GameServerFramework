@@ -9,6 +9,7 @@ public enum AIState : sbyte
 {
   Patrol = 0,
   Detect = 1,
+  Attack = 2,
 };
 
 
