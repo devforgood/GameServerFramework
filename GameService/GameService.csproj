@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Protobuf Include="..\protos\lobby.proto" Link="protos\lobby.proto" />
+    <Protobuf Include="..\protos\chat.proto" Link="protos\chat.proto" />
   </ItemGroup>
 
 
