@@ -4,9 +4,9 @@ Description=Chat Server
 [Service]
 Type=notify
 # will set the Current Working Directory (CWD). Worker service will have issues without this setting
-WorkingDirectory=/home/ec2-user/chat/publish/linux-x64
+WorkingDirectory=/home/ec2-user/server/ExternalServerBin/Chat
 # systemd will run this executable to start the service
-ExecStart=/home/ec2-user/chat/publish/linux-x64/Chat appsettings.Release.json
+ExecStart=/home/ec2-user/server/ExternalServerBin/Chat/Chat appsettings.Release.json
 # to query logs using journalctl, set a logical name here
 SyslogIdentifier=Chat
 

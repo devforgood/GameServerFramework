@@ -51,11 +51,18 @@ enum ErrorCode
   NotExist = 2;
 }
 
+enum MessageType
+{
+  Normal = 0;
+  Attachment = 1;
+}
+
 message ChatMessage {
   ErrorCode code = 1;
   string room_id = 2;
   string sender_name = 3;
   string message = 4;
+  MessageType message_type = 5;
 }
 
 message CreateRoomRequest {
@@ -70,6 +77,7 @@ message JoinRoomRequest {
 message SendChatRequest {
   string room_id = 1;
   string message = 2;
+  MessageType message_type = 3;
 }
 
 message SendChatReply {

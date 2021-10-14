@@ -65,12 +65,13 @@ namespace Lobby
 
         }
 
-        private async Task SendChatMessageAsync(string roomId, string Message)
+        private async Task SendChatMessageAsync(string roomId, GameChat.MessageType type, string Message)
         {
             GameChat.ChatMessage chat_msg = new GameChat.ChatMessage()
             {
                 RoomId = roomId,
                 Message = Message,
+                MessageType = type,
             };
 
             var msg = JsonConvert.SerializeObject(chat_msg);
@@ -140,7 +141,7 @@ namespace Lobby
 
         public override async Task<global::GameChat.SendChatReply> SendChat(GameChat.SendChatRequest request, ServerCallContext context)
         {
-            await SendChatMessageAsync(request.RoomId, request.Message);
+            await SendChatMessageAsync(request.RoomId, request.MessageType, request.Message);
 
             return new GameChat.SendChatReply()
             {
