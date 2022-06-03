@@ -193,8 +193,10 @@ void game_server::tick(const boost::system::error_code& e)
 	}
 
 	lastTime_ = curTime;
+	int elapsed_time = getPerfTimeUsec(getPerfTime() - curTime) / 1000;
+
 	// Reschedule the timer for 1 second in the future:
-	timer_.expires_at(timer_.expires_at() + boost::posix_time::milliseconds(16));
+	timer_.expires_at(timer_.expires_at() + boost::posix_time::milliseconds(TICK_RATES - elapsed_time));
 	// Posts the timer event
 	timer_.async_wait(boost::bind(&game_server::tick, this, boost::asio::placeholders::error));
 }

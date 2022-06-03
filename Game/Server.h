@@ -99,6 +99,8 @@ private:
 
 class game_server
 {
+	const int TICK_RATES = 100; // ms
+
 public:
 	game_server(boost::asio::io_context& io_context,
 		const tcp::endpoint& endpoint);

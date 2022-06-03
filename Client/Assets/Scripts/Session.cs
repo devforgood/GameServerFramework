@@ -118,7 +118,7 @@ public class Session : MonoBehaviour
 
 	public void startServer()
 	{
-		session = new TcpConnection(core.NetworkHelper.CreateIPEndPoint("127.0.0.1:60001"));
+		session = new TcpConnection(core.NetworkHelper.CreateIPEndPoint(GameManager.Instance.server_address));
 		session.Receiver = this;
 		session.Connect();
 	}
@@ -216,7 +216,7 @@ public class Session : MonoBehaviour
 	public void SendPing(float deltaTime)
 	{
 		lastSendTime += deltaTime;
-		if (lastSendTime >= 0.01f)
+		if (lastSendTime >= 0.1f)
 		{
 			byte[] body = MakePing();
 
