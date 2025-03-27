@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <VCProjectVersion>16.0</VCProjectVersion>
+    <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{f441c4b3-58a8-4627-b07c-264c21891861}</ProjectGuid>
-    <RootNamespace>BehaviorTree</RootNamespace>
+    <ProjectGuid>{8e24c208-4d79-43be-941d-dbd48e5a4264}</ProjectGuid>
+    <RootNamespace>recastnavigation</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -70,18 +70,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -122,7 +110,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
@@ -151,28 +139,55 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Behavior.h" />
-    <ClInclude Include="BehaviorEvent.h" />
-    <ClInclude Include="BehaviorOptimized.h" />
-    <ClInclude Include="BehaviorTree.h" />
-    <ClInclude Include="BehaviorTreeEvent.h" />
-    <ClInclude Include="BehaviorTreeOptimized.h" />
+    <ClInclude Include="DetourAlloc.h" />
+    <ClInclude Include="DetourAssert.h" />
+    <ClInclude Include="DetourCommon.h" />
+    <ClInclude Include="DetourCrowd.h" />
+    <ClInclude Include="DetourLocalBoundary.h" />
+    <ClInclude Include="DetourMath.h" />
+    <ClInclude Include="DetourNavMesh.h" />
+    <ClInclude Include="DetourNavMeshBuilder.h" />
+    <ClInclude Include="DetourNavMeshQuery.h" />
+    <ClInclude Include="DetourNode.h" />
+    <ClInclude Include="DetourObstacleAvoidance.h" />
+    <ClInclude Include="DetourPathCorridor.h" />
+    <ClInclude Include="DetourPathQueue.h" />
+    <ClInclude Include="DetourProximityGrid.h" />
+    <ClInclude Include="DetourStatus.h" />
+    <ClInclude Include="DetourTileCache.h" />
+    <ClInclude Include="DetourTileCacheBuilder.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="pch.h" />
+    <ClInclude Include="Recast.h" />
+    <ClInclude Include="RecastAlloc.h" />
+    <ClInclude Include="RecastAssert.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Behavior.cpp" />
-    <ClCompile Include="BehaviorEvent.cpp" />
-    <ClCompile Include="BehaviorOptimized.cpp" />
-    <ClCompile Include="BehaviorTree.cpp" />
-    <ClCompile Include="BehaviorTreeEvent.cpp" />
-    <ClCompile Include="BehaviorTreeOptimized.cpp" />
-    <ClCompile Include="pch.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="DetourAlloc.cpp" />
+    <ClCompile Include="DetourAssert.cpp" />
+    <ClCompile Include="DetourCommon.cpp" />
+    <ClCompile Include="DetourCrowd.cpp" />
+    <ClCompile Include="DetourLocalBoundary.cpp" />
+    <ClCompile Include="DetourNavMesh.cpp" />
+    <ClCompile Include="DetourNavMeshBuilder.cpp" />
+    <ClCompile Include="DetourNavMeshQuery.cpp" />
+    <ClCompile Include="DetourNode.cpp" />
+    <ClCompile Include="DetourObstacleAvoidance.cpp" />
+    <ClCompile Include="DetourPathCorridor.cpp" />
+    <ClCompile Include="DetourPathQueue.cpp" />
+    <ClCompile Include="DetourProximityGrid.cpp" />
+    <ClCompile Include="DetourTileCache.cpp" />
+    <ClCompile Include="DetourTileCacheBuilder.cpp" />
+    <ClCompile Include="Recast.cpp" />
+    <ClCompile Include="RecastAlloc.cpp" />
+    <ClCompile Include="RecastArea.cpp" />
+    <ClCompile Include="RecastAssert.cpp" />
+    <ClCompile Include="RecastContour.cpp" />
+    <ClCompile Include="RecastFilter.cpp" />
+    <ClCompile Include="RecastLayers.cpp" />
+    <ClCompile Include="RecastMesh.cpp" />
+    <ClCompile Include="RecastMeshDetail.cpp" />
+    <ClCompile Include="RecastRasterization.cpp" />
+    <ClCompile Include="RecastRegion.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

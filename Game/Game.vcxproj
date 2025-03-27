@@ -29,26 +29,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -88,6 +88,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>..\flatbuffer\flatbuffers-1.12.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -114,9 +115,9 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\Detour\Include;..\Recast\Include;..\DetourCrowd\Include;..\DetourTileCache\Include;..\flatbuffer\flatbuffers-1.12.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -166,17 +167,8 @@
     <ProjectReference Include="..\BehaviorTree\BehaviorTree.vcxproj">
       <Project>{f441c4b3-58a8-4627-b07c-264c21891861}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\DetourCrowd\DetourCrowd.vcxproj">
-      <Project>{f7616a66-6317-e35b-ec0b-dd3258c0d95f}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\DetourTileCache\DetourTileCache.vcxproj">
-      <Project>{1ab411d3-863f-7f97-8f50-028cfb5adb97}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Detour\Detour.vcxproj">
-      <Project>{18fee2ad-04a0-0d84-ed5a-21d8d99b94d4}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Recast\Recast.vcxproj">
-      <Project>{a7a881ce-934a-aca4-7c05-c0f8684633f5}</Project>
+    <ProjectReference Include="..\recastnavigation\recastnavigation.vcxproj">
+      <Project>{8e24c208-4d79-43be-941d-dbd48e5a4264}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
