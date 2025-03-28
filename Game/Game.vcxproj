@@ -149,6 +149,7 @@
     <ClCompile Include="Character.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="LuaManager.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="MessageDispatcher.cpp" />
     <ClCompile Include="Monster.cpp" />
@@ -158,6 +159,8 @@
     <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="behavior_tree.lua" />
+    <None Include="mob.lua" />
     <None Include="packages.config" />
     <CopyFileToFolders Include="solo_navmesh.bin">
       <FileType>Document</FileType>
@@ -175,6 +178,7 @@
     <ClInclude Include="Character.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="LogHelper.h" />
+    <ClInclude Include="LuaManager.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="Message.h" />
@@ -233,6 +237,7 @@
     <Import Project="..\packages\boost_zlib-vc142.1.72.0.0\build\boost_zlib-vc142.targets" Condition="Exists('..\packages\boost_zlib-vc142.1.72.0.0\build\boost_zlib-vc142.targets')" />
     <Import Project="..\packages\boost-vc142.1.72.0.0\build\boost-vc142.targets" Condition="Exists('..\packages\boost-vc142.1.72.0.0\build\boost-vc142.targets')" />
     <Import Project="..\packages\spdlog.native.1.0.0\build\native\spdlog.native.targets" Condition="Exists('..\packages\spdlog.native.1.0.0\build\native\spdlog.native.targets')" />
+    <Import Project="..\packages\luajit.native.2.1.1739213504\build\native\luajit.native.targets" Condition="Exists('..\packages\luajit.native.2.1.1739213504\build\native\luajit.native.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -281,5 +286,6 @@
     <Error Condition="!Exists('..\packages\boost_zlib-vc142.1.72.0.0\build\boost_zlib-vc142.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost_zlib-vc142.1.72.0.0\build\boost_zlib-vc142.targets'))" />
     <Error Condition="!Exists('..\packages\boost-vc142.1.72.0.0\build\boost-vc142.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost-vc142.1.72.0.0\build\boost-vc142.targets'))" />
     <Error Condition="!Exists('..\packages\spdlog.native.1.0.0\build\native\spdlog.native.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\spdlog.native.1.0.0\build\native\spdlog.native.targets'))" />
+    <Error Condition="!Exists('..\packages\luajit.native.2.1.1739213504\build\native\luajit.native.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\luajit.native.2.1.1739213504\build\native\luajit.native.targets'))" />
   </Target>
 </Project>

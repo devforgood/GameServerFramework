@@ -5,6 +5,7 @@
 #include "World.h"
 #include "Server.h"
 #include "LogHelper.h"
+#include "LuaManager.h"
 
 
 //----------------------------------------------------------------------
@@ -29,6 +30,8 @@ int main(int argc, char* argv[])
 			tcp::endpoint endpoint(tcp::v4(), std::atoi(argv[i]));
 			servers.emplace_back(io_context, endpoint);
 		}
+
+		LuaManager::test();
 
 		io_context.run();
 	}

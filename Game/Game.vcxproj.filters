@@ -20,6 +20,12 @@
     <Filter Include="GameObject">
       <UniqueIdentifier>{73f233f1-36ab-4c41-8686-2628d242b74f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Scripts">
+      <UniqueIdentifier>{9b982b1c-36bb-422d-8c9f-3e2de12c7783}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AI">
+      <UniqueIdentifier>{30aba9c6-232f-46e0-9bfb-0d7c441bd6e1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -40,9 +46,18 @@
     <ClCompile Include="Monster.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
+    <ClCompile Include="LuaManager.cpp">
+      <Filter>AI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="behavior_tree.lua">
+      <Filter>Scripts</Filter>
+    </None>
+    <None Include="mob.lua">
+      <Filter>Scripts</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Walker.h">
@@ -74,6 +89,9 @@
       <Filter>GameObject</Filter>
     </ClInclude>
     <ClInclude Include="MathHelper.h" />
+    <ClInclude Include="LuaManager.h">
+      <Filter>AI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">
