@@ -4,6 +4,6 @@
 class LuaManager
 {
 public :
-	static void test();
+	static void Initialize();
 };
 

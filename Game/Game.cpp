@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 			servers.emplace_back(io_context, endpoint);
 		}
 
-		LuaManager::test();
+		LuaManager::Initialize();
 
 		io_context.run();
 	}

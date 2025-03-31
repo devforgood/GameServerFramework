@@ -49,7 +49,7 @@ void runBehaviorTree(lua_State* L) {
 }
 
 
-void LuaManager::test() {
+void LuaManager::Initialize() {
 	// Lua 상태 객체 생성
 	lua_State* L = luaL_newstate();
 	luaL_openlibs(L);
@@ -62,7 +62,12 @@ void LuaManager::test() {
 	// Lua 스크립트 실행
 	runLuaScript(L, "mob.lua");
 	// Lua Behavior Tree 실행
-	runBehaviorTree(L);
+
+    for (int i = 0; i < 10; i++) {
+        runBehaviorTree(L);
+    }
+	//runBehaviorTree(L);
 	// Lua 상태 객체 닫기
 	lua_close(L);
 }
+

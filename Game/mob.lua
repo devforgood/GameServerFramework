@@ -3,12 +3,12 @@ local bt = require("behavior_tree")
 -- 트리 정의 (각 행동은 C++에서 처리)
 bt.root:addChildren {
     bt.Sequence:new("Combat") :addChildren {
-        bt.Action:new("Attack"),
-        bt.Action:new("Defend")
+        bt.Action:new("Attack", function() return executeAction("Attack") end),
+        bt.Action:new("Defend", function() return executeAction("Defend") end)
     },
     bt.Selector:new("Idle") :addChildren {
-        bt.Action:new("Patrol"),
-        bt.Action:new("LookAround")
+        bt.Action:new("Patrol", function() return executeAction("Patrol") end),
+        bt.Action:new("LookAround", function() return executeAction("LookAround") end)
     }
 }
 
