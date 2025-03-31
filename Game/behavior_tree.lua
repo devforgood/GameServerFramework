@@ -37,9 +37,9 @@ function BehaviorTree.Selector:new(name)
     return obj
 end
 
-function BehaviorTree.Selector:run()
+function BehaviorTree.Selector:run(monster)
     for _, child in ipairs(self.children) do
-        local status = child:run()
+        local status = child:run(monster)
         if status == "SUCCESS" then
             return "SUCCESS"
         end
@@ -55,9 +55,9 @@ function BehaviorTree.Sequence:new(name)
     return obj
 end
 
-function BehaviorTree.Sequence:run()
+function BehaviorTree.Sequence:run(monster)
     for _, child in ipairs(self.children) do
-        local status = child:run()
+        local status = child:run(monster)
         if status == "FAILURE" then
             return "FAILURE"
         end
@@ -74,8 +74,8 @@ function BehaviorTree.Action:new(name, func)
     return obj
 end
 
-function BehaviorTree.Action:run()
-    return self.func()
+function BehaviorTree.Action:run(monster)
+    return self.func(monster)
 end
 
 -- 트리의 루트 노드 생성

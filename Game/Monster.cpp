@@ -147,11 +147,13 @@ Monster::Monster(int agent_id, World* world)
 	delete Builder;
 
 
-	auto agent = world_->map()->getAgent(agent_id);
-	if (agent != nullptr)
-	{
-		dtVcopy(spawn_pos_, agent->npos);
-		spawn_ref_ = agent->corridor.getPath()[0];
+	if(world_ != nullptr) {
+		auto agent = world_->map()->getAgent(agent_id);
+		if (agent != nullptr)
+		{
+			dtVcopy(spawn_pos_, agent->npos);
+			spawn_ref_ = agent->corridor.getPath()[0];
+		}
 	}
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "GameObject.h"
 #include "DetourNavMesh.h"
+#include <string>
 
 namespace BT
 {
@@ -17,6 +18,7 @@ private:
 
 public:
 	int target_agent_id_;
+	std::string name_;
 
 public:
 	Monster(int agent_id, World * world);
