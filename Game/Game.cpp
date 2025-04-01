@@ -5,7 +5,6 @@
 #include "World.h"
 #include "Server.h"
 #include "LogHelper.h"
-#include "LuaManager.h"
 
 
 //----------------------------------------------------------------------
@@ -31,7 +30,6 @@ int main(int argc, char* argv[])
 			servers.emplace_back(io_context, endpoint);
 		}
 
-		LuaManager::Initialize();
 
 		io_context.run();
 	}

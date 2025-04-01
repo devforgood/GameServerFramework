@@ -118,6 +118,36 @@ protected:
 	}
 };
 
+
+
+int lua_Attack(lua_State* L) {
+	Monster* monster = static_cast<Monster*>(lua_touserdata(L, 1));
+	std::cout << "Executing Attack! " << monster->name_ << std::endl;
+	lua_pushstring(L, "SUCCESS"); // 결과 반환
+	return 1;
+}
+
+int lua_Defend(lua_State* L) {
+	Monster* monster = static_cast<Monster*>(lua_touserdata(L, 1));
+	std::cout << "Executing Defend! " << monster->name_ << std::endl;
+	lua_pushstring(L, "FAILURE");
+	return 1;
+}
+
+int lua_Patrol(lua_State* L) {
+	Monster* monster = static_cast<Monster*>(lua_touserdata(L, 1));
+	std::cout << "Executing Patrol! " << monster->name_ << std::endl;
+	lua_pushstring(L, "SUCCESS");
+	return 1;
+}
+
+int lua_LookAround(lua_State* L) {
+	Monster* monster = static_cast<Monster*>(lua_touserdata(L, 1));
+	std::cout << "Executing LookAround! " << monster->name_ << std::endl;
+	lua_pushstring(L, "SUCCESS");
+	return 1;
+}
+
 Monster::Monster(int agent_id, World* world)
 	: GameObject(agent_id, world), bt_(nullptr)
 {
@@ -155,6 +185,13 @@ Monster::Monster(int agent_id, World* world)
 			spawn_ref_ = agent->corridor.getPath()[0];
 		}
 	}
+
+	name_ = "Monster:" + std::to_string(agent_id);
+
+	registerLuaFunction("Attack", lua_Attack);
+	registerLuaFunction("Defend", lua_Defend);
+	registerLuaFunction("Patrol", lua_Patrol);
+	registerLuaFunction("LookAround", lua_LookAround);
 }
 
 Monster::~Monster()
@@ -166,6 +203,7 @@ Monster::~Monster()
 void Monster::Update()
 {
 	bt_->Tick();
+	runBehaviorTree(this);
 }
 
 int Monster::AttackRange()

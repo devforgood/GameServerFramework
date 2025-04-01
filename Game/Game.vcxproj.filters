@@ -46,7 +46,7 @@
     <ClCompile Include="Monster.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
-    <ClCompile Include="LuaManager.cpp">
+    <ClCompile Include="LuaObject.cpp">
       <Filter>AI</Filter>
     </ClCompile>
   </ItemGroup>
@@ -89,7 +89,7 @@
       <Filter>GameObject</Filter>
     </ClInclude>
     <ClInclude Include="MathHelper.h" />
-    <ClInclude Include="LuaManager.h">
+    <ClInclude Include="LuaObject.h">
       <Filter>AI</Filter>
     </ClInclude>
   </ItemGroup>

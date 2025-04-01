@@ -18,6 +18,7 @@ void World::Init()
 {
 	map_ = new Map();
 	map_->Init();
+	Monster::Initialize("mob.lua");
 
 }
 

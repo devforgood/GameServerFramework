@@ -149,7 +149,7 @@
     <ClCompile Include="Character.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
-    <ClCompile Include="LuaManager.cpp" />
+    <ClCompile Include="LuaObject.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="MessageDispatcher.cpp" />
     <ClCompile Include="Monster.cpp" />
@@ -178,7 +178,7 @@
     <ClInclude Include="Character.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="LogHelper.h" />
-    <ClInclude Include="LuaManager.h" />
+    <ClInclude Include="LuaObject.h" />
     <ClInclude Include="Map.h" />
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="Message.h" />
