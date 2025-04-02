@@ -78,6 +78,35 @@ function BehaviorTree.Action:run(monster)
     return self.func(monster)
 end
 
+-- 헬퍼 함수: Action 노드를 생성하는 함수
+function BehaviorTree.createAction(name)
+    return BehaviorTree.Action:new(name, function(monster) return BehaviorTree.executeAction(name, monster) end)
+end
+
+-- 헬퍼 함수: Sequence 노드를 생성하는 함수
+function BehaviorTree.createSequence(name, actions)
+    local sequence = BehaviorTree.Sequence:new(name)
+    sequence:addChildren(actions)
+    return sequence
+end
+
+-- 헬퍼 함수: Selector 노드를 생성하는 함수
+function BehaviorTree.createSelector(name, actions)
+    local selector = BehaviorTree.Selector:new(name)
+    selector:addChildren(actions)
+    return selector
+end
+
+-- 행동 실행 (C++에서 함수 호출)
+function BehaviorTree.executeAction(actionName, monster)
+    local cppFunction = _G[actionName] -- C++에서 제공하는 함수 실행
+    if cppFunction then
+        return cppFunction(monster)
+    else
+        return "FAILURE"
+    end
+end
+
 -- 트리의 루트 노드 생성
 BehaviorTree.root = BehaviorTree.Selector:new("Root")
 
