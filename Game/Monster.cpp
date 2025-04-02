@@ -187,11 +187,6 @@ Monster::Monster(int agent_id, World* world)
 	}
 
 	name_ = "Monster:" + std::to_string(agent_id);
-
-	registerLuaFunction("Attack", lua_Attack);
-	registerLuaFunction("Defend", lua_Defend);
-	registerLuaFunction("Patrol", lua_Patrol);
-	registerLuaFunction("LookAround", lua_LookAround);
 }
 
 Monster::~Monster()
@@ -220,4 +215,12 @@ int Monster::AttackRange()
 		return target_agent_id_;
 	}
 	return -1;
+}
+
+void Monster::registerLuaFunctionAll()
+{
+	registerLuaFunction("Attack", lua_Attack);
+	registerLuaFunction("Defend", lua_Defend);
+	registerLuaFunction("Patrol", lua_Patrol);
+	registerLuaFunction("LookAround", lua_LookAround);
 }

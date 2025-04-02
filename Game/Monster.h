@@ -23,6 +23,7 @@ public:
 	std::string name_;
 
 public:
+
 	Monster(int agent_id, World * world);
 	virtual ~Monster();
 	virtual void Update();
@@ -31,6 +32,7 @@ public:
 	void SetState(syncnet::AIState state) { state_ = state; }
 	int AttackRange();
 
+	static void registerLuaFunctionAll();
 
 	friend Action_Patrol;
 };
