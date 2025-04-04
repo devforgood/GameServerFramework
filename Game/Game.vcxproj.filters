@@ -49,6 +49,9 @@
     <ClCompile Include="LuaObject.cpp">
       <Filter>AI</Filter>
     </ClCompile>
+    <ClCompile Include="BehaviorTreeCPP.cpp">
+      <Filter>AI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -90,6 +93,9 @@
     </ClInclude>
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="LuaObject.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="BehaviorTreeCPP.h">
       <Filter>AI</Filter>
     </ClInclude>
   </ItemGroup>

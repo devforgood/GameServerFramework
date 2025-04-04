@@ -5,7 +5,7 @@
 #include "World.h"
 #include "Server.h"
 #include "LogHelper.h"
-
+#include "BehaviorTreeCPP.h"
 
 //----------------------------------------------------------------------
 int main(int argc, char* argv[])
@@ -29,6 +29,8 @@ int main(int argc, char* argv[])
 			tcp::endpoint endpoint(tcp::v4(), std::atoi(argv[i]));
 			servers.emplace_back(io_context, endpoint);
 		}
+
+		BehaviorTreeCPP::test();
 
 
 		io_context.run();
