@@ -12,6 +12,7 @@ namespace BT
 }
 
 class Action_Patrol;
+class ActionPatrol;
 class Monster : public GameObject, public LuaObject<Monster>
 {
 private:
@@ -37,5 +38,6 @@ public:
 	static void registerLuaFunctionAll();
 
 	friend Action_Patrol;
+	friend ActionPatrol;
 };
 

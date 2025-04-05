@@ -157,58 +157,132 @@ static const char* xml_text = R"(
  <root BTCPP_format="4" >
 
      <BehaviorTree ID="MainTree">
-        <Sequence name="root">
-            <AlwaysSuccess/>
-            <SaySomething   message="this works too" />
-            <ThinkWhatToSay text="{the_answer}"/>
-            <SaySomething   message="{the_answer}" />
-        </Sequence>
+        <Fallback>
+			<Sequence>
+				<ConditionDetectEnemy/>
+				<Fallback>
+					<Sequence>
+						<ConditionAttackRange/>
+						<ActionAttack/>
+					</Sequence>
+					<ActionChase/>
+				</Fallback>
+			</Sequence>
+			<ActionPatrol/>
+        </Fallback>
      </BehaviorTree>
 
  </root>
  )";
 // clang-format on
 
-
-class SaySomething : public BT::SyncActionNode
+class ConditionDetectEnemy : public BT::ConditionNode
 {
+private:
+	Monster* monster_;
+
 public:
-	SaySomething(const std::string& name, const BT::NodeConfig& config) :
-		BT::SyncActionNode(name, config)
+	ConditionDetectEnemy(const std::string& name, const BT::NodeConfig& config, Monster* monster) :
+		BT::ConditionNode(name, config), monster_(monster)
 	{
 	}
 
 	BT::NodeStatus tick() override
 	{
-		std::string msg;
-		getInput("message", msg);
-		std::cout << msg << std::endl;
-		return BT::NodeStatus::SUCCESS;
-	}
+		monster_->target_agent_id_ = monster_->world()->DetectEnemy(monster_->agent_id());
+		if (monster_->target_agent_id_ >= 0)
+		{
+			monster_->SetState(syncnet::AIState_Detect);
+			std::cout << "See enemy!" << std::endl;
+			return  BT::NodeStatus::SUCCESS;
+		}
 
-	static BT::PortsList providedPorts()
-	{
-		return { BT::InputPort<std::string>("message") };
+		monster_->SetState(syncnet::AIState_Patrol);
+		std::cout << "Not see enemy" << std::endl;
+
+		return BT::NodeStatus::FAILURE;
 	}
 };
 
-class ThinkWhatToSay : public BT::SyncActionNode
+
+class ActionPatrol : public BT::SyncActionNode
 {
+private:
+	Monster* monster_;
+
 public:
-	ThinkWhatToSay(const std::string& name, const BT::NodeConfig& config) :
-		BT::SyncActionNode(name, config)
+	ActionPatrol(const std::string& name, const BT::NodeConfig& config, Monster* monster) :
+		BT::SyncActionNode(name, config), monster_(monster)
 	{
 	}
 
 	BT::NodeStatus tick() override
 	{
-		setOutput("text", "The answer is 42");
+		monster_->world()->map()->patrol(monster_->agent_id(), monster_->spawn_pos_, monster_->spawn_ref_);
 		return BT::NodeStatus::SUCCESS;
 	}
+};
 
-	static BT::PortsList providedPorts()
+class ActionChase : public BT::SyncActionNode
+{
+private:
+	Monster* monster_;
+
+public:
+	ActionChase(const std::string& name, const BT::NodeConfig& config, Monster* monster) :
+		BT::SyncActionNode(name, config), monster_(monster)
 	{
-		return { BT::OutputPort<std::string>("text") };
+	}
+
+	BT::NodeStatus tick() override
+	{
+		monster_->SetState(syncnet::AIState_Detect);
+		monster_->world()->map()->setMoveTarget(monster_->world()->map()->getPos(monster_->target_agent_id_), false, monster_->agent_id());
+		return BT::NodeStatus::SUCCESS;
+	}
+};
+
+class ConditionAttackRange : public BT::ConditionNode
+{
+private:
+	Monster* monster_;
+
+public:
+	ConditionAttackRange(const std::string& name, const BT::NodeConfig& config, Monster* monster) :
+		BT::ConditionNode(name, config), monster_(monster)
+	{
+	}
+
+	BT::NodeStatus tick() override
+	{
+		if (monster_->AttackRange() >= 0)
+		{
+			std::cout << "Attack Range!" << std::endl;
+			return BT::NodeStatus::SUCCESS;
+		}
+
+		std::cout << "Not Attack Range" << std::endl;
+		
+		return BT::NodeStatus::FAILURE;
+	}
+};
+
+class ActionAttack : public BT::SyncActionNode
+{
+private:
+	Monster* monster_;
+
+public:
+	ActionAttack(const std::string& name, const BT::NodeConfig& config, Monster* monster) :
+		BT::SyncActionNode(name, config), monster_(monster)
+	{
+	}
+
+	BT::NodeStatus tick() override
+	{
+		monster_->SetState(syncnet::AIState_Attack);
+		std::cout << "Attack enemy!" << std::endl;
+		return BT::NodeStatus::SUCCESS;
 	}
 };
 
@@ -256,8 +330,28 @@ Monster::Monster(int agent_id, World* world)
 
 	BT::BehaviorTreeFactory factory;
 
-	factory.registerNodeType<SaySomething>("SaySomething");
-	factory.registerNodeType<ThinkWhatToSay>("ThinkWhatToSay");
+	// DetectEnemy 노드를 등록할 때 Monster 포인터를 전달
+	factory.registerBuilder<ConditionDetectEnemy>("ConditionDetectEnemy", [this](const std::string& name, const BT::NodeConfig& config) {
+		return std::make_unique<ConditionDetectEnemy>(name, config, this);
+		});
+
+	factory.registerBuilder<ActionPatrol>("ActionPatrol", [this](const std::string& name, const BT::NodeConfig& config) {
+		return std::make_unique<ActionPatrol>(name, config, this);
+		});
+
+	factory.registerBuilder<ActionChase>("ActionChase", [this](const std::string& name, const BT::NodeConfig& config) {
+		return std::make_unique<ActionChase>(name, config, this);
+		});
+
+	factory.registerBuilder<ConditionAttackRange>("ConditionAttackRange", [this](const std::string& name, const BT::NodeConfig& config) {
+		return std::make_unique<ConditionAttackRange>(name, config, this);
+		});
+
+	factory.registerBuilder<ActionAttack>("ActionAttack", [this](const std::string& name, const BT::NodeConfig& config) {
+		return std::make_unique<ActionAttack>(name, config, this);
+		});
+
+
 
     tree_ = new BT::Tree(factory.createTreeFromText(xml_text));
 }
@@ -270,7 +364,7 @@ Monster::~Monster()
 
 void Monster::Update()
 {
-	bt_->Tick();
+	//bt_->Tick();
 	//runBehaviorTree(this);
 	tree_->tickOnce();
 }
