@@ -8,6 +8,7 @@
 namespace BT
 {
 	class BehaviorTree;
+	class Tree;
 }
 
 class Action_Patrol;
@@ -17,6 +18,7 @@ private:
 	BT::BehaviorTree * bt_;
 	float spawn_pos_[3];
 	dtPolyRef spawn_ref_;
+	BT::Tree* tree_;
 
 public:
 	int target_agent_id_;
