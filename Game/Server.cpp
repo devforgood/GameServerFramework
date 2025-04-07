@@ -4,6 +4,7 @@
 #include "syncnet_generated.h"
 #include "DetourCrowd.h"
 #include "LogHelper.h"
+#include "Player.h"
 
 game_room::game_room()
 {
@@ -37,11 +38,15 @@ void game_room::deliver(std::shared_ptr<send_message> msg)
 
 void game_session::start()
 {
+	player_ = new Player();
 	dispatcher_ = new MessageDispatcher();
 	dispatcher_->world_ = room_.world();
+	dispatcher_->player_ = player_;
+
 
 	room_.join(shared_from_this());
 	do_read_header();
+
 }
 
 void game_session::send(std::shared_ptr<send_message> msg)

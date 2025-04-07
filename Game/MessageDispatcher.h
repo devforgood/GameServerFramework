@@ -4,6 +4,12 @@
 class World;
 class MessageDispatcher
 {
+private:
+	World* world_;
+	Player* player_;
+
+	friend class game_session;
+
 public:
 	void dispatch(const syncnet::AddAgent* msg);
 	void dispatch(const syncnet::RemoveAgent* msg);
@@ -11,7 +17,5 @@ public:
 	void dispatch(const syncnet::GetAgents* msg);
 	void dispatch(const syncnet::Ping* msg);
 	void dispatch(const syncnet::SetRaycast* msg);
-
-	World * world_;
 };
 

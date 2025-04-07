@@ -64,6 +64,7 @@ private:
 };
 
 //----------------------------------------------------------------------
+class Player;
 class MessageDispatcher;
 class game_session
 	: public game_participant,
@@ -74,6 +75,19 @@ public:
 		: socket_(std::move(socket)),
 		room_(room)
 	{
+		dispatcher_ = nullptr;
+		player_ = nullptr;
+
+	}
+
+	~game_session()
+	{
+		if (dispatcher_)
+			delete dispatcher_;
+		dispatcher_ = nullptr;
+		if (player_)
+			delete player_;
+		player_ = nullptr;
 	}
 
 	void start();
@@ -93,6 +107,7 @@ private:
 	game_message read_msg_;
 	game_message_queue write_msgs_;
 	MessageDispatcher* dispatcher_;
+	Player* player_;
 };
 
 //----------------------------------------------------------------------

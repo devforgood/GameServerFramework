@@ -157,6 +157,7 @@
     <ClCompile Include="MessageDispatcher.cpp" />
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
+    <ClCompile Include="Player.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="WalkerTest.cpp" />
     <ClCompile Include="World.cpp" />
@@ -189,6 +190,7 @@
     <ClInclude Include="MessageDispatcher.h" />
     <ClInclude Include="Monster.h" />
     <ClInclude Include="PerfTimer.h" />
+    <ClInclude Include="Player.h" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="syncnet_generated.h" />

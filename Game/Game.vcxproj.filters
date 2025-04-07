@@ -26,6 +26,9 @@
     <Filter Include="AI">
       <UniqueIdentifier>{30aba9c6-232f-46e0-9bfb-0d7c441bd6e1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Player">
+      <UniqueIdentifier>{20a3f127-da87-4d53-a9a2-38a2076b6a42}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -51,6 +54,9 @@
     </ClCompile>
     <ClCompile Include="BehaviorTreeCPP.cpp">
       <Filter>AI</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -97,6 +103,9 @@
     </ClInclude>
     <ClInclude Include="BehaviorTreeCPP.h">
       <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>Player</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
