@@ -2,6 +2,7 @@
 #include "syncnet_generated.h"
 
 class World;
+class Player;
 class MessageDispatcher
 {
 private:

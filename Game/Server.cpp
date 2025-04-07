@@ -36,6 +36,30 @@ void game_room::deliver(std::shared_ptr<send_message> msg)
 
 //----------------------------------------------------------------------
 
+game_session::game_session(tcp::socket socket, game_room& room)
+	: socket_(std::move(socket)),
+	room_(room)
+{
+	dispatcher_ = nullptr;
+	player_ = nullptr;
+}
+
+game_session::~game_session()
+{
+	if (player_ != nullptr)
+	{
+		delete player_;
+		player_ = nullptr;
+	}
+	if (dispatcher_ != nullptr)
+	{
+		delete dispatcher_;
+		dispatcher_ = nullptr;
+	}
+	room_.leave(shared_from_this());
+	socket_.close();
+}
+
 void game_session::start()
 {
 	player_ = new Player();

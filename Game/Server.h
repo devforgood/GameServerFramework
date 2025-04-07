@@ -71,24 +71,8 @@ class game_session
 	public std::enable_shared_from_this<game_session>
 {
 public:
-	game_session(tcp::socket socket, game_room& room)
-		: socket_(std::move(socket)),
-		room_(room)
-	{
-		dispatcher_ = nullptr;
-		player_ = nullptr;
-
-	}
-
-	~game_session()
-	{
-		if (dispatcher_)
-			delete dispatcher_;
-		dispatcher_ = nullptr;
-		if (player_)
-			delete player_;
-		player_ = nullptr;
-	}
+	game_session(tcp::socket socket, game_room& room);
+	~game_session();
 
 	void start();
 
