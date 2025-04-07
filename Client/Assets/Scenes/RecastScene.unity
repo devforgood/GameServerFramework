@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.44657898, g: 0.4964133, b: 0.5748178, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -277,6 +277,7 @@ MonoBehaviour:
   _setRaycastChannel: {fileID: 11400000, guid: 6d544c4dcf9e6344f9319bddcd92b9ee, type: 2}
   _setMoveCharacterChannel: {fileID: 11400000, guid: 3cd41db51fa6be3408fda9464cab95d7,
     type: 2}
+  _setLoginChannel: {fileID: 11400000, guid: 07f2be63ac1f46148adf708c6187ae76, type: 2}
 --- !u!114 &489458940
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -296,6 +297,7 @@ MonoBehaviour:
   _OnSetRaycast: {fileID: 11400000, guid: 6d544c4dcf9e6344f9319bddcd92b9ee, type: 2}
   _OnSetMoveCharacter: {fileID: 11400000, guid: 3cd41db51fa6be3408fda9464cab95d7,
     type: 2}
+  _OnLogin: {fileID: 11400000, guid: 07f2be63ac1f46148adf708c6187ae76, type: 2}
 --- !u!1001 &1248347624
 PrefabInstance:
   m_ObjectHideFlags: 0
