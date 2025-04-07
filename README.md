@@ -10,6 +10,12 @@
 * [lidgren](https://github.com/lidgren/lidgren-network-gen3)
 * [Hazel-Networking](https://github.com/DarkRiftNetworking/Hazel-Networking)
 * [BEPUPhysics](https://github.com/bepu/bepuphysics1)
+* [BehaviorTree.CPP](https://github.com/BehaviorTree/BehaviorTree.CPP)
+
+## Prepare
+```bash
+./vcpkg install behaviortree-cpp
+```
 
 ## Server Architecture
 ![severArchitecture](https://user-images.githubusercontent.com/17477292/115057890-8e971280-9f1f-11eb-8043-6dbc64521900.png)
