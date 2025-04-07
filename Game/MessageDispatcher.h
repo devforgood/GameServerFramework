@@ -18,5 +18,6 @@ public:
 	void dispatch(const syncnet::GetAgents* msg);
 	void dispatch(const syncnet::Ping* msg);
 	void dispatch(const syncnet::SetRaycast* msg);
+	void dispatch(const syncnet::Login* msg);
 };
 

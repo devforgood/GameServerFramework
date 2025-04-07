@@ -36,9 +36,11 @@ public class TestServer : MonoBehaviour
 	[SerializeField] private SessionChannelSO _setMoveTargetChannel = default;
 	[SerializeField] private SessionChannelSO _setRaycastChannel = default;
 	[SerializeField] private SessionChannelSO _setMoveCharacterChannel = default;
+    [SerializeField] private SessionChannelSO _setLoginChannel = default;
 
 
-	void OnDisable()
+
+    void OnDisable()
 	{
 	}
 
@@ -159,6 +161,11 @@ public class TestServer : MonoBehaviour
 			}
 		}
 
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            _setLoginChannel.RaiseEvent(0, hit_.point, 0);
+        }
 
-	}
+
+    }
 }

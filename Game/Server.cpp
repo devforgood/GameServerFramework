@@ -56,8 +56,6 @@ game_session::~game_session()
 		delete dispatcher_;
 		dispatcher_ = nullptr;
 	}
-	room_.leave(shared_from_this());
-	socket_.close();
 }
 
 void game_session::start()
@@ -124,7 +122,8 @@ void game_session::do_read_body()
 				case syncnet::GameMessages::GameMessages_RemoveAgent:		dispatcher_->dispatch(msg->msg_as_RemoveAgent()); break;
 				case syncnet::GameMessages::GameMessages_SetMoveTarget:		dispatcher_->dispatch(msg->msg_as_SetMoveTarget()); break;
 				case syncnet::GameMessages::GameMessages_Ping:				dispatcher_->dispatch(msg->msg_as_Ping()); break;
-				case syncnet::GameMessages::GameMessages_SetRaycast:				dispatcher_->dispatch(msg->msg_as_SetRaycast()); break;
+				case syncnet::GameMessages::GameMessages_SetRaycast:		dispatcher_->dispatch(msg->msg_as_SetRaycast()); break;
+				case syncnet::GameMessages::GameMessages_Login:				dispatcher_->dispatch(msg->msg_as_Login()); break;
 				}
 
 				room_.world()->SendWorldState(this);

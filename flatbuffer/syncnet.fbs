@@ -10,6 +10,7 @@ union GameMessages
   GetAgents,
   Ping,
   SetRaycast,
+  Login,
 } // Optionally add more tables.
 
 struct Vec3 {
@@ -74,4 +75,10 @@ table SetRaycast {
   agentId:int;
   pos:Vec3;
 }
+
+table Login {
+  userId:string;
+  password:string;
+}
+
 root_type GameMessage;

@@ -34,7 +34,10 @@ public class Session : MonoBehaviour
 	[Header("Set Move Character Event")]
 	[SerializeField] private SessionChannelSO _OnSetMoveCharacter = default;
 
-	private void OnEnable()
+    [Header("Set Login Event")]
+    [SerializeField] private SessionChannelSO _OnLogin = default;
+
+    private void OnEnable()
 	{
 		if (_OnAddAgent != null)
 		{
@@ -60,7 +63,11 @@ public class Session : MonoBehaviour
 		{
 			_OnSetMoveCharacter.OnEventRaised += OnSetMoveCharacter;
 		}
-	}
+        if (_OnLogin != null)
+        {
+            _OnLogin.OnEventRaised += OnLogin;
+        }
+    }
 
 	private void OnDisable()
 	{
@@ -84,7 +91,11 @@ public class Session : MonoBehaviour
 		{
 			_OnSetMoveCharacter.OnEventRaised -= OnSetMoveCharacter;
 		}
-	}
+        if (_OnLogin != null)
+        {
+            _OnLogin.OnEventRaised -= OnLogin;
+        }
+    }
 
 	private void OnAddAgent(int agent_id, Vector3 pos, int type)
 	{
@@ -110,7 +121,11 @@ public class Session : MonoBehaviour
 	{
 		SendMessage(MakeSetMoveTarget(player_agnet_id, pos));
 	}
-	void Start()
+    private void OnLogin(int agent_id, Vector3 pos, int type)
+    {
+        SendMessage(MakeLogin());
+    }
+    void Start()
 	{
 		Application.runInBackground = true;
 		startServer();
@@ -213,7 +228,22 @@ public class Session : MonoBehaviour
 		return body;
 	}
 
-	public void SendPing(float deltaTime)
+	public byte[] MakeLogin()
+    {
+        var builder = new FlatBufferBuilder(1024);
+		var nameOffSet = builder.CreateString("test");
+		var passwordOffSet = builder.CreateString("1234");
+        Login.StartLogin(builder);
+        Login.AddUserId(builder, nameOffSet);
+        Login.AddPassword(builder,passwordOffSet);
+        var offset = Login.EndLogin(builder);
+        var msg = GameMessage.CreateGameMessage(builder, GameMessages.Login, offset.Value);
+        builder.Finish(msg.Value);
+        byte[] body = builder.SizedByteArray();
+        return body;
+    }
+
+    public void SendPing(float deltaTime)
 	{
 		lastSendTime += deltaTime;
 		if (lastSendTime >= 0.1f)

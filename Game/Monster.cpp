@@ -193,12 +193,12 @@ public:
 		if (monster_->target_agent_id_ >= 0)
 		{
 			monster_->SetState(syncnet::AIState_Detect);
-			std::cout << "See enemy!" << std::endl;
+			//std::cout << "See enemy!" << std::endl;
 			return  BT::NodeStatus::SUCCESS;
 		}
 
 		monster_->SetState(syncnet::AIState_Patrol);
-		std::cout << "Not see enemy" << std::endl;
+		//std::cout << "Not see enemy" << std::endl;
 
 		return BT::NodeStatus::FAILURE;
 	}
@@ -257,11 +257,11 @@ public:
 	{
 		if (monster_->AttackRange() >= 0)
 		{
-			std::cout << "Attack Range!" << std::endl;
+			//std::cout << "Attack Range!" << std::endl;
 			return BT::NodeStatus::SUCCESS;
 		}
 
-		std::cout << "Not Attack Range" << std::endl;
+		//std::cout << "Not Attack Range" << std::endl;
 		
 		return BT::NodeStatus::FAILURE;
 	}
@@ -281,7 +281,7 @@ public:
 	BT::NodeStatus tick() override
 	{
 		monster_->SetState(syncnet::AIState_Attack);
-		std::cout << "Attack enemy!" << std::endl;
+		//std::cout << "Attack enemy!" << std::endl;
 		return BT::NodeStatus::SUCCESS;
 	}
 };

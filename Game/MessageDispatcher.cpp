@@ -40,3 +40,8 @@ void MessageDispatcher::dispatch(const syncnet::SetRaycast* msg)
 	LOG.info("SetRaycast pos:({},{},{})", msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 	world_->OnSetRaycast(msg->pos());
 }
+
+void MessageDispatcher::dispatch(const syncnet::Login* msg)
+{
+	LOG.info("Login id :{}", msg->userId()->c_str());
+}

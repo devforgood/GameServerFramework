@@ -37,6 +37,9 @@ struct PingBuilder;
 struct SetRaycast;
 struct SetRaycastBuilder;
 
+struct Login;
+struct LoginBuilder;
+
 enum GameMessages {
   GameMessages_NONE = 0,
   GameMessages_AddAgent = 1,
@@ -46,11 +49,12 @@ enum GameMessages {
   GameMessages_GetAgents = 5,
   GameMessages_Ping = 6,
   GameMessages_SetRaycast = 7,
+  GameMessages_Login = 8,
   GameMessages_MIN = GameMessages_NONE,
-  GameMessages_MAX = GameMessages_SetRaycast
+  GameMessages_MAX = GameMessages_Login
 };
 
-inline const GameMessages (&EnumValuesGameMessages())[8] {
+inline const GameMessages (&EnumValuesGameMessages())[9] {
   static const GameMessages values[] = {
     GameMessages_NONE,
     GameMessages_AddAgent,
@@ -59,13 +63,14 @@ inline const GameMessages (&EnumValuesGameMessages())[8] {
     GameMessages_AgentInfo,
     GameMessages_GetAgents,
     GameMessages_Ping,
-    GameMessages_SetRaycast
+    GameMessages_SetRaycast,
+    GameMessages_Login
   };
   return values;
 }
 
 inline const char * const *EnumNamesGameMessages() {
-  static const char * const names[9] = {
+  static const char * const names[10] = {
     "NONE",
     "AddAgent",
     "RemoveAgent",
@@ -74,13 +79,14 @@ inline const char * const *EnumNamesGameMessages() {
     "GetAgents",
     "Ping",
     "SetRaycast",
+    "Login",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameGameMessages(GameMessages e) {
-  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_SetRaycast)) return "";
+  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_Login)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesGameMessages()[index];
 }
@@ -115,6 +121,10 @@ template<> struct GameMessagesTraits<syncnet::Ping> {
 
 template<> struct GameMessagesTraits<syncnet::SetRaycast> {
   static const GameMessages enum_value = GameMessages_SetRaycast;
+};
+
+template<> struct GameMessagesTraits<syncnet::Login> {
+  static const GameMessages enum_value = GameMessages_Login;
 };
 
 bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type);
@@ -244,6 +254,9 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::SetRaycast *msg_as_SetRaycast() const {
     return msg_type() == syncnet::GameMessages_SetRaycast ? static_cast<const syncnet::SetRaycast *>(msg()) : nullptr;
   }
+  const syncnet::Login *msg_as_Login() const {
+    return msg_type() == syncnet::GameMessages_Login ? static_cast<const syncnet::Login *>(msg()) : nullptr;
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_MSG_TYPE) &&
@@ -279,6 +292,10 @@ template<> inline const syncnet::Ping *GameMessage::msg_as<syncnet::Ping>() cons
 
 template<> inline const syncnet::SetRaycast *GameMessage::msg_as<syncnet::SetRaycast>() const {
   return msg_as_SetRaycast();
+}
+
+template<> inline const syncnet::Login *GameMessage::msg_as<syncnet::Login>() const {
+  return msg_as_Login();
 }
 
 struct GameMessageBuilder {
@@ -745,6 +762,72 @@ inline flatbuffers::Offset<SetRaycast> CreateSetRaycast(
   return builder_.Finish();
 }
 
+struct Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef LoginBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_USERID = 4,
+    VT_PASSWORD = 6
+  };
+  const flatbuffers::String *userId() const {
+    return GetPointer<const flatbuffers::String *>(VT_USERID);
+  }
+  const flatbuffers::String *password() const {
+    return GetPointer<const flatbuffers::String *>(VT_PASSWORD);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_USERID) &&
+           verifier.VerifyString(userId()) &&
+           VerifyOffset(verifier, VT_PASSWORD) &&
+           verifier.VerifyString(password()) &&
+           verifier.EndTable();
+  }
+};
+
+struct LoginBuilder {
+  typedef Login Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_userId(flatbuffers::Offset<flatbuffers::String> userId) {
+    fbb_.AddOffset(Login::VT_USERID, userId);
+  }
+  void add_password(flatbuffers::Offset<flatbuffers::String> password) {
+    fbb_.AddOffset(Login::VT_PASSWORD, password);
+  }
+  explicit LoginBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  LoginBuilder &operator=(const LoginBuilder &);
+  flatbuffers::Offset<Login> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Login>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Login> CreateLogin(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> userId = 0,
+    flatbuffers::Offset<flatbuffers::String> password = 0) {
+  LoginBuilder builder_(_fbb);
+  builder_.add_password(password);
+  builder_.add_userId(userId);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Login> CreateLoginDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *userId = nullptr,
+    const char *password = nullptr) {
+  auto userId__ = userId ? _fbb.CreateString(userId) : 0;
+  auto password__ = password ? _fbb.CreateString(password) : 0;
+  return syncnet::CreateLogin(
+      _fbb,
+      userId__,
+      password__);
+}
+
 inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type) {
   switch (type) {
     case GameMessages_NONE: {
@@ -776,6 +859,10 @@ inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj,
     }
     case GameMessages_SetRaycast: {
       auto ptr = reinterpret_cast<const syncnet::SetRaycast *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_Login: {
+      auto ptr = reinterpret_cast<const syncnet::Login *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;
