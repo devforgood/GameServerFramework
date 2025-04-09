@@ -159,6 +159,7 @@
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Server.cpp" />
+    <ClCompile Include="SqlClient.cpp" />
     <ClCompile Include="WalkerTest.cpp" />
     <ClCompile Include="World.cpp" />
   </ItemGroup>
@@ -193,6 +194,7 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
+    <ClInclude Include="SqlClient.h" />
     <ClInclude Include="syncnet_generated.h" />
     <ClInclude Include="Vector3Converter.h" />
     <ClInclude Include="Walker.h" />

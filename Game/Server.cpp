@@ -36,9 +36,11 @@ void game_room::deliver(std::shared_ptr<send_message> msg)
 
 //----------------------------------------------------------------------
 
-game_session::game_session(tcp::socket socket, game_room& room)
+game_session::game_session(tcp::socket socket, game_room& room, boost::asio::thread_pool& db_thread_pool)
 	: socket_(std::move(socket)),
-	room_(room)
+	room_(room),
+	strand_(db_thread_pool.get_executor())
+
 {
 	dispatcher_ = nullptr;
 	player_ = nullptr;
@@ -61,6 +63,7 @@ game_session::~game_session()
 void game_session::start()
 {
 	player_ = new Player();
+	player_->set_session(this);
 	dispatcher_ = new MessageDispatcher();
 	dispatcher_->world_ = room_.world();
 	dispatcher_->player_ = player_;
@@ -165,6 +168,8 @@ void game_session::do_write()
 game_server::game_server(boost::asio::io_context& io_context, const tcp::endpoint& endpoint)
 	: acceptor_(io_context, endpoint)
 	, timer_(io_context, boost::posix_time::milliseconds(16)) // 60 «¡∑π¿”
+	, io_context_(io_context)
+	, db_thread_pool_(4)
 {
 	do_accept();
 
@@ -184,7 +189,7 @@ void game_server::do_accept()
 			{
 				std::cout << "connected" << std::endl;
 
-				std::make_shared<game_session>(std::move(socket), room_)->start();
+				std::make_shared<game_session>(std::move(socket), room_, db_thread_pool_)->start();
 			}
 
 			do_accept();

@@ -1,12 +1,15 @@
 #pragma once
 #include <string>
 
+class game_session;
 class Player
 {
 private:
 	std::string name_;
 	int level_;
 	int agent_id_;
+
+	game_session* session_;
 
 public:
 	Player()
@@ -25,6 +28,7 @@ public:
 	{
 		level_ = level;
 	}
+	void set_session(game_session* session);
 
 	std::string name() { return name_; }
 	int agent_id() { return agent_id_; }
@@ -33,5 +37,7 @@ public:
 	{
 		agent_id_ = agent_id;
 	}
+
+	void async_db_query();
 };
 

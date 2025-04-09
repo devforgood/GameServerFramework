@@ -4,7 +4,7 @@
 #include "Vector3Converter.h"
 #include "DetourNavMeshQuery.h"
 #include "LogHelper.h"
-
+#include "Player.h"
 
 void MessageDispatcher::dispatch(const syncnet::AddAgent* msg)
 {
@@ -44,4 +44,6 @@ void MessageDispatcher::dispatch(const syncnet::SetRaycast* msg)
 void MessageDispatcher::dispatch(const syncnet::Login* msg)
 {
 	LOG.info("Login id :{}", msg->userId()->c_str());
+
+	player_->async_db_query();
 }

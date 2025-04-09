@@ -5,7 +5,8 @@
 #include "World.h"
 #include "Server.h"
 #include "LogHelper.h"
-#include "BehaviorTreeCPP.h"
+//#include "BehaviorTreeCPP.h"
+#include "SqlClient.h"
 
 //----------------------------------------------------------------------
 int main(int argc, char* argv[])
@@ -30,7 +31,8 @@ int main(int argc, char* argv[])
 			servers.emplace_back(io_context, endpoint);
 		}
 
-		BehaviorTreeCPP::test();
+		//BehaviorTreeCPP::test();
+		SqlClient::test();
 
 
 		io_context.run();

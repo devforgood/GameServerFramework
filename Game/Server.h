@@ -71,7 +71,7 @@ class game_session
 	public std::enable_shared_from_this<game_session>
 {
 public:
-	game_session(tcp::socket socket, game_room& room);
+	game_session(tcp::socket socket, game_room& room, boost::asio::thread_pool & db_thread_pool);
 	~game_session();
 
 	void start();
@@ -92,6 +92,10 @@ private:
 	game_message_queue write_msgs_;
 	MessageDispatcher* dispatcher_;
 	Player* player_;
+	boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
+
+	friend Player;
+
 };
 
 //----------------------------------------------------------------------
@@ -113,4 +117,6 @@ private:
 	boost::asio::deadline_timer timer_;
 	TimeVal lastTime_;
 	float timeAcc;
+	boost::asio::io_context& io_context_;
+	boost::asio::thread_pool db_thread_pool_;
 };
