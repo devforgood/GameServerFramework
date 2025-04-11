@@ -32,6 +32,9 @@
     <Filter Include="SQL">
       <UniqueIdentifier>{cf05b3ec-c90a-4800-b9ab-fe562019ed30}</UniqueIdentifier>
     </Filter>
+    <Filter Include="core">
+      <UniqueIdentifier>{77aa5725-e40d-4c26-be00-8aa5e4c7a915}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -62,6 +65,9 @@
       <Filter>Player</Filter>
     </ClCompile>
     <ClCompile Include="SqlClient.cpp">
+      <Filter>SQL</Filter>
+    </ClCompile>
+    <ClCompile Include="SqlClientManager.cpp">
       <Filter>SQL</Filter>
     </ClCompile>
   </ItemGroup>
@@ -114,6 +120,9 @@
       <Filter>Player</Filter>
     </ClInclude>
     <ClInclude Include="SqlClient.h">
+      <Filter>SQL</Filter>
+    </ClInclude>
+    <ClInclude Include="SqlClientManager.h">
       <Filter>SQL</Filter>
     </ClInclude>
   </ItemGroup>

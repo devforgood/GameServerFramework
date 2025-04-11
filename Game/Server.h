@@ -66,12 +66,13 @@ private:
 //----------------------------------------------------------------------
 class Player;
 class MessageDispatcher;
+class game_server;
 class game_session
 	: public game_participant,
 	public std::enable_shared_from_this<game_session>
 {
 public:
-	game_session(tcp::socket socket, game_room& room, boost::asio::thread_pool & db_thread_pool);
+	game_session(tcp::socket socket, game_room& room, boost::asio::thread_pool & db_thread_pool, game_server * server);
 	~game_session();
 
 	void start();
@@ -93,6 +94,7 @@ private:
 	MessageDispatcher* dispatcher_;
 	Player* player_;
 	boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
+	game_server* server_;
 
 	friend Player;
 
@@ -102,11 +104,17 @@ private:
 
 class game_server
 {
-	const int TICK_RATES = 100; // ms
+	const static int TICK_RATES = 100; // ms
+	const static int DB_THREAD_POOL_SIZE = 4;
 
 public:
-	game_server(boost::asio::io_context& io_context,
+	game_server(std::shared_ptr<boost::asio::io_context> io_context,
 		const tcp::endpoint& endpoint);
+
+	std::shared_ptr<boost::asio::io_context> get_io_context()
+	{
+		return io_context_;
+	}
 
 private:
 	void do_accept();
@@ -117,6 +125,10 @@ private:
 	boost::asio::deadline_timer timer_;
 	TimeVal lastTime_;
 	float timeAcc;
-	boost::asio::io_context& io_context_;
+	std::shared_ptr<boost::asio::io_context> io_context_;
 	boost::asio::thread_pool db_thread_pool_;
+
+
+private:
+	void initialize_db_thread_pool();
 };

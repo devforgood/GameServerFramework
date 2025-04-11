@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
-		boost::asio::io_context io_context;
+		auto io_context = std::make_shared<boost::asio::io_context>();
 
 		std::list<game_server> servers;
 		for (int i = 1; i < argc; ++i)
@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
 		SqlClient::test();
 
 
-		io_context.run();
+		io_context->run();
 	}
 	catch (std::exception& e)
 	{

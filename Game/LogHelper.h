@@ -19,3 +19,4 @@ inline void InitLog()
 	spdlog::register_logger(net_logger);
 
 }
+

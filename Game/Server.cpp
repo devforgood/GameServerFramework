@@ -5,6 +5,8 @@
 #include "DetourCrowd.h"
 #include "LogHelper.h"
 #include "Player.h"
+#include "SqlClient.h"
+#include "SqlClientManager.h"
 
 game_room::game_room()
 {
@@ -36,11 +38,11 @@ void game_room::deliver(std::shared_ptr<send_message> msg)
 
 //----------------------------------------------------------------------
 
-game_session::game_session(tcp::socket socket, game_room& room, boost::asio::thread_pool& db_thread_pool)
+game_session::game_session(tcp::socket socket, game_room& room, boost::asio::thread_pool& db_thread_pool, game_server * server)
 	: socket_(std::move(socket)),
 	room_(room),
-	strand_(db_thread_pool.get_executor())
-
+	strand_(db_thread_pool.get_executor()),
+	server_(server)
 {
 	dispatcher_ = nullptr;
 	player_ = nullptr;
@@ -63,7 +65,8 @@ game_session::~game_session()
 void game_session::start()
 {
 	player_ = new Player();
-	player_->set_session(this);
+	player_->set_session(shared_from_this());
+	player_->set_server(server_);
 	dispatcher_ = new MessageDispatcher();
 	dispatcher_->world_ = room_.world();
 	dispatcher_->player_ = player_;
@@ -165,17 +168,52 @@ void game_session::do_write()
 
 //----------------------------------------------------------------------
 
-game_server::game_server(boost::asio::io_context& io_context, const tcp::endpoint& endpoint)
-	: acceptor_(io_context, endpoint)
-	, timer_(io_context, boost::posix_time::milliseconds(16)) // 60 프레임
+
+game_server::game_server(std::shared_ptr<boost::asio::io_context> io_context, const tcp::endpoint& endpoint)
+	: acceptor_(*io_context, endpoint)
+	, timer_(*io_context, boost::posix_time::milliseconds(16)) // 60 프레임
 	, io_context_(io_context)
-	, db_thread_pool_(4)
+	, db_thread_pool_(DB_THREAD_POOL_SIZE)
 {
+	initialize_db_thread_pool();
 	do_accept();
 
 	timeAcc = 0.0f;
 	lastTime_ = getPerfTime();
 	timer_.async_wait(boost::bind(&game_server::tick, this, boost::asio::placeholders::error));
+}
+
+
+std::atomic<int> initialized_threads(0); // 초기화된 스레드 수 추적
+
+void game_server::initialize_db_thread_pool()
+{
+	std::cout << "Initializing DB thread pool..." 
+		<< " on Thread " << std::this_thread::get_id() << std::endl;
+
+
+	// 각 스레드에서 초기화 작업 수행
+	for (int i = 0; i < DB_THREAD_POOL_SIZE; ++i) {
+		boost::asio::post(db_thread_pool_, [i]() {
+			static thread_local bool initialized = false;
+			if (!initialized) {
+				LOG.info("DB thread pool initialized on thread: {}, thread ID {}", i, std::hash<std::thread::id>{}(std::this_thread::get_id()));
+
+				// 스레드별 초기화 작업
+				SqlClientManager::getInstance().init();
+				initialized = true;
+
+				// 초기화 완료를 semaphore로 알림
+				initialized_threads.fetch_add(1, std::memory_order_relaxed);
+				while (initialized_threads.load(std::memory_order_relaxed) < DB_THREAD_POOL_SIZE)
+				{
+					LOG.info("Waiting for other threads to initialize... {}", i);
+					std::this_thread::yield(); // 다른 스레드가 초기화 완료를 기다리도록 함
+				}
+				LOG.info("threads initialized. Proceeding with DB operations. {}", i);
+			}
+			});
+	}
 }
 
 void game_server::do_accept()
@@ -189,7 +227,7 @@ void game_server::do_accept()
 			{
 				std::cout << "connected" << std::endl;
 
-				std::make_shared<game_session>(std::move(socket), room_, db_thread_pool_)->start();
+				std::make_shared<game_session>(std::move(socket), room_, db_thread_pool_, this)->start();
 			}
 
 			do_accept();
@@ -233,3 +271,4 @@ void game_server::tick(const boost::system::error_code& e)
 	// Posts the timer event
 	timer_.async_wait(boost::bind(&game_server::tick, this, boost::asio::placeholders::error));
 }
+

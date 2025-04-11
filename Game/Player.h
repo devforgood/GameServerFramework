@@ -1,7 +1,9 @@
 #pragma once
 #include <string>
+#include <memory>
 
 class game_session;
+class game_server;
 class Player
 {
 private:
@@ -9,7 +11,8 @@ private:
 	int level_;
 	int agent_id_;
 
-	game_session* session_;
+	std::weak_ptr<game_session> session_;
+	game_server* server_;
 
 public:
 	Player()
@@ -28,7 +31,8 @@ public:
 	{
 		level_ = level;
 	}
-	void set_session(game_session* session);
+	void set_session(std::shared_ptr<game_session> session);
+	void set_server(game_server* server);
 
 	std::string name() { return name_; }
 	int agent_id() { return agent_id_; }
