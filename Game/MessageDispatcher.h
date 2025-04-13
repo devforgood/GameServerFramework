@@ -7,7 +7,7 @@ class MessageDispatcher
 {
 private:
 	World* world_;
-	Player* player_;
+	std::shared_ptr<Player> player_;
 
 	friend class game_session;
 

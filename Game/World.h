@@ -9,7 +9,8 @@
 class game_session;
 class Monster;
 class GameObject;
-
+class Character;
+class Player;
 
 class World
 {
@@ -21,6 +22,8 @@ private:
 
 	std::vector<syncnet::Vec3> raycasts_;
 
+	std::unordered_map<long, std::shared_ptr<Player>> players_;
+
 public:
 
 	void Init();
@@ -28,9 +31,9 @@ public:
 
 	Map* map() { return map_; }
 
-	void SendWorldState(game_session* session);
+	void SendWorldState();
 
-	void OnAddAgent(syncnet::GameObjectType type, const syncnet::Vec3* pos);
+	void OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
 	void OnRemoveAgent(int agent_id);
 	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
 	void OnSetRaycast(const syncnet::Vec3* pos);

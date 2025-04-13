@@ -4,13 +4,16 @@
 
 class game_session;
 class game_server;
-class Player
+class send_message;
+class Character;
+class Player : public std::enable_shared_from_this<Player>
 {
 private:
+	long player_id_;
 	std::string name_;
 	int level_;
-	int agent_id_;
 
+	std::shared_ptr<Character> character_;
 	std::weak_ptr<game_session> session_;
 	game_server* server_;
 
@@ -34,14 +37,12 @@ public:
 	void set_session(std::shared_ptr<game_session> session);
 	void set_server(game_server* server);
 
+	long player_id() { return player_id_; }
 	std::string name() { return name_; }
-	int agent_id() { return agent_id_; }
 
-	void possess(int agent_id)
-	{
-		agent_id_ = agent_id;
-	}
+	void possess(std::shared_ptr<Character> character);
 
 	void async_db_query();
+	void send(std::shared_ptr<send_message> msg);
 };
 

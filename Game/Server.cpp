@@ -50,11 +50,6 @@ game_session::game_session(tcp::socket socket, game_room& room, boost::asio::thr
 
 game_session::~game_session()
 {
-	if (player_ != nullptr)
-	{
-		delete player_;
-		player_ = nullptr;
-	}
 	if (dispatcher_ != nullptr)
 	{
 		delete dispatcher_;
@@ -64,7 +59,7 @@ game_session::~game_session()
 
 void game_session::start()
 {
-	player_ = new Player();
+	player_ = std::make_shared<Player>();
 	player_->set_session(shared_from_this());
 	player_->set_server(server_);
 	dispatcher_ = new MessageDispatcher();
@@ -131,9 +126,6 @@ void game_session::do_read_body()
 				case syncnet::GameMessages::GameMessages_SetRaycast:		dispatcher_->dispatch(msg->msg_as_SetRaycast()); break;
 				case syncnet::GameMessages::GameMessages_Login:				dispatcher_->dispatch(msg->msg_as_Login()); break;
 				}
-
-				room_.world()->SendWorldState(this);
-
 
 				do_read_header();
 			}

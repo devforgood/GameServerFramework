@@ -9,6 +9,7 @@
 #include "LogHelper.h"
 #include "DetourCommon.h"
 #include "MathHelper.h"
+#include "Player.h"
 
 //const float g_fDistance = std::powf(10.0f, 2);
 const float g_fDistance = 10.0f;
@@ -29,9 +30,10 @@ void World::update(float deltaTime)
 		(*itr)->Update();
 
 	map_->update(deltaTime);
+	SendWorldState();
 }
 
-void World::SendWorldState(game_session* session)
+void World::SendWorldState()
 {
 	auto builder_ptr = std::make_shared<send_message>();
 	flatbuffers::Offset<syncnet::AgentInfo> agent_info;
@@ -67,10 +69,13 @@ void World::SendWorldState(game_session* session)
 	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_GetAgents, getAgents.Union());
 	builder_ptr->Finish(send_msg);
 
-	session->send(builder_ptr);
+	for (auto itr = players_.begin(); itr != players_.end(); ++itr)
+	{
+		itr->second->send(builder_ptr);
+	}
 }
 
-void World::OnAddAgent(syncnet::GameObjectType type, const syncnet::Vec3* pos)
+void World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
 	float speed = 3.5f;
 	if (type == syncnet::GameObjectType::GameObjectType_Character)
@@ -94,8 +99,20 @@ void World::OnAddAgent(syncnet::GameObjectType type, const syncnet::Vec3* pos)
 	switch (type)
 	{
 	case syncnet::GameObjectType::GameObjectType_Character:
-		game_object = std::make_shared<Character>(agent_id, this);
-		break;
+		{
+			auto itr = players_.find(player->player_id());
+			if (itr != players_.end())
+			{
+				LOG.error("OnAddAgent error already exist in players_");
+				return;
+			}
+
+			players_.insert(std::make_pair(player->player_id(), player));
+			std::shared_ptr<Character> character = std::make_shared<Character>(agent_id, this);
+			game_object = character;
+			player->possess(character);
+			break;
+		}
 	case syncnet::GameObjectType::GameObjectType_Monster:
 		game_object = std::make_shared<Monster>(agent_id, this);
 		break;
@@ -113,6 +130,18 @@ void World::OnRemoveAgent(int agent_id)
 		LOG.error("OnRemoveAgent error not exist in monsters_map_");
 		return;
 	}
+
+	if (itr->second->get()->GetType() == syncnet::GameObjectType_Character)
+	{
+		auto character = std::dynamic_pointer_cast<Character>(*itr->second);
+
+		auto itr_player = players_.find(character->player_id());
+		if (itr_player != players_.end())
+		{
+			players_.erase(itr_player);
+		}
+	}
+
 	game_object_list_.erase(itr->second);
 	game_object_map_.erase(itr);
 

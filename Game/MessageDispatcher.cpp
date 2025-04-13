@@ -10,7 +10,7 @@ void MessageDispatcher::dispatch(const syncnet::AddAgent* msg)
 {
 	LOG.info("add agent pos:({},{},{})", msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 
-	world_->OnAddAgent(msg->gameObjectType(), msg->pos());
+	world_->OnAddAgent(player_, msg->gameObjectType(), msg->pos());
 }
 
 void MessageDispatcher::dispatch(const syncnet::RemoveAgent* msg)

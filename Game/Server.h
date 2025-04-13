@@ -92,7 +92,7 @@ private:
 	game_message read_msg_;
 	game_message_queue write_msgs_;
 	MessageDispatcher* dispatcher_;
-	Player* player_;
+	std::shared_ptr<Player> player_;
 	boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
 	game_server* server_;
 

@@ -16,7 +16,7 @@ public:
 	{
 
 	}
-	virtual ~GameObject() {}
+	virtual ~GameObject() = default; // 반드시 virtual 소멸자를 추가
 	virtual void Update() {};
 
 	virtual syncnet::GameObjectType GetType() { return syncnet::GameObjectType::GameObjectType_Monster; }
