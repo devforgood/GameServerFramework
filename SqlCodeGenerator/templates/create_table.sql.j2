@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS {{ table.name }} (
+    {% for col in table.columns %}
+    {{ col.name }} {{ col.type }}{% if col.auto_increment %} AUTO_INCREMENT{% endif %}{% if not col.nullable %} NOT NULL{% endif %}{% if col.default %} DEFAULT {{ col.default }}{% endif %}{% if not loop.last %},{% endif %}
+    {% endfor %},
+    PRIMARY KEY ({{ table.primary_key.name }})
+);

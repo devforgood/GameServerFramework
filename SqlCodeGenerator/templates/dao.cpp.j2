@@ -1,0 +1,44 @@
+{% if include_header %}
+#include "{{ table.file_name }}.h"
+{% else %}
+
+
+// ----------------------------------------
+{% endif %}
+
+{{ class_name }}::{{ class_name }}(sql::Connection* conn)
+    : conn_(conn) {}
+
+void {{ class_name }}::Insert({% for col in table.columns if not col.auto_increment %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %}) {
+    std::unique_ptr<sql::PreparedStatement> stmt(
+        conn_->prepareStatement("INSERT INTO {{ table.name }} ({% for col in table.columns if not col.auto_increment %}{{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %}) VALUES ({% for col in table.columns if not col.auto_increment %}?{% if not loop.last %}, {% endif %}{% endfor %})")
+    );
+
+    {% for col in table.columns if not col.auto_increment %}
+    stmt->set{{ col.cpp_set_func }}({{ loop.index }}, {{ col.name }});
+    {% endfor %}
+
+    stmt->execute();
+}
+
+void {{ class_name }}::Update({{ table.primary_key.cpp_type }} {{ table.primary_key.name }}, {% for col in table.columns if col.name != table.primary_key.name and not col.auto_increment %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %}) {
+    std::unique_ptr<sql::PreparedStatement> stmt(
+        conn_->prepareStatement("UPDATE {{ table.name }} SET {% for col in table.columns if col.name != table.primary_key.name and not col.auto_increment %}{{ col.name }} = ?{% if not loop.last %}, {% endif %}{% endfor %} WHERE {{ table.primary_key.name }} = ?")
+    );
+
+    {% for col in table.columns if col.name != table.primary_key.name and not col.auto_increment %}
+    stmt->set{{ col.cpp_set_func }}({{ loop.index }}, {{ col.name }});
+    {% endfor %}
+    stmt->set{{ table.primary_key.cpp_set_func }}({{ table.columns | length }}, {{ table.primary_key.name }});
+
+    stmt->execute();
+}
+
+void {{ class_name }}::Delete({{ table.primary_key.cpp_type }} {{ table.primary_key.name }}) {
+    std::unique_ptr<sql::PreparedStatement> stmt(
+        conn_->prepareStatement("DELETE FROM {{ table.name }} WHERE {{ table.primary_key.name }} = ?")
+    );
+
+    stmt->set{{ table.primary_key.cpp_set_func }}(1, {{ table.primary_key.name }});
+    stmt->execute();
+}

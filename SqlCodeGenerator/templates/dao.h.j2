@@ -1,0 +1,21 @@
+{% if include_header %}
+#pragma once
+#include <mariadb/conncpp.hpp>
+#include <string>
+{% else %}
+
+
+// ----------------------------------------
+{% endif %}
+
+class {{ class_name }} {
+public:
+    {{ class_name }}(sql::Connection* conn);
+
+    void Insert({% for col in table.columns if not col.auto_increment %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %});
+    void Update({{ table.primary_key.cpp_type }} {{ table.primary_key.name }}, {% for col in table.columns if col.name != table.primary_key.name and not col.auto_increment %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %});
+    void Delete({{ table.primary_key.cpp_type }} {{ table.primary_key.name }});
+
+private:
+    sql::Connection* conn_;
+};
