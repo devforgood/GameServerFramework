@@ -1,6 +1,16 @@
 CREATE TABLE IF NOT EXISTS {{ table.name }} (
     {% for col in table.columns %}
-    {{ col.name }} {{ col.type }}{% if col.auto_increment %} AUTO_INCREMENT{% endif %}{% if not col.nullable %} NOT NULL{% endif %}{% if col.default %} DEFAULT {{ col.default }}{% endif %}{% if not loop.last %},{% endif %}
-    {% endfor %},
+    {{ col.name }} {{ col.type }}{% if col.auto_increment %} AUTO_INCREMENT{% endif %}{% if not col.nullable %} NOT NULL{% endif %}{% if col.default %} DEFAULT {{ col.default }}{% endif %}{% if not loop.last or table.unique_keys or table.indexes or table.primary_key %},{% endif %}
+    {% endfor %}
+    {% if table.unique_keys %}
+    {% for unique_key in table.unique_keys %}
+    UNIQUE KEY ({{ unique_key | join(', ') }}){% if not loop.last or table.indexes or table.primary_key %},{% endif %}
+    {% endfor %}
+    {% endif %}
+    {% if table.indexes %}
+    {% for index in table.indexes %}
+    INDEX ({{ index | join(', ') }}){% if not loop.last or table.primary_key %},{% endif %}
+    {% endfor %}
+    {% endif %}
     PRIMARY KEY ({{ table.primary_key.name }})
 );

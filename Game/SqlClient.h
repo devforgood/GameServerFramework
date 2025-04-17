@@ -29,5 +29,9 @@ public:
 	~SqlClient();
 
 	void select(const std::string& query, const std::vector<std::string>& params, IResultParser& parser);
+
+	sql::Connection * getConnection() {
+		return conn_.get();
+	}
 };
 

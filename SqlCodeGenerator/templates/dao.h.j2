@@ -2,7 +2,10 @@
 #pragma once
 #include <mariadb/conncpp.hpp>
 #include <string>
+#include <vector>
 {% else %}
+
+
 
 
 // ----------------------------------------
@@ -12,10 +15,23 @@ class {{ class_name }} {
 public:
     {{ class_name }}(sql::Connection* conn);
 
-    void Insert({% for col in table.columns if not col.auto_increment %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %});
-    void Update({{ table.primary_key.cpp_type }} {{ table.primary_key.name }}, {% for col in table.columns if col.name != table.primary_key.name and not col.auto_increment %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %});
-    void Delete({{ table.primary_key.cpp_type }} {{ table.primary_key.name }});
+    void Insert();
+    void Update();
+    void Delete();
+
+    // Select by primary key
+    bool Select({{ table.primary_key.cpp_type }} {{ table.primary_key.name }});
+
+    // Select by index columns (if any)
+    {% if table.indexes %}
+    std::vector<{{ class_name }}> SelectByIndex({% for index in table.indexes[0] %}{{ table.columns | selectattr("name", "equalto", index) | map(attribute="cpp_type") | first }} {{ index }}{% if not loop.last %}, {% endif %}{% endfor %});
+    {% endif %}
 
 private:
     sql::Connection* conn_;
+
+public:
+    {% for col in table.columns %}
+    {{ col.cpp_type }} {{ col.name }};
+    {% endfor %}
 };

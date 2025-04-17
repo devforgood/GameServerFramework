@@ -5,6 +5,7 @@
 #include "Character.h"
 #include <string>
 #include <mariadb/conncpp.hpp>
+#include "./SQL/generated/dao.h"
 
 
 
@@ -65,6 +66,13 @@ void Player::async_db_query() {
 
 		std::cout << "[User " << user_id << "] User ID: " << user->user_id
 			<< ", User Name: " << user->user_name << std::endl;
+
+		PlayerDAO player_dao(SqlClientManager::getInstance().sqlClientPtr->getConnection());
+		player_dao.Select(user->user_id);
+		std::cout << "[User " << user_id << "] Player ID: " << player_dao.id
+			<< ", Player Name: " << player_dao.name
+			<< ", Player Level: " << player_dao.level << std::endl;
+
 
         std::cout << "[User " << user_id << "] Finished DB Query #" << query_id << std::endl;
 

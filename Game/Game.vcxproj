@@ -161,6 +161,7 @@
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="SqlClient.cpp" />
     <ClCompile Include="SqlClientManager.cpp" />
+    <ClCompile Include="SQL\generated\dao.cpp" />
     <ClCompile Include="WalkerTest.cpp" />
     <ClCompile Include="World.cpp" />
   </ItemGroup>
@@ -171,6 +172,7 @@
     <CopyFileToFolders Include="solo_navmesh.bin">
       <FileType>Document</FileType>
     </CopyFileToFolders>
+    <None Include="SQL\generated\create_tables.sql" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BehaviorTree\BehaviorTree.vcxproj">
@@ -197,6 +199,7 @@
     <ClInclude Include="Server.h" />
     <ClInclude Include="SqlClient.h" />
     <ClInclude Include="SqlClientManager.h" />
+    <ClInclude Include="SQL\generated\dao.h" />
     <ClInclude Include="syncnet_generated.h" />
     <ClInclude Include="Vector3Converter.h" />
     <ClInclude Include="Walker.h" />

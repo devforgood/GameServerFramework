@@ -70,6 +70,9 @@
     <ClCompile Include="SqlClientManager.cpp">
       <Filter>SQL</Filter>
     </ClCompile>
+    <ClCompile Include="SQL\generated\dao.cpp">
+      <Filter>SQL</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -78,6 +81,9 @@
     </None>
     <None Include="mob.lua">
       <Filter>Scripts</Filter>
+    </None>
+    <None Include="SQL\generated\create_tables.sql">
+      <Filter>SQL</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -123,6 +129,9 @@
       <Filter>SQL</Filter>
     </ClInclude>
     <ClInclude Include="SqlClientManager.h">
+      <Filter>SQL</Filter>
+    </ClInclude>
+    <ClInclude Include="SQL\generated\dao.h">
       <Filter>SQL</Filter>
     </ClInclude>
   </ItemGroup>

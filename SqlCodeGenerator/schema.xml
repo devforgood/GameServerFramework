@@ -1,14 +1,16 @@
 <database>
   <table name="player" class_name="PlayerDAO" file_name="dao">
-    <column name="id" type="INT" auto_increment="true" nullable="false"/>
+    <column name="id" type="BIGINT" auto_increment="true" nullable="false"/>
     <column name="name" type="VARCHAR(50)" nullable="false"/>
     <column name="level" type="INT" default="1"/>
     <primary_key>id</primary_key>
+    <unique_key>name</unique_key>
   </table>
   <table name="item" class_name="ItemDAO" file_name="dao">
-    <column name="id" type="INT" auto_increment="true" nullable="false"/>
-    <column name="name" type="VARCHAR(50)" nullable="false"/>
+    <column name="id" type="BIGINT" auto_increment="true" nullable="false"/>
+    <column name="player_id" type="BIGINT" nullable="false" />
     <column name="level" type="INT" default="1"/>
     <primary_key>id</primary_key>
+    <index>player_id</index>
   </table>
 </database>
