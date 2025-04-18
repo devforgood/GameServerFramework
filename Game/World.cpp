@@ -10,6 +10,7 @@
 #include "DetourCommon.h"
 #include "MathHelper.h"
 #include "Player.h"
+#include "GridManager.h"
 
 //const float g_fDistance = std::powf(10.0f, 2);
 const float g_fDistance = 10.0f;
@@ -21,6 +22,7 @@ void World::Init()
 	map_->Init();
 	Monster::Initialize("mob.lua");
 	Monster::registerLuaFunctionAll();
+	grid_manager_ = new GridManager(1000, 1000, 2);
 
 }
 
@@ -46,6 +48,7 @@ void World::SendWorldState()
 
 		syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
 		//std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
+		grid_manager_->move((Actor*)itr->get(), agent->npos[0], agent->npos[2]);
 
 		agent_info = syncnet::CreateAgentInfo(*builder_ptr, itr->get()->agent_id(), &pos, itr->get()->GetType(), itr->get()->state());
 		agent_info_vector.push_back(agent_info);
@@ -94,7 +97,7 @@ void World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType t
 		return;
 	}
 	
-	std::shared_ptr<GameObject> game_object;
+	std::shared_ptr<Actor> actor;
 
 	switch (type)
 	{
@@ -109,17 +112,21 @@ void World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType t
 
 			players_.insert(std::make_pair(player->player_id(), player));
 			std::shared_ptr<Character> character = std::make_shared<Character>(agent_id, this);
-			game_object = character;
+			actor = character;
 			player->possess(character);
 			break;
 		}
 	case syncnet::GameObjectType::GameObjectType_Monster:
-		game_object = std::make_shared<Monster>(agent_id, this);
+		actor = std::make_shared<Monster>(agent_id, this);
 		break;
 	}
 
-	auto itr = game_object_list_.insert(game_object_list_.end(), game_object);
+	actor->x = pos->x();
+	actor->y = pos->z();
+
+	auto itr = game_object_list_.insert(game_object_list_.end(), actor);
 	game_object_map_.insert(std::make_pair(agent_id, itr));
+	grid_manager_->add(actor.get());
 }
 
 void World::OnRemoveAgent(int agent_id)
@@ -142,6 +149,7 @@ void World::OnRemoveAgent(int agent_id)
 		}
 	}
 
+	grid_manager_->remove((Actor*)itr->second->get());
 	game_object_list_.erase(itr->second);
 	game_object_map_.erase(itr);
 

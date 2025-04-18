@@ -148,10 +148,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Actor.cpp" />
     <ClCompile Include="BehaviorTreeCPP.cpp" />
     <ClCompile Include="Character.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
+    <ClCompile Include="GridManager.cpp" />
     <ClCompile Include="LuaObject.cpp" />
     <ClCompile Include="Map.cpp" />
     <ClCompile Include="MessageDispatcher.cpp" />
@@ -159,6 +161,7 @@
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Server.cpp" />
+    <ClCompile Include="SkillManager.cpp" />
     <ClCompile Include="SqlClient.cpp" />
     <ClCompile Include="SqlClientManager.cpp" />
     <ClCompile Include="SQL\generated\dao.cpp" />
@@ -183,9 +186,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Actor.h" />
     <ClInclude Include="BehaviorTreeCPP.h" />
     <ClInclude Include="Character.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="GridManager.h" />
     <ClInclude Include="LogHelper.h" />
     <ClInclude Include="LuaObject.h" />
     <ClInclude Include="Map.h" />
@@ -197,6 +202,7 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
+    <ClInclude Include="SkillManager.h" />
     <ClInclude Include="SqlClient.h" />
     <ClInclude Include="SqlClientManager.h" />
     <ClInclude Include="SQL\generated\dao.h" />

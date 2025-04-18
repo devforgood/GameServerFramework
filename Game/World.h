@@ -11,6 +11,7 @@ class Monster;
 class GameObject;
 class Character;
 class Player;
+class GridManager;
 
 class World
 {
@@ -23,6 +24,8 @@ private:
 	std::vector<syncnet::Vec3> raycasts_;
 
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
+
+	GridManager* grid_manager_;
 
 public:
 

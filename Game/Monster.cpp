@@ -288,7 +288,7 @@ public:
 
 
 Monster::Monster(int agent_id, World* world)
-	: GameObject(agent_id, world), bt_(nullptr)
+	: Actor(agent_id, world), bt_(nullptr)
 {
 	BT::BehaviorTreeBuilder* Builder = new BT::BehaviorTreeBuilder();
 	bt_ = Builder

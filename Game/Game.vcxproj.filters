@@ -73,6 +73,11 @@
     <ClCompile Include="SQL\generated\dao.cpp">
       <Filter>SQL</Filter>
     </ClCompile>
+    <ClCompile Include="GridManager.cpp" />
+    <ClCompile Include="Actor.cpp">
+      <Filter>GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="SkillManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -134,6 +139,11 @@
     <ClInclude Include="SQL\generated\dao.h">
       <Filter>SQL</Filter>
     </ClInclude>
+    <ClInclude Include="GridManager.h" />
+    <ClInclude Include="Actor.h">
+      <Filter>GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="SkillManager.h" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

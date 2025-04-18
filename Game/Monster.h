@@ -1,5 +1,5 @@
 #pragma once
-#include "GameObject.h"
+#include "Actor.h"
 #include "DetourNavMesh.h"
 #include "LuaObject.h"
 
@@ -13,7 +13,7 @@ namespace BT
 
 class Action_Patrol;
 class ActionPatrol;
-class Monster : public GameObject, public LuaObject<Monster>
+class Monster : public Actor, public LuaObject<Monster>
 {
 private:
 	BT::BehaviorTree * bt_;

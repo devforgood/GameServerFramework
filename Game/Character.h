@@ -1,7 +1,7 @@
 #pragma once
-#include "GameObject.h"
+#include "Actor.h"
 
-class Character : public GameObject
+class Character : public Actor
 {
 private:
 	long player_id_;
