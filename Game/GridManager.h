@@ -6,7 +6,16 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <functional>
 
+namespace std {
+    template <>
+    struct hash<std::pair<int, int>> {
+        size_t operator()(const std::pair<int, int>& p) const {
+            return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
+        }
+    };
+}
 
 class Actor;
 class GridManager {
@@ -28,7 +37,7 @@ private:
     };
 
     int width, height, cellSize;
-    std::vector<std::vector<Cell>> grid;
+    std::unordered_map<std::pair<int, int>, Cell, std::hash<std::pair<int, int>>> grid;
 
     std::pair<int, int> getCellCoord(float x, float y);
     void enterCell(Actor* actor, int x, int y);

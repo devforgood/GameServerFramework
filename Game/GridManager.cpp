@@ -5,7 +5,6 @@
 
 GridManager::GridManager(int width, int height, int cellSize)
     : width(width), height(height), cellSize(cellSize), NEGATIVE_VALUE_OFFSET(width*cellSize/2){
-    grid.resize(width, std::vector<Cell>(height));
 }
 
 std::pair<int, int> GridManager::getCellCoord(float x, float y) {
@@ -14,22 +13,29 @@ std::pair<int, int> GridManager::getCellCoord(float x, float y) {
 
 void GridManager::enterCell(Actor* actor, int x, int y) {
     if (x < 0 || x >= width || y < 0 || y >= height) return;
-    if (actor->GetType() == syncnet::GameObjectType::GameObjectType_Character)
-        grid[x][y].characters.insert(actor);
-    else
-        grid[x][y].monsters.insert(actor);
 
-	LOG.info("Actor {} entered cell ({}, {})", actor->agent_id(), x, y);
+    auto& cell = grid[{x, y}]; // unordered_map에서 해당 셀 가져오기
+    if (actor->GetType() == syncnet::GameObjectType::GameObjectType_Character)
+        cell.characters.insert(actor);
+    else
+        cell.monsters.insert(actor);
+
+    LOG.info("Actor {} entered cell ({}, {})", actor->agent_id(), x, y);
 }
 
 void GridManager::leaveCell(Actor* actor, int x, int y) {
     if (x < 0 || x >= width || y < 0 || y >= height) return;
-    if (actor->GetType() == syncnet::GameObjectType::GameObjectType_Character)
-        grid[x][y].characters.erase(actor);
-    else
-        grid[x][y].monsters.erase(actor);
 
-	LOG.info("Actor {} left cell ({}, {})", actor->agent_id(), x, y);
+    auto it = grid.find({ x, y });
+    if (it != grid.end()) {
+        auto& cell = it->second;
+        if (actor->GetType() == syncnet::GameObjectType::GameObjectType_Character)
+            cell.characters.erase(actor);
+        else
+            cell.monsters.erase(actor);
+    }
+
+    LOG.info("Actor {} left cell ({}, {})", actor->agent_id(), x, y);
 }
 
 void GridManager::add(Actor* actor) {
@@ -65,10 +71,15 @@ std::vector<Actor*> GridManager::getEntitiesInViewRange(Actor* viewer, float ran
             int x = cx + dx;
             int y = cy + dy;
             if (x < 0 || y < 0 || x >= width || y >= height) continue;
-            for (auto* e : grid[x][y].characters)
-                if (e != viewer) result.push_back(e);
-            for (auto* e : grid[x][y].monsters)
-                result.push_back(e);
+
+            auto it = grid.find({ x, y });
+            if (it != grid.end()) {
+                auto& cell = it->second;
+                for (auto* e : cell.characters)
+                    if (e != viewer) result.push_back(e);
+                for (auto* e : cell.monsters)
+                    result.push_back(e);
+            }
         }
     }
     return result;
@@ -94,8 +105,13 @@ std::vector<Actor*> GridManager::getEntitiesInAoEMask(float x, float y, float ra
             int nx = cx + dx;
             int ny = cy + dy;
             if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+            auto it = grid.find({ nx, ny });
+            if (it == grid.end()) {
+				continue;
+            }
+            auto& cell = it->second;
 
-            for (auto* e : grid[nx][ny].characters) {
+            for (auto* e : cell.characters) {
                 float dx = e->x - x;
                 float dy = e->y - y;
                 float distSq = dx * dx + dy * dy;
@@ -104,7 +120,7 @@ std::vector<Actor*> GridManager::getEntitiesInAoEMask(float x, float y, float ra
                 }
             }
 
-            for (auto* e : grid[nx][ny].monsters) {
+            for (auto* e : cell.monsters) {
                 float dx = e->x - x;
                 float dy = e->y - y;
                 float distSq = dx * dx + dy * dy;
