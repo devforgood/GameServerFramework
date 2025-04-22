@@ -18,5 +18,6 @@ public:
 
 	int gridX = -1;
 	int gridY = -1;
+	float speed = 0.0f;
 };
 

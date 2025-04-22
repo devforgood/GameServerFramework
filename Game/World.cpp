@@ -125,6 +125,7 @@ void World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType t
 
 	actor->x = pos->x();
 	actor->y = pos->z();
+	actor->speed = speed;
 
 	auto itr = game_object_list_.insert(game_object_list_.end(), actor);
 	game_object_map_.insert(std::make_pair(agent_id, itr));

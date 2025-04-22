@@ -237,6 +237,7 @@ public:
 	BT::NodeStatus tick() override
 	{
 		monster_->SetState(syncnet::AIState_Detect);
+		monster_->Resume();
 		monster_->world()->map()->setMoveTarget(monster_->world()->map()->getPos(monster_->target_agent_id_), false, monster_->agent_id());
 		return BT::NodeStatus::SUCCESS;
 	}
@@ -281,6 +282,7 @@ public:
 	BT::NodeStatus tick() override
 	{
 		monster_->SetState(syncnet::AIState_Attack);
+		monster_->Attack();
 		//std::cout << "Attack enemy!" << std::endl;
 		return BT::NodeStatus::SUCCESS;
 	}
@@ -383,6 +385,19 @@ int Monster::AttackRange()
 		return target_agent_id_;
 	}
 	return -1;
+}
+
+int Monster::Attack()
+{
+	dtCrowdAgent* this_agent = world_->map()->crowd()->getEditableAgent(agent_id());
+	this_agent->desiredSpeed = 0.0f;
+	return 0;
+}
+int Monster::Resume()
+{
+	dtCrowdAgent* this_agent = world_->map()->crowd()->getEditableAgent(agent_id());
+	this_agent->desiredSpeed = this->speed;
+	return 0;
 }
 
 void Monster::registerLuaFunctionAll()

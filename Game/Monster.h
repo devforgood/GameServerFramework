@@ -34,6 +34,8 @@ public:
 
 	void SetState(syncnet::AIState state) { state_ = state; }
 	int AttackRange();
+	int Attack();
+	int Resume();
 
 	static void registerLuaFunctionAll();
 
