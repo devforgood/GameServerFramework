@@ -17,6 +17,8 @@ namespace std {
     };
 }
 
+
+
 class Actor;
 class GridManager {
 public:
@@ -30,14 +32,25 @@ public:
     void broadcastToNearby(float x, float y, float range, const std::string& msg);
     std::vector<Actor*> getEntitiesInAoEMask(float x, float y, float range, float dirDeg);
 
-private:
     struct Cell {
         std::unordered_set<Actor*> characters;
         std::unordered_set<Actor*> monsters;
     };
 
-    int width, height, cellSize;
-    std::unordered_map<std::pair<int, int>, Cell, std::hash<std::pair<int, int>>> grid;
+    class IGrid
+    {
+    public:
+        virtual ~IGrid() = default;
+        virtual Cell& get(int x, int y) = 0;
+		virtual int getWidth() const = 0;
+		virtual int getHeight() const = 0;
+		virtual int getCellSize() const = 0;
+    };
+
+private:
+
+
+    IGrid* grid_;
 
     std::pair<int, int> getCellCoord(float x, float y);
     void enterCell(Actor* actor, int x, int y);
