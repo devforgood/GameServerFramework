@@ -29,7 +29,7 @@ protected:
 	virtual ~Condition_DetectEnemy() {}
 	virtual BT::EStatus Update() override
 	{
-		monster_->target_agent_id_ = monster_->world()->DetectEnemy(monster_->agent_id());
+		monster_->target_agent_id_ = monster_->world()->DetectEnemy(monster_);
 		if (monster_->target_agent_id_ >=0)
 		{
 			monster_->SetState(syncnet::AIState_Detect);
@@ -189,7 +189,7 @@ public:
 
 	BT::NodeStatus tick() override
 	{
-		monster_->target_agent_id_ = monster_->world()->DetectEnemy(monster_->agent_id());
+		monster_->target_agent_id_ = monster_->world()->DetectEnemy(monster_);
 		if (monster_->target_agent_id_ >= 0)
 		{
 			monster_->SetState(syncnet::AIState_Detect);

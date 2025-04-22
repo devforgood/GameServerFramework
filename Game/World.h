@@ -12,6 +12,7 @@ class GameObject;
 class Character;
 class Player;
 class GridManager;
+class Actor;
 
 class World
 {
@@ -41,7 +42,7 @@ public:
 	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
 	void OnSetRaycast(const syncnet::Vec3* pos);
 
-	int DetectEnemy(int agent_id);
+	int DetectEnemy(Actor* actor);
 
 };
 

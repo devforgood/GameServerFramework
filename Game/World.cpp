@@ -175,25 +175,24 @@ void World::OnSetRaycast(const syncnet::Vec3* pos)
 	}
 }
 
-int World::DetectEnemy(int agent_id)
+int World::DetectEnemy(Actor * actor)
 {
-	const dtCrowdAgent* this_agent = this->map()->crowd()->getAgent(agent_id);
+	const dtCrowdAgent* this_agent = this->map()->crowd()->getAgent(actor->agent_id());
 	float hitPoint[3];
 
+	auto targets = grid_manager_->getEntitiesInViewRange(actor, g_fDistance);
 
-	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
+	for (auto itr = targets.begin(); itr != targets.end(); ++itr)
 	{
-		if (itr->get()->GetType() != syncnet::GameObjectType_Character)
+		if ((*itr)->GetType() != syncnet::GameObjectType_Character)
 			continue;
 
-		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(itr->get()->agent_id());
+		const dtCrowdAgent* agent = this->map()->crowd()->getAgent((*itr)->agent_id());
 
-		if (ManhattanDistance(this_agent->npos, agent->npos) > g_fDistance)
-			continue;
 
-		if (this->map()->raycast(agent_id, agent->npos, hitPoint) == false)
+		if (this->map()->raycast(actor->agent_id(), agent->npos, hitPoint) == false)
 		{
-			return itr->get()->agent_id();
+			return (*itr)->agent_id();
 		}
 	}
 	return -1;
