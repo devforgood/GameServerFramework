@@ -22,17 +22,19 @@ void World::Init()
 	map_->Init();
 	Monster::Initialize("mob.lua");
 	Monster::registerLuaFunctionAll();
-	grid_manager_ = new GridManager(1000, 1000, 2);
+	grid_manager_ = new GridManager(100, 100, 2);
 
 }
 
 void World::update(float deltaTime)
 {
+	//LOG.info("World update begin");
 	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin();itr!= game_object_list_.end();++itr)
 		(*itr)->Update();
 
 	map_->update(deltaTime);
 	SendWorldState();
+	//LOG.info("World update end");
 }
 
 void World::SendWorldState()

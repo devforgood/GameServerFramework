@@ -163,7 +163,7 @@ void game_session::do_write()
 
 game_server::game_server(std::shared_ptr<boost::asio::io_context> io_context, const tcp::endpoint& endpoint)
 	: acceptor_(*io_context, endpoint)
-	, timer_(*io_context, boost::posix_time::milliseconds(16)) // 60 프레임
+	, timer_(*io_context, boost::posix_time::milliseconds(100)) // 10 프레임
 	, io_context_(io_context)
 	, db_thread_pool_(DB_THREAD_POOL_SIZE)
 {
@@ -234,7 +234,7 @@ void game_server::tick(const boost::system::error_code& e)
 	//std::cout << "tick " << dt << std::endl;
 
 	// Update sample simulation.
-	const float SIM_RATE = 20;
+	const float SIM_RATE = 10;
 	const float DELTA_TIME = 1.0f / SIM_RATE;
 	timeAcc = rcClamp(timeAcc + dt, -1.0f, 1.0f);
 	int simIter = 0;
@@ -244,13 +244,6 @@ void game_server::tick(const boost::system::error_code& e)
 		if (simIter < 5)
 		{
 			room_.world()->update(DELTA_TIME);
-
-			auto agent = room_.world()->map()->crowd()->getAgent(0);
-			if (agent != nullptr)
-			{
-				//std::cout << "update agent " << agent->active << " pos (" << agent->npos[0] * -1 << "," << agent->npos[1] << "," << agent->npos[2] << ")" << std::endl;
-
-			}
 		}
 		simIter++;
 	}

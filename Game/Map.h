@@ -88,7 +88,7 @@ protected:
 	float m_detailSampleMaxError;
 	int m_partitionType;
 
-	static const int MAX_AGENTS = 128;
+	static const int MAX_AGENTS = 1024;
 
 	CrowdToolParams m_toolParams;
 
@@ -131,9 +131,9 @@ public:
 		m_toolParams.m_anticipateTurns = true;
 		m_toolParams.m_optimizeVis = true;
 		m_toolParams.m_optimizeTopo = true;
-		m_toolParams.m_obstacleAvoidance = true;
+		m_toolParams.m_obstacleAvoidance = true; // 장애물 회피 활성화
 		m_toolParams.m_obstacleAvoidanceType = 3.0f;
-		m_toolParams.m_separation = false;
+		m_toolParams.m_separation = false; // 분리 로직 활성화
 		m_toolParams.m_separationWeight = 2.0f;
 
 		m_targetRef = 0;
