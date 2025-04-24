@@ -37,7 +37,7 @@ public class EditorObjExporter : ScriptableObject
     private static string targetFolder = "ExportedObj";
 
 
-    private static string MeshToString(MeshFilter mf, Dictionary<string, ObjMaterial> materialList)
+    private static string MeshToString2(MeshFilter mf, Dictionary<string, ObjMaterial> materialList)
     {
         Mesh m = mf.sharedMesh;
         Material[] mats = mf.GetComponent<Renderer>().sharedMaterials;
@@ -110,6 +110,70 @@ public class EditorObjExporter : ScriptableObject
         return sb.ToString();
     }
 
+    private static string MeshToString(MeshFilter mf, Dictionary<string, ObjMaterial> materialList)
+    {
+        Mesh m = mf.sharedMesh;
+        Transform t = mf.transform;
+
+        StringBuilder sb = new StringBuilder();
+
+        // 그룹 이름 추가
+        sb.Append("g ").Append(mf.name).Append("\n");
+
+        // Y축 180도 회전 행렬
+        Matrix4x4 rotationMatrix = Matrix4x4.Rotate(Quaternion.Euler(0, 180, 0));
+
+        // 정점(Vertex) 좌표 추가 (Y축 180도 회전 및 Z축 반전)
+        foreach (Vector3 lv in m.vertices)
+        {
+            // TransformPoint를 사용하여 위치, 회전, 스케일을 모두 적용
+            Vector3 wv = t.localToWorldMatrix.MultiplyPoint3x4(lv);
+
+            // Y축 180도 회전 적용
+            wv = rotationMatrix.MultiplyPoint3x4(wv);
+
+            // Z축 반전
+            sb.Append(string.Format("v {0} {1} {2}\n", wv.x, wv.y, -wv.z));
+        }
+        sb.Append("\n");
+
+        // 노멀(Normal) 벡터 추가 (Y축 180도 회전 및 Z축 반전)
+        foreach (Vector3 lv in m.normals)
+        {
+            Vector3 wv = t.TransformDirection(lv);
+
+            // Y축 180도 회전 적용
+            wv = rotationMatrix.MultiplyVector(wv);
+
+            // Z축 반전
+            sb.Append(string.Format("vn {0} {1} {2}\n", wv.x, wv.y, -wv.z));
+        }
+        sb.Append("\n");
+
+        // 텍스처 좌표 추가 (필요한 경우)
+        foreach (Vector3 v in m.uv)
+        {
+            sb.Append(string.Format("vt {0} {1}\n", v.x, v.y));
+        }
+
+        // 삼각형 정의 추가 (winding order 반전)
+        for (int material = 0; material < m.subMeshCount; material++)
+        {
+            int[] triangles = m.GetTriangles(material);
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                sb.Append(string.Format("f {0} {2} {1}\n",
+                    triangles[i] + 1 + vertexOffset,
+                    triangles[i + 1] + 1 + vertexOffset,
+                    triangles[i + 2] + 1 + vertexOffset));
+            }
+        }
+
+        // 정점 오프셋 업데이트
+        vertexOffset += m.vertices.Length;
+
+        return sb.ToString();
+    }
     private static void Clear()
     {
         vertexOffset = 0;
