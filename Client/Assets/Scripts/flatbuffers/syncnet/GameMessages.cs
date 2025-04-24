@@ -12,10 +12,11 @@ public enum GameMessages : byte
   RemoveAgent = 2,
   SetMoveTarget = 3,
   AgentInfo = 4,
-  GetAgents = 5,
+  UpdateActorNotify = 5,
   Ping = 6,
   SetRaycast = 7,
   Login = 8,
+  UseSkill = 9,
 };
 
 

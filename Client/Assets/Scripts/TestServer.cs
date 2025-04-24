@@ -37,6 +37,7 @@ public class TestServer : MonoBehaviour
 	[SerializeField] private SessionChannelSO _setRaycastChannel = default;
 	[SerializeField] private SessionChannelSO _setMoveCharacterChannel = default;
     [SerializeField] private SessionChannelSO _setLoginChannel = default;
+    [SerializeField] private SessionChannelSO _setUseSkillChannel = default;
 
 
 
@@ -111,7 +112,18 @@ public class TestServer : MonoBehaviour
 				clickAltOn = true;
 			}
 		}
-		else if (Input.GetMouseButton(0))
+        else if (Input.GetMouseButton(0) && Input.GetKey(KeyCode.LeftShift))
+        {
+            if (clickOn == false)
+            {
+                if (GetHitPoint("floor") || GetHitPoint("monster"))
+                {
+                    _setUseSkillChannel.RaiseEvent(0, hit_.point, 0);
+                }
+                clickOn = true;
+            }
+        }
+        else if (Input.GetMouseButton(0))
 		{
 			if (clickOn == false)
 			{

@@ -114,18 +114,8 @@ void game_session::do_read_body()
 			{
 				//room_.deliver(read_msg_);
 
-				auto msg = syncnet::GetGameMessage(read_msg_.body());
+				dispatcher_->dispatch(syncnet::GetGameMessage(read_msg_.body()));
 				//std::cout << "recv message type : " << msg->msg_type() << std::endl;
-
-				switch (msg->msg_type())
-				{
-				case syncnet::GameMessages::GameMessages_AddAgent:			dispatcher_->dispatch(msg->msg_as_AddAgent()); break;
-				case syncnet::GameMessages::GameMessages_RemoveAgent:		dispatcher_->dispatch(msg->msg_as_RemoveAgent()); break;
-				case syncnet::GameMessages::GameMessages_SetMoveTarget:		dispatcher_->dispatch(msg->msg_as_SetMoveTarget()); break;
-				case syncnet::GameMessages::GameMessages_Ping:				dispatcher_->dispatch(msg->msg_as_Ping()); break;
-				case syncnet::GameMessages::GameMessages_SetRaycast:		dispatcher_->dispatch(msg->msg_as_SetRaycast()); break;
-				case syncnet::GameMessages::GameMessages_Login:				dispatcher_->dispatch(msg->msg_as_Login()); break;
-				}
 
 				do_read_header();
 			}

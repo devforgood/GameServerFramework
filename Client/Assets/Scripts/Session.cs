@@ -37,6 +37,9 @@ public class Session : MonoBehaviour
     [Header("Set Login Event")]
     [SerializeField] private SessionChannelSO _OnLogin = default;
 
+    [Header("Set Use Skill Event")]
+    [SerializeField] private SessionChannelSO _OnUseSkill = default;
+
     private void OnEnable()
 	{
 		if (_OnAddAgent != null)
@@ -67,6 +70,10 @@ public class Session : MonoBehaviour
         {
             _OnLogin.OnEventRaised += OnLogin;
         }
+        if (_OnUseSkill != null)
+        {
+            _OnUseSkill.OnEventRaised += OnUseSkill;
+        }
     }
 
 	private void OnDisable()
@@ -94,6 +101,10 @@ public class Session : MonoBehaviour
         if (_OnLogin != null)
         {
             _OnLogin.OnEventRaised -= OnLogin;
+        }
+        if (_OnUseSkill != null)
+        {
+            _OnUseSkill.OnEventRaised -= OnUseSkill;
         }
     }
 
@@ -124,6 +135,10 @@ public class Session : MonoBehaviour
     private void OnLogin(int agent_id, Vector3 pos, int type)
     {
         SendMessage(MakeLogin());
+    }
+    private void OnUseSkill(int agent_id, Vector3 pos, int type)
+    {
+        SendMessage(MakeUseSkill(agent_id, pos, type));
     }
     void Start()
 	{
@@ -243,6 +258,20 @@ public class Session : MonoBehaviour
         return body;
     }
 
+    public byte[] MakeUseSkill(int agentId, Vector3 pos, int type)
+    {
+        var builder = new FlatBufferBuilder(1024);
+        UseSkill.StartUseSkill(builder);
+        UseSkill.AddId(builder, agentId);
+        UseSkill.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
+		UseSkill.AddTargetId(builder, type);
+        var offset = UseSkill.EndUseSkill(builder);
+        var msg = GameMessage.CreateGameMessage(builder, GameMessages.UseSkill, offset.Value);
+        builder.Finish(msg.Value);
+        byte[] body = builder.SizedByteArray();
+        return body;
+    }
+
     public void SendPing(float deltaTime)
 	{
 		lastSendTime += deltaTime;
@@ -269,10 +298,10 @@ public class Session : MonoBehaviour
 		var recv_msg = GameMessage.GetRootAsGameMessage(new ByteBuffer(bytes));
 		switch (recv_msg.MsgType)
 		{
-			case GameMessages.GetAgents:
+			case GameMessages.UpdateActorNotify:
 				{
 					agents.Clear();
-					GetAgents getAgents = recv_msg.Msg<GetAgents>().Value;
+                    UpdateActorNotify getAgents = recv_msg.Msg<UpdateActorNotify>().Value;
 					for (int i = 0; i < getAgents.AgentsLength; ++i)
 					{
 						var agent_id = getAgents.Agents(i).Value.AgentId;
@@ -338,7 +367,14 @@ public class Session : MonoBehaviour
 					}
 				}
 				break;
-		}
+			case GameMessages.UseSkill:
+                {
+                    UseSkill useSkill = recv_msg.Msg<UseSkill>().Value;
+                    var pos = new Vector3(useSkill.Pos.Value.X, useSkill.Pos.Value.Y, useSkill.Pos.Value.Z);
+                    var obj = (GameObject)Instantiate(Resources.Load("DebugTarget"), pos, Quaternion.identity);
+                }
+                break;
+        }
 	}
 
 	void Update()

@@ -69,9 +69,9 @@ void World::SendWorldState()
 	auto debug_raycasts = builder_ptr->CreateVector(debug_raycast_vector);
 	// ----------------------------
 
-	auto getAgents = syncnet::CreateGetAgents(*builder_ptr, agents, debug_raycasts);
+	auto updateActorNotify = syncnet::CreateUpdateActorNotify(*builder_ptr, agents, debug_raycasts);
 
-	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_GetAgents, getAgents.Union());
+	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
 	builder_ptr->Finish(send_msg);
 
 	for (auto itr = players_.begin(); itr != players_.end(); ++itr)

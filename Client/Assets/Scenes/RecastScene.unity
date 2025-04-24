@@ -278,6 +278,8 @@ MonoBehaviour:
   _setMoveCharacterChannel: {fileID: 11400000, guid: 3cd41db51fa6be3408fda9464cab95d7,
     type: 2}
   _setLoginChannel: {fileID: 11400000, guid: 07f2be63ac1f46148adf708c6187ae76, type: 2}
+  _setUseSkillChannel: {fileID: 11400000, guid: e4dbea3cdf8beca4bb26040aee00ce40,
+    type: 2}
 --- !u!114 &489458940
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -298,6 +300,7 @@ MonoBehaviour:
   _OnSetMoveCharacter: {fileID: 11400000, guid: 3cd41db51fa6be3408fda9464cab95d7,
     type: 2}
   _OnLogin: {fileID: 11400000, guid: 07f2be63ac1f46148adf708c6187ae76, type: 2}
+  _OnUseSkill: {fileID: 11400000, guid: e4dbea3cdf8beca4bb26040aee00ce40, type: 2}
 --- !u!1001 &1248347624
 PrefabInstance:
   m_ObjectHideFlags: 0

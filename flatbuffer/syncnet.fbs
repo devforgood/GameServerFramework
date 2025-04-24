@@ -7,10 +7,11 @@ union GameMessages
   RemoveAgent,
   SetMoveTarget,
   AgentInfo,
-  GetAgents,
+  UpdateActorNotify,
   Ping,
   SetRaycast,
   Login,
+  UseSkill,
 } // Optionally add more tables.
 
 struct Vec3 {
@@ -62,7 +63,7 @@ table DebugRaycast {
   endPos:Vec3;
 }
 
-table GetAgents {
+table UpdateActorNotify {
   agents:[AgentInfo];
   debugs:[DebugRaycast];
 }
@@ -79,6 +80,15 @@ table SetRaycast {
 table Login {
   userId:string;
   password:string;
+}
+
+table UseSkill {
+  id:int;
+  skillId:int;
+  targetId:int;
+  pos:Vec3;
+  dir:Vec3;
+  timestamp:long;
 }
 
 root_type GameMessage;

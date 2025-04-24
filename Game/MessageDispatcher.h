@@ -12,12 +12,13 @@ private:
 	friend class game_session;
 
 public:
+	void dispatch(const syncnet::GameMessage* msg);
 	void dispatch(const syncnet::AddAgent* msg);
 	void dispatch(const syncnet::RemoveAgent* msg);
 	void dispatch(const syncnet::SetMoveTarget* msg);
-	void dispatch(const syncnet::GetAgents* msg);
 	void dispatch(const syncnet::Ping* msg);
 	void dispatch(const syncnet::SetRaycast* msg);
 	void dispatch(const syncnet::Login* msg);
+	void dispatch(const syncnet::UseSkill* msg);
 };
 

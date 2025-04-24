@@ -9,31 +9,31 @@ using global::System;
 using global::System.Collections.Generic;
 using global::FlatBuffers;
 
-public struct GetAgents : IFlatbufferObject
+public struct UpdateActorNotify : IFlatbufferObject
 {
   private Table __p;
   public ByteBuffer ByteBuffer { get { return __p.bb; } }
   public static void ValidateVersion() { FlatBufferConstants.FLATBUFFERS_1_12_0(); }
-  public static GetAgents GetRootAsGetAgents(ByteBuffer _bb) { return GetRootAsGetAgents(_bb, new GetAgents()); }
-  public static GetAgents GetRootAsGetAgents(ByteBuffer _bb, GetAgents obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
+  public static UpdateActorNotify GetRootAsUpdateActorNotify(ByteBuffer _bb) { return GetRootAsUpdateActorNotify(_bb, new UpdateActorNotify()); }
+  public static UpdateActorNotify GetRootAsUpdateActorNotify(ByteBuffer _bb, UpdateActorNotify obj) { return (obj.__assign(_bb.GetInt(_bb.Position) + _bb.Position, _bb)); }
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
-  public GetAgents __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
+  public UpdateActorNotify __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public syncnet.AgentInfo? Agents(int j) { int o = __p.__offset(4); return o != 0 ? (syncnet.AgentInfo?)(new syncnet.AgentInfo()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int AgentsLength { get { int o = __p.__offset(4); return o != 0 ? __p.__vector_len(o) : 0; } }
   public syncnet.DebugRaycast? Debugs(int j) { int o = __p.__offset(6); return o != 0 ? (syncnet.DebugRaycast?)(new syncnet.DebugRaycast()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int DebugsLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
 
-  public static Offset<syncnet.GetAgents> CreateGetAgents(FlatBufferBuilder builder,
+  public static Offset<syncnet.UpdateActorNotify> CreateUpdateActorNotify(FlatBufferBuilder builder,
       VectorOffset agentsOffset = default(VectorOffset),
       VectorOffset debugsOffset = default(VectorOffset)) {
     builder.StartTable(2);
-    GetAgents.AddDebugs(builder, debugsOffset);
-    GetAgents.AddAgents(builder, agentsOffset);
-    return GetAgents.EndGetAgents(builder);
+    UpdateActorNotify.AddDebugs(builder, debugsOffset);
+    UpdateActorNotify.AddAgents(builder, agentsOffset);
+    return UpdateActorNotify.EndUpdateActorNotify(builder);
   }
 
-  public static void StartGetAgents(FlatBufferBuilder builder) { builder.StartTable(2); }
+  public static void StartUpdateActorNotify(FlatBufferBuilder builder) { builder.StartTable(2); }
   public static void AddAgents(FlatBufferBuilder builder, VectorOffset agentsOffset) { builder.AddOffset(0, agentsOffset.Value, 0); }
   public static VectorOffset CreateAgentsVector(FlatBufferBuilder builder, Offset<syncnet.AgentInfo>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateAgentsVectorBlock(FlatBufferBuilder builder, Offset<syncnet.AgentInfo>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
@@ -42,9 +42,9 @@ public struct GetAgents : IFlatbufferObject
   public static VectorOffset CreateDebugsVector(FlatBufferBuilder builder, Offset<syncnet.DebugRaycast>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateDebugsVectorBlock(FlatBufferBuilder builder, Offset<syncnet.DebugRaycast>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartDebugsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
-  public static Offset<syncnet.GetAgents> EndGetAgents(FlatBufferBuilder builder) {
+  public static Offset<syncnet.UpdateActorNotify> EndUpdateActorNotify(FlatBufferBuilder builder) {
     int o = builder.EndTable();
-    return new Offset<syncnet.GetAgents>(o);
+    return new Offset<syncnet.UpdateActorNotify>(o);
   }
 };
 
