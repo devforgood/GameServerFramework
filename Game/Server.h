@@ -19,7 +19,7 @@
 #include <boost/bind.hpp>
 #include "Message.h"
 #include "PerfTimer.h"
-#include "MessageDispatcher.h"
+#include "PlayerController.h"
 #include "SendMessage.h"
 
 using boost::asio::ip::tcp;
@@ -65,7 +65,7 @@ private:
 
 //----------------------------------------------------------------------
 class Player;
-class MessageDispatcher;
+class PlayerController;
 class game_server;
 class game_session
 	: public game_participant,
@@ -91,7 +91,7 @@ private:
 	game_room& room_;
 	game_message read_msg_;
 	game_message_queue write_msgs_;
-	MessageDispatcher* dispatcher_;
+	PlayerController* player_controller_;
 	std::shared_ptr<Player> player_;
 	boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
 	game_server* server_;

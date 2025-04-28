@@ -37,7 +37,7 @@ public:
 
 	void SendWorldState();
 
-	void OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
+	bool OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
 	void OnRemoveAgent(int agent_id);
 	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
 	void OnSetRaycast(const syncnet::Vec3* pos);

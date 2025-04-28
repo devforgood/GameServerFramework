@@ -6,6 +6,7 @@
 #include <string>
 #include <mariadb/conncpp.hpp>
 #include "./SQL/generated/dao.h"
+#include "LogHelper.h"
 
 
 

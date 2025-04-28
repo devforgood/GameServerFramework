@@ -80,7 +80,7 @@ void World::SendWorldState()
 	}
 }
 
-void World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
+bool World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
 	float speed = 3.5f;
 	if (type == syncnet::GameObjectType::GameObjectType_Character)
@@ -90,13 +90,13 @@ void World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType t
 	if (agent_id < 0)
 	{
 		LOG.error("OnAddAgent error in Map.addAgent()");
-		return;
+		return false;
 	}
 
 	if (game_object_map_.find(agent_id) != game_object_map_.end())
 	{
 		LOG.error("OnAddAgent error already exist in monsters_map_");
-		return;
+		return false;
 	}
 	
 	std::shared_ptr<Actor> actor;
@@ -109,7 +109,7 @@ void World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType t
 			if (itr != players_.end())
 			{
 				LOG.error("OnAddAgent error already exist in players_");
-				return;
+				return false;
 			}
 
 			players_.insert(std::make_pair(player->player_id(), player));
@@ -130,6 +130,7 @@ void World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType t
 	auto itr = game_object_list_.insert(game_object_list_.end(), actor);
 	game_object_map_.insert(std::make_pair(agent_id, itr));
 	grid_manager_->add(actor.get());
+	return true;
 }
 
 void World::OnRemoveAgent(int agent_id)

@@ -156,7 +156,7 @@
     <ClCompile Include="GridManager.cpp" />
     <ClCompile Include="LuaObject.cpp" />
     <ClCompile Include="Map.cpp" />
-    <ClCompile Include="MessageDispatcher.cpp" />
+    <ClCompile Include="PlayerController.cpp" />
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Player.cpp" />
@@ -196,7 +196,7 @@
     <ClInclude Include="Map.h" />
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="Message.h" />
-    <ClInclude Include="MessageDispatcher.h" />
+    <ClInclude Include="PlayerController.h" />
     <ClInclude Include="Monster.h" />
     <ClInclude Include="PerfTimer.h" />
     <ClInclude Include="Player.h" />

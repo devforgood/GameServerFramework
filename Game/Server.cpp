@@ -7,6 +7,7 @@
 #include "Player.h"
 #include "SqlClient.h"
 #include "SqlClientManager.h"
+#include "PlayerController.h"
 
 game_room::game_room()
 {
@@ -44,16 +45,16 @@ game_session::game_session(tcp::socket socket, game_room& room, boost::asio::thr
 	strand_(db_thread_pool.get_executor()),
 	server_(server)
 {
-	dispatcher_ = nullptr;
+	player_controller_ = nullptr;
 	player_ = nullptr;
 }
 
 game_session::~game_session()
 {
-	if (dispatcher_ != nullptr)
+	if (player_controller_ != nullptr)
 	{
-		delete dispatcher_;
-		dispatcher_ = nullptr;
+		delete player_controller_;
+		player_controller_ = nullptr;
 	}
 }
 
@@ -62,9 +63,9 @@ void game_session::start()
 	player_ = std::make_shared<Player>();
 	player_->set_session(shared_from_this());
 	player_->set_server(server_);
-	dispatcher_ = new MessageDispatcher();
-	dispatcher_->world_ = room_.world();
-	dispatcher_->player_ = player_;
+	player_controller_ = new PlayerController();
+	player_controller_->world_ = room_.world();
+	player_controller_->player_ = player_;
 
 
 	room_.join(shared_from_this());
@@ -114,7 +115,7 @@ void game_session::do_read_body()
 			{
 				//room_.deliver(read_msg_);
 
-				dispatcher_->dispatch(syncnet::GetGameMessage(read_msg_.body()));
+				player_controller_->handle(syncnet::GetGameMessage(read_msg_.body()));
 				//std::cout << "recv message type : " << msg->msg_type() << std::endl;
 
 				do_read_header();

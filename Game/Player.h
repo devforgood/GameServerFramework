@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <memory>
+#include "syncnet_generated.h"
 
 class game_session;
 class game_server;
@@ -44,5 +45,8 @@ public:
 
 	void async_db_query();
 	void send(std::shared_ptr<send_message> msg);
+
+	std::shared_ptr<Character> & character() { return character_; }
+	
 };
 

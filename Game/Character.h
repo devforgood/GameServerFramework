@@ -16,5 +16,6 @@ public:
 		player_id_ = player_id;
 	}
 	long player_id() { return player_id_; }
+	void use_skill(int skill_id, const syncnet::Vec3* target_pos);
 };
 

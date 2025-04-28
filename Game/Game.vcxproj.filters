@@ -35,6 +35,9 @@
     <Filter Include="core">
       <UniqueIdentifier>{77aa5725-e40d-4c26-be00-8aa5e4c7a915}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Controller">
+      <UniqueIdentifier>{ce6fade7-ea59-4be4-9fb6-55eb8bdd1100}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -45,7 +48,6 @@
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="World.cpp" />
-    <ClCompile Include="MessageDispatcher.cpp" />
     <ClCompile Include="GameObject.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
@@ -78,6 +80,9 @@
       <Filter>GameObject</Filter>
     </ClCompile>
     <ClCompile Include="SkillManager.cpp" />
+    <ClCompile Include="PlayerController.cpp">
+      <Filter>Controller</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -105,7 +110,6 @@
     <ClInclude Include="syncnet_generated.h">
       <Filter>flatbuffers</Filter>
     </ClInclude>
-    <ClInclude Include="MessageDispatcher.h" />
     <ClInclude Include="SendMessage.h">
       <Filter>Message</Filter>
     </ClInclude>
@@ -144,6 +148,9 @@
       <Filter>GameObject</Filter>
     </ClInclude>
     <ClInclude Include="SkillManager.h" />
+    <ClInclude Include="PlayerController.h">
+      <Filter>Controller</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">
