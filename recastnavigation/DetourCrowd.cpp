@@ -1448,3 +1448,46 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 	}
 	
 }
+
+void dtCrowd::teleportAgent(int agentIdx, const float* targetPos) {
+	if (agentIdx < 0 || agentIdx >= m_maxAgents) {
+		//std::cerr << "Invalid agent index!" << std::endl;
+		return;
+	}
+
+	dtCrowdAgent* agent = &m_agents[agentIdx];
+	if (!agent->active) {
+		//std::cerr << "Agent is not active!" << std::endl;
+		return;
+	}
+
+	// 네비게이션 메시에서 가장 가까운 폴리곤을 찾음
+	float nearestPos[3];
+	dtPolyRef nearestRef = 0;
+	dtStatus status = m_navquery->findNearestPoly(
+		targetPos, m_agentPlacementHalfExtents,
+		&m_filters[agent->params.queryFilterType],
+		&nearestRef, nearestPos
+	);
+
+	if (dtStatusFailed(status) || !nearestRef) {
+		//std::cerr << "Failed to find nearest polygon on navmesh!" << std::endl;
+		return;
+	}
+
+	// 에이전트의 위치를 업데이트
+	dtVcopy(agent->npos, nearestPos);
+
+	// 경로 정보를 초기화
+	agent->corridor.reset(nearestRef, nearestPos);
+	agent->boundary.reset();
+	agent->partial = false;
+
+	// 속도 및 목표 상태 초기화
+	dtVset(agent->vel, 0, 0, 0);
+	dtVset(agent->dvel, 0, 0, 0);
+	agent->targetState = DT_CROWDAGENT_TARGET_NONE;
+
+	//std::cout << "Agent " << agentIdx << " teleported to ("
+	//	<< nearestPos[0] << ", " << nearestPos[1] << ", " << nearestPos[2] << ")" << std::endl;
+}

@@ -348,6 +348,8 @@ public:
 	/// Gets the query object used by the crowd.
 	const dtNavMeshQuery* getNavMeshQuery() const { return m_navquery; }
 
+	void teleportAgent(int agentIdx, const float* targetPos);
+
 private:
 	// Explicitly disabled copy constructor and copy assignment operator.
 	dtCrowd(const dtCrowd&);

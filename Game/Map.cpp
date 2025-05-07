@@ -372,3 +372,16 @@ const dtCrowdAgent* Map::getAgent(const int agent_idx)
 {
 	return m_crowd->getAgent(agent_idx);
 }
+
+// 에이전트를 지정된 위치로 순간이동합니다.
+bool Map::teleportAgent(int agent_idx, const float* pos)
+{
+	dtCrowd* crowd = m_crowd;
+	if (crowd)
+	{
+		crowd->teleportAgent(agent_idx, pos);
+		return true;
+	}
+	return false;
+
+}

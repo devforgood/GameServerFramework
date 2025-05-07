@@ -161,6 +161,7 @@
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Server.cpp" />
+    <ClCompile Include="Skill.cpp" />
     <ClCompile Include="SkillManager.cpp" />
     <ClCompile Include="SqlClient.cpp" />
     <ClCompile Include="SqlClientManager.cpp" />
@@ -202,6 +203,7 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
+    <ClInclude Include="Skill.h" />
     <ClInclude Include="SkillManager.h" />
     <ClInclude Include="SqlClient.h" />
     <ClInclude Include="SqlClientManager.h" />

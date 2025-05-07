@@ -152,5 +152,6 @@ public:
 
 	const float* getPos(const int agent_idx);
 	const dtCrowdAgent* getAgent(const int agent_idx);
+	bool teleportAgent(int agent_idx, const float* pos);
 };
 

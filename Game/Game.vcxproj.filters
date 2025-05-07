@@ -38,6 +38,9 @@
     <Filter Include="Controller">
       <UniqueIdentifier>{ce6fade7-ea59-4be4-9fb6-55eb8bdd1100}</UniqueIdentifier>
     </Filter>
+    <Filter Include="skill">
+      <UniqueIdentifier>{9c6d76e4-1915-4245-a42b-da9c4c31da6a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -82,6 +85,9 @@
     <ClCompile Include="SkillManager.cpp" />
     <ClCompile Include="PlayerController.cpp">
       <Filter>Controller</Filter>
+    </ClCompile>
+    <ClCompile Include="Skill.cpp">
+      <Filter>skill</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -150,6 +156,9 @@
     <ClInclude Include="SkillManager.h" />
     <ClInclude Include="PlayerController.h">
       <Filter>Controller</Filter>
+    </ClInclude>
+    <ClInclude Include="Skill.h">
+      <Filter>skill</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
