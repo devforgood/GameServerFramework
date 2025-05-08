@@ -68,5 +68,5 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 {
 	LOG.info("UseSkill id :{}, skillId :{}, targetId :{} pos:({},{},{})", msg->id(), msg->skillId(), msg->targetId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 
-	character_->use_skill(msg->id(), msg->pos());
+	character_->use_skill(msg->skillId(), msg->pos());
 }

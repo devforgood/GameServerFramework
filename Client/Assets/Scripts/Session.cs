@@ -262,6 +262,7 @@ public class Session : MonoBehaviour
     {
         var builder = new FlatBufferBuilder(1024);
         UseSkill.StartUseSkill(builder);
+		UseSkill.AddSkillId(builder, 1);
         UseSkill.AddId(builder, agentId);
         UseSkill.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
 		UseSkill.AddTargetId(builder, type);

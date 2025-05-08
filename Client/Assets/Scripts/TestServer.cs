@@ -118,7 +118,7 @@ public class TestServer : MonoBehaviour
             {
                 if (GetHitPoint("floor") || GetHitPoint("monster"))
                 {
-                    _setUseSkillChannel.RaiseEvent(0, hit_.point, 0);
+                    _setUseSkillChannel.RaiseEvent(0, hit_.point, 1);
                 }
                 clickOn = true;
             }
