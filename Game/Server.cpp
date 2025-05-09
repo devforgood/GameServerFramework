@@ -83,6 +83,12 @@ void game_session::send(std::shared_ptr<send_message> msg)
 	}
 }
 
+void game_session::close()
+{
+	boost::system::error_code ignored_ec;
+	socket_.close(ignored_ec);
+	room_.leave(shared_from_this());
+}
 
 void game_session::do_read_header()
 {

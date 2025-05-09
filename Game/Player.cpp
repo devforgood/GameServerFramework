@@ -96,6 +96,19 @@ void Player::send(std::shared_ptr<send_message> msg)
 	}
 	else
 	{
-		std::cerr << "Session expired!" << std::endl;
+		std::cerr << "Session expired! in send" << std::endl;
+	}
+}
+
+void Player::close()
+{
+	auto session = session_.lock();
+	if (session)
+	{
+		session->close();
+	}
+	else
+	{
+		std::cerr << "Session expired! in close" << std::endl;
 	}
 }

@@ -78,6 +78,7 @@ public:
 	void start();
 
 	void send(std::shared_ptr<send_message>  msg);
+	void close();
 
 
 private:

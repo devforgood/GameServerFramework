@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <memory>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
 #include "syncnet_generated.h"
 
 class game_session;
@@ -13,6 +15,8 @@ private:
 	long player_id_;
 	std::string name_;
 	int level_;
+	boost::uuids::uuid uuid_;
+
 
 	std::shared_ptr<Character> character_;
 	std::weak_ptr<game_session> session_;
@@ -21,6 +25,7 @@ private:
 public:
 	Player()
 	{
+		uuid_ = boost::uuids::random_generator()();
 	}
 
 	~Player() {}
@@ -45,6 +50,7 @@ public:
 
 	void async_db_query();
 	void send(std::shared_ptr<send_message> msg);
+	void close();
 
 	std::shared_ptr<Character> & character() { return character_; }
 	
