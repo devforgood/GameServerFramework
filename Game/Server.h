@@ -80,7 +80,7 @@ public:
 	void send(std::shared_ptr<send_message>  msg);
 	void close();
 
-
+	void set_player(std::shared_ptr<Player> player);
 private:
 	void do_read_header();
 

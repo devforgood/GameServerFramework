@@ -53,6 +53,8 @@ public:
 	void close();
 
 	std::shared_ptr<Character> & character() { return character_; }
+
+	bool switch_session(std::shared_ptr<Player> player);
 	
 };
 

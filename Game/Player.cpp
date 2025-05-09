@@ -96,7 +96,7 @@ void Player::send(std::shared_ptr<send_message> msg)
 	}
 	else
 	{
-		std::cerr << "Session expired! in send" << std::endl;
+		LOG.error("Session expired! in send");
 	}
 }
 
@@ -109,6 +109,23 @@ void Player::close()
 	}
 	else
 	{
-		std::cerr << "Session expired! in close" << std::endl;
+		LOG.error("Session expired! in close");
 	}
+}
+
+bool Player::switch_session(std::shared_ptr<Player> player)
+{
+	// 기존 세션 정리
+	close();
+
+	auto session = player->session_.lock();
+	if (!session)
+	{
+		LOG.error("Session expired! in switch_session");
+		return false;
+	}
+
+	session->set_player(shared_from_this());
+	LOG.info("Switching session for player {} to new session", player_id_);
+	return true;
 }

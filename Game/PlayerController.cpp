@@ -67,6 +67,11 @@ void PlayerController::handle(const syncnet::Login* msg)
 void PlayerController::handle(const syncnet::UseSkill* msg)
 {
 	LOG.info("UseSkill id :{}, skillId :{}, targetId :{} pos:({},{},{})", msg->id(), msg->skillId(), msg->targetId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
+	if (!character_)
+	{
+		LOG.error("character is null");
+		return;
+	}
 
 	character_->use_skill(msg->skillId(), msg->pos());
 }

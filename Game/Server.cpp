@@ -45,8 +45,8 @@ game_session::game_session(tcp::socket socket, game_room& room, boost::asio::thr
 	strand_(db_thread_pool.get_executor()),
 	server_(server)
 {
-	player_controller_ = nullptr;
 	player_ = nullptr;
+	player_controller_ = new PlayerController();
 }
 
 game_session::~game_session()
@@ -60,17 +60,20 @@ game_session::~game_session()
 
 void game_session::start()
 {
-	player_ = std::make_shared<Player>();
-	player_->set_session(shared_from_this());
-	player_->set_server(server_);
-	player_controller_ = new PlayerController();
-	player_controller_->world_ = room_.world();
-	player_controller_->player_ = player_;
-
+	set_player(std::make_shared<Player>());
 
 	room_.join(shared_from_this());
 	do_read_header();
 
+}
+
+void game_session::set_player(std::shared_ptr<Player> player)
+{
+	player_ = player;
+	player_->set_session(shared_from_this());
+	player_->set_server(server_);
+	player_controller_->player_ = player_;
+	player_controller_->world_ = room_.world();
 }
 
 void game_session::send(std::shared_ptr<send_message> msg)

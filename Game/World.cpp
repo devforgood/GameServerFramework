@@ -108,9 +108,10 @@ bool World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType t
 			auto itr = players_.find(player->player_id());
 			if (itr != players_.end())
 			{
-				LOG.error("OnAddAgent error already exist in players_");
-				itr->second->close();
-				players_.erase(itr);
+				LOG.info("OnAddAgent already exist in players_");
+				itr->second->switch_session(player);
+				
+				return true;
 			}
 
 			players_.insert(std::make_pair(player->player_id(), player));
