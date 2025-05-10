@@ -89,6 +89,9 @@
     <ClCompile Include="Skill.cpp">
       <Filter>skill</Filter>
     </ClCompile>
+    <ClCompile Include="GameObjectFactory.cpp">
+      <Filter>GameObject</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -119,7 +122,7 @@
     <ClInclude Include="SendMessage.h">
       <Filter>Message</Filter>
     </ClInclude>
-    <ClInclude Include="Vector3Converter.h" />
+    <ClInclude Include="Vector3.h" />
     <ClInclude Include="LogHelper.h" />
     <ClInclude Include="GameObject.h">
       <Filter>GameObject</Filter>
@@ -159,6 +162,9 @@
     </ClInclude>
     <ClInclude Include="Skill.h">
       <Filter>skill</Filter>
+    </ClInclude>
+    <ClInclude Include="GameObjectFactory.h">
+      <Filter>GameObject</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

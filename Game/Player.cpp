@@ -115,6 +115,12 @@ void Player::close()
 
 bool Player::switch_session(std::shared_ptr<Player> player)
 {
+	if (this == player.get())
+	{
+		LOG.error("Player is same! in switch_session");
+		return false;
+	}
+
 	// 기존 세션 정리
 	close();
 

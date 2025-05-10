@@ -2,27 +2,30 @@
 #include "syncnet_generated.h"
 
 class World;
+class Vector3;
+
 class GameObject
 {
-private:
-	int agent_id_;
+
 
 protected:
 	World* world_;
 	syncnet::AIState state_;
 
 public:
-	GameObject(int agent_id, World* world) : agent_id_(agent_id), world_(world)
+	GameObject(World* world) : world_(world)
 	{
 
 	}
 	virtual ~GameObject() = default; // 반드시 virtual 소멸자를 추가
-	virtual void Update() {};
+	virtual void update() {};
 
-	virtual syncnet::GameObjectType GetType() { return syncnet::GameObjectType::GameObjectType_Monster; }
+	virtual syncnet::GameObjectType type() { return syncnet::GameObjectType::GameObjectType_Monster; }
+	virtual int agent_id() { return -1; }
+	virtual bool init(Vector3& pos) { return false; }
 
-	int agent_id() { return agent_id_; }
 	World* world() { return world_; }
 	syncnet::AIState state() { return state_; }
+
 };
 

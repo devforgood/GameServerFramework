@@ -63,7 +63,7 @@ void GridManager::enterCell(Actor* actor, int x, int y) {
     if (x < 0 || x >= grid_->getWidth() || y < 0 || y >= grid_->getHeight()) return;
 
     auto& cell = grid_->get(x, y);
-    if (actor->GetType() == syncnet::GameObjectType::GameObjectType_Character)
+    if (actor->type() == syncnet::GameObjectType::GameObjectType_Character)
         cell.characters.insert(actor);
     else
         cell.monsters.insert(actor);
@@ -75,7 +75,7 @@ void GridManager::leaveCell(Actor* actor, int x, int y) {
     if (x < 0 || x >= grid_->getWidth() || y < 0 || y >= grid_->getHeight()) return;
 
     auto& cell =  grid_->get(x, y);;
-    if (actor->GetType() == syncnet::GameObjectType::GameObjectType_Character)
+    if (actor->type() == syncnet::GameObjectType::GameObjectType_Character)
         cell.characters.erase(actor);
     else
         cell.monsters.erase(actor);

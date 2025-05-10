@@ -13,6 +13,7 @@ class Character;
 class Player;
 class GridManager;
 class Actor;
+class GameObjectFactory;
 
 class World
 {
@@ -43,6 +44,11 @@ public:
 	void OnSetRaycast(const syncnet::Vec3* pos);
 
 	int DetectEnemy(Actor* actor);
+
+	friend class Actor;
+	friend class GameObjectFactory;
+	friend class Monster;
+	friend class Character;
 
 };
 

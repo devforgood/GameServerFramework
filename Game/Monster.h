@@ -13,6 +13,8 @@ namespace BT
 
 class Action_Patrol;
 class ActionPatrol;
+class Vector3;
+
 class Monster : public Actor, public LuaObject<Monster>
 {
 private:
@@ -27,10 +29,11 @@ public:
 
 public:
 
-	Monster(int agent_id, World * world);
+	Monster(World * world);
 	virtual ~Monster();
-	virtual void Update();
-	virtual syncnet::GameObjectType GetType() { return syncnet::GameObjectType::GameObjectType_Monster; }
+	virtual void update();
+	virtual syncnet::GameObjectType type() { return syncnet::GameObjectType::GameObjectType_Monster; }
+	virtual bool init(Vector3& pos) override;
 
 	void SetState(syncnet::AIState state) { state_ = state; }
 	int AttackRange();

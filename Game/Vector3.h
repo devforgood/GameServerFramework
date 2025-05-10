@@ -2,13 +2,13 @@
 
 #include "syncnet_generated.h"
 
-class Vector3Converter
+class Vector3
 {
 private:
 	float pos_[3];
 
 public:
-	Vector3Converter(const syncnet::Vec3* pos)
+	Vector3(const syncnet::Vec3* pos)
 	{
 		pos_[0] = pos->x() * -1;
 		pos_[1] = pos->y();
@@ -19,4 +19,8 @@ public:
 	{
 		return pos_;
 	}
+
+	float x() { return pos_[0]; }
+	float y() { return pos_[1]; }
+	float z() { return pos_[2]; }
 };

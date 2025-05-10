@@ -6,6 +6,8 @@
 #include "DetourCommon.h"
 #include "MathHelper.h"
 #include "behaviortree_cpp/bt_factory.h"
+#include "Vector3.h"
+#include "LogHelper.h"
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
 
@@ -289,37 +291,67 @@ public:
 };
 
 
-Monster::Monster(int agent_id, World* world)
-	: Actor(agent_id, world), bt_(nullptr)
+Monster::Monster(World* world)
+	: Actor(world), bt_(nullptr)
 {
+
+}
+
+Monster::~Monster()
+{
+	if (bt_ != nullptr)
+		delete bt_;
+}
+bool Monster::init(Vector3& pos)
+{
+	float speed = 3.5f;
+	int agent_id = world_->map()->addAgent(pos.pos(), speed);
+	if (agent_id < 0)
+	{
+		LOG.error("OnAddAgent error in Map.addAgent()");
+		return false;
+	}
+
+	if (world_->game_object_map_.find(agent_id) != world_->game_object_map_.end())
+	{
+		LOG.error("OnAddAgent error already exist in monsters_map_");
+		return false;
+	}
+
+	agent_id_ = agent_id;
+	this->x = pos.x();
+	this->y = pos.z();
+	this->speed = speed;
+
+
 	BT::BehaviorTreeBuilder* Builder = new BT::BehaviorTreeBuilder();
 	bt_ = Builder
 		->ActiveSelector()
-			->Sequence()
-				->Condition(Condition_DetectEnemy::Create(false, this))
-					->Back()
-				->ActiveSelector()
-					->Sequence()
-						->Condition(BT::Condition_IsHealthLow::Create(true))
-							->Back()
-						->Action(Action_Chase::Create(this))
-							->Back()
-					//	->Back()
-					//->Parallel(BT::EPolicy::RequireAll, BT::EPolicy::RequireOne)
-						->Condition(Condition_AttackRange::Create(true, this))
-							->Back()
-						->Action(BT::Action_Attack::Create())
-							->Back()
-						->Back()
-					->Back()
-				->Back()
-			->Action(Action_Patrol::Create(this))
+		->Sequence()
+		->Condition(Condition_DetectEnemy::Create(false, this))
+		->Back()
+		->ActiveSelector()
+		->Sequence()
+		->Condition(BT::Condition_IsHealthLow::Create(true))
+		->Back()
+		->Action(Action_Chase::Create(this))
+		->Back()
+		//	->Back()
+		//->Parallel(BT::EPolicy::RequireAll, BT::EPolicy::RequireOne)
+		->Condition(Condition_AttackRange::Create(true, this))
+		->Back()
+		->Action(BT::Action_Attack::Create())
+		->Back()
+		->Back()
+		->Back()
+		->Back()
+		->Action(Action_Patrol::Create(this))
 		->End();
 	delete Builder;
 
 
-	if(world_ != nullptr) {
-		auto agent = world_->map()->getAgent(agent_id);
+	if (world_ != nullptr) {
+		auto agent = world_->map()->getAgent(agent_id_);
 		if (agent != nullptr)
 		{
 			dtVcopy(spawn_pos_, agent->npos);
@@ -327,7 +359,7 @@ Monster::Monster(int agent_id, World* world)
 		}
 	}
 
-	name_ = "Monster:" + std::to_string(agent_id);
+	name_ = "Monster:" + std::to_string(agent_id_);
 
 
 	BT::BehaviorTreeFactory factory;
@@ -355,17 +387,13 @@ Monster::Monster(int agent_id, World* world)
 
 
 
-    tree_ = new BT::Tree(factory.createTreeFromText(xml_text));
+	tree_ = new BT::Tree(factory.createTreeFromText(xml_text));
+	return true;
 }
 
-Monster::~Monster()
+void Monster::update()
 {
-	if (bt_ != nullptr)
-		delete bt_;
-}
-
-void Monster::Update()
-{
+	Actor::update();
 	//bt_->Tick();
 	//runBehaviorTree(this);
 	tree_->tickOnce();

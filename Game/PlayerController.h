@@ -9,7 +9,6 @@ class PlayerController
 private:
 	World* world_;
 	std::shared_ptr<Player> player_;
-	std::shared_ptr<Character> character_;
 
 	friend class game_session;
 

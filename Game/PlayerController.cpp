@@ -1,7 +1,7 @@
 #include "PlayerController.h"
 #include <iostream>
 #include "World.h"
-#include "Vector3Converter.h"
+#include "Vector3.h"
 #include "DetourNavMeshQuery.h"
 #include "LogHelper.h"
 #include "Player.h"
@@ -27,10 +27,7 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 
 	bool ret = world_->OnAddAgent(player_, msg->gameObjectType(), msg->pos());
 
-	if(ret)
-	{
-		character_ = player_->character();
-	}
+
 }
 
 void PlayerController::handle(const syncnet::RemoveAgent* msg)
@@ -67,11 +64,13 @@ void PlayerController::handle(const syncnet::Login* msg)
 void PlayerController::handle(const syncnet::UseSkill* msg)
 {
 	LOG.info("UseSkill id :{}, skillId :{}, targetId :{} pos:({},{},{})", msg->id(), msg->skillId(), msg->targetId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
-	if (!character_)
+
+	auto character = player_->character();
+	if (!character)
 	{
 		LOG.error("character is null");
 		return;
 	}
 
-	character_->use_skill(msg->skillId(), msg->pos());
+	character->use_skill(msg->skillId(), msg->pos());
 }

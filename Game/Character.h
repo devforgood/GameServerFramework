@@ -2,6 +2,8 @@
 #include "Actor.h"
 
 class Skill;
+class Vector3;
+
 class Character : public Actor
 {
 private:
@@ -9,10 +11,10 @@ private:
 	std::unordered_map<int, Skill*> skills_;
 
 public:
-	Character(int agent_id, World* world);
+	Character(World* world);
 	virtual ~Character();
 
-	virtual syncnet::GameObjectType GetType() { return syncnet::GameObjectType::GameObjectType_Character; }
+	virtual syncnet::GameObjectType type() { return syncnet::GameObjectType::GameObjectType_Character; }
 
 	void set_player_id(long player_id)
 	{
@@ -20,5 +22,7 @@ public:
 	}
 	long player_id() { return player_id_; }
 	void use_skill(int skill_id, const syncnet::Vec3* target_pos);
+	virtual void update() override;
+	virtual bool init(Vector3& pos) override;
 };
 

@@ -5,12 +5,13 @@
 #include "Server.h"
 #include "Monster.h"
 #include "Character.h"
-#include "Vector3Converter.h"
+#include "Vector3.h"
 #include "LogHelper.h"
 #include "DetourCommon.h"
 #include "MathHelper.h"
 #include "Player.h"
 #include "GridManager.h"
+#include "GameObjectFactory.h"
 
 //const float g_fDistance = std::powf(10.0f, 2);
 const float g_fDistance = 10.0f;
@@ -30,7 +31,7 @@ void World::update(float deltaTime)
 {
 	//LOG.info("World update begin");
 	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin();itr!= game_object_list_.end();++itr)
-		(*itr)->Update();
+		(*itr)->update();
 
 	map_->update(deltaTime);
 	SendWorldState();
@@ -52,7 +53,7 @@ void World::SendWorldState()
 		//std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
 		grid_manager_->move((Actor*)itr->get(), agent->npos[0], agent->npos[2]);
 
-		agent_info = syncnet::CreateAgentInfo(*builder_ptr, itr->get()->agent_id(), &pos, itr->get()->GetType(), itr->get()->state());
+		agent_info = syncnet::CreateAgentInfo(*builder_ptr, itr->get()->agent_id(), &pos, itr->get()->type(), itr->get()->state());
 		agent_info_vector.push_back(agent_info);
 	}
 	auto agents = builder_ptr->CreateVector(agent_info_vector);
@@ -82,56 +83,16 @@ void World::SendWorldState()
 
 bool World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
-	float speed = 3.5f;
-	if (type == syncnet::GameObjectType::GameObjectType_Character)
-		speed = 4.5f;
-
-	int agent_id = this->map()->addAgent(Vector3Converter(pos).pos(), speed);
-	if (agent_id < 0)
+	auto game_object = GameObjectFactory::CreateGameObject(this, player, type, pos);
+	if (game_object == nullptr)
 	{
-		LOG.error("OnAddAgent error in Map.addAgent()");
+		LOG.error("OnAddAgent error in GameObjectFactory::CreateGameObject()");
 		return false;
 	}
 
-	if (game_object_map_.find(agent_id) != game_object_map_.end())
-	{
-		LOG.error("OnAddAgent error already exist in monsters_map_");
-		return false;
-	}
-	
-	std::shared_ptr<Actor> actor;
+	auto itr = game_object_list_.insert(game_object_list_.end(), game_object);
+	game_object_map_.insert(std::make_pair(game_object->agent_id(), itr));
 
-	switch (type)
-	{
-	case syncnet::GameObjectType::GameObjectType_Character:
-		{
-			auto itr = players_.find(player->player_id());
-			if (itr != players_.end())
-			{
-				LOG.info("OnAddAgent already exist in players_");
-				itr->second->switch_session(player);
-				
-				return true;
-			}
-
-			players_.insert(std::make_pair(player->player_id(), player));
-			std::shared_ptr<Character> character = std::make_shared<Character>(agent_id, this);
-			actor = character;
-			player->possess(character);
-			break;
-		}
-	case syncnet::GameObjectType::GameObjectType_Monster:
-		actor = std::make_shared<Monster>(agent_id, this);
-		break;
-	}
-
-	actor->x = pos->x();
-	actor->y = pos->z();
-	actor->speed = speed;
-
-	auto itr = game_object_list_.insert(game_object_list_.end(), actor);
-	game_object_map_.insert(std::make_pair(agent_id, itr));
-	grid_manager_->add(actor.get());
 	return true;
 }
 
@@ -144,7 +105,7 @@ void World::OnRemoveAgent(int agent_id)
 		return;
 	}
 
-	if (itr->second->get()->GetType() == syncnet::GameObjectType_Character)
+	if (itr->second->get()->type() == syncnet::GameObjectType_Character)
 	{
 		auto character = std::dynamic_pointer_cast<Character>(*itr->second);
 
@@ -165,14 +126,14 @@ void World::OnRemoveAgent(int agent_id)
 
 void World::OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos)
 {
-	this->map()->setMoveTarget(Vector3Converter(pos).pos(), false, agent_id);
+	this->map()->setMoveTarget(Vector3(pos).pos(), false, agent_id);
 
 }
 
 void World::OnSetRaycast(const syncnet::Vec3* pos)
 {
 	float hitPoint[3];
-	if (this->map()->raycast(0, Vector3Converter(pos).pos(), hitPoint))
+	if (this->map()->raycast(0, Vector3(pos).pos(), hitPoint))
 	{
 		syncnet::Vec3 pos(hitPoint[0] * -1, hitPoint[1], hitPoint[2]);
 		this->raycasts_.push_back(pos);
@@ -188,7 +149,7 @@ int World::DetectEnemy(Actor * actor)
 
 	for (auto itr = targets.begin(); itr != targets.end(); ++itr)
 	{
-		if ((*itr)->GetType() != syncnet::GameObjectType_Character)
+		if ((*itr)->type() != syncnet::GameObjectType_Character)
 			continue;
 
 		const dtCrowdAgent* agent = this->map()->crowd()->getAgent((*itr)->agent_id());

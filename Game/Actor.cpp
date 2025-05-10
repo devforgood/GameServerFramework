@@ -1,7 +1,7 @@
 #include "Actor.h"
 
 
-void Actor::Update()
+void Actor::update()
 {
-	GameObject::Update();
+	GameObject::update();
 }

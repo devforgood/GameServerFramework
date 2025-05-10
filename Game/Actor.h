@@ -3,14 +3,17 @@
 
 class Actor : public GameObject
 {
+protected:
+	int agent_id_ = -1;
+
 public:
-	Actor(int agent_id, World* world) : GameObject(agent_id, world)
+	Actor(World* world) : GameObject(world)
 	{
 	}
 	virtual ~Actor() {}
-	virtual void Update() override;
+	virtual void update() override;
 
-
+	virtual int agent_id() override { return agent_id_; }
 
 public:
 	float x;
