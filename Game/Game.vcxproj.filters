@@ -92,6 +92,12 @@
     <ClCompile Include="GameObjectFactory.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
+    <ClCompile Include="MonsterBT.cpp">
+      <Filter>AI</Filter>
+    </ClCompile>
+    <ClCompile Include="MonsterCodeBaseBT.cpp">
+      <Filter>AI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -165,6 +171,12 @@
     </ClInclude>
     <ClInclude Include="GameObjectFactory.h">
       <Filter>GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="MonsterBT.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="MonsterCodeBaseBT.h">
+      <Filter>AI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
