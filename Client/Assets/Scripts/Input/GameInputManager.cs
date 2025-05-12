@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class GameInputManager : MonoBehaviour
@@ -50,5 +51,32 @@ public class GameInputManager : MonoBehaviour
             if (Vector3.Distance(playerTransform.position, targetPosition.Value) < 0.05f)
                 targetPosition = null;
         }
+
+        if (Input.GetMouseButtonDown(1)) // 우클릭
+        {
+            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit, 100f, groundLayer))
+            {
+                // y좌표는 현재 플레이어의 y값을 사용
+                Vector3 dest = hit.point;
+                dest.y = playerTransform.position.y;
+                StartCoroutine(JumpToPosition(playerTransform.position, dest, 1, 3));
+            }
+        }
+    }
+
+    IEnumerator JumpToPosition(Vector3 start, Vector3 end, float duration, float height)
+    {
+        float time = 0;
+        while (time < duration)
+        {
+            float t = time / duration;
+            float yOffset = Mathf.Sin(Mathf.PI * t) * height;
+            playerTransform.position = Vector3.Lerp(start, end, t) + Vector3.up * yOffset;
+            time += Time.deltaTime;
+            yield return null;
+        }
+        playerTransform.position = end;
     }
 }
