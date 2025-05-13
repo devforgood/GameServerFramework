@@ -1,27 +1,27 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+
+
+
 
 public class GameInputManager : MonoBehaviour
 {
     public Camera mainCamera;
     public LayerMask groundLayer;
     public float moveSpeed = 5f;
-    public float jumpDuration = 1f;
-    public float jumpHeight = 3f;
-    public float whirlwindSpeed = 5f;
-    public float whirlwindRotateSpeed = 5220f;
+
 
     private Transform playerTransform;
     private Vector3? targetPosition = null;
-    private bool isJumping = false;
-    private bool isWhirlwind = false;
 
-    private enum SkillType { None, Jump, Whirlwind }
-    private SkillType selectedSkill = SkillType.None;
+    // 스킬 관리
+    private Dictionary<KeyCode, ISkill> skillKeyMap = new Dictionary<KeyCode, ISkill>();
+    private ISkill currentSkill = null;
+    public bool IsSkillActive { get; set; } = false;
 
-    // 휠윈드용 목적지
-    private Vector3 whirlwindTarget;
-    private Coroutine whirlwindCoroutine;
+    public Transform PlayerTransform => playerTransform;
+    public Vector3 PlayerPosition { get => playerTransform.position; set => playerTransform.position = value; }
 
     void Start()
     {
@@ -31,6 +31,13 @@ public class GameInputManager : MonoBehaviour
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
             playerTransform = player.transform;
+
+        // 스킬 등록
+        skillKeyMap[KeyCode.F1] = new JumpSkill();
+        skillKeyMap[KeyCode.F2] = new WhirlwindSkill();
+        skillKeyMap[KeyCode.F3] = new ExplosionNoPhysics();
+
+        currentSkill = skillKeyMap[KeyCode.F1]; // 기본 스킬 설정
     }
 
     void Update()
@@ -38,85 +45,54 @@ public class GameInputManager : MonoBehaviour
         if (playerTransform == null)
             return;
 
-        // F1: 점프 스킬 선택
-        if (Input.GetKeyDown(KeyCode.F1))
+        // 스킬 선택
+        foreach (var kv in skillKeyMap)
         {
-            selectedSkill = SkillType.Jump;
-            isWhirlwind = false;
-        }
-
-        // F2: 휠윈드 스킬 선택
-        if (Input.GetKeyDown(KeyCode.F2))
-        {
-            selectedSkill = SkillType.Whirlwind;
-        }
-
-        // 마우스 좌클릭: 일반 이동
-        if (!isJumping && !isWhirlwind && Input.GetMouseButtonDown(0))
-        {
-            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit, 100f, groundLayer))
+            if (Input.GetKeyDown(kv.Key))
             {
-                Vector3 dest = hit.point;
-                dest.y = playerTransform.position.y;
-                targetPosition = dest;
+                if (currentSkill != null)
+                    currentSkill.OnDeselect(this);
+                currentSkill = kv.Value;
+                currentSkill.OnSelect(this);
             }
         }
 
-        // 일반 이동 처리
-        if (!isJumping && !isWhirlwind && targetPosition.HasValue)
+        // 스킬 발동(우클릭)
+        if (currentSkill != null)
+        {
+            if (Input.GetMouseButtonDown(1))
+                currentSkill.OnSkillButtonDown(this);
+            if (Input.GetMouseButtonUp(1))
+                currentSkill.OnSkillButtonUp(this);
+            currentSkill.Update(this);
+        }
+
+        // 일반 이동(좌클릭)
+        if (!IsSkillActive && Input.GetMouseButtonDown(0))
+        {
+            Vector3? dest = GetMouseGroundPosition();
+            if (dest.HasValue)
+            {
+                Vector3 d = dest.Value;
+                d.y = playerTransform.position.y;
+                targetPosition = d;
+            }
+        }
+
+        if (!IsSkillActive && targetPosition.HasValue)
         {
             playerTransform.position = Vector3.MoveTowards(
                 playerTransform.position,
                 targetPosition.Value,
                 moveSpeed * Time.deltaTime
             );
-
             if (Vector3.Distance(playerTransform.position, targetPosition.Value) < 0.05f)
                 targetPosition = null;
         }
-
-        // 휠윈드: 우클릭을 누르고 있는 동안 발동
-        if (!isJumping && selectedSkill == SkillType.Whirlwind)
-        {
-            if (Input.GetMouseButtonDown(1) && !isWhirlwind)
-            {
-                targetPosition = null;
-                // 휠윈드 시작
-                UpdateWhirlwindTarget();
-                whirlwindCoroutine = StartCoroutine(WhirlwindMove(whirlwindSpeed, whirlwindRotateSpeed));
-            }
-            else if (Input.GetMouseButton(1) && isWhirlwind)
-            {
-                // 휠윈드 중 목적지 계속 갱신
-                UpdateWhirlwindTarget();
-            }
-            else if (Input.GetMouseButtonUp(1) && isWhirlwind)
-            {
-                // 휠윈드 종료
-                StopCoroutine(whirlwindCoroutine);
-                isWhirlwind = false;
-                whirlwindCoroutine = null;
-            }
-        }
-
-        // 점프 스킬: 선택 후 우클릭으로 발동(기존과 동일)
-        if (!isJumping && !isWhirlwind && selectedSkill == SkillType.Jump && Input.GetMouseButtonDown(1))
-        {
-            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit, 100f, groundLayer))
-            {
-                Vector3 dest = hit.point;
-                dest.y = playerTransform.position.y;
-                targetPosition = null;
-                StartCoroutine(JumpToPosition(playerTransform.position, dest, jumpDuration, jumpHeight));
-            }
-        }
     }
 
-    void UpdateWhirlwindTarget()
+    // 마우스 위치의 지면 좌표 반환
+    public Vector3? GetMouseGroundPosition()
     {
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         RaycastHit hit;
@@ -124,40 +100,8 @@ public class GameInputManager : MonoBehaviour
         {
             Vector3 dest = hit.point;
             dest.y = playerTransform.position.y;
-            whirlwindTarget = dest;
+            return dest;
         }
-    }
-
-    IEnumerator JumpToPosition(Vector3 start, Vector3 end, float duration, float height)
-    {
-        isJumping = true;
-        float time = 0;
-        while (time < duration)
-        {
-            float t = time / duration;
-            float yOffset = Mathf.Sin(Mathf.PI * t) * height;
-            playerTransform.position = Vector3.Lerp(start, end, t) + Vector3.up * yOffset;
-            time += Time.deltaTime;
-            yield return null;
-        }
-        playerTransform.position = end;
-        isJumping = false;
-    }
-
-    IEnumerator WhirlwindMove(float speed, float rotateSpeed)
-    {
-        isWhirlwind = true;
-        while (isWhirlwind)
-        {
-            playerTransform.position = Vector3.MoveTowards(
-                playerTransform.position,
-                whirlwindTarget,
-                speed * Time.deltaTime
-            );
-            playerTransform.Rotate(Vector3.up, rotateSpeed * Time.deltaTime, Space.Self);
-
-            // 목적지에 거의 도달하면 멈추지 않고, 마우스 위치가 바뀌면 계속 이동
-            yield return null;
-        }
+        return null;
     }
 }
