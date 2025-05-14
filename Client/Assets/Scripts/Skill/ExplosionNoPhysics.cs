@@ -73,16 +73,20 @@ public class ExplosionNoPhysics : ISkill
     private IEnumerator JumpUp(FakePhysicsUnit unit, Vector3 velocity, float duration, float height)
     {
         Vector3 start = unit.transform.position;
-        // end 위치에 y축 힘을 명확히 반영
         Vector3 end = start + new Vector3(velocity.x, 0, velocity.z);
-        float upHeight = velocity.y * 0.1f + height; // y축 힘에 따라 높이 보정
+        float upHeight = velocity.y * 0.1f + height;
+        float randomHeight = upHeight * Random.Range(0.9f, 1.1f);
+        float randomDuration = duration * Random.Range(0.9f, 1.1f);
 
         float time = 0;
-        while (time < duration)
+        while (time < randomDuration)
         {
-            float t = time / duration;
-            float yOffset = Mathf.Sin(Mathf.PI * t) * upHeight;
+            float t = time / randomDuration;
+            // 포물선 궤적
+            float yOffset = 4f * randomHeight * t * (1 - t);
             unit.transform.position = Vector3.Lerp(start, end, t) + Vector3.up * yOffset;
+            // 회전 효과
+            unit.transform.Rotate(Vector3.up, 180f * Time.deltaTime);
             time += Time.deltaTime;
             yield return null;
         }
