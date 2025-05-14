@@ -62,7 +62,7 @@ public class ExplosionNoPhysics : ISkill
                 Vector3 force = dir * power;
                 force.y = Mathf.Abs(force.y) + power * upwardPowerRatio;
 
-                context.StartCoroutine(JumpUp(unit, force, 0.5f, 2f));
+                context.StartCoroutine(JumpUp(unit, force, 1f, 2f));
             }
         }
 
