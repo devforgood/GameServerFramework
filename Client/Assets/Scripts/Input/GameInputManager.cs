@@ -2,15 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
-
-
 public class GameInputManager : MonoBehaviour
 {
     public Camera mainCamera;
     public LayerMask groundLayer;
     public float moveSpeed = 5f;
-
 
     private Transform playerTransform;
     private Vector3? targetPosition = null;
@@ -104,4 +100,26 @@ public class GameInputManager : MonoBehaviour
         }
         return null;
     }
+
+#if UNITY_EDITOR
+    void OnDrawGizmos()
+    {
+        // 현재 스킬이 ExplosionNoPhysics일 때만
+        if (currentSkill is ExplosionNoPhysics explosionSkill)
+        {
+            Vector3? mousePos = GetMouseGroundPosition();
+            if (mousePos.HasValue)
+            {
+                float radius = explosionSkill.radius;
+                Vector3 center = mousePos.Value;
+                Gizmos.color = new Color(1f, 0.5f, 0f, 0.2f);
+                Gizmos.DrawSphere(center, 0.1f); // 중심점 표시(선택)
+                UnityEditor.Handles.color = new Color(1f, 0.5f, 0f, 0.3f);
+                UnityEditor.Handles.DrawSolidDisc(center, Vector3.up, radius);
+                UnityEditor.Handles.color = new Color(1f, 0.3f, 0f, 1f);
+                UnityEditor.Handles.DrawWireDisc(center, Vector3.up, radius);
+            }
+        }
+    }
+#endif
 }
