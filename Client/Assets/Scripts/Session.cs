@@ -380,7 +380,7 @@ public class Session : MonoBehaviour
 
 	void Update()
 	{
-		SendPing(Time.deltaTime);
+		//SendPing(Time.deltaTime);
 		byte[] result;
 		while (session.queue.TryDequeue(out result))
 		{
@@ -391,8 +391,9 @@ public class Session : MonoBehaviour
 		{
 			try
 			{
-				//Debug.DrawLine(ExportNavMeshToObj.ToUnityVector(lastPosition[i]), ExportNavMeshToObj.ToUnityVector(crowd.GetAgent(i).Position), Color.green, 1);
-				game_objects[agent.Key].transform.position = Vector3.Lerp(game_objects[agent.Key].transform.position, agent.Value.pos, UnityEngine.Time.deltaTime * 10f);
+				float lerpSpeed = 15f; // 원하는 값으로 조정 (5~15 정도가 적당함)
+                game_objects[agent.Key].transform.position =
+					Vector3.Lerp(game_objects[agent.Key].transform.position, agent.Value.pos, Time.deltaTime * lerpSpeed);
 			}
 			catch
 			{
