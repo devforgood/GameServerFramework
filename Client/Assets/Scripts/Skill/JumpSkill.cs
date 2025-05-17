@@ -19,6 +19,7 @@ public class JumpSkill : ISkill
         {
             jumpCoroutine = context.StartCoroutine(JumpToPosition(context, context.PlayerPosition, dest.Value, jumpDuration, jumpHeight));
             context.IsSkillActive = true;
+            context.targetPosition = null;
         }
     }
 

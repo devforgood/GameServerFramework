@@ -9,7 +9,7 @@ public class GameInputManager : MonoBehaviour
     public float moveSpeed = 5f;
 
     private Transform playerTransform;
-    private Vector3? targetPosition = null;
+    public Vector3? targetPosition = null;
 
     // 스킬 관리
     private Dictionary<KeyCode, ISkill> skillKeyMap = new Dictionary<KeyCode, ISkill>();

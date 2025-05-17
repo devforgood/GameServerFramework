@@ -30,6 +30,7 @@ public class WhirlwindSkill : ISkill
             target = dest.Value;
             whirlwindCoroutine = context.StartCoroutine(WhirlwindMove(context));
             context.IsSkillActive = true;
+            context.targetPosition = null;
         }
     }
 

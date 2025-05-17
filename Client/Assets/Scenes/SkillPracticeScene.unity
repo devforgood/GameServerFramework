@@ -428,9 +428,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 0}
-  distance: 15
+  distance: 20
   height: 2
-  angle: 45
+  angle: 55
   followSpeed: 8
 --- !u!114 &99107718
 MonoBehaviour:
