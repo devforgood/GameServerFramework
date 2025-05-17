@@ -201,3 +201,123 @@ std::vector<ItemDAO> ItemDAO::SelectByIndex(int player_id) {
     }
     return std::vector<ItemDAO>();
 }
+
+
+// ----------------------------------------
+
+SkillDAO::SkillDAO(sql::Connection* conn)
+    : conn_(conn) {}
+
+void SkillDAO::Insert() {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("INSERT INTO skill (player_id, skill_id, level) VALUES (?, ?, ?)")
+        );
+
+        stmt->setInt(1, player_id);
+        stmt->setInt(2, skill_id);
+        stmt->setInt(3, level);
+
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+void SkillDAO::Update() {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("UPDATE skill SET player_id = ?, skill_id = ?, level = ? WHERE id = ?")
+        );
+
+        stmt->setInt(1, player_id);
+        stmt->setInt(2, skill_id);
+        stmt->setInt(3, level);
+        stmt->setInt(4, id);
+
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+void SkillDAO::Delete() {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("DELETE FROM skill WHERE id = ?")
+        );
+
+        stmt->setInt(1, id);
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+bool SkillDAO::Select(int id) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("SELECT id, player_id, skill_id, level FROM skill WHERE id = ?")
+        );
+
+        stmt->setInt(1, id);
+
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        if (res->next()) {
+            this->id = res->getInt("id");
+            this->player_id = res->getInt("player_id");
+            this->skill_id = res->getInt("skill_id");
+            this->level = res->getInt("level");
+        } else {
+            return false;
+        }
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+    return true;
+}
+
+std::vector<SkillDAO> SkillDAO::SelectByIndex(int player_id) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("SELECT id, player_id, skill_id, level FROM skill WHERE player_id = ?")
+        );
+
+        stmt->setInt(1, player_id);
+
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        std::vector<SkillDAO> results;
+        while (res->next()) {
+            SkillDAO obj(conn_);
+            obj.id = res->getInt("id");
+            obj.player_id = res->getInt("player_id");
+            obj.skill_id = res->getInt("skill_id");
+            obj.level = res->getInt("level");
+            results.push_back(obj);
+        }
+        return results;
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+    return std::vector<SkillDAO>();
+}

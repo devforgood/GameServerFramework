@@ -17,6 +17,7 @@ private:
     SqlClientManager() = default;
     ~SqlClientManager() = default;
 
+    bool create_tables();
 public:
 	boost::thread_specific_ptr<SqlClient> sqlClientPtr; // Thread-specific pointer to SqlClient
 };

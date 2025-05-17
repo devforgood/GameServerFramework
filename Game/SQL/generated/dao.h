@@ -51,3 +51,31 @@ public:
     int player_id;
     int level;
 };
+
+
+
+// ----------------------------------------
+
+class SkillDAO {
+public:
+    SkillDAO(sql::Connection* conn);
+
+    void Insert();
+    void Update();
+    void Delete();
+
+    // Select by primary key
+    bool Select(int id);
+
+    // Select by index columns (if any)
+    std::vector<SkillDAO> SelectByIndex(int player_id);
+
+private:
+    sql::Connection* conn_;
+
+public:
+    int id;
+    int player_id;
+    int skill_id;
+    int level;
+};
