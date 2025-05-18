@@ -17,9 +17,12 @@ public class Session : MonoBehaviour
 	public Dictionary<int, Agent> agents = new Dictionary<int, Agent>();
 	public Dictionary<int, GameObject> game_objects = new Dictionary<int, GameObject>();
 	public int player_agnet_id = 0;
+	private int last_message_id = 1;
+
+	public int getMesssagetId() => last_message_id++;
 
 
-	[Header("Add Agent Event")]
+    [Header("Add Agent Event")]
 	[SerializeField] private SessionChannelSO _OnAddAgent = default;
 
 	[Header("Remove Agent Event Event")]
@@ -169,7 +172,7 @@ public class Session : MonoBehaviour
 		AddAgent.AddGameObjectType(builder, gameObjectType);
 		var offset = AddAgent.EndAddAgent(builder);
 
-		var msg = GameMessage.CreateGameMessage(builder, GameMessages.AddAgent, offset.Value);
+		var msg = GameMessage.CreateGameMessage(builder, 0, GameMessages.AddAgent, offset.Value);
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
@@ -184,7 +187,7 @@ public class Session : MonoBehaviour
 		RemoveAgent.AddAgentId(builder, agentId);
 		var offset = RemoveAgent.EndRemoveAgent(builder);
 
-		var msg = GameMessage.CreateGameMessage(builder, GameMessages.RemoveAgent, offset.Value);
+		var msg = GameMessage.CreateGameMessage(builder, 0, GameMessages.RemoveAgent, offset.Value);
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
@@ -203,7 +206,7 @@ public class Session : MonoBehaviour
 		SetMoveTarget.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
 		var offset = SetMoveTarget.EndSetMoveTarget(builder);
 
-		var msg = GameMessage.CreateGameMessage(builder, GameMessages.SetMoveTarget, offset.Value);
+		var msg = GameMessage.CreateGameMessage(builder, 0, GameMessages.SetMoveTarget, offset.Value);
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
@@ -219,7 +222,7 @@ public class Session : MonoBehaviour
 		syncnet.Ping.AddSeq(builder, seq++);
 		var offset = syncnet.Ping.EndPing(builder);
 
-		var msg = GameMessage.CreateGameMessage(builder, GameMessages.Ping, offset.Value);
+		var msg = GameMessage.CreateGameMessage(builder, 0, GameMessages.Ping, offset.Value);
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
@@ -235,7 +238,7 @@ public class Session : MonoBehaviour
 		SetRaycast.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
 		var offset = SetRaycast.EndSetRaycast(builder);
 
-		var msg = GameMessage.CreateGameMessage(builder, GameMessages.SetRaycast, offset.Value);
+		var msg = GameMessage.CreateGameMessage(builder, 0, GameMessages.SetRaycast, offset.Value);
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
@@ -252,7 +255,7 @@ public class Session : MonoBehaviour
         Login.AddUserId(builder, nameOffSet);
         Login.AddPassword(builder,passwordOffSet);
         var offset = Login.EndLogin(builder);
-        var msg = GameMessage.CreateGameMessage(builder, GameMessages.Login, offset.Value);
+        var msg = GameMessage.CreateGameMessage(builder, getMesssagetId(), GameMessages.Login, offset.Value);
         builder.Finish(msg.Value);
         byte[] body = builder.SizedByteArray();
         return body;
@@ -267,7 +270,7 @@ public class Session : MonoBehaviour
         UseSkill.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
 		UseSkill.AddTargetId(builder, type);
         var offset = UseSkill.EndUseSkill(builder);
-        var msg = GameMessage.CreateGameMessage(builder, GameMessages.UseSkill, offset.Value);
+        var msg = GameMessage.CreateGameMessage(builder, 0, GameMessages.UseSkill, offset.Value);
         builder.Finish(msg.Value);
         byte[] body = builder.SizedByteArray();
         return body;

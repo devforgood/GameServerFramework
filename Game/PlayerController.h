@@ -9,6 +9,7 @@ class PlayerController
 private:
 	World* world_;
 	std::shared_ptr<Player> player_;
+	int last_message_id_;
 
 	friend class game_session;
 

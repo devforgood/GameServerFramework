@@ -233,9 +233,13 @@ FLATBUFFERS_STRUCT_END(Vec3, 12);
 struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef GameMessageBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_MSG_TYPE = 4,
-    VT_MSG = 6
+    VT_ID = 4,
+    VT_MSG_TYPE = 6,
+    VT_MSG = 8
   };
+  int32_t id() const {
+    return GetField<int32_t>(VT_ID, 0);
+  }
   syncnet::GameMessages msg_type() const {
     return static_cast<syncnet::GameMessages>(GetField<uint8_t>(VT_MSG_TYPE, 0));
   }
@@ -272,6 +276,7 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_ID) &&
            VerifyField<uint8_t>(verifier, VT_MSG_TYPE) &&
            VerifyOffset(verifier, VT_MSG) &&
            VerifyGameMessages(verifier, msg(), msg_type()) &&
@@ -319,6 +324,9 @@ struct GameMessageBuilder {
   typedef GameMessage Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
+  void add_id(int32_t id) {
+    fbb_.AddElement<int32_t>(GameMessage::VT_ID, id, 0);
+  }
   void add_msg_type(syncnet::GameMessages msg_type) {
     fbb_.AddElement<uint8_t>(GameMessage::VT_MSG_TYPE, static_cast<uint8_t>(msg_type), 0);
   }
@@ -339,10 +347,12 @@ struct GameMessageBuilder {
 
 inline flatbuffers::Offset<GameMessage> CreateGameMessage(
     flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t id = 0,
     syncnet::GameMessages msg_type = syncnet::GameMessages_NONE,
     flatbuffers::Offset<void> msg = 0) {
   GameMessageBuilder builder_(_fbb);
   builder_.add_msg(msg);
+  builder_.add_id(id);
   builder_.add_msg_type(msg_type);
   return builder_.Finish();
 }

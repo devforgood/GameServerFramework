@@ -9,6 +9,8 @@
 
 void PlayerController::handle(const syncnet::GameMessage* msg)
 {
+	last_message_id_ = msg->id();
+
 	switch (msg->msg_type())
 	{
 	case syncnet::GameMessages::GameMessages_AddAgent:			handle(msg->msg_as_AddAgent()); break;
@@ -56,7 +58,7 @@ void PlayerController::handle(const syncnet::SetRaycast* msg)
 
 void PlayerController::handle(const syncnet::Login* msg)
 {
-	LOG.info("Login id :{}", msg->userId()->c_str());
+	LOG.info("Login id :{}, lastMessageId:{}", msg->userId()->c_str(), last_message_id_);
 
 	player_->async_db_query();
 }

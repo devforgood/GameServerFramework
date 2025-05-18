@@ -34,6 +34,7 @@ enum AIState:byte
 }
 
 table GameMessage {
+  id:int = 0;
   msg:GameMessages;
 }
 
