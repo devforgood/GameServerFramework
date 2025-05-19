@@ -49,7 +49,7 @@ public:
 	void possess(std::shared_ptr<Character> character);
 
 	void async_db_query();
-	void send(std::shared_ptr<send_message> msg);
+	void send(std::shared_ptr<send_message>& msg);
 	void close();
 
 	std::shared_ptr<Character> & character() { return character_; }

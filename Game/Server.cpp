@@ -76,7 +76,7 @@ void game_session::set_player(std::shared_ptr<Player> player)
 	player_controller_->world_ = room_.world();
 }
 
-void game_session::send(std::shared_ptr<send_message> msg)
+void game_session::send(std::shared_ptr<send_message>& msg)
 {
 	bool write_in_progress = !write_msgs_.empty();
 	write_msgs_.push_back(msg);

@@ -34,8 +34,9 @@ enum AIState:byte
 }
 
 table GameMessage {
-  id:int = 0;
   msg:GameMessages;
+  id:int = 0;
+  result:int = 0;
 }
 
 table AddAgent {

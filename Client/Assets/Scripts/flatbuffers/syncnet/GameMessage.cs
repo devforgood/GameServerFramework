@@ -19,25 +19,29 @@ public struct GameMessage : IFlatbufferObject
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
   public GameMessage __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public int Id { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
-  public syncnet.GameMessages MsgType { get { int o = __p.__offset(6); return o != 0 ? (syncnet.GameMessages)__p.bb.Get(o + __p.bb_pos) : syncnet.GameMessages.NONE; } }
-  public TTable? Msg<TTable>() where TTable : struct, IFlatbufferObject { int o = __p.__offset(8); return o != 0 ? (TTable?)__p.__union<TTable>(o + __p.bb_pos) : null; }
+  public syncnet.GameMessages MsgType { get { int o = __p.__offset(4); return o != 0 ? (syncnet.GameMessages)__p.bb.Get(o + __p.bb_pos) : syncnet.GameMessages.NONE; } }
+  public TTable? Msg<TTable>() where TTable : struct, IFlatbufferObject { int o = __p.__offset(6); return o != 0 ? (TTable?)__p.__union<TTable>(o + __p.bb_pos) : null; }
+  public int Id { get { int o = __p.__offset(8); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public int Result { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
 
   public static Offset<syncnet.GameMessage> CreateGameMessage(FlatBufferBuilder builder,
-      int id = 0,
       syncnet.GameMessages msg_type = syncnet.GameMessages.NONE,
-      int msgOffset = 0) {
-    builder.StartTable(3);
-    GameMessage.AddMsg(builder, msgOffset);
+      int msgOffset = 0,
+      int id = 0,
+      int result = 0) {
+    builder.StartTable(4);
+    GameMessage.AddResult(builder, result);
     GameMessage.AddId(builder, id);
+    GameMessage.AddMsg(builder, msgOffset);
     GameMessage.AddMsgType(builder, msg_type);
     return GameMessage.EndGameMessage(builder);
   }
 
-  public static void StartGameMessage(FlatBufferBuilder builder) { builder.StartTable(3); }
-  public static void AddId(FlatBufferBuilder builder, int id) { builder.AddInt(0, id, 0); }
-  public static void AddMsgType(FlatBufferBuilder builder, syncnet.GameMessages msgType) { builder.AddByte(1, (byte)msgType, 0); }
-  public static void AddMsg(FlatBufferBuilder builder, int msgOffset) { builder.AddOffset(2, msgOffset, 0); }
+  public static void StartGameMessage(FlatBufferBuilder builder) { builder.StartTable(4); }
+  public static void AddMsgType(FlatBufferBuilder builder, syncnet.GameMessages msgType) { builder.AddByte(0, (byte)msgType, 0); }
+  public static void AddMsg(FlatBufferBuilder builder, int msgOffset) { builder.AddOffset(1, msgOffset, 0); }
+  public static void AddId(FlatBufferBuilder builder, int id) { builder.AddInt(2, id, 0); }
+  public static void AddResult(FlatBufferBuilder builder, int result) { builder.AddInt(3, result, 0); }
   public static Offset<syncnet.GameMessage> EndGameMessage(FlatBufferBuilder builder) {
     int o = builder.EndTable();
     return new Offset<syncnet.GameMessage>(o);

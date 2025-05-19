@@ -36,7 +36,7 @@ class game_participant
 {
 public:
 	virtual ~game_participant() {}
-	virtual void send(std::shared_ptr<send_message> msg) = 0;
+	virtual void send(std::shared_ptr<send_message>& msg) = 0;
 };
 
 typedef std::shared_ptr<game_participant> game_participant_ptr;
@@ -77,7 +77,7 @@ public:
 
 	void start();
 
-	void send(std::shared_ptr<send_message>  msg);
+	void send(std::shared_ptr<send_message>& msg);
 	void close();
 
 	void set_player(std::shared_ptr<Player> player);

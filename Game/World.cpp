@@ -72,7 +72,7 @@ void World::SendWorldState()
 
 	auto updateActorNotify = syncnet::CreateUpdateActorNotify(*builder_ptr, agents, debug_raycasts);
 
-	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, 0, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
+	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
 	builder_ptr->Finish(send_msg);
 
 	for (auto itr = players_.begin(); itr != players_.end(); ++itr)

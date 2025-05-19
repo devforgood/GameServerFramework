@@ -6,6 +6,7 @@
 #include "LogHelper.h"
 #include "Player.h"
 #include "Character.h"
+#include "SendMessage.h"
 
 void PlayerController::handle(const syncnet::GameMessage* msg)
 {
@@ -61,6 +62,15 @@ void PlayerController::handle(const syncnet::Login* msg)
 	LOG.info("Login id :{}, lastMessageId:{}", msg->userId()->c_str(), last_message_id_);
 
 	player_->async_db_query();
+
+	int result = 0; // 0: success, 1: fail
+
+	auto builder_ptr = std::make_shared<send_message>();
+	flatbuffers::Offset<syncnet::Login> loginResponse = syncnet::CreateLogin(*builder_ptr, 0, 0);
+	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_Login, loginResponse.Union(), last_message_id_, result);
+	builder_ptr->Finish(send_msg);
+
+	player_->send(builder_ptr);
 }
 
 void PlayerController::handle(const syncnet::UseSkill* msg)

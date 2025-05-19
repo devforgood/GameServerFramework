@@ -21,4 +21,9 @@ public:
 		buffers.push_back(boost::asio::buffer(this->GetBufferPointer(), this->GetSize()));
 		return buffers;
 	}
+
+	flatbuffers::FlatBufferBuilder & get_builder()
+	{
+		return *this;
+	}
 };

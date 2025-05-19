@@ -87,7 +87,7 @@ void Player::async_db_query() {
         });
 }
 
-void Player::send(std::shared_ptr<send_message> msg)
+void Player::send(std::shared_ptr<send_message>& msg)
 {
 	auto session = session_.lock();
 	if (session)
