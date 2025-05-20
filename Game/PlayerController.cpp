@@ -64,13 +64,14 @@ void PlayerController::handle(const syncnet::Login* msg)
 	player_->async_db_query();
 
 	int result = 0; // 0: success, 1: fail
-
-	auto builder_ptr = std::make_shared<send_message>();
-	flatbuffers::Offset<syncnet::Login> loginResponse = syncnet::CreateLogin(*builder_ptr, 0, 0);
-	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_Login, loginResponse.Union(), last_message_id_, result);
-	builder_ptr->Finish(send_msg);
-
-	player_->send(builder_ptr);
+	player_->send(
+		syncnet::CreateLoginDirect
+		, syncnet::GameMessages::GameMessages_Login
+		, last_message_id_
+		, result
+		, msg->userId()->c_str()
+		, msg->password()->c_str()
+	);
 }
 
 void PlayerController::handle(const syncnet::UseSkill* msg)

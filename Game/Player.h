@@ -4,10 +4,10 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include "syncnet_generated.h"
+#include "SendMessage.h"
 
 class game_session;
 class game_server;
-class send_message;
 class Character;
 class Player : public std::enable_shared_from_this<Player>
 {
@@ -55,6 +55,29 @@ public:
 	std::shared_ptr<Character> & character() { return character_; }
 
 	bool switch_session(std::shared_ptr<Player> player);
+
+	template<typename CreateFunc, typename... Args>
+	void send(
+		CreateFunc createFunc,
+		syncnet::GameMessages msgType,
+		int32_t id,
+		int32_t result,
+		Args&&... args)
+	{
+		auto builder_ptr = std::make_shared<send_message>();
+		// 메시지 생성 (예: syncnet::CreateLogin, syncnet::CreateAddAgent 등)
+		auto msgOffset = createFunc(*builder_ptr, std::forward<Args>(args)...);
+		// GameMessage 생성
+		auto send_msg = syncnet::CreateGameMessage(
+			*builder_ptr,
+			msgType,
+			msgOffset.Union(),
+			id,
+			result
+		);
+		builder_ptr->Finish(send_msg);
+		this->send(builder_ptr);
+	}
 	
 };
 
