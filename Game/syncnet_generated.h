@@ -873,7 +873,8 @@ struct UseSkill FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_TARGETID = 8,
     VT_POS = 10,
     VT_DIR = 12,
-    VT_TIMESTAMP = 14
+    VT_TIMESTAMP = 14,
+    VT_DURATION = 16
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -893,6 +894,9 @@ struct UseSkill FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int64_t timestamp() const {
     return GetField<int64_t>(VT_TIMESTAMP, 0);
   }
+  int64_t duration() const {
+    return GetField<int64_t>(VT_DURATION, 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
@@ -901,6 +905,7 @@ struct UseSkill FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
            VerifyField<syncnet::Vec3>(verifier, VT_DIR) &&
            VerifyField<int64_t>(verifier, VT_TIMESTAMP) &&
+           VerifyField<int64_t>(verifier, VT_DURATION) &&
            verifier.EndTable();
   }
 };
@@ -927,6 +932,9 @@ struct UseSkillBuilder {
   void add_timestamp(int64_t timestamp) {
     fbb_.AddElement<int64_t>(UseSkill::VT_TIMESTAMP, timestamp, 0);
   }
+  void add_duration(int64_t duration) {
+    fbb_.AddElement<int64_t>(UseSkill::VT_DURATION, duration, 0);
+  }
   explicit UseSkillBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -946,8 +954,10 @@ inline flatbuffers::Offset<UseSkill> CreateUseSkill(
     int32_t targetId = 0,
     const syncnet::Vec3 *pos = 0,
     const syncnet::Vec3 *dir = 0,
-    int64_t timestamp = 0) {
+    int64_t timestamp = 0,
+    int64_t duration = 0) {
   UseSkillBuilder builder_(_fbb);
+  builder_.add_duration(duration);
   builder_.add_timestamp(timestamp);
   builder_.add_dir(dir);
   builder_.add_pos(pos);

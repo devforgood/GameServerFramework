@@ -14,6 +14,7 @@ class Player;
 class GridManager;
 class Actor;
 class GameObjectFactory;
+class TimeStamp;
 
 class World
 {
@@ -28,8 +29,11 @@ private:
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
 
 	GridManager* grid_manager_;
+	TimeStamp* time_stamp_;
 
 public:
+	World();
+	virtual ~World();
 
 	void Init();
 	void update(float deltaTime);

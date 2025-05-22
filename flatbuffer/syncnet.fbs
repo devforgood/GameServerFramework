@@ -91,6 +91,7 @@ table UseSkill {
   pos:Vec3;
   dir:Vec3;
   timestamp:long;
+  duration:long;
 }
 
 root_type GameMessage;

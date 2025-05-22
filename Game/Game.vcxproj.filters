@@ -101,6 +101,9 @@
     <ClCompile Include="RingBuffer.cpp">
       <Filter>core</Filter>
     </ClCompile>
+    <ClCompile Include="TimeStamp.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -182,6 +185,9 @@
       <Filter>AI</Filter>
     </ClInclude>
     <ClInclude Include="RingBuffer.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeStamp.h">
       <Filter>core</Filter>
     </ClInclude>
   </ItemGroup>

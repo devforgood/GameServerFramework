@@ -1,8 +1,10 @@
 ﻿using FlatBuffers;
 using syncnet;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -19,10 +21,13 @@ public class Session : MonoBehaviour
 
 	public Dictionary<int, Action<GameMessage>> responses = new Dictionary<int, Action<GameMessage>>();
 
+	public long unixTimestampMs => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
     public int player_agnet_id = 0;
 	private int last_message_id = 0;
 
-	public int nextMesssagetId()
+    private Coroutine jumpCoroutine;
+    public int nextMesssagetId()
 	{
 		++last_message_id;
 		if (last_message_id <= 0)
@@ -170,10 +175,51 @@ public class Session : MonoBehaviour
 
         });
     }
-    private void OnUseSkill(int agent_id, Vector3 pos, int type)
+	private void OnUseSkill(int agent_id, Vector3 pos, int type)
+	{
+		SendMessage(MakeUseSkill(agent_id, pos, type));
+		GameObject game_object = null;
+		if (game_objects.TryGetValue(agent_id, out game_object) == true)
+		{
+            jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, 1f, 3f));
+
+        }
+	}
+
+    private IEnumerator JumpToPosition(GameObject game_object, Vector3 start, Vector3 end, float duration, float height)
     {
-        SendMessage(MakeUseSkill(agent_id, pos, type));
+        float time = 0;
+        float dropPoint = 0.7f; // 상승 구간 비율 (0~1)
+        float fallDuration = duration * (1f - dropPoint); // 하강 구간 시간
+        Vector3 lastPos = start;
+
+        while (time < duration)
+        {
+            float t = time / duration;
+            float yOffset;
+
+            if (t < dropPoint)
+            {
+                // 천천히 상승 (곡선 조정 가능)
+                yOffset = Mathf.Lerp(0, height, t / dropPoint);
+            }
+            else
+            {
+                // 완만하게 하강 (선형 하강)
+                float fallT = (t - dropPoint) / (1f - dropPoint); // 0~1
+                yOffset = Mathf.Lerp(height, 0, fallT);
+            }
+
+            Vector3 pos = Vector3.Lerp(start, end, t) + Vector3.up * yOffset;
+            game_object.transform.position = pos;
+            lastPos = pos;
+            time += Time.deltaTime;
+            yield return null;
+        }
+        // 마지막 위치는 착지점
+        game_object.transform.position = end;
     }
+
     void Start()
 	{
 		Application.runInBackground = true;
@@ -301,6 +347,8 @@ public class Session : MonoBehaviour
         UseSkill.AddId(builder, agentId);
         UseSkill.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
 		UseSkill.AddTargetId(builder, type);
+		UseSkill.AddDuration(builder, 1);
+		UseSkill.AddTimestamp(builder, unixTimestampMs);
         var offset = UseSkill.EndUseSkill(builder);
         var msg = GameMessage.CreateGameMessage(builder, GameMessages.UseSkill, offset.Value);
         builder.Finish(msg.Value);
@@ -341,18 +389,19 @@ public class Session : MonoBehaviour
 			case GameMessages.UpdateActorNotify:
 				{
 					agents.Clear();
-                    UpdateActorNotify getAgents = recv_msg.Msg<UpdateActorNotify>().Value;
-					for (int i = 0; i < getAgents.AgentsLength; ++i)
+                    UpdateActorNotify updateActorNotify = recv_msg.Msg<UpdateActorNotify>().Value;
+					for (int i = 0; i < updateActorNotify.AgentsLength; ++i)
 					{
-						var agent_id = getAgents.Agents(i).Value.AgentId;
-						var pos = new Vector3(getAgents.Agents(i).Value.Pos.Value.X, getAgents.Agents(i).Value.Pos.Value.Y, getAgents.Agents(i).Value.Pos.Value.Z);
-						agents[agent_id] = new Agent() { pos = pos, state = getAgents.Agents(i).Value.State };
+						var agent = updateActorNotify.Agents(i).Value;
+						var agent_id = agent.AgentId;
+						var pos = new Vector3(agent.Pos.Value.X, agent.Pos.Value.Y, agent.Pos.Value.Z);
+						agents[agent_id] = new Agent() { pos = pos, state = agent.State };
 
 						GameObject game_object = null;
-						if(game_objects.TryGetValue(agent_id, out game_object) ==false)
-                        {
-							switch(getAgents.Agents(i).Value.GameObjectType)
-                            {
+						if (game_objects.TryGetValue(agent_id, out game_object) == false)
+						{
+							switch (agent.GameObjectType)
+							{
 								case GameObjectType.Monster:
 									game_object = (GameObject)Instantiate(Resources.Load("Monster"), pos, Quaternion.identity);
 									game_object.GetComponent<Monster>().agnet_id = agent_id;
@@ -364,13 +413,13 @@ public class Session : MonoBehaviour
 									break;
 							}
 
-							game_objects[agent_id] = game_object; 
+							game_objects[agent_id] = game_object;
 						}
 
-						if (getAgents.Agents(i).Value.GameObjectType == GameObjectType.Monster)
+						if (agent.GameObjectType == GameObjectType.Monster)
 						{
-							switch(getAgents.Agents(i).Value.State)
-                            {
+							switch (agent.State)
+							{
 								case AIState.Detect:
 									game_objects[agent_id].GetComponent<MeshRenderer>().material.color = Color.red;
 									break;
@@ -382,27 +431,31 @@ public class Session : MonoBehaviour
 									break;
 							}
 						}
+						else if (agent.GameObjectType == GameObjectType.Character)
+						{
+                            Debug.Log($"Player Agent ID: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+
+                        }
 					}
+					//List<int> removals = new List<int>();
+					//foreach(var game_object in game_objects)
+     //               {
+					//	if (agents.ContainsKey(game_object.Key) == false)
+					//		removals.Add(game_object.Key);
+     //               }
 
-					List<int> removals = new List<int>();
-					foreach(var game_object in game_objects)
-                    {
-						if (agents.ContainsKey(game_object.Key) == false)
-							removals.Add(game_object.Key);
-                    }
+					//foreach(var id in removals)
+     //               {
+					//	Destroy(game_objects[id]);
+					//	game_objects.Remove(id);
+					//}
 
-					foreach(var id in removals)
-                    {
-						Destroy(game_objects[id]);
-						game_objects.Remove(id);
-					}
-
-					for (int i = 0; i < getAgents.DebugsLength; ++i)
+					for (int i = 0; i < updateActorNotify.DebugsLength; ++i)
 					{
 						Vector3 pos;
-						pos.x = getAgents.Debugs(i).Value.EndPos.Value.X;
-						pos.y = getAgents.Debugs(i).Value.EndPos.Value.Y;
-						pos.z = getAgents.Debugs(i).Value.EndPos.Value.Z;
+						pos.x = updateActorNotify.Debugs(i).Value.EndPos.Value.X;
+						pos.y = updateActorNotify.Debugs(i).Value.EndPos.Value.Y;
+						pos.z = updateActorNotify.Debugs(i).Value.EndPos.Value.Z;
 						var obj = (GameObject)Instantiate(Resources.Load("DebugTarget"), pos, Quaternion.identity);
 					}
 				}

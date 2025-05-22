@@ -170,6 +170,7 @@
     <ClCompile Include="SqlClient.cpp" />
     <ClCompile Include="SqlClientManager.cpp" />
     <ClCompile Include="SQL\generated\dao.cpp" />
+    <ClCompile Include="TimeStamp.cpp" />
     <ClCompile Include="WalkerTest.cpp" />
     <ClCompile Include="World.cpp" />
   </ItemGroup>
@@ -217,6 +218,7 @@
     <ClInclude Include="SqlClientManager.h" />
     <ClInclude Include="SQL\generated\dao.h" />
     <ClInclude Include="syncnet_generated.h" />
+    <ClInclude Include="TimeStamp.h" />
     <ClInclude Include="Vector3.h" />
     <ClInclude Include="Walker.h" />
     <ClInclude Include="World.h" />

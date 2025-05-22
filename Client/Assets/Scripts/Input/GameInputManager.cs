@@ -19,6 +19,7 @@ public class GameInputManager : MonoBehaviour
     public Transform PlayerTransform => playerTransform;
     public Vector3 PlayerPosition { get => playerTransform.position; set => playerTransform.position = value; }
 
+
     void Start()
     {
         if (mainCamera == null)

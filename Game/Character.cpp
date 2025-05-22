@@ -3,6 +3,7 @@
 #include "LogHelper.h"
 #include "skill.h"
 #include "Vector3.h"
+#include "TimeStamp.h"
 
 Character::Character(World* world) : Actor(world)
 {
@@ -20,36 +21,45 @@ Character::~Character()
 	LOG.info("Character {} destroyed", player_id_);
 }
 
-void Character::use_skill(int skill_id, const syncnet::Vec3* target_pos)
+void Character::use_skill(const syncnet::UseSkill* msg)
 {
-	// Implement skill usage logic here
-	LOG.info("Character {} using skill {} at position ({}, {}, {})", player_id_, skill_id, target_pos->x(), target_pos->y(), target_pos->z());
+	// 시간 오차로 인해 타임스탬프를 업데이트
+	world_->time_stamp_->update();
+	float serverClientTimeOffset = world_->time_stamp_->getServerClientTimeOffset(msg->timestamp());
 
-	auto itr = skills_.find(skill_id);
+	// Implement skill usage logic here
+	LOG.info("Character {} using skill {} at position ({}, {}, {}) serverClientTimeOffset {}", player_id_, msg->skillId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z(), serverClientTimeOffset);
+
+	auto itr = skills_.find(msg->skillId());
 
 	if (itr != skills_.end())
 	{
 		Skill* skill = itr->second;
-		int result = skill->cast_skill(this, skill_id, target_pos);
+		int result = skill->cast_skill(this, msg, serverClientTimeOffset);
 		if (result == 0)
 		{
-			LOG.info("Skill {} cast successfully by character {}", skill_id, player_id_);
+			LOG.info("Skill {} cast successfully by character {}", msg->skillId(), player_id_);
 		}
 		else
 		{
-			LOG.error("Failed to cast skill {} by character {}. Error code: {}", skill_id, player_id_, result);
+			LOG.error("Failed to cast skill {} by character {}. Error code: {}", msg->skillId(), player_id_, result);
 		}
 
 	}
 	else
 	{
-		LOG.error("Skill {} not found for character {}", skill_id, player_id_);
+		LOG.error("Skill {} not found for character {}", msg->skillId(), player_id_);
 	}
 }
 
-void Character::update()
+void Character::update(float dt)
 {
-	Actor::update();
+	Actor::update(dt);
+	for(auto itr = skills_.begin(); itr != skills_.end(); ++itr)
+	{
+		Skill* skill = itr->second;
+		skill->update(dt);
+	}
 }
 
 bool Character::init(Vector3& pos)

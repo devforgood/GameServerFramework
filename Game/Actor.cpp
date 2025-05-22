@@ -1,7 +1,7 @@
 #include "Actor.h"
 
 
-void Actor::update()
+void Actor::update(float dt)
 {
-	GameObject::update();
+	GameObject::update(dt);
 }

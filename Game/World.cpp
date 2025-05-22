@@ -12,10 +12,36 @@
 #include "Player.h"
 #include "GridManager.h"
 #include "GameObjectFactory.h"
+#include "TimeStamp.h"
 
 //const float g_fDistance = std::powf(10.0f, 2);
 const float g_fDistance = 10.0f;
 
+World::World()
+{
+	map_ = nullptr;
+	grid_manager_ = nullptr;
+	time_stamp_ = nullptr;
+}
+
+World::~World()
+{
+	if (map_)
+	{
+		delete map_;
+		map_ = nullptr;
+	}
+	if (grid_manager_)
+	{
+		delete grid_manager_;
+		grid_manager_ = nullptr;
+	}
+	if (time_stamp_)
+	{
+		delete time_stamp_;
+		time_stamp_ = nullptr;
+	}
+}
 
 void World::Init()
 {
@@ -24,14 +50,16 @@ void World::Init()
 	Monster::Initialize("mob.lua");
 	Monster::registerLuaFunctionAll();
 	grid_manager_ = new GridManager(100, 100, 2);
-
+	time_stamp_ = new TimeStamp();
 }
 
 void World::update(float deltaTime)
 {
+	time_stamp_->update();
+
 	//LOG.info("World update begin");
 	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin();itr!= game_object_list_.end();++itr)
-		(*itr)->update();
+		(*itr)->update(deltaTime);
 
 	map_->update(deltaTime);
 	SendWorldState();
@@ -45,15 +73,21 @@ void World::SendWorldState()
 	std::vector<flatbuffers::Offset<syncnet::AgentInfo>> agent_info_vector;
 	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
 	{
-		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(itr->get()->agent_id());
+		auto game_object = itr->get();
+		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(game_object->agent_id());
 		if (agent->active == false)
 			continue;
 
-		syncnet::Vec3 pos(agent->npos[0] * -1, agent->npos[1], agent->npos[2]);
+		if(!game_object->is_changed_position(agent->npos[0], agent->npos[2]) 
+			&& !game_object->is_changed_state()) {
+			continue;
+		}
+
+		auto pos = Vector3::of(agent->npos);
 		//std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
 		grid_manager_->move((Actor*)itr->get(), agent->npos[0], agent->npos[2]);
 
-		agent_info = syncnet::CreateAgentInfo(*builder_ptr, itr->get()->agent_id(), &pos, itr->get()->type(), itr->get()->state());
+		agent_info = syncnet::CreateAgentInfo(*builder_ptr, game_object->agent_id(), pos.get(), game_object->type(), game_object->state());
 		agent_info_vector.push_back(agent_info);
 	}
 	auto agents = builder_ptr->CreateVector(agent_info_vector);

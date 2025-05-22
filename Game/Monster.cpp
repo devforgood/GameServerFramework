@@ -68,9 +68,9 @@ bool Monster::init(Vector3& pos)
 	return true;
 }
 
-void Monster::update()
+void Monster::update(float dt)
 {
-	Actor::update();
+	Actor::update(dt);
 	//bt_->Tick();
 	//runBehaviorTree(this);
 	tree_->tickOnce();

@@ -25,14 +25,16 @@ public struct UseSkill : IFlatbufferObject
   public syncnet.Vec3? Pos { get { int o = __p.__offset(10); return o != 0 ? (syncnet.Vec3?)(new syncnet.Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
   public syncnet.Vec3? Dir { get { int o = __p.__offset(12); return o != 0 ? (syncnet.Vec3?)(new syncnet.Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
   public long Timestamp { get { int o = __p.__offset(14); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
+  public long Duration { get { int o = __p.__offset(16); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
 
-  public static void StartUseSkill(FlatBufferBuilder builder) { builder.StartTable(6); }
+  public static void StartUseSkill(FlatBufferBuilder builder) { builder.StartTable(7); }
   public static void AddId(FlatBufferBuilder builder, int id) { builder.AddInt(0, id, 0); }
   public static void AddSkillId(FlatBufferBuilder builder, int skillId) { builder.AddInt(1, skillId, 0); }
   public static void AddTargetId(FlatBufferBuilder builder, int targetId) { builder.AddInt(2, targetId, 0); }
   public static void AddPos(FlatBufferBuilder builder, Offset<syncnet.Vec3> posOffset) { builder.AddStruct(3, posOffset.Value, 0); }
   public static void AddDir(FlatBufferBuilder builder, Offset<syncnet.Vec3> dirOffset) { builder.AddStruct(4, dirOffset.Value, 0); }
   public static void AddTimestamp(FlatBufferBuilder builder, long timestamp) { builder.AddLong(5, timestamp, 0); }
+  public static void AddDuration(FlatBufferBuilder builder, long duration) { builder.AddLong(6, duration, 0); }
   public static Offset<syncnet.UseSkill> EndUseSkill(FlatBufferBuilder builder) {
     int o = builder.EndTable();
     return new Offset<syncnet.UseSkill>(o);
