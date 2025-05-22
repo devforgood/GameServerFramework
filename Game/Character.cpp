@@ -23,8 +23,6 @@ Character::~Character()
 
 void Character::use_skill(const syncnet::UseSkill* msg)
 {
-	// 시간 오차로 인해 타임스탬프를 업데이트
-	world_->time_stamp_->update();
 	float serverClientTimeOffset = world_->time_stamp_->getServerClientTimeOffset(msg->timestamp());
 
 	// Implement skill usage logic here
