@@ -190,7 +190,8 @@ public class Session : MonoBehaviour
 
 	byte[] MakeHeader(byte[] body)
 	{
-		return BitConverter.GetBytes(body.Length);
+        // 2byte header + 2byte body length
+        return BitConverter.GetBytes((ushort)body.Length);
 	}
 
 	public byte[] MakeAddAgent(Vector3 pos, GameObjectType gameObjectType = GameObjectType.Monster)

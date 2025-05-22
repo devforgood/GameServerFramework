@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <span>
 
 #ifndef _WIN32_WINNT         
 #define _WIN32_WINNT 0x0A00   // Windows 10
@@ -67,6 +68,7 @@ private:
 class Player;
 class PlayerController;
 class game_server;
+class RingBuffer;
 class game_session
 	: public game_participant,
 	public std::enable_shared_from_this<game_session>
@@ -88,8 +90,14 @@ private:
 
 	void do_write();
 
+	void do_read();
+	void process_packets();
+	void handle_packet(std::span<const char> data);
+
+
 	tcp::socket socket_;
 	game_room& room_;
+	RingBuffer* ring_buf_;
 	game_message read_msg_;
 	game_message_queue write_msgs_;
 	PlayerController* player_controller_;

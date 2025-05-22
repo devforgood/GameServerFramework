@@ -8,6 +8,7 @@
 #include "SqlClient.h"
 #include "SqlClientManager.h"
 #include "PlayerController.h"
+#include "RingBuffer.h"
 
 game_room::game_room()
 {
@@ -47,6 +48,7 @@ game_session::game_session(tcp::socket socket, game_room& room, boost::asio::thr
 {
 	player_ = nullptr;
 	player_controller_ = new PlayerController();
+	ring_buf_ = new RingBuffer(8192); // 8192 bytes
 }
 
 game_session::~game_session()
@@ -56,6 +58,11 @@ game_session::~game_session()
 		delete player_controller_;
 		player_controller_ = nullptr;
 	}
+	if (ring_buf_ != nullptr)
+	{
+		delete ring_buf_;
+		ring_buf_ = nullptr;
+	}
 }
 
 void game_session::start()
@@ -63,7 +70,7 @@ void game_session::start()
 	set_player(std::make_shared<Player>());
 
 	room_.join(shared_from_this());
-	do_read_header();
+	do_read();
 
 }
 
@@ -92,6 +99,63 @@ void game_session::close()
 	socket_.close(ignored_ec);
 	room_.leave(shared_from_this());
 }
+
+void game_session::do_read() {
+	size_t space = 0;
+	char* write_ptr = ring_buf_->write_ptr(space);
+	if (!write_ptr || space == 0) return;
+
+	socket_.async_read_some(boost::asio::buffer(write_ptr, space),
+		[this](boost::system::error_code ec, std::size_t bytes_transferred) {
+			if (!ec) {
+				ring_buf_->commit_write(bytes_transferred);
+				process_packets();
+				do_read();
+			}
+		});
+}
+
+void game_session::process_packets() {
+	while (true) {
+		if (ring_buf_->size() < game_message::header_length)
+			return;
+
+		const char* hdr_ptr = nullptr;
+		uint16_t body_len = 0;
+
+		if (ring_buf_->peek_ptr(hdr_ptr, game_message::header_length)) {
+			std::memcpy(&body_len, hdr_ptr, game_message::header_length);
+		}
+		else {
+			char tmp[game_message::header_length];
+			if (!ring_buf_->peek(tmp, game_message::header_length)) return;
+			std::memcpy(&body_len, tmp, game_message::header_length);
+		}
+
+		if (ring_buf_->size() < game_message::header_length + body_len)
+			return;
+
+		ring_buf_->read(nullptr, game_message::header_length);  // consume header
+
+		auto body_view = ring_buf_->try_peek_span(body_len);
+		if (body_view) {
+			handle_packet(*body_view);
+			ring_buf_->read(nullptr, body_len);  // consume body
+		}
+		else {
+			// fallback
+			std::vector<char> body(body_len);
+			ring_buf_->read(body.data(), body_len);
+			handle_packet(std::span<const char>(body));
+		}
+	}
+}
+
+void game_session::handle_packet(std::span<const char> data) {
+	const uint8_t* udata = reinterpret_cast<const uint8_t*>(data.data());
+	player_controller_->handle(syncnet::GetGameMessage(udata));
+}
+
 
 void game_session::do_read_header()
 {

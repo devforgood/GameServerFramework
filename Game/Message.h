@@ -3,7 +3,7 @@
 class game_message
 {
 public:
-	enum { header_length = 4 };
+	enum { header_length = 2 };
 	enum { max_body_length = 512 };
 
 	game_message()
@@ -21,7 +21,7 @@ public:
 		return data_;
 	}
 
-	std::size_t length() const
+	uint16_t length() const
 	{
 		return header_length + body_length_;
 	}
@@ -36,12 +36,12 @@ public:
 		return data_ + header_length;
 	}
 
-	std::size_t body_length() const
+	uint16_t body_length() const
 	{
 		return body_length_;
 	}
 
-	void body_length(std::size_t new_length)
+	void body_length(uint16_t new_length)
 	{
 		body_length_ = new_length;
 		if (body_length_ > max_body_length)
@@ -54,7 +54,7 @@ public:
 		//strncat_s(header, data_, header_length);
 		//body_length_ = std::atoi(header);
 
-		body_length_ = *(reinterpret_cast<int*>(data_));
+		body_length_ = *(reinterpret_cast<uint16_t*>(data_));
 		if (body_length_ > max_body_length)
 		{
 			body_length_ = 0;
@@ -69,11 +69,11 @@ public:
 		//printf_s(header, "%4d", static_cast<int>(body_length_));
 		//std::memcpy(data_, header, header_length);
 
-		*(reinterpret_cast<int*>(data_)) = static_cast<int>(body_length_);
+		*(reinterpret_cast<uint16_t*>(data_)) = static_cast<uint16_t>(body_length_);
 
 	}
 
 private:
 	char data_[header_length + max_body_length];
-	std::size_t body_length_;
+	uint16_t body_length_;
 };

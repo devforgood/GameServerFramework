@@ -13,6 +13,7 @@ using UnityEngine;
 /// <inheritdoc />
 public class TcpConnection : IDisposable
 {
+    public const int HEADER_SIZE = 2;
     /// <summary>
     ///     The socket we're managing.
     /// </summary>
@@ -179,7 +180,7 @@ public class TcpConnection : IDisposable
     /// <param name="callback">The callback to invoke when the body has been read.</param>
     void StartWaitingForHeader(Action<byte[]> callback)
     {
-        StartWaitingForBytes(4, (bytes) => HeaderReadCallback(bytes, callback));
+        StartWaitingForBytes(HEADER_SIZE, (bytes) => HeaderReadCallback(bytes, callback));
     }
 
     /// <summary>
@@ -277,10 +278,10 @@ public class TcpConnection : IDisposable
     /// <returns>The number of bytes.</returns>
     static int GetLengthFromBytes(byte[] bytes)
     {
-        if (bytes.Length < 4)
+        if (bytes.Length < HEADER_SIZE)
             throw new IndexOutOfRangeException("Not enough bytes passed to calculate length.");
 
-        return BitConverter.ToInt32(bytes, 0);
+        return BitConverter.ToInt16(bytes, 0);
     }
 
     /// <inheritdoc />
