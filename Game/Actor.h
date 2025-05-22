@@ -20,9 +20,9 @@ public:
 		return (this->x != x || this->y != y);
 	}
 
-	virtual bool is_changed_state() 
+	virtual bool is_changed() 
 	{ 
-		return last_state_ != state_;
+		return is_changed_;
 	}
 
 
