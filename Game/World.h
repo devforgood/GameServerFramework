@@ -15,6 +15,7 @@ class GridManager;
 class Actor;
 class GameObjectFactory;
 class TimeStamp;
+class send_message;
 
 class World
 {
@@ -42,12 +43,13 @@ public:
 
 	void SendWorldState();
 
-	bool OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
+	std::shared_ptr<GameObject> OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
 	void OnRemoveAgent(int agent_id);
 	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
 	void OnSetRaycast(const syncnet::Vec3* pos);
 
 	int DetectEnemy(Actor* actor);
+	void SendBroadcast(std::shared_ptr<send_message> msg);
 
 	friend class Actor;
 	friend class GameObjectFactory;

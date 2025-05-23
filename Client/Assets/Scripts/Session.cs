@@ -129,8 +129,33 @@ public class Session : MonoBehaviour
 
 	private void OnAddAgent(int agent_id, Vector3 pos, int type)
 	{
-		SendMessage(MakeAddAgent(pos, (GameObjectType)type));
-	}
+        int messageId = nextMesssagetId();
+        SendMessage(MakeAddAgent(pos, (GameObjectType)type), response =>
+        {
+            if (response.MsgType == GameMessages.AddAgent)
+            {
+                AddAgent addAgent = response.Msg<AddAgent>().Value;
+                if (response.Result == StatusCode.Success)
+                {
+                    Debug.Log("AddAgent Success");
+					if(addAgent.GameObjectType == (int)GameObjectType.Character)
+					{
+						player_agnet_id = addAgent.AgentId;
+					}
+                }
+                else
+                {
+                    Debug.Log("AddAgent Fail");
+                }
+            }
+            else
+            {
+                Debug.Log("AddAgent Error");
+
+            }
+
+        });
+    }
 
 	private void OnRemoveAgent(int agent_id, Vector3 pos, int type)
 	{
@@ -162,7 +187,7 @@ public class Session : MonoBehaviour
 			if (response.MsgType == GameMessages.Login)
 			{
 				Login login = response.Msg<Login>().Value;
-				if (response.Result == 0)
+				if (response.Result == StatusCode.Success)
 				{
 					Debug.Log("Login Success");
 				}
@@ -190,9 +215,9 @@ public class Session : MonoBehaviour
         }
 
 
-        SendMessage(MakeUseSkill(agent_id, pos, type));
+        SendMessage(MakeUseSkill(player_agnet_id, pos, type));
 		GameObject game_object = null;
-		if (game_objects.TryGetValue(agent_id, out game_object) == true)
+		if (game_objects.TryGetValue(player_agnet_id, out game_object) == true)
 		{
             jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, 1f, 3f));
 
@@ -424,7 +449,6 @@ public class Session : MonoBehaviour
 								case GameObjectType.Character:
 									game_object = (GameObject)Instantiate(Resources.Load("Character2"), pos, Quaternion.identity);
 									game_object.GetComponent<Character>().agnet_id = agent_id;
-									player_agnet_id = agent_id;
 									break;
 							}
 

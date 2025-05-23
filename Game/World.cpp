@@ -78,8 +78,11 @@ void World::SendWorldState()
 		if (agent->active == false)
 			continue;
 
-		if(game_object->is_changed_position(agent->npos[0], agent->npos[2]))
+		if (game_object->is_changed_position(agent->npos[0], agent->npos[2]))
+		{
 			game_object->set_changed(true);
+			grid_manager_->move((Actor*)itr->get(), agent->npos[0], agent->npos[2]);
+		}
 		
 		if (!game_object->is_changed()) 
 			continue;
@@ -88,7 +91,6 @@ void World::SendWorldState()
 
 		auto pos = Vector3::of(agent->npos);
 		//std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
-		grid_manager_->move((Actor*)itr->get(), agent->npos[0], agent->npos[2]);
 
 		agent_info = syncnet::CreateAgentInfo(*builder_ptr, game_object->agent_id(), pos.get(), game_object->type(), game_object->state());
 		agent_info_vector.push_back(agent_info);
@@ -112,26 +114,31 @@ void World::SendWorldState()
 	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
 	builder_ptr->Finish(send_msg);
 
+	SendBroadcast(builder_ptr);
+}
+
+void World::SendBroadcast(std::shared_ptr<send_message> msg) 
+{
 	for (auto itr = players_.begin(); itr != players_.end(); ++itr)
 	{
-		itr->second->send(builder_ptr);
+		itr->second->send(msg);
 	}
 }
 
-bool World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
+std::shared_ptr<GameObject> World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
 	auto game_object = GameObjectFactory::CreateGameObject(this, player, type, pos);
 	if (game_object == nullptr)
 	{
 		LOG.error("OnAddAgent error in GameObjectFactory::CreateGameObject()");
-		return false;
+		return nullptr;
 	}
 
 	auto itr = game_object_list_.insert(game_object_list_.end(), game_object);
 	game_object_map_.insert(std::make_pair(game_object->agent_id(), itr));
 	game_object->set_changed(true);
 
-	return true;
+	return game_object;
 }
 
 void World::OnRemoveAgent(int agent_id)

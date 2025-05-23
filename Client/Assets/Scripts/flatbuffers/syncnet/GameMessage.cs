@@ -22,17 +22,17 @@ public struct GameMessage : IFlatbufferObject
   public syncnet.GameMessages MsgType { get { int o = __p.__offset(4); return o != 0 ? (syncnet.GameMessages)__p.bb.Get(o + __p.bb_pos) : syncnet.GameMessages.NONE; } }
   public TTable? Msg<TTable>() where TTable : struct, IFlatbufferObject { int o = __p.__offset(6); return o != 0 ? (TTable?)__p.__union<TTable>(o + __p.bb_pos) : null; }
   public int Id { get { int o = __p.__offset(8); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
-  public int Result { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public syncnet.StatusCode Result { get { int o = __p.__offset(10); return o != 0 ? (syncnet.StatusCode)__p.bb.GetShort(o + __p.bb_pos) : syncnet.StatusCode.Success; } }
 
   public static Offset<syncnet.GameMessage> CreateGameMessage(FlatBufferBuilder builder,
       syncnet.GameMessages msg_type = syncnet.GameMessages.NONE,
       int msgOffset = 0,
       int id = 0,
-      int result = 0) {
+      syncnet.StatusCode result = syncnet.StatusCode.Success) {
     builder.StartTable(4);
-    GameMessage.AddResult(builder, result);
     GameMessage.AddId(builder, id);
     GameMessage.AddMsg(builder, msgOffset);
+    GameMessage.AddResult(builder, result);
     GameMessage.AddMsgType(builder, msg_type);
     return GameMessage.EndGameMessage(builder);
   }
@@ -41,7 +41,7 @@ public struct GameMessage : IFlatbufferObject
   public static void AddMsgType(FlatBufferBuilder builder, syncnet.GameMessages msgType) { builder.AddByte(0, (byte)msgType, 0); }
   public static void AddMsg(FlatBufferBuilder builder, int msgOffset) { builder.AddOffset(1, msgOffset, 0); }
   public static void AddId(FlatBufferBuilder builder, int id) { builder.AddInt(2, id, 0); }
-  public static void AddResult(FlatBufferBuilder builder, int result) { builder.AddInt(3, result, 0); }
+  public static void AddResult(FlatBufferBuilder builder, syncnet.StatusCode result) { builder.AddShort(3, (short)result, 0); }
   public static Offset<syncnet.GameMessage> EndGameMessage(FlatBufferBuilder builder) {
     int o = builder.EndTable();
     return new Offset<syncnet.GameMessage>(o);

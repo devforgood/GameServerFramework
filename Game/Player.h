@@ -61,7 +61,7 @@ public:
 		CreateFunc createFunc,
 		syncnet::GameMessages msgType,
 		int32_t id,
-		int32_t result,
+		syncnet::StatusCode result,
 		Args&&... args)
 	{
 		auto builder_ptr = std::make_shared<send_message>();

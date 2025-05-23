@@ -14,6 +14,14 @@ union GameMessages
   UseSkill,
 } // Optionally add more tables.
 
+enum StatusCode:short
+{
+  Success = 0,
+  Failed,
+  NotFound,
+  AlreadyExists,
+}
+
 struct Vec3 {
   x:float;
   y:float;
@@ -36,12 +44,13 @@ enum AIState:byte
 table GameMessage {
   msg:GameMessages;
   id:int = 0;
-  result:int = 0;
+  result:StatusCode = Success;
 }
 
 table AddAgent {
   gameObjectType:GameObjectType = Monster;
   pos:Vec3;
+  agentId:int = 0;
 }
 
 table RemoveAgent {

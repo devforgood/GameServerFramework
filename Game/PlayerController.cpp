@@ -28,8 +28,27 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 {
 	LOG.info("add agent pos:({},{},{})", msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 
-	bool ret = world_->OnAddAgent(player_, msg->gameObjectType(), msg->pos());
+	auto game_object = world_->OnAddAgent(player_, msg->gameObjectType(), msg->pos());
+	auto status = syncnet::StatusCode::StatusCode_Success;
+	int agent_id = 0;
+	if (!game_object) {
+		LOG.error("OnAddAgent 실패: GameObject 생성에 실패했습니다.");
+		status = syncnet::StatusCode::StatusCode_Failed;
+	}
+	else
+	{ 
+		agent_id = game_object->agent_id();
+	}
 
+	player_->send(
+		syncnet::CreateAddAgent
+		, syncnet::GameMessages::GameMessages_AddAgent
+		, last_message_id_
+		, status
+		, msg->gameObjectType()
+		, msg->pos()
+		, agent_id
+	);
 
 }
 
@@ -81,12 +100,11 @@ void PlayerController::handle(const syncnet::Login* msg)
 
 	player_->async_db_query();
 
-	int result = 0; // 0: success, 1: fail
 	player_->send(
 		syncnet::CreateLoginDirect
 		, syncnet::GameMessages::GameMessages_Login
 		, last_message_id_
-		, result
+		, syncnet::StatusCode::StatusCode_Success
 		, msg->userId()->c_str()
 		, msg->password()->c_str()
 	);
