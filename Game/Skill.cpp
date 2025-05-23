@@ -38,7 +38,7 @@ int Skill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, float serverCl
 	duration_ = msg->duration() - serverClientTimeOffset; // Adjust duration with server-client time offset
 
 	is_casting_ = true;
-
+	actor_->set_input_locked(true); // Lock input while casting
 
 	return 0;
 }
@@ -52,6 +52,7 @@ void Skill::update(float dt)
 		{
 			end_duration_skill();
 			is_casting_ = false;
+			actor_->set_input_locked(false); // Unlock input after casting
 			duration_ = 0; 
 		}
 	}

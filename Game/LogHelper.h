@@ -16,6 +16,7 @@ inline void InitLog()
 	sinks.push_back(std::make_shared<spdlog::sinks::daily_file_sink_mt>("logs/logfile.log", 23, 59)); //file
 	// create synchronous  loggers
 	auto net_logger = std::make_shared<spdlog::logger>("net", sinks.begin(), sinks.end());
+	net_logger->set_level(spdlog::level::debug);
 	spdlog::register_logger(net_logger);
 
 }

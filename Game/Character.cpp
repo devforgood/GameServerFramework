@@ -9,6 +9,7 @@ Character::Character(World* world) : Actor(world)
 {
 	// todo : load skills from DB table
 	skills_[1] = new Skill();
+	is_input_locked_ = false;
 }
 
 Character::~Character() 

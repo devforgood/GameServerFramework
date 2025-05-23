@@ -27,6 +27,7 @@ public class Session : MonoBehaviour
 	private int last_message_id = 0;
 
     private Coroutine jumpCoroutine;
+	private bool isCasting = false;
     public int nextMesssagetId()
 	{
 		++last_message_id;
@@ -138,17 +139,20 @@ public class Session : MonoBehaviour
 
 	private void OnSetMoveTarget(int agent_id, Vector3 pos, int type)
 	{
-		SendMessage(MakeSetMoveTarget(agent_id, pos));
+		Debug.Log($"SetMoveTarget agent_id: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+        SendMessage(MakeSetMoveTarget(agent_id, pos));
 	}
 
 	private void OnSetRaycast(int agent_id, Vector3 pos, int type)
 	{
-		SendMessage(MakeSetRaycast(pos));
+		Debug.Log($"SetRaycast agent_id: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+        SendMessage(MakeSetRaycast(pos));
 	}
 
 	private void OnSetMoveCharacter(int agent_id, Vector3 pos, int type)
 	{
-		SendMessage(MakeSetMoveTarget(player_agnet_id, pos));
+		Debug.Log($"SetMoveCharacter agent_id: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+        SendMessage(MakeSetMoveTarget(player_agnet_id, pos));
 	}
     private void OnLogin(int agent_id, Vector3 pos, int type)
     {
@@ -177,7 +181,16 @@ public class Session : MonoBehaviour
     }
 	private void OnUseSkill(int agent_id, Vector3 pos, int type)
 	{
-		SendMessage(MakeUseSkill(agent_id, pos, type));
+		Debug.Log($"UseSkill agent_id: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+
+		if(isCasting == true)
+		{
+			Debug.Log("isCasting");
+			return;
+        }
+
+
+        SendMessage(MakeUseSkill(agent_id, pos, type));
 		GameObject game_object = null;
 		if (game_objects.TryGetValue(agent_id, out game_object) == true)
 		{
@@ -193,6 +206,7 @@ public class Session : MonoBehaviour
         float fallDuration = duration * (1f - dropPoint); // 하강 구간 시간
         Vector3 lastPos = start;
 
+        isCasting = true;
         while (time < duration)
         {
             float t = time / duration;
@@ -218,6 +232,7 @@ public class Session : MonoBehaviour
         }
         // 마지막 위치는 착지점
         game_object.transform.position = end;
+		isCasting = false;
     }
 
     void Start()

@@ -41,7 +41,25 @@ void PlayerController::handle(const syncnet::RemoveAgent* msg)
 
 void PlayerController::handle(const syncnet::SetMoveTarget* msg)
 {
-	LOG.info("move target agent id :{}, pos:({},{},{})", msg->agentId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
+	if(!player_)
+	{
+		LOG.error("player is null");
+		return;
+	}
+
+	if(!player_->character())
+	{
+		LOG.error("character is null");
+		return;
+	}
+
+	if(player_->character()->is_input_locked())
+	{
+		LOG.debug("character is input locked");
+		return;
+	}
+
+	LOG.debug("move target agent id :{}, pos:({},{},{})", msg->agentId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 	world_->OnSetMoveTarget(msg->agentId(), msg->pos());
 }
 
@@ -84,7 +102,12 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 		LOG.error("character is null");
 		return;
 	}
-	
+
+	if (player_->character()->is_input_locked())
+	{
+		LOG.debug("character is input locked");
+		return;
+	}
 
 	character->use_skill(msg);
 

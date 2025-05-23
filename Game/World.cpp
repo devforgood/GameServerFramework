@@ -80,7 +80,7 @@ void World::SendWorldState()
 
 		if(game_object->is_changed_position(agent->npos[0], agent->npos[2]))
 			game_object->set_changed(true);
-
+		
 		if (!game_object->is_changed()) 
 			continue;
 
