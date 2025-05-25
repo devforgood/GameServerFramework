@@ -23,13 +23,8 @@ private:
 	game_server* server_;
 
 public:
-	Player()
-	{
-		uuid_ = boost::uuids::random_generator()();
-	}
-
-	~Player() {}
-
+	Player();
+	~Player();
 
 	void set_name(std::string name)
 	{

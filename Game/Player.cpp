@@ -25,6 +25,19 @@ public:
 };
 
 
+// todo :  Player ID 디비에서 관리 개선 필요
+static long next_player_id = 1;
+
+Player::Player()
+{
+	uuid_ = boost::uuids::random_generator()();
+	player_id_ = next_player_id++;
+}
+
+Player::~Player() {
+}
+
+
 void Player::set_session(std::shared_ptr<game_session> session)
 {
 	session_ = session;
