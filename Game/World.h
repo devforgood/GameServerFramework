@@ -42,6 +42,7 @@ public:
 	Map* map() { return map_; }
 
 	void SendWorldState();
+	void GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::AgentInfo>>& agent_info_vector);
 
 	std::shared_ptr<GameObject> OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
 	void OnRemoveAgent(int agent_id);

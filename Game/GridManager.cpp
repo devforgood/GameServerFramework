@@ -84,7 +84,7 @@ void GridManager::leaveCell(Actor* actor, int x, int y) {
 }
 
 void GridManager::add(Actor* actor) {
-    auto [cx, cy] = getCellCoord(actor->x, actor->y);
+    auto [cx, cy] = getCellCoord(actor->get_vecter2_x(), actor->get_vecter2_y());
     actor->gridX = cx;
     actor->gridY = cy;
     enterCell(actor, cx, cy);
@@ -98,8 +98,6 @@ void GridManager::move(Actor* actor, float newX, float newY) {
         actor->gridX = newCX;
         actor->gridY = newCY;
     }
-    actor->x = newX;
-    actor->y = newY;
 }
 
 void GridManager::remove(Actor* actor) {
@@ -108,7 +106,7 @@ void GridManager::remove(Actor* actor) {
 
 std::vector<Actor*> GridManager::getEntitiesInViewRange(Actor* viewer, float range) {
     std::vector<Actor*> result;
-    auto [cx, cy] = getCellCoord(viewer->x, viewer->y);
+    auto [cx, cy] = getCellCoord(viewer->get_vecter2_x(), viewer->get_vecter2_y());
     int cells = static_cast<int>(std::ceil(range / grid_->getCellSize()));
 
     for (int dx = -cells; dx <= cells; ++dx) {
@@ -151,8 +149,8 @@ std::vector<Actor*> GridManager::getEntitiesInAoEMask(float x, float y, float ra
             auto& cell = grid_->get(x, y);
 
             for (auto* e : cell.characters) {
-                float dx = e->x - x;
-                float dy = e->y - y;
+                float dx = e->get_vecter2_x() - x;
+                float dy = e->get_vecter2_y() - y;
                 float distSq = dx * dx + dy * dy;
                 if (distSq <= rangeSq) {
                     result.push_back(e);
@@ -160,8 +158,8 @@ std::vector<Actor*> GridManager::getEntitiesInAoEMask(float x, float y, float ra
             }
 
             for (auto* e : cell.monsters) {
-                float dx = e->x - x;
-                float dy = e->y - y;
+                float dx = e->get_vecter2_x() - x;
+                float dy = e->get_vecter2_y() - y;
                 float distSq = dx * dx + dy * dy;
                 if (distSq <= rangeSq) {
                     result.push_back(e);

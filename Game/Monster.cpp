@@ -10,13 +10,14 @@
 #include "MonsterBT.h"
 #include "MonsterCodeBaseBT.h"
 #include "behaviortree_cpp/bt_factory.h"
+#include "../BehaviorTree/BehaviorTree.h"
 
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
 
 
 Monster::Monster(World* world)
-	: Actor(world), bt_(nullptr)
+	: Actor(world), bt_(nullptr), tree_(nullptr)
 {
 
 }
@@ -24,8 +25,18 @@ Monster::Monster(World* world)
 Monster::~Monster()
 {
 	if (bt_ != nullptr)
+	{
 		delete bt_;
+		bt_ = nullptr;
+	}
+
+	if (tree_ != nullptr)
+	{
+		delete tree_;
+		tree_ = nullptr;
+	}
 }
+
 bool Monster::init(Vector3& pos)
 {
 	float speed = 3.5f;
@@ -42,9 +53,8 @@ bool Monster::init(Vector3& pos)
 		return false;
 	}
 
+	this->set_position(pos.x(), pos.y(), pos.z());
 	agent_id_ = agent_id;
-	this->x = pos.x();
-	this->y = pos.z();
 	this->speed = speed;
 
 

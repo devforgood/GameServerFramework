@@ -21,7 +21,8 @@ public:
 	}
 	virtual ~GameObject() = default; // 반드시 virtual 소멸자를 추가
 	virtual void update(float dt) {};
-	virtual bool is_changed_position(float x, float y) { return false; }
+	virtual void set_position(float x, float y, float z) {};
+	virtual bool is_changed_position(float x, float y, float z) { return false; }
 	virtual bool is_changed() { return false; }
 	virtual void set_changed(bool changed) { is_changed_ = changed; }
 
