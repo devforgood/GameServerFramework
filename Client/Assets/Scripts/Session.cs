@@ -130,7 +130,7 @@ public class Session : MonoBehaviour
 	private void OnAddAgent(int agent_id, Vector3 pos, int type)
 	{
         int messageId = nextMesssagetId();
-        SendMessage(MakeAddAgent(pos, (GameObjectType)type), response =>
+        SendMessage(MakeAddAgent(messageId, pos, (GameObjectType)type), response =>
         {
             if (response.MsgType == GameMessages.AddAgent)
             {
@@ -141,7 +141,8 @@ public class Session : MonoBehaviour
 					if(addAgent.GameObjectType == (int)GameObjectType.Character)
 					{
 						player_agnet_id = addAgent.AgentId;
-					}
+						Debug.Log($"Player Agent ID: {player_agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+                    }
                 }
                 else
                 {
@@ -164,8 +165,8 @@ public class Session : MonoBehaviour
 
 	private void OnSetMoveTarget(int agent_id, Vector3 pos, int type)
 	{
-		Debug.Log($"SetMoveTarget agent_id: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
-        SendMessage(MakeSetMoveTarget(agent_id, pos));
+		Debug.Log($"SetMoveTarget agent_id: {player_agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+        SendMessage(MakeSetMoveTarget(player_agnet_id, pos));
 	}
 
 	private void OnSetRaycast(int agent_id, Vector3 pos, int type)
@@ -176,7 +177,7 @@ public class Session : MonoBehaviour
 
 	private void OnSetMoveCharacter(int agent_id, Vector3 pos, int type)
 	{
-		Debug.Log($"SetMoveCharacter agent_id: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+        Debug.Log($"SetMoveCharacter agent_id: {player_agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
         SendMessage(MakeSetMoveTarget(player_agnet_id, pos));
 	}
     private void OnLogin(int agent_id, Vector3 pos, int type)
@@ -280,7 +281,7 @@ public class Session : MonoBehaviour
         return BitConverter.GetBytes((ushort)body.Length);
 	}
 
-	public byte[] MakeAddAgent(Vector3 pos, GameObjectType gameObjectType = GameObjectType.Monster)
+	public byte[] MakeAddAgent(int messageId, Vector3 pos, GameObjectType gameObjectType = GameObjectType.Monster)
 	{
 		var builder = new FlatBufferBuilder(1024);
 
@@ -290,7 +291,7 @@ public class Session : MonoBehaviour
 		AddAgent.AddGameObjectType(builder, gameObjectType);
 		var offset = AddAgent.EndAddAgent(builder);
 
-		var msg = GameMessage.CreateGameMessage(builder, GameMessages.AddAgent, offset.Value);
+		var msg = GameMessage.CreateGameMessage(builder, GameMessages.AddAgent, offset.Value, messageId);
 		builder.Finish(msg.Value);
 
 		byte[] body = builder.SizedByteArray();
@@ -472,7 +473,7 @@ public class Session : MonoBehaviour
 						}
 						else if (agent.GameObjectType == GameObjectType.Character)
 						{
-                            Debug.Log($"Player Agent ID: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+                            //Debug.Log($"Player Agent ID: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
 
                         }
 					}

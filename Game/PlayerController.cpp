@@ -78,8 +78,8 @@ void PlayerController::handle(const syncnet::SetMoveTarget* msg)
 		return;
 	}
 
-	LOG.debug("move target agent id :{}, pos:({},{},{})", msg->agentId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
-	world_->OnSetMoveTarget(msg->agentId(), msg->pos());
+	LOG.debug("move target agent id :{}, pos:({},{},{})", player_->character()->agent_id(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
+	world_->OnSetMoveTarget(player_->character()->agent_id(), msg->pos());
 }
 
 void PlayerController::handle(const syncnet::Ping* msg)
