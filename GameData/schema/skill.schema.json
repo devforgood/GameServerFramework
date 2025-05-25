@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SkillList",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "고유 숫자 ID"
+      },
+      "type": {
+        "type": "string",
+        "enum": ["active", "passive", "toggle"],
+        "description": "스킬 유형"
+      },
+      "cooldown": {
+        "type": "number",
+        "minimum": 0,
+        "description": "쿨타임 (초)"
+      },
+      "damage": {
+        "type": "number",
+        "minimum": 0,
+        "description": "피해량 또는 효과 수치"
+      },
+      "mana_cost": {
+        "type": "number",
+        "minimum": 0,
+        "description": "필요 마나량"
+      },
+      "name_id": {
+        "type": "string",
+        "pattern": "^skill_.*_name$",
+        "description": "다국어 키 (이름)"
+      },
+      "desc_id": {
+        "type": "string",
+        "pattern": "^skill_.*_desc$",
+        "description": "다국어 키 (설명)"
+      }
+    },
+    "required": ["id", "type", "cooldown", "damage", "mana_cost", "name_id", "desc_id"],
+    "additionalProperties": false
+  }
+}

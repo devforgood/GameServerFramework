@@ -1,0 +1,11 @@
+[
+  {
+    "id": 1,
+    "type": "active",
+    "cooldown": 5,
+    "damage": 50,
+    "mana_cost": 20,
+    "name_id": "skill_fireball_name",
+    "desc_id": "skill_fireball_desc"
+  }
+]

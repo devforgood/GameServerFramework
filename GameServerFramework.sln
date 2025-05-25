@@ -44,6 +44,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "recastnavigation", "recastn
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "SqlCodeGenerator", "SqlCodeGenerator\SqlCodeGenerator.pyproj", "{7BA08C7F-02B1-4F72-AB24-945EC095DA42}"
 EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "GameDataFlow", "GameDataFlow\GameDataFlow.pyproj", "{27536BB6-5913-462E-BDCB-2D19386B5966}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug Win64|Any CPU = Debug Win64|Any CPU
@@ -682,6 +684,24 @@ Global
 		{7BA08C7F-02B1-4F72-AB24-945EC095DA42}.ReleaseDummyClient|Any CPU.ActiveCfg = Release|Any CPU
 		{7BA08C7F-02B1-4F72-AB24-945EC095DA42}.ReleaseDummyClient|x64.ActiveCfg = Release|Any CPU
 		{7BA08C7F-02B1-4F72-AB24-945EC095DA42}.ReleaseDummyClient|x86.ActiveCfg = Release|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Debug Win64|Any CPU.ActiveCfg = Debug|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Debug Win64|x64.ActiveCfg = Debug|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Debug Win64|x86.ActiveCfg = Debug|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.DebugDummyClient|Any CPU.ActiveCfg = Debug|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.DebugDummyClient|x64.ActiveCfg = Debug|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.DebugDummyClient|x86.ActiveCfg = Debug|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Release Win64|Any CPU.ActiveCfg = Release|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Release Win64|x64.ActiveCfg = Release|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Release Win64|x86.ActiveCfg = Release|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Release|x64.ActiveCfg = Release|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.Release|x86.ActiveCfg = Release|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.ReleaseDummyClient|Any CPU.ActiveCfg = Release|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.ReleaseDummyClient|x64.ActiveCfg = Release|Any CPU
+		{27536BB6-5913-462E-BDCB-2D19386B5966}.ReleaseDummyClient|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

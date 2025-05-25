@@ -1,0 +1,9 @@
+[
+  {
+    "id": 1,
+    "type": "consumable",
+    "heal": 50,
+    "name_id": "item_potion_hp_small_name",
+    "desc_id": "item_potion_hp_small_desc"
+  }
+]
