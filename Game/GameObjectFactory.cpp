@@ -16,12 +16,10 @@ std::shared_ptr<GameObject> GameObjectFactory::CreateGameObject(World* world, st
 	{
 	case syncnet::GameObjectType::GameObjectType_Character:
 	{
-		auto itr = world->players_.find(player->player_id());
-		if (itr != world->players_.end())
+		// 이미 생성된 캐릭터가 있는지 확인하고, 있다면 해당 캐릭터를 반환하도록 수정 필요
+		if (player->character() != nullptr)
 		{
-			LOG.info("OnAddAgent already exist in players_");
-
-			itr->second->switch_session(player);
+			LOG.error("OnAddAgent error: player already has a character");
 			return nullptr;
 		}
 
@@ -32,7 +30,6 @@ std::shared_ptr<GameObject> GameObjectFactory::CreateGameObject(World* world, st
 			LOG.error("OnAddAgent error in Character::init()");
 			return nullptr;
 		}
-		world->players_.insert(std::make_pair(player->player_id(), player));
 		player->possess(character);
 		world->grid_manager_->add(character.get());
 		break;

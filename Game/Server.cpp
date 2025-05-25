@@ -19,24 +19,15 @@ game_room::game_room()
 void game_room::join(game_participant_ptr participant)
 {
 	participants_.insert(participant);
-	//for (auto msg : recent_msgs_)
-	//	participant->deliver(msg);
+	world_->join(participant->get_player());
 }
 
 void game_room::leave(game_participant_ptr participant)
 {
+	world_->leave(participant->get_player());
 	participants_.erase(participant);
 }
 
-void game_room::deliver(std::shared_ptr<send_message> msg)
-{
-	recent_msgs_.push_back(msg);
-	while (recent_msgs_.size() > max_recent_msgs)
-		recent_msgs_.pop_front();
-
-	for (auto participant : participants_)
-		participant->send(msg);
-}
 
 //----------------------------------------------------------------------
 

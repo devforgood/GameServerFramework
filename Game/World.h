@@ -51,6 +51,9 @@ public:
 	int DetectEnemy(Actor* actor);
 	void SendBroadcast(std::shared_ptr<send_message> msg);
 
+	void join(std::shared_ptr<Player> player);
+	void leave(std::shared_ptr<Player> player);
+
 	friend class Actor;
 	friend class GameObjectFactory;
 	friend class Monster;

@@ -66,6 +66,39 @@ void World::update(float deltaTime)
 	//LOG.info("World update end");
 }
 
+void World::join(std::shared_ptr<Player> player)
+{
+	if (player == nullptr)
+	{
+		LOG.error("World::join error player is nullptr");
+		return;
+	}
+	auto itr = players_.find(player->player_id());
+	if (itr != players_.end())
+	{
+		LOG.error("World::join error player already exists");
+		return;
+	}
+	players_.insert(std::make_pair(player->player_id(), player));
+	//player->sendWelcomeMessage();
+}
+
+void World::leave(std::shared_ptr<Player> player)
+{
+	if (player == nullptr)
+	{
+		LOG.error("World::leave error player is nullptr");
+		return;
+	}
+	auto itr = players_.find(player->player_id());
+	if (itr == players_.end())
+	{
+		LOG.error("World::leave error player not found");
+		return;
+	}
+	players_.erase(itr);
+}
+
 void World::SendWorldState()
 {
 	auto builder_ptr = std::make_shared<send_message>();

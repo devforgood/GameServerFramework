@@ -26,6 +26,10 @@
 using boost::asio::ip::tcp;
 
 
+class Player;
+class PlayerController;
+class game_server;
+class RingBuffer;
 
 //----------------------------------------------------------------------
 
@@ -38,6 +42,7 @@ class game_participant
 public:
 	virtual ~game_participant() {}
 	virtual void send(std::shared_ptr<send_message>& msg) = 0;
+	virtual std::shared_ptr<Player> get_player() = 0;
 };
 
 typedef std::shared_ptr<game_participant> game_participant_ptr;
@@ -52,23 +57,17 @@ public:
 
 	void leave(game_participant_ptr participant);
 
-	void deliver(std::shared_ptr<send_message> msg);
 
 	game_room();
 
 	World* world() { return world_; }
 private:
-	std::set<game_participant_ptr> participants_;
-	enum { max_recent_msgs = 100 };
-	game_message_queue recent_msgs_;
 	World * world_;
+	std::set<game_participant_ptr> participants_;
 };
 
 //----------------------------------------------------------------------
-class Player;
-class PlayerController;
-class game_server;
-class RingBuffer;
+
 class game_session
 	: public game_participant,
 	public std::enable_shared_from_this<game_session>
@@ -82,6 +81,10 @@ public:
 	void send(std::shared_ptr<send_message>& msg);
 	void close();
 
+	virtual std::shared_ptr<Player> get_player() override
+	{
+		return player_;
+	}
 	void set_player(std::shared_ptr<Player> player);
 private:
 	void do_read_header();
