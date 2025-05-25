@@ -26,6 +26,10 @@ public class Session : MonoBehaviour
     public int player_agnet_id = 0;
 	private int last_message_id = 0;
 
+    // todo : 스킬 테이블 생성시 스킬별 지속 시간 설정
+    private float skill_duration = 1f; // 스킬 지속 시간
+	private float skill_height = 3f; // 스킬 점프 높이
+
     private Coroutine jumpCoroutine;
 	private bool isCasting = false;
     public int nextMesssagetId()
@@ -220,7 +224,7 @@ public class Session : MonoBehaviour
 		GameObject game_object = null;
 		if (game_objects.TryGetValue(player_agnet_id, out game_object) == true)
 		{
-            jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, 1f, 3f));
+            jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, skill_duration, skill_height));
 
         }
 	}
@@ -505,6 +509,16 @@ public class Session : MonoBehaviour
                     UseSkill useSkill = recv_msg.Msg<UseSkill>().Value;
                     var pos = new Vector3(useSkill.Pos.Value.X, useSkill.Pos.Value.Y, useSkill.Pos.Value.Z);
                     var obj = (GameObject)Instantiate(Resources.Load("DebugTarget"), pos, Quaternion.identity);
+
+					var target_agent_id = useSkill.Id;
+					var remote_player_skill_duration = skill_duration - (unixTimestampMs- useSkill.Timestamp) / 1000f;
+
+                    GameObject game_object = null;
+                    if (game_objects.TryGetValue(target_agent_id, out game_object) == true)
+                    {
+                        jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, remote_player_skill_duration, skill_height));
+
+                    }
                 }
                 break;
         }

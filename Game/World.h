@@ -50,7 +50,8 @@ public:
 	void OnSetRaycast(const syncnet::Vec3* pos);
 
 	int DetectEnemy(Actor* actor);
-	void SendBroadcast(std::shared_ptr<send_message> msg);
+	void SendBroadcast(std::shared_ptr<send_message> msg);	
+	void SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except);
 
 	void join(std::shared_ptr<Player> player);
 	void leave(std::shared_ptr<Player> player);

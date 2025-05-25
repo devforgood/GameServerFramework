@@ -129,5 +129,21 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 
 	character->use_skill(msg);
 
-
+	auto builder_ptr = std::make_shared<send_message>();
+	auto send_msg = syncnet::CreateGameMessage(
+		*builder_ptr,
+		syncnet::GameMessages::GameMessages_UseSkill,
+		syncnet::CreateUseSkill(
+			*builder_ptr
+			, msg->id()
+			, msg->skillId()
+			, msg->targetId()
+			, msg->pos()
+			, msg->dir()
+			, msg->timestamp()
+			, msg->duration()
+		).Union()
+	);
+	builder_ptr->Finish(send_msg);
+	world_->SendBroadcast(builder_ptr, player_);
 }

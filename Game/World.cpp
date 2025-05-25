@@ -180,6 +180,16 @@ void World::SendBroadcast(std::shared_ptr<send_message> msg)
 		itr->second->send(msg);
 	}
 }
+void World::SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except)
+{
+	for (auto itr = players_.begin(); itr != players_.end(); ++itr)
+	{
+		if (itr->second.get() == except.get())
+			continue;
+
+		itr->second->send(msg);
+	}
+}
 
 std::shared_ptr<GameObject> World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
