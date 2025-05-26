@@ -12,8 +12,18 @@
       },
       "type": {
         "type": "string",
-        "enum": ["active", "passive", "toggle"],
+        "enum": [ "active", "passive", "toggle" ],
         "description": "스킬 유형"
+      },
+      "effect": {
+        "type": "string",
+        "enum": [ "damage", "heal", "buff", "debuff", "utility", "increase_damage", "reduce_cooldown" ],
+        "description": "스킬 효과 유형"
+      },
+      "value": {
+        "type": "number",
+        "minimum": 0,
+        "description": "수치"
       },
       "cooldown": {
         "type": "number",
@@ -41,7 +51,7 @@
         "description": "다국어 키 (설명)"
       }
     },
-    "required": ["id", "type", "cooldown", "damage", "mana_cost", "name_id", "desc_id"],
+    "required": ["id", "type", "name_id", "desc_id"],
     "additionalProperties": false
   }
 }

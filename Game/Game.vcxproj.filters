@@ -41,6 +41,9 @@
     <Filter Include="skill">
       <UniqueIdentifier>{9c6d76e4-1915-4245-a42b-da9c4c31da6a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameData">
+      <UniqueIdentifier>{4d39d179-bc90-4099-8a99-1778f624883e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -103,6 +106,9 @@
     </ClCompile>
     <ClCompile Include="TimeStamp.cpp">
       <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceLoader.cpp">
+      <Filter>GameData</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -189,6 +195,15 @@
     </ClInclude>
     <ClInclude Include="TimeStamp.h">
       <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="RSkill.hpp">
+      <Filter>GameData</Filter>
+    </ClInclude>
+    <ClInclude Include="RItem.hpp">
+      <Filter>GameData</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceLoader.h">
+      <Filter>GameData</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

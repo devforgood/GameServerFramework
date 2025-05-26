@@ -8,4 +8,30 @@
     "name_id": "skill_fireball_name",
     "desc_id": "skill_fireball_desc"
   }
+  ,
+  {
+    "id": 2,
+    "type": "passive",
+    "effect": "increase_damage",
+    "value": 10,
+    "name_id": "skill_berserk_name",
+    "desc_id": "skill_berserk_desc"
+  },
+  {
+    "id": 3,
+    "type": "active",
+    "cooldown": 10,
+    "damage": 100,
+    "mana_cost": 50,
+    "name_id": "skill_lightning_strike_name",
+    "desc_id": "skill_lightning_strike_desc"
+  },
+  {
+    "id": 4,
+    "type": "passive",
+    "effect": "reduce_cooldown",
+    "value": 2,
+    "name_id": "skill_quickness_name",
+    "desc_id": "skill_quickness_desc"
+  }
 ]

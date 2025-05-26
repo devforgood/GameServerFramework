@@ -1,0 +1,30 @@
+#pragma once
+#include <string>
+#include <nlohmann/json.hpp>
+
+struct {{ struct_name }} {
+    {% for field in fields %}
+    {{ field.type }} {{ field.name }};
+    {% endfor %}
+
+    // nlohmann::json을 이용한 역직렬화
+    static {{ struct_name }}* FromJSON(const nlohmann::json& obj) {
+        {{ struct_name }}* c = new {{ struct_name }}();
+        {% for field in fields %}
+        {% if field.type == "int" %}
+        if (obj.contains("{{ field.name }}") && obj["{{ field.name }}"].is_number_integer())
+            c->{{ field.name }} = obj["{{ field.name }}"].get<int>();
+        {% elif field.type is defined and field.type == "double" %}
+        if (obj.contains("{{ field.name }}") && obj["{{ field.name }}"].is_number())
+            c->{{ field.name }} = obj["{{ field.name }}"].get<double>();
+        {% elif field.type == "std::string" %}
+        if (obj.contains("{{ field.name }}") && obj["{{ field.name }}"].is_string())
+            c->{{ field.name }} = obj["{{ field.name }}"].get<std::string>();
+        {% elif field.type == "bool" %}
+        if (obj.contains("{{ field.name }}") && obj["{{ field.name }}"].is_boolean())
+            c->{{ field.name }} = obj["{{ field.name }}"].get<bool>();
+        {% endif %}
+        {% endfor %}
+        return c;
+    }
+};

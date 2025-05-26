@@ -6,4 +6,31 @@
     "name_id": "item_potion_hp_small_name",
     "desc_id": "item_potion_hp_small_desc"
   }
+  ,
+  {
+    "id": 2,
+    "type": "consumable",
+    "heal": 100,
+    "name_id": "item_potion_hp_medium_name",
+    "desc_id": "item_potion_hp_medium_desc"
+  },
+  {
+    "id": 3,
+    "type": "consumable",
+    "heal": 200,
+    "name_id": "item_potion_hp_large_name",
+    "desc_id": "item_potion_hp_large_desc"
+  },
+  {
+    "id": 4,
+    "type": "equipment",
+    "name_id": "item_sword_basic_name",
+    "desc_id": "item_sword_basic_desc"
+  },
+  {
+    "id": 5,
+    "type": "equipment",
+    "name_id": "item_shield_basic_name",
+    "desc_id": "item_shield_basic_desc"
+  }
 ]

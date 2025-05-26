@@ -163,6 +163,7 @@
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="ResourceLoader.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="Skill.cpp" />
@@ -209,7 +210,10 @@
     <ClInclude Include="Monster.h" />
     <ClInclude Include="PerfTimer.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="ResourceLoader.h" />
     <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="RItem.hpp" />
+    <ClInclude Include="RSkill.hpp" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="Skill.h" />
@@ -230,6 +234,7 @@
     <Import Project="..\packages\spdlog_native.2021.07.30\build\native\spdlog_native.targets" Condition="Exists('..\packages\spdlog_native.2021.07.30\build\native\spdlog_native.targets')" />
     <Import Project="..\packages\boost_filesystem-vc143.1.87.0\build\boost_filesystem-vc143.targets" Condition="Exists('..\packages\boost_filesystem-vc143.1.87.0\build\boost_filesystem-vc143.targets')" />
     <Import Project="..\packages\boost_thread-vc143.1.87.0\build\boost_thread-vc143.targets" Condition="Exists('..\packages\boost_thread-vc143.1.87.0\build\boost_thread-vc143.targets')" />
+    <Import Project="..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets" Condition="Exists('..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -240,5 +245,6 @@
     <Error Condition="!Exists('..\packages\spdlog_native.2021.07.30\build\native\spdlog_native.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\spdlog_native.2021.07.30\build\native\spdlog_native.targets'))" />
     <Error Condition="!Exists('..\packages\boost_filesystem-vc143.1.87.0\build\boost_filesystem-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost_filesystem-vc143.1.87.0\build\boost_filesystem-vc143.targets'))" />
     <Error Condition="!Exists('..\packages\boost_thread-vc143.1.87.0\build\boost_thread-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost_thread-vc143.1.87.0\build\boost_thread-vc143.targets'))" />
+    <Error Condition="!Exists('..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets'))" />
   </Target>
 </Project>
