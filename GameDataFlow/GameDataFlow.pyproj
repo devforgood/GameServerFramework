@@ -27,6 +27,7 @@
     <Folder Include="template\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="template\class.cs.jinja2" />
     <Content Include="template\class.hpp.jinja2" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />

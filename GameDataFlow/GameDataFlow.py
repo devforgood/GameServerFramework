@@ -14,6 +14,7 @@ CONTENT_TYPES = [
 SCHEMA_DIR = "../GameData/schema"
 DATA_DIR = "../GameData"
 OUTPUT_CLIENT_DIR = "../Client/Assets/Resources/GameData"
+OUTPUT_SRC_CLIENT_DIR = "../Client/Assets/Scripts/GameData"
 OUTPUT_SERVER_DIR = "../Game"
 
 def load_json(path):
@@ -53,19 +54,28 @@ def render_template(content_name, schema):
     enums = []
 
     for name, prop in properties.items():
-        # 타입 매핑
+        # 타입 매핑 (C++/C# 모두)
         if prop.get("type") == "integer":
             field_type = "int"
+            cs_type = "int"
         elif prop.get("type") == "number":
             field_type = "double"
+            cs_type = "double"
         elif prop.get("type") == "string":
             field_type = "std::string"
+            cs_type = "string"
+        elif prop.get("type") == "boolean":
+            field_type = "bool"
+            cs_type = "bool"
         elif "enum" in prop:
-            field_type = name.capitalize()
+            enum_name = name.capitalize()
+            field_type = enum_name
+            cs_type = enum_name
         else:
             field_type = "std::string"  # fallback
+            cs_type = "string"
 
-        field = {"name": name, "type": field_type}
+        field = {"name": name, "type": field_type, "cs_type": cs_type}
 
         # enum 필드 처리
         if "enum" in prop:
@@ -79,17 +89,28 @@ def render_template(content_name, schema):
         fields.append(field)
 
     env = jinja2.Environment(loader=jinja2.FileSystemLoader("template"))
-    tmpl = env.get_template("class.hpp.jinja2")
-
-    output = tmpl.render(
+    # C++ 템플릿 렌더링
+    tmpl_cpp = env.get_template("class.hpp.jinja2")
+    output_cpp = tmpl_cpp.render(
         struct_name=struct_name,
         fields=fields,
         enums=enums
     )
+    filename_cpp = os.path.join(OUTPUT_SERVER_DIR, f"{struct_name}.hpp")
+    with open(filename_cpp, "w") as f:
+        f.write(output_cpp)
 
-    filename = os.path.join(OUTPUT_SERVER_DIR, f"{struct_name}.hpp")
-    with open(filename, "w") as f:
-        f.write(output)
+    # C# 템플릿 렌더링
+    tmpl_cs = env.get_template("class.cs.jinja2")
+    output_cs = tmpl_cs.render(
+        struct_name=struct_name,
+        fields=fields,
+        enums=enums
+    )
+    filename_cs = os.path.join(OUTPUT_SRC_CLIENT_DIR, f"{struct_name}.cs")
+    ensure_directory(OUTPUT_SRC_CLIENT_DIR)
+    with open(filename_cs, "w", encoding="utf-8") as f:
+        f.write(output_cs)
 
 def process_content(content_name, schema_file):
     print(f"\n🔍 {content_name} 처리 중...")

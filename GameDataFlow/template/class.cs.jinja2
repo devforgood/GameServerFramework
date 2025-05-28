@@ -1,0 +1,15 @@
+using UnityEngine;
+
+[System.Serializable]
+public class {{ struct_name }}
+{
+    {% for field in fields %}
+    public {{ field.cs_type }} {{ field.name }};
+    {% endfor %}
+
+    // UnityEngine.JsonUtility를 이용한 역직렬화
+    public static {{ struct_name }} FromJson(string json)
+    {
+        return JsonUtility.FromJson<{{ struct_name }}>(json);
+    }
+}
