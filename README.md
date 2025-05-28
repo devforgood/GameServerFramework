@@ -44,7 +44,7 @@
 * 게임 오브젝트 상태 동기화 : 일정 주기 마다 월드에서 상태가 변경된 오브젝트만 동기화 (리플리케이션 - 변수 복제)
 3) 스킬 동기화
 * 각 스킬 고유한 정보를 RPC 호출로 동기화
-![Image](https://github.com/user-attachments/assets/639982be-fa14-4597-8e42-cbd8f96aa145)
+
 
 # 프로토콜
 1) gRPC
