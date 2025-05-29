@@ -152,6 +152,7 @@
     <ClCompile Include="BehaviorTreeCPP.cpp" />
     <ClCompile Include="Character.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="gamedata.pb.cc" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GameObjectFactory.cpp" />
     <ClCompile Include="GridManager.cpp" />
@@ -166,7 +167,7 @@
     <ClCompile Include="ResourceLoader.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="Server.cpp" />
-    <ClCompile Include="Skill.cpp" />
+    <ClCompile Include="BaseSkill.cpp" />
     <ClCompile Include="SkillManager.cpp" />
     <ClCompile Include="SqlClient.cpp" />
     <ClCompile Include="SqlClientManager.cpp" />
@@ -196,6 +197,7 @@
     <ClInclude Include="Actor.h" />
     <ClInclude Include="BehaviorTreeCPP.h" />
     <ClInclude Include="Character.h" />
+    <ClInclude Include="gamedata.pb.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameObjectFactory.h" />
     <ClInclude Include="GridManager.h" />
@@ -212,11 +214,9 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="ResourceLoader.h" />
     <ClInclude Include="RingBuffer.h" />
-    <ClInclude Include="RItem.hpp" />
-    <ClInclude Include="RSkill.hpp" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
-    <ClInclude Include="Skill.h" />
+    <ClInclude Include="BaseSkill.h" />
     <ClInclude Include="SkillManager.h" />
     <ClInclude Include="SqlClient.h" />
     <ClInclude Include="SqlClientManager.h" />

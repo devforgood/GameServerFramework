@@ -11,7 +11,7 @@ enum skillProperties
 class Actor; // Forward declaration
 class Vector3; // Forward declaration
 
-class Skill
+class BaseSkill
 {
 private:
 	int skill_id_;
@@ -23,8 +23,8 @@ private:
 	Actor* actor_;
 
 public:
-	Skill();
-	virtual ~Skill();
+	BaseSkill();
+	virtual ~BaseSkill();
 
 	int cast_skill(Actor * actor, const syncnet::UseSkill* msg, float serverClientTimeOffset);
 	void update(float deltaTime);

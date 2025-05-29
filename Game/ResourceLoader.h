@@ -1,25 +1,27 @@
 #pragma once
 #include <boost/noncopyable.hpp>
 #include <unordered_map>
-
-struct RItem;
-struct RSkill;
+#include "gamedata.pb.h"
 
 class ResourceLoader : private boost::noncopyable
 {
 private:
-	std::unordered_map<long, RItem*> items;
-	std::unordered_map<long, RSkill*> skills;
-	
-public:
-	static ResourceLoader& Instance() {
-		static ResourceLoader instance;
-		return instance;
-	}
+    // Protobuf 객체를 직접 저장
+    std::unordered_map<long, gamedata::Item*> items;
+    std::unordered_map<long, gamedata::Skill*> skills;
 
-	bool LoadResources();
+public:
+    static ResourceLoader& Instance() {
+        static ResourceLoader instance;
+        return instance;
+    }
+
+    bool LoadResources();
+
+    // 필요시 getter 추가
+    const std::unordered_map<long, gamedata::Item*>& GetItems() const { return items; }
+    const std::unordered_map<long, gamedata::Skill*>& GetSkills() const { return skills; }
 
 private:
-	ResourceLoader() = default;
+    ResourceLoader() = default;
 };
-

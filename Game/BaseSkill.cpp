@@ -1,15 +1,15 @@
-#include "Skill.h"
+#include "BaseSkill.h"
 #include "Actor.h"
 #include "World.h"
 #include "Vector3.h"
 #include "LogHelper.h"
 
-Skill::Skill()
+BaseSkill::BaseSkill()
 	: actor_(nullptr), skill_id_(0), target_pos_(nullptr), is_casting_(false), duration_(0.0f)
 {
 }
 
-Skill::~Skill()
+BaseSkill::~BaseSkill()
 {
 	if(target_pos_)
 	{
@@ -18,7 +18,7 @@ Skill::~Skill()
 	}
 }
 
-int Skill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, float serverClientTimeOffset)
+int BaseSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, float serverClientTimeOffset)
 {
 	if(!actor || !msg)
 	{
@@ -43,7 +43,7 @@ int Skill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, float serverCl
 	return 0;
 }
 
-void Skill::update(float dt)
+void BaseSkill::update(float dt)
 {
 	if(is_casting_)
 	{
@@ -58,7 +58,7 @@ void Skill::update(float dt)
 	}
 }
 
-int Skill::end_duration_skill()
+int BaseSkill::end_duration_skill()
 {
 	if(!is_casting_)
 	{

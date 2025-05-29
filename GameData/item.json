@@ -4,7 +4,21 @@
     "type": "consumable",
     "heal": 50,
     "name_id": "item_potion_hp_small_name",
-    "desc_id": "item_potion_hp_small_desc"
+    "desc_id": "item_potion_hp_small_desc",
+    "item_options": [
+      {
+        "id": 1,
+        "value": 1.5
+      },
+      {
+        "id": 2,
+        "value": 2.0
+      },
+      {
+        "id": 3,
+        "value": 2.5
+      }
+    ]
   }
   ,
   {

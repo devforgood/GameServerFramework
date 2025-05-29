@@ -1,154 +1,62 @@
-﻿import json
-import os
+import json
+from google.protobuf import json_format
+import gamedata_pb2
 import shutil
-import jinja2
-from jsonschema import validate, ValidationError
+import os
 
-# 콘텐츠 종류 (스키마 & 데이터쌍)
-CONTENT_TYPES = [
-    ("skill", "skill.schema.json"),
-    ("item", "item.schema.json")
+# ��ȯ�� JSON ���� ��� �� ����
+JSON_PROTO_MAP = [
+    {
+        "json_path": "../GameData/skill.json",
+        "pb_cls": gamedata_pb2.SkillList,
+        "repeated_field": "skills",
+        "out_path": "skill.bytes"
+    },
+    {
+        "json_path": "../GameData/item.json",
+        "pb_cls": gamedata_pb2.ItemList,
+        "repeated_field": "items",
+        "out_path": "item.bytes"
+    }
 ]
 
-# 폴더 경로
-SCHEMA_DIR = "../GameData/schema"
-DATA_DIR = "../GameData"
-OUTPUT_CLIENT_DIR = "../Client/Assets/Resources/GameData"
-OUTPUT_SRC_CLIENT_DIR = "../Client/Assets/Scripts/GameData"
-OUTPUT_SERVER_DIR = "../Game"
+# ���� ��� ����
+CLIENT_DIR = "../Client/Assets/Resources/GameData/"
+SERVER_DIR = "../Game/GameData/"
 
-def load_json(path):
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
-
-def ensure_directory(path):
-    os.makedirs(path, exist_ok=True)
-
-def validate_content(data, schema, content_name):
-    # 스키마의 최상위 타입이 'array'인지 확인
-    if schema.get("type") == "array":
-        if not isinstance(data, list):
-            raise ValueError(f"{content_name}.json은 배열(JSON array)이어야 합니다.")
-        for i, entry in enumerate(data):
-            try:
-                validate(instance=entry, schema=schema.get("items", {}))
-            except ValidationError as e:
-                raise ValidationError(f"[{content_name}의 {i}번째 항목 오류] {e.message}")
-    else:
-        # 최상위 타입이 array가 아니면 전체 데이터로 검증
-        try:
-            validate(instance=data, schema=schema)
-        except ValidationError as e:
-            raise ValidationError(f"[{content_name} 오류] {e.message}")
-
-def render_template(content_name, schema):
-    # 최상위 타입이 array면 items에서, object면 바로 properties 사용
-    if schema.get("type") == "array":
-        properties = schema["items"]["properties"]
-        struct_name = "R" + schema["items"].get("title", content_name.capitalize())
-    else:
-        properties = schema["properties"]
-        struct_name = "R" + schema.get("title", content_name.capitalize())
-
-    fields = []
-    enums = []
-
-    for name, prop in properties.items():
-        # 타입 매핑 (C++/C# 모두)
-        if prop.get("type") == "integer":
-            field_type = "int"
-            cs_type = "int"
-        elif prop.get("type") == "number":
-            field_type = "double"
-            cs_type = "double"
-        elif prop.get("type") == "string":
-            field_type = "std::string"
-            cs_type = "string"
-        elif prop.get("type") == "boolean":
-            field_type = "bool"
-            cs_type = "bool"
-        elif "enum" in prop:
-            enum_name = name.capitalize()
-            field_type = enum_name
-            cs_type = enum_name
-        else:
-            field_type = "std::string"  # fallback
-            cs_type = "string"
-
-        field = {"name": name, "type": field_type, "cs_type": cs_type}
-
-        # enum 필드 처리
-        if "enum" in prop:
-            enum_name = name.capitalize()
-            enum_values = prop["enum"]
-            # enum 중복 방지
-            if not any(e["name"] == enum_name for e in enums):
-                enums.append({"name": enum_name, "values": enum_values})
-            field["enum"] = {"name": enum_name, "values": enum_values}
-
-        fields.append(field)
-
-    env = jinja2.Environment(loader=jinja2.FileSystemLoader("template"))
-    # C++ 템플릿 렌더링
-    tmpl_cpp = env.get_template("class.hpp.jinja2")
-    output_cpp = tmpl_cpp.render(
-        struct_name=struct_name,
-        fields=fields,
-        enums=enums
-    )
-    filename_cpp = os.path.join(OUTPUT_SERVER_DIR, f"{struct_name}.hpp")
-    with open(filename_cpp, "w") as f:
-        f.write(output_cpp)
-
-    # C# 템플릿 렌더링
-    tmpl_cs = env.get_template("class.cs.jinja2")
-    output_cs = tmpl_cs.render(
-        struct_name=struct_name,
-        fields=fields,
-        enums=enums
-    )
-    filename_cs = os.path.join(OUTPUT_SRC_CLIENT_DIR, f"{struct_name}.cs")
-    ensure_directory(OUTPUT_SRC_CLIENT_DIR)
-    with open(filename_cs, "w", encoding="utf-8") as f:
-        f.write(output_cs)
-
-def process_content(content_name, schema_file):
-    print(f"\n🔍 {content_name} 처리 중...")
-
-    schema_path = os.path.join(SCHEMA_DIR, schema_file)
-    data_path = os.path.join(DATA_DIR, f"{content_name}.json")
-    output_client = os.path.join(OUTPUT_CLIENT_DIR, f"{content_name}.json")
-    output_server = os.path.join(OUTPUT_SERVER_DIR, f"{content_name}.json")
-
+def convert_json_to_protobuf(json_path, pb_cls, repeated_field, out_path):
     try:
-        schema = load_json(schema_path)
-        data = load_json(data_path)
-
-        validate_content(data, schema, content_name)
-        print(f"✅ {content_name}.json: 유효성 검사 통과")
-
-        ensure_directory(OUTPUT_CLIENT_DIR)
-        ensure_directory(OUTPUT_SERVER_DIR)
-
-        shutil.copy(data_path, output_client)
-        shutil.copy(data_path, output_server)
-        print(f"📁 {content_name}.json 클라이언트/서버 폴더에 복사 완료")
-
-        render_template(content_name, schema)
-        print(f"📝 {content_name}.hpp 서버 폴더에 생성 완료")
-
-    except FileNotFoundError as e:
-        print(f"❌ 파일 누락: {e.filename}")
-    except ValidationError as e:
-        print(f"❌ 유효성 오류: {e}")
+        with open(json_path, encoding="utf-8") as f:
+            data = json.load(f)
     except Exception as e:
-        print(f"❌ 기타 오류: {e}")
+        print(f"[ERROR] {json_path} file read/parse error: {e}")
+        return
 
-def main():
-    print("📦 MMORPG 콘텐츠 유효성 검사 및 배포 스크립트 시작")
-    for content_name, schema_file in CONTENT_TYPES:
-        process_content(content_name, schema_file)
-    print("\n🏁 완료!")
+    pb_list = pb_cls()
+    try:
+        for entry in data:
+            json_format.ParseDict(entry, getattr(pb_list, repeated_field).add())
+        with open(out_path, "wb") as f:
+            f.write(pb_list.SerializeToString())
+        print(f"[OK] {json_path} -> {out_path} conversion complete")
+    except Exception as e:
+        print(f"[ERROR] {json_path} -> {out_path} conversion error: {e}")
+        return
+
+    # ���̳ʸ� ���� ����
+    for target_dir in [CLIENT_DIR, SERVER_DIR]:
+        try:
+            os.makedirs(target_dir, exist_ok=True)
+            shutil.copy2(out_path, os.path.join(target_dir, out_path))
+            print(f"[OK] {out_path} copied to {target_dir}")
+        except Exception as e:
+            print(f"[ERROR] {out_path} copy to {target_dir} failed: {e}")
 
 if __name__ == "__main__":
-    main()
+    for info in JSON_PROTO_MAP:
+        convert_json_to_protobuf(
+            json_path=info["json_path"],
+            pb_cls=info["pb_cls"],
+            repeated_field=info["repeated_field"],
+            out_path=info["out_path"]
+        )

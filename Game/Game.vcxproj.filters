@@ -44,6 +44,9 @@
     <Filter Include="GameData">
       <UniqueIdentifier>{4d39d179-bc90-4099-8a99-1778f624883e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="protobuf">
+      <UniqueIdentifier>{d5a69c7a-649b-49e1-b5c6-8ae936135ef0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -89,7 +92,7 @@
     <ClCompile Include="PlayerController.cpp">
       <Filter>Controller</Filter>
     </ClCompile>
-    <ClCompile Include="Skill.cpp">
+    <ClCompile Include="BaseSkill.cpp">
       <Filter>skill</Filter>
     </ClCompile>
     <ClCompile Include="GameObjectFactory.cpp">
@@ -109,6 +112,9 @@
     </ClCompile>
     <ClCompile Include="ResourceLoader.cpp">
       <Filter>GameData</Filter>
+    </ClCompile>
+    <ClCompile Include="gamedata.pb.cc">
+      <Filter>protobuf</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -178,7 +184,7 @@
     <ClInclude Include="PlayerController.h">
       <Filter>Controller</Filter>
     </ClInclude>
-    <ClInclude Include="Skill.h">
+    <ClInclude Include="BaseSkill.h">
       <Filter>skill</Filter>
     </ClInclude>
     <ClInclude Include="GameObjectFactory.h">
@@ -196,14 +202,11 @@
     <ClInclude Include="TimeStamp.h">
       <Filter>core</Filter>
     </ClInclude>
-    <ClInclude Include="RSkill.hpp">
-      <Filter>GameData</Filter>
-    </ClInclude>
-    <ClInclude Include="RItem.hpp">
-      <Filter>GameData</Filter>
-    </ClInclude>
     <ClInclude Include="ResourceLoader.h">
       <Filter>GameData</Filter>
+    </ClInclude>
+    <ClInclude Include="gamedata.pb.h">
+      <Filter>protobuf</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

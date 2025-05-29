@@ -1,14 +1,14 @@
 #include "Character.h"
 #include "World.h"
 #include "LogHelper.h"
-#include "skill.h"
+#include "BaseSkill.h"
 #include "Vector3.h"
 #include "TimeStamp.h"
 
 Character::Character(World* world) : Actor(world)
 {
 	// todo : load skills from DB table
-	skills_[1] = new Skill();
+	skills_[1] = new BaseSkill();
 	is_input_locked_ = false;
 }
 
@@ -33,7 +33,7 @@ void Character::use_skill(const syncnet::UseSkill* msg)
 
 	if (itr != skills_.end())
 	{
-		Skill* skill = itr->second;
+		BaseSkill* skill = itr->second;
 		int result = skill->cast_skill(this, msg, serverClientTimeOffset);
 		if (result == 0)
 		{
@@ -56,7 +56,7 @@ void Character::update(float dt)
 	Actor::update(dt);
 	for(auto itr = skills_.begin(); itr != skills_.end(); ++itr)
 	{
-		Skill* skill = itr->second;
+		BaseSkill* skill = itr->second;
 		skill->update(dt);
 	}
 }

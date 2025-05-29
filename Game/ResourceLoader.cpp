@@ -1,46 +1,63 @@
 #include "ResourceLoader.h"
-#include <nlohmann/json.hpp>
 #include <fstream>
-#include <sstream>
-#include "RItem.hpp"
-#include "RSkill.hpp"
+#include <vector>
+#include "gamedata.pb.h"
 
-namespace {
-    template<typename T>
-    bool LoadJsonToMap(const std::string& filename, std::unordered_map<long, T*>& map, T* (*fromJsonFunc)(const nlohmann::json&)) {
-        std::ifstream file(filename);
-        if (!file.is_open()) {
-            return false;
-        }
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        std::string jsonStr = buffer.str();
-        file.close();
 
-        nlohmann::json doc;
-        try {
-            doc = nlohmann::json::parse(jsonStr);
-        }
-        catch (const nlohmann::json::parse_error&) {
-            return false;
-        }
-
-        if (!doc.is_array()) {
-            return false;
-        }
-
-        for (const auto& v : doc) {
-            T* obj = fromJsonFunc(v);
-            map[obj->id] = obj;
-        }
-        return true;
+template<typename TMessage, typename TMap, typename TGetter>
+bool LoadProtobufFile(const char* filename, TMap& map, TGetter getter) {
+    std::ifstream input(filename, std::ios::binary);
+    if (!input) {
+        printf("[ERROR] %s 파일을 열 수 없습니다.\n", filename);
+        return false;
     }
+    std::vector<char> buffer((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+    if (buffer.empty()) {
+        printf("[ERROR] %s 파일이 비어있습니다.\n", filename);
+        return false;
+    }
+    TMessage message;
+    if (!message.ParseFromArray(buffer.data(), static_cast<int>(buffer.size()))) {
+        printf("[ERROR] %s 파싱 실패 (size=%zu)\n", filename, buffer.size());
+        return false;
+    }
+    for (const auto& entry : getter(message)) {
+        using EntryType = std::decay_t<decltype(entry)>;
+        map[entry.id()] = new EntryType(entry); // 포인터로 동적 할당
+    }
+    return true;
 }
-
 
 bool ResourceLoader::LoadResources()
 {
-    bool itemResult = LoadJsonToMap<RItem>("item.json", items, RItem::FromJSON);
-    bool skillResult = LoadJsonToMap<RSkill>("skill.json", skills, RSkill::FromJSON);
-    return itemResult && skillResult;
+    items.clear();
+    skills.clear();
+
+    // item.bytes
+    if (!LoadProtobufFile<gamedata::ItemList>(
+        "GameData/item.bytes",
+        items,
+        [](const gamedata::ItemList& list) -> const ::google::protobuf::RepeatedPtrField<gamedata::Item>&{ return list.items(); }))
+        return false;
+
+    // skill.bytes
+    if (!LoadProtobufFile<gamedata::SkillList>(
+        "GameData/skill.bytes",
+        skills,
+        [](const gamedata::SkillList& list) -> const ::google::protobuf::RepeatedPtrField<gamedata::Skill>&{ return list.skills(); }))
+        return false;
+
+    // items 맵 디버그 출력
+    printf("[DEBUG] items map size: %zu\n", items.size());
+    for (const auto& [id, item] : items) {
+        printf("[DEBUG] Item id: %d, type: %s, name_id: %s, desc_id: %s, heal:%d\n",
+            item->id(),
+            item->type().c_str(),
+            item->name_id().c_str(),
+            item->desc_id().c_str(),
+			item->heal()
+        );
+    }
+
+    return true;
 }

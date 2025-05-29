@@ -2,15 +2,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>27536bb6-5913-462e-bdcb-2d19386b5966</ProjectGuid>
-    <ProjectHome>.</ProjectHome>
+    <ProjectGuid>f2477eb7-c4d9-4d97-9cb8-dd976cc2e1c9</ProjectGuid>
+    <ProjectHome>
+    </ProjectHome>
     <StartupFile>GameDataFlow.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>GameDataFlow</Name>
-    <RootNamespace>GameDataFlow</RootNamespace>
+    <RootNamespace>GameDataProtobuf</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -24,11 +25,7 @@
     <Compile Include="GameDataFlow.py" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="template\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="template\class.cs.jinja2" />
-    <Content Include="template\class.hpp.jinja2" />
+    <Content Include="gamedata.proto" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
