@@ -146,11 +146,13 @@ std::vector<Actor*> GridManager::getEntitiesInAoEMask(float x, float y, float ra
             int ny = cy + dy;
             if (nx < 0 || ny < 0 || nx >= grid_->getWidth() || ny >= grid_->getHeight()) continue;
 
-            auto& cell = grid_->get(x, y);
+            auto& cell = grid_->get(nx, ny); // <-- 수정: nx, ny 사용
 
             for (auto* e : cell.characters) {
-                float dx = e->get_vecter2_x() - x;
-                float dy = e->get_vecter2_y() - y;
+                float ex = e->get_vecter2_x();
+                float ey = e->get_vecter2_y();
+                float dx = ex - x;
+                float dy = ey - y;
                 float distSq = dx * dx + dy * dy;
                 if (distSq <= rangeSq) {
                     result.push_back(e);
@@ -158,8 +160,10 @@ std::vector<Actor*> GridManager::getEntitiesInAoEMask(float x, float y, float ra
             }
 
             for (auto* e : cell.monsters) {
-                float dx = e->get_vecter2_x() - x;
-                float dy = e->get_vecter2_y() - y;
+                float ex = e->get_vecter2_x();
+                float ey = e->get_vecter2_y();
+                float dx = ex - x;
+                float dy = ey - y;
                 float distSq = dx * dx + dy * dy;
                 if (distSq <= rangeSq) {
                     result.push_back(e);

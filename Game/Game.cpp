@@ -8,6 +8,24 @@
 //#include "BehaviorTreeCPP.h"
 #include "SqlClient.h"
 #include "../GameDataProtobuf/ResourceLoader.h"
+#include "../GameDataProtobuf/gamedata.pb.h"
+
+void test()
+{
+	//BehaviorTreeCPP::test();
+	//SqlClient::test();
+
+	ResourceLoader::Instance().LoadResources();
+	auto itr = ResourceLoader::Instance().GetItems().find(1);
+	if (itr != ResourceLoader::Instance().GetItems().end())
+	{
+		LOG.info("Item ID: {}, Name: {}", itr->first, itr->second->name_id().c_str());
+	}
+	else
+	{
+		LOG.error("Item not found");
+	}
+}
 
 //----------------------------------------------------------------------
 int main(int argc, char* argv[])
@@ -32,9 +50,7 @@ int main(int argc, char* argv[])
 			servers.emplace_back(io_context, endpoint);
 		}
 
-		//BehaviorTreeCPP::test();
-		//SqlClient::test();
-		ResourceLoader::Instance().LoadResources();
+		test();
 
 
 		io_context->run();
@@ -46,4 +62,5 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
+
 
