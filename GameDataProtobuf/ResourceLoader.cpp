@@ -1,6 +1,9 @@
 #include "ResourceLoader.h"
 #include <fstream>
 #include <vector>
+#pragma warning(disable: 4251)
+#pragma warning(disable: 4267)
+#pragma warning(disable: 4251)
 #include "gamedata.pb.h"
 
 

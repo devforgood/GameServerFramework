@@ -80,7 +80,7 @@ EStatus Selector::Update()
 EStatus Parallel::Update()
 {
 	int SuccessCount = 0, FailureCount = 0;
-	int ChildrenSize = Children.size();
+	int ChildrenSize = (int)Children.size();
 	for (auto it : Children)
 	{
 		if (!it->IsTerminate())

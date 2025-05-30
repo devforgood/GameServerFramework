@@ -7,7 +7,7 @@
 #include "LogHelper.h"
 //#include "BehaviorTreeCPP.h"
 #include "SqlClient.h"
-#include "ResourceLoader.h"
+#include "../GameDataProtobuf/ResourceLoader.h"
 
 //----------------------------------------------------------------------
 int main(int argc, char* argv[])

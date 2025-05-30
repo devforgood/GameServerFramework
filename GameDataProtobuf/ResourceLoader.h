@@ -1,7 +1,11 @@
 #pragma once
 #include <boost/noncopyable.hpp>
 #include <unordered_map>
-#include "gamedata.pb.h"
+
+namespace gamedata {
+    class Item;  // Forward declaration
+    class Skill; // Forward declaration
+}
 
 class ResourceLoader : private boost::noncopyable
 {

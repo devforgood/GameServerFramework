@@ -1,1 +1,1 @@
-protoc --proto_path=.  --python_out=.  --cpp_out=../Game  --csharp_out=../Client/Assets/Scripts/GameData  gamedata.proto
+protoc --proto_path=.  --python_out=.  --cpp_out=../GameDataProtobuf  --csharp_out=../Client/Assets/Scripts/GameData  gamedata.proto

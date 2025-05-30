@@ -46,6 +46,8 @@ Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "SqlCodeGenerator", "SqlCode
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "GameDataFlow", "GameDataFlow\GameDataFlow.pyproj", "{F2477EB7-C4D9-4D97-9CB8-DD976CC2E1C9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GameDataProtobuf", "GameDataProtobuf\GameDataProtobuf.vcxproj", "{E4B71EF2-EFBD-456C-B30D-22D40F00C989}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug Win64|Any CPU = Debug Win64|Any CPU
@@ -702,6 +704,42 @@ Global
 		{F2477EB7-C4D9-4D97-9CB8-DD976CC2E1C9}.ReleaseDummyClient|Any CPU.ActiveCfg = Release|Any CPU
 		{F2477EB7-C4D9-4D97-9CB8-DD976CC2E1C9}.ReleaseDummyClient|x64.ActiveCfg = Release|Any CPU
 		{F2477EB7-C4D9-4D97-9CB8-DD976CC2E1C9}.ReleaseDummyClient|x86.ActiveCfg = Release|Any CPU
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug Win64|Any CPU.ActiveCfg = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug Win64|Any CPU.Build.0 = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug Win64|x64.ActiveCfg = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug Win64|x64.Build.0 = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug Win64|x86.ActiveCfg = Debug|Win32
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug Win64|x86.Build.0 = Debug|Win32
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug|Any CPU.Build.0 = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug|x64.ActiveCfg = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug|x64.Build.0 = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug|x86.ActiveCfg = Debug|Win32
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Debug|x86.Build.0 = Debug|Win32
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.DebugDummyClient|Any CPU.ActiveCfg = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.DebugDummyClient|Any CPU.Build.0 = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.DebugDummyClient|x64.ActiveCfg = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.DebugDummyClient|x64.Build.0 = Debug|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.DebugDummyClient|x86.ActiveCfg = Debug|Win32
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.DebugDummyClient|x86.Build.0 = Debug|Win32
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release Win64|Any CPU.ActiveCfg = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release Win64|Any CPU.Build.0 = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release Win64|x64.ActiveCfg = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release Win64|x64.Build.0 = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release Win64|x86.ActiveCfg = Release|Win32
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release Win64|x86.Build.0 = Release|Win32
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release|Any CPU.ActiveCfg = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release|Any CPU.Build.0 = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release|x64.ActiveCfg = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release|x64.Build.0 = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release|x86.ActiveCfg = Release|Win32
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.Release|x86.Build.0 = Release|Win32
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.ReleaseDummyClient|Any CPU.ActiveCfg = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.ReleaseDummyClient|Any CPU.Build.0 = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.ReleaseDummyClient|x64.ActiveCfg = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.ReleaseDummyClient|x64.Build.0 = Release|x64
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.ReleaseDummyClient|x86.ActiveCfg = Release|Win32
+		{E4B71EF2-EFBD-456C-B30D-22D40F00C989}.ReleaseDummyClient|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -152,7 +152,6 @@
     <ClCompile Include="BehaviorTreeCPP.cpp" />
     <ClCompile Include="Character.cpp" />
     <ClCompile Include="Game.cpp" />
-    <ClCompile Include="gamedata.pb.cc" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GameObjectFactory.cpp" />
     <ClCompile Include="GridManager.cpp" />
@@ -164,7 +163,6 @@
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Player.cpp" />
-    <ClCompile Include="ResourceLoader.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="BaseSkill.cpp" />
@@ -189,6 +187,9 @@
     <ProjectReference Include="..\BehaviorTree\BehaviorTree.vcxproj">
       <Project>{f441c4b3-58a8-4627-b07c-264c21891861}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\GameDataProtobuf\GameDataProtobuf.vcxproj">
+      <Project>{e4b71ef2-efbd-456c-b30d-22d40f00c989}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\recastnavigation\recastnavigation.vcxproj">
       <Project>{8e24c208-4d79-43be-941d-dbd48e5a4264}</Project>
     </ProjectReference>
@@ -197,7 +198,6 @@
     <ClInclude Include="Actor.h" />
     <ClInclude Include="BehaviorTreeCPP.h" />
     <ClInclude Include="Character.h" />
-    <ClInclude Include="gamedata.pb.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameObjectFactory.h" />
     <ClInclude Include="GridManager.h" />
@@ -212,7 +212,6 @@
     <ClInclude Include="Monster.h" />
     <ClInclude Include="PerfTimer.h" />
     <ClInclude Include="Player.h" />
-    <ClInclude Include="ResourceLoader.h" />
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
