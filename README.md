@@ -15,6 +15,7 @@
 ## Prepare
 ```bash
 ./vcpkg install behaviortree-cpp
+./vcpkg install protobuf:x64-windows
 ```
 
 ## Server Architecture
