@@ -1,11 +1,11 @@
 using System.Collections;
 using UnityEngine;
 
-public class JumpSkill : BaseSkill
+public class NormalAttackSkill : BaseSkill
 {
     public float jumpDuration = 1f;
     public float jumpHeight = 3f;
-    public string Name => "Jump";
+    public string Name => "NormalAttack";
     private Coroutine jumpCoroutine;
 
     public void OnSelect(GameInputManager context) { }

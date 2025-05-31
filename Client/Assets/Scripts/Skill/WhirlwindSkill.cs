@@ -2,7 +2,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class WhirlwindSkill : ISkill
+public class WhirlwindSkill : BaseSkill
 {
 
     public float whirlwindSpeed = 5f;

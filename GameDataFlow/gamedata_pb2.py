@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0egamedata.proto\x12\x08gamedata\"\x97\x01\n\x05Skill\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x10\n\x08\x63ooldown\x18\x03 \x01(\x01\x12\x0e\n\x06\x64\x61mage\x18\x04 \x01(\x01\x12\x11\n\tmana_cost\x18\x05 \x01(\x01\x12\x0e\n\x06\x65\x66\x66\x65\x63t\x18\x06 \x01(\t\x12\r\n\x05value\x18\x07 \x01(\x01\x12\x0f\n\x07name_id\x18\x08 \x01(\t\x12\x0f\n\x07\x64\x65sc_id\x18\t \x01(\t\",\n\tSkillList\x12\x1f\n\x06skills\x18\x01 \x03(\x0b\x32\x0f.gamedata.Skill\"#\n\x06Option\x12\n\n\x02id\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x01\"x\n\x04Item\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x0c\n\x04heal\x18\x03 \x01(\x05\x12\x0f\n\x07name_id\x18\x04 \x01(\t\x12\x0f\n\x07\x64\x65sc_id\x18\x05 \x01(\t\x12&\n\x0citem_options\x18\x06 \x03(\x0b\x32\x10.gamedata.Option\")\n\x08ItemList\x12\x1d\n\x05items\x18\x01 \x03(\x0b\x32\x0e.gamedata.Itemb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0egamedata.proto\x12\x08gamedata\"\x83\x02\n\x05Skill\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x10\n\x08\x63ooldown\x18\x03 \x01(\x01\x12\x0e\n\x06\x64\x61mage\x18\x04 \x01(\x01\x12\x11\n\tmana_cost\x18\x05 \x01(\x01\x12\x0e\n\x06\x65\x66\x66\x65\x63t\x18\x06 \x01(\t\x12\r\n\x05value\x18\x07 \x01(\x01\x12\x0f\n\x07name_id\x18\x08 \x01(\t\x12\x0f\n\x07\x64\x65sc_id\x18\t \x01(\t\x12\x10\n\x08\x64uration\x18\n \x01(\x01\x12\x0e\n\x06hieght\x18\x0b \x01(\x01\x12\r\n\x05range\x18\x0c \x01(\x01\x12\x12\n\nmin_damage\x18\r \x01(\x01\x12\x12\n\nmax_damage\x18\x0e \x01(\x01\x12\x11\n\tcode_name\x18\x0f \x01(\t\",\n\tSkillList\x12\x1f\n\x06skills\x18\x01 \x03(\x0b\x32\x0f.gamedata.Skill\"#\n\x06Option\x12\n\n\x02id\x18\x01 \x01(\x05\x12\r\n\x05value\x18\x02 \x01(\x01\"x\n\x04Item\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x0c\n\x04heal\x18\x03 \x01(\x05\x12\x0f\n\x07name_id\x18\x04 \x01(\t\x12\x0f\n\x07\x64\x65sc_id\x18\x05 \x01(\t\x12&\n\x0citem_options\x18\x06 \x03(\x0b\x32\x10.gamedata.Option\")\n\x08ItemList\x12\x1d\n\x05items\x18\x01 \x03(\x0b\x32\x0e.gamedata.Itemb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,13 +32,13 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'gamedata_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_SKILL']._serialized_start=29
-  _globals['_SKILL']._serialized_end=180
-  _globals['_SKILLLIST']._serialized_start=182
-  _globals['_SKILLLIST']._serialized_end=226
-  _globals['_OPTION']._serialized_start=228
-  _globals['_OPTION']._serialized_end=263
-  _globals['_ITEM']._serialized_start=265
-  _globals['_ITEM']._serialized_end=385
-  _globals['_ITEMLIST']._serialized_start=387
-  _globals['_ITEMLIST']._serialized_end=428
+  _globals['_SKILL']._serialized_end=288
+  _globals['_SKILLLIST']._serialized_start=290
+  _globals['_SKILLLIST']._serialized_end=334
+  _globals['_OPTION']._serialized_start=336
+  _globals['_OPTION']._serialized_end=371
+  _globals['_ITEM']._serialized_start=373
+  _globals['_ITEM']._serialized_end=493
+  _globals['_ITEMLIST']._serialized_start=495
+  _globals['_ITEMLIST']._serialized_end=536
 # @@protoc_insertion_point(module_scope)

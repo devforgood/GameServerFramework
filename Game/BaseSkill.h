@@ -13,7 +13,7 @@ class Vector3; // Forward declaration
 
 class BaseSkill
 {
-private:
+protected:
 	int skill_id_;
 	std::vector<int> skill_properties_;
 	float cooldown_;
@@ -26,9 +26,19 @@ public:
 	BaseSkill();
 	virtual ~BaseSkill();
 
-	int cast_skill(Actor * actor, const syncnet::UseSkill* msg, float serverClientTimeOffset);
-	void update(float deltaTime);
-	int end_duration_skill();
+	virtual int cast_skill(Actor* actor, const syncnet::UseSkill* msg, float serverClientTimeOffset)
+	{
+		return 0; // Default implementation does nothing
+	}
+	virtual void update(float deltaTime)
+	{
+		// Default implementation does nothing
+	}
+
+	virtual int end_duration_skill() 
+	{
+		return 0; // Default implementation does nothing
+	}
 
 };
 

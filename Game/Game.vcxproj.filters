@@ -82,7 +82,6 @@
     <ClCompile Include="Actor.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
-    <ClCompile Include="SkillManager.cpp" />
     <ClCompile Include="PlayerController.cpp">
       <Filter>Controller</Filter>
     </ClCompile>
@@ -103,6 +102,18 @@
     </ClCompile>
     <ClCompile Include="TimeStamp.cpp">
       <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="JumpSkill.cpp">
+      <Filter>skill</Filter>
+    </ClCompile>
+    <ClCompile Include="NormalAttackSkill.cpp">
+      <Filter>skill</Filter>
+    </ClCompile>
+    <ClCompile Include="SkillFactory.cpp">
+      <Filter>skill</Filter>
+    </ClCompile>
+    <ClCompile Include="SkillManager.cpp">
+      <Filter>skill</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -168,7 +179,6 @@
     <ClInclude Include="Actor.h">
       <Filter>GameObject</Filter>
     </ClInclude>
-    <ClInclude Include="SkillManager.h" />
     <ClInclude Include="PlayerController.h">
       <Filter>Controller</Filter>
     </ClInclude>
@@ -189,6 +199,18 @@
     </ClInclude>
     <ClInclude Include="TimeStamp.h">
       <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="JumpSkill.h">
+      <Filter>skill</Filter>
+    </ClInclude>
+    <ClInclude Include="NormalAttackSkill.h">
+      <Filter>skill</Filter>
+    </ClInclude>
+    <ClInclude Include="SkillFactory.h">
+      <Filter>skill</Filter>
+    </ClInclude>
+    <ClInclude Include="SkillManager.h">
+      <Filter>skill</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

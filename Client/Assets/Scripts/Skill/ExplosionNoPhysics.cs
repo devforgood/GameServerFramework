@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class ExplosionNoPhysics : ISkill
+public class ExplosionNoPhysics : BaseSkill
 {
     public string Name => "ExplosionNoPhysics";
 

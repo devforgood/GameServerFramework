@@ -1,5 +1,6 @@
 import json
 from google.protobuf import json_format
+from generate_skill_factory import generate_skill_factory
 import gamedata_pb2
 import shutil
 import os
@@ -23,6 +24,8 @@ JSON_PROTO_MAP = [
 # 복사 대상 폴더
 CLIENT_DIR = "../Client/Assets/Resources/GameData/"
 SERVER_DIR = "../Game/GameData/"
+SERVER_SRC_DIR = "../Game/"
+CLIENT_SRC_DIR = "../Client/Assets/Scripts/"
 
 def convert_json_to_protobuf(json_path, pb_cls, repeated_field, out_path):
     try:
@@ -43,6 +46,10 @@ def convert_json_to_protobuf(json_path, pb_cls, repeated_field, out_path):
         print(f"[ERROR] {json_path} -> {out_path} conversion error: {e}")
         return
 
+    # 스킬 테이블이라면 목록을 넘겨 코드를 생성
+    if os.path.basename(json_path) == "skill.json":
+        generate_skill_factory(SERVER_SRC_DIR, CLIENT_SRC_DIR, data)
+
     # 바이너리 파일 복사
     for target_dir in [CLIENT_DIR, SERVER_DIR]:
         try:
@@ -60,3 +67,4 @@ if __name__ == "__main__":
             repeated_field=info["repeated_field"],
             out_path=info["out_path"]
         )
+

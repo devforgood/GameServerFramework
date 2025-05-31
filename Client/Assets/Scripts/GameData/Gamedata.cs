@@ -24,20 +24,23 @@ namespace Gamedata {
     static GamedataReflection() {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
-            "Cg5nYW1lZGF0YS5wcm90bxIIZ2FtZWRhdGEilwEKBVNraWxsEgoKAmlkGAEg",
+            "Cg5nYW1lZGF0YS5wcm90bxIIZ2FtZWRhdGEigwIKBVNraWxsEgoKAmlkGAEg",
             "ASgFEgwKBHR5cGUYAiABKAkSEAoIY29vbGRvd24YAyABKAESDgoGZGFtYWdl",
             "GAQgASgBEhEKCW1hbmFfY29zdBgFIAEoARIOCgZlZmZlY3QYBiABKAkSDQoF",
             "dmFsdWUYByABKAESDwoHbmFtZV9pZBgIIAEoCRIPCgdkZXNjX2lkGAkgASgJ",
-            "IiwKCVNraWxsTGlzdBIfCgZza2lsbHMYASADKAsyDy5nYW1lZGF0YS5Ta2ls",
-            "bCIjCgZPcHRpb24SCgoCaWQYASABKAUSDQoFdmFsdWUYAiABKAEieAoESXRl",
-            "bRIKCgJpZBgBIAEoBRIMCgR0eXBlGAIgASgJEgwKBGhlYWwYAyABKAUSDwoH",
-            "bmFtZV9pZBgEIAEoCRIPCgdkZXNjX2lkGAUgASgJEiYKDGl0ZW1fb3B0aW9u",
-            "cxgGIAMoCzIQLmdhbWVkYXRhLk9wdGlvbiIpCghJdGVtTGlzdBIdCgVpdGVt",
-            "cxgBIAMoCzIOLmdhbWVkYXRhLkl0ZW1iBnByb3RvMw=="));
+            "EhAKCGR1cmF0aW9uGAogASgBEg4KBmhpZWdodBgLIAEoARINCgVyYW5nZRgM",
+            "IAEoARISCgptaW5fZGFtYWdlGA0gASgBEhIKCm1heF9kYW1hZ2UYDiABKAES",
+            "EQoJY29kZV9uYW1lGA8gASgJIiwKCVNraWxsTGlzdBIfCgZza2lsbHMYASAD",
+            "KAsyDy5nYW1lZGF0YS5Ta2lsbCIjCgZPcHRpb24SCgoCaWQYASABKAUSDQoF",
+            "dmFsdWUYAiABKAEieAoESXRlbRIKCgJpZBgBIAEoBRIMCgR0eXBlGAIgASgJ",
+            "EgwKBGhlYWwYAyABKAUSDwoHbmFtZV9pZBgEIAEoCRIPCgdkZXNjX2lkGAUg",
+            "ASgJEiYKDGl0ZW1fb3B0aW9ucxgGIAMoCzIQLmdhbWVkYXRhLk9wdGlvbiIp",
+            "CghJdGVtTGlzdBIdCgVpdGVtcxgBIAMoCzIOLmdhbWVkYXRhLkl0ZW1iBnBy",
+            "b3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.Skill), global::Gamedata.Skill.Parser, new[]{ "Id", "Type", "Cooldown", "Damage", "ManaCost", "Effect", "Value", "NameId", "DescId" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.Skill), global::Gamedata.Skill.Parser, new[]{ "Id", "Type", "Cooldown", "Damage", "ManaCost", "Effect", "Value", "NameId", "DescId", "Duration", "Hieght", "Range", "MinDamage", "MaxDamage", "CodeName" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.SkillList), global::Gamedata.SkillList.Parser, new[]{ "Skills" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.Option), global::Gamedata.Option.Parser, new[]{ "Id", "Value" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.Item), global::Gamedata.Item.Parser, new[]{ "Id", "Type", "Heal", "NameId", "DescId", "ItemOptions" }, null, null, null, null),
@@ -92,6 +95,12 @@ namespace Gamedata {
       value_ = other.value_;
       nameId_ = other.nameId_;
       descId_ = other.descId_;
+      duration_ = other.duration_;
+      hieght_ = other.hieght_;
+      range_ = other.range_;
+      minDamage_ = other.minDamage_;
+      maxDamage_ = other.maxDamage_;
+      codeName_ = other.codeName_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -209,6 +218,78 @@ namespace Gamedata {
       }
     }
 
+    /// <summary>Field number for the "duration" field.</summary>
+    public const int DurationFieldNumber = 10;
+    private double duration_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public double Duration {
+      get { return duration_; }
+      set {
+        duration_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "hieght" field.</summary>
+    public const int HieghtFieldNumber = 11;
+    private double hieght_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public double Hieght {
+      get { return hieght_; }
+      set {
+        hieght_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "range" field.</summary>
+    public const int RangeFieldNumber = 12;
+    private double range_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public double Range {
+      get { return range_; }
+      set {
+        range_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "min_damage" field.</summary>
+    public const int MinDamageFieldNumber = 13;
+    private double minDamage_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public double MinDamage {
+      get { return minDamage_; }
+      set {
+        minDamage_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "max_damage" field.</summary>
+    public const int MaxDamageFieldNumber = 14;
+    private double maxDamage_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public double MaxDamage {
+      get { return maxDamage_; }
+      set {
+        maxDamage_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "code_name" field.</summary>
+    public const int CodeNameFieldNumber = 15;
+    private string codeName_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string CodeName {
+      get { return codeName_; }
+      set {
+        codeName_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -233,6 +314,12 @@ namespace Gamedata {
       if (!pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.Equals(Value, other.Value)) return false;
       if (NameId != other.NameId) return false;
       if (DescId != other.DescId) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.Equals(Duration, other.Duration)) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.Equals(Hieght, other.Hieght)) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.Equals(Range, other.Range)) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.Equals(MinDamage, other.MinDamage)) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.Equals(MaxDamage, other.MaxDamage)) return false;
+      if (CodeName != other.CodeName) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -249,6 +336,12 @@ namespace Gamedata {
       if (Value != 0D) hash ^= pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.GetHashCode(Value);
       if (NameId.Length != 0) hash ^= NameId.GetHashCode();
       if (DescId.Length != 0) hash ^= DescId.GetHashCode();
+      if (Duration != 0D) hash ^= pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.GetHashCode(Duration);
+      if (Hieght != 0D) hash ^= pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.GetHashCode(Hieght);
+      if (Range != 0D) hash ^= pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.GetHashCode(Range);
+      if (MinDamage != 0D) hash ^= pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.GetHashCode(MinDamage);
+      if (MaxDamage != 0D) hash ^= pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.GetHashCode(MaxDamage);
+      if (CodeName.Length != 0) hash ^= CodeName.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -303,6 +396,30 @@ namespace Gamedata {
         output.WriteRawTag(74);
         output.WriteString(DescId);
       }
+      if (Duration != 0D) {
+        output.WriteRawTag(81);
+        output.WriteDouble(Duration);
+      }
+      if (Hieght != 0D) {
+        output.WriteRawTag(89);
+        output.WriteDouble(Hieght);
+      }
+      if (Range != 0D) {
+        output.WriteRawTag(97);
+        output.WriteDouble(Range);
+      }
+      if (MinDamage != 0D) {
+        output.WriteRawTag(105);
+        output.WriteDouble(MinDamage);
+      }
+      if (MaxDamage != 0D) {
+        output.WriteRawTag(113);
+        output.WriteDouble(MaxDamage);
+      }
+      if (CodeName.Length != 0) {
+        output.WriteRawTag(122);
+        output.WriteString(CodeName);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -349,6 +466,30 @@ namespace Gamedata {
         output.WriteRawTag(74);
         output.WriteString(DescId);
       }
+      if (Duration != 0D) {
+        output.WriteRawTag(81);
+        output.WriteDouble(Duration);
+      }
+      if (Hieght != 0D) {
+        output.WriteRawTag(89);
+        output.WriteDouble(Hieght);
+      }
+      if (Range != 0D) {
+        output.WriteRawTag(97);
+        output.WriteDouble(Range);
+      }
+      if (MinDamage != 0D) {
+        output.WriteRawTag(105);
+        output.WriteDouble(MinDamage);
+      }
+      if (MaxDamage != 0D) {
+        output.WriteRawTag(113);
+        output.WriteDouble(MaxDamage);
+      }
+      if (CodeName.Length != 0) {
+        output.WriteRawTag(122);
+        output.WriteString(CodeName);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -385,6 +526,24 @@ namespace Gamedata {
       }
       if (DescId.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(DescId);
+      }
+      if (Duration != 0D) {
+        size += 1 + 8;
+      }
+      if (Hieght != 0D) {
+        size += 1 + 8;
+      }
+      if (Range != 0D) {
+        size += 1 + 8;
+      }
+      if (MinDamage != 0D) {
+        size += 1 + 8;
+      }
+      if (MaxDamage != 0D) {
+        size += 1 + 8;
+      }
+      if (CodeName.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(CodeName);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -424,6 +583,24 @@ namespace Gamedata {
       }
       if (other.DescId.Length != 0) {
         DescId = other.DescId;
+      }
+      if (other.Duration != 0D) {
+        Duration = other.Duration;
+      }
+      if (other.Hieght != 0D) {
+        Hieght = other.Hieght;
+      }
+      if (other.Range != 0D) {
+        Range = other.Range;
+      }
+      if (other.MinDamage != 0D) {
+        MinDamage = other.MinDamage;
+      }
+      if (other.MaxDamage != 0D) {
+        MaxDamage = other.MaxDamage;
+      }
+      if (other.CodeName.Length != 0) {
+        CodeName = other.CodeName;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -480,6 +657,30 @@ namespace Gamedata {
             DescId = input.ReadString();
             break;
           }
+          case 81: {
+            Duration = input.ReadDouble();
+            break;
+          }
+          case 89: {
+            Hieght = input.ReadDouble();
+            break;
+          }
+          case 97: {
+            Range = input.ReadDouble();
+            break;
+          }
+          case 105: {
+            MinDamage = input.ReadDouble();
+            break;
+          }
+          case 113: {
+            MaxDamage = input.ReadDouble();
+            break;
+          }
+          case 122: {
+            CodeName = input.ReadString();
+            break;
+          }
         }
       }
     #endif
@@ -533,6 +734,30 @@ namespace Gamedata {
           }
           case 74: {
             DescId = input.ReadString();
+            break;
+          }
+          case 81: {
+            Duration = input.ReadDouble();
+            break;
+          }
+          case 89: {
+            Hieght = input.ReadDouble();
+            break;
+          }
+          case 97: {
+            Range = input.ReadDouble();
+            break;
+          }
+          case 105: {
+            MinDamage = input.ReadDouble();
+            break;
+          }
+          case 113: {
+            MaxDamage = input.ReadDouble();
+            break;
+          }
+          case 122: {
+            CodeName = input.ReadString();
             break;
           }
         }

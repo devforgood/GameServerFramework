@@ -40,10 +40,18 @@ inline constexpr Skill::Impl_::Impl_(
         desc_id_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
+        code_name_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
         cooldown_{0},
         damage_{0},
         mana_cost_{0},
         value_{0},
+        duration_{0},
+        hieght_{0},
+        range_{0},
+        min_damage_{0},
+        max_damage_{0},
         id_{0},
         _cached_size_{0} {}
 
@@ -203,6 +211,12 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.value_),
         PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.name_id_),
         PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.desc_id_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.duration_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.hieght_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.range_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.min_damage_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.max_damage_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.code_name_),
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::gamedata::SkillList, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -250,10 +264,10 @@ const ::uint32_t
 static const ::_pbi::MigrationSchema
     schemas[] ABSL_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
         {0, -1, -1, sizeof(::gamedata::Skill)},
-        {17, -1, -1, sizeof(::gamedata::SkillList)},
-        {26, -1, -1, sizeof(::gamedata::Option)},
-        {36, -1, -1, sizeof(::gamedata::Item)},
-        {50, -1, -1, sizeof(::gamedata::ItemList)},
+        {23, -1, -1, sizeof(::gamedata::SkillList)},
+        {32, -1, -1, sizeof(::gamedata::Option)},
+        {42, -1, -1, sizeof(::gamedata::Item)},
+        {56, -1, -1, sizeof(::gamedata::ItemList)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::gamedata::_Skill_default_instance_._instance,
@@ -264,23 +278,26 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 const char descriptor_table_protodef_gamedata_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
     protodesc_cold) = {
-    "\n\016gamedata.proto\022\010gamedata\"\227\001\n\005Skill\022\n\n\002"
+    "\n\016gamedata.proto\022\010gamedata\"\203\002\n\005Skill\022\n\n\002"
     "id\030\001 \001(\005\022\014\n\004type\030\002 \001(\t\022\020\n\010cooldown\030\003 \001(\001"
     "\022\016\n\006damage\030\004 \001(\001\022\021\n\tmana_cost\030\005 \001(\001\022\016\n\006e"
     "ffect\030\006 \001(\t\022\r\n\005value\030\007 \001(\001\022\017\n\007name_id\030\010 "
-    "\001(\t\022\017\n\007desc_id\030\t \001(\t\",\n\tSkillList\022\037\n\006ski"
-    "lls\030\001 \003(\0132\017.gamedata.Skill\"#\n\006Option\022\n\n\002"
-    "id\030\001 \001(\005\022\r\n\005value\030\002 \001(\001\"x\n\004Item\022\n\n\002id\030\001 "
-    "\001(\005\022\014\n\004type\030\002 \001(\t\022\014\n\004heal\030\003 \001(\005\022\017\n\007name_"
-    "id\030\004 \001(\t\022\017\n\007desc_id\030\005 \001(\t\022&\n\014item_option"
-    "s\030\006 \003(\0132\020.gamedata.Option\")\n\010ItemList\022\035\n"
-    "\005items\030\001 \003(\0132\016.gamedata.Itemb\006proto3"
+    "\001(\t\022\017\n\007desc_id\030\t \001(\t\022\020\n\010duration\030\n \001(\001\022\016"
+    "\n\006hieght\030\013 \001(\001\022\r\n\005range\030\014 \001(\001\022\022\n\nmin_dam"
+    "age\030\r \001(\001\022\022\n\nmax_damage\030\016 \001(\001\022\021\n\tcode_na"
+    "me\030\017 \001(\t\",\n\tSkillList\022\037\n\006skills\030\001 \003(\0132\017."
+    "gamedata.Skill\"#\n\006Option\022\n\n\002id\030\001 \001(\005\022\r\n\005"
+    "value\030\002 \001(\001\"x\n\004Item\022\n\n\002id\030\001 \001(\005\022\014\n\004type\030"
+    "\002 \001(\t\022\014\n\004heal\030\003 \001(\005\022\017\n\007name_id\030\004 \001(\t\022\017\n\007"
+    "desc_id\030\005 \001(\t\022&\n\014item_options\030\006 \003(\0132\020.ga"
+    "medata.Option\")\n\010ItemList\022\035\n\005items\030\001 \003(\013"
+    "2\016.gamedata.Itemb\006proto3"
 };
 static ::absl::once_flag descriptor_table_gamedata_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_gamedata_2eproto = {
     false,
     false,
-    436,
+    544,
     descriptor_table_protodef_gamedata_2eproto,
     "gamedata.proto",
     &descriptor_table_gamedata_2eproto_once,
@@ -316,6 +333,7 @@ inline PROTOBUF_NDEBUG_INLINE Skill::Impl_::Impl_(
         effect_(arena, from.effect_),
         name_id_(arena, from.name_id_),
         desc_id_(arena, from.desc_id_),
+        code_name_(arena, from.code_name_),
         _cached_size_{0} {}
 
 Skill::Skill(
@@ -348,6 +366,7 @@ inline PROTOBUF_NDEBUG_INLINE Skill::Impl_::Impl_(
         effect_(arena),
         name_id_(arena),
         desc_id_(arena),
+        code_name_(arena),
         _cached_size_{0} {}
 
 inline void Skill::SharedCtor(::_pb::Arena* arena) {
@@ -371,6 +390,7 @@ inline void Skill::SharedDtor(MessageLite& self) {
   this_._impl_.effect_.Destroy();
   this_._impl_.name_id_.Destroy();
   this_._impl_.desc_id_.Destroy();
+  this_._impl_.code_name_.Destroy();
   this_._impl_.~Impl_();
 }
 
@@ -410,15 +430,15 @@ const ::google::protobuf::internal::ClassData* Skill::GetClassData() const {
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<4, 9, 0, 55, 2> Skill::_table_ = {
+const ::_pbi::TcParseTable<4, 15, 0, 64, 2> Skill::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    9, 120,  // max_field_number, fast_idx_mask
+    15, 120,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294966784,  // skipmap
+    4294934528,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    9,  // num_field_entries
+    15,  // num_field_entries
     0,  // num_aux_entries
     offsetof(decltype(_table_), field_names),  // no aux_entries
     _class_data_.base(),
@@ -456,12 +476,24 @@ const ::_pbi::TcParseTable<4, 9, 0, 55, 2> Skill::_table_ = {
     // string desc_id = 9;
     {::_pbi::TcParser::FastUS1,
      {74, 63, 0, PROTOBUF_FIELD_OFFSET(Skill, _impl_.desc_id_)}},
-    {::_pbi::TcParser::MiniParse, {}},
-    {::_pbi::TcParser::MiniParse, {}},
-    {::_pbi::TcParser::MiniParse, {}},
-    {::_pbi::TcParser::MiniParse, {}},
-    {::_pbi::TcParser::MiniParse, {}},
-    {::_pbi::TcParser::MiniParse, {}},
+    // double duration = 10;
+    {::_pbi::TcParser::FastF64S1,
+     {81, 63, 0, PROTOBUF_FIELD_OFFSET(Skill, _impl_.duration_)}},
+    // double hieght = 11;
+    {::_pbi::TcParser::FastF64S1,
+     {89, 63, 0, PROTOBUF_FIELD_OFFSET(Skill, _impl_.hieght_)}},
+    // double range = 12;
+    {::_pbi::TcParser::FastF64S1,
+     {97, 63, 0, PROTOBUF_FIELD_OFFSET(Skill, _impl_.range_)}},
+    // double min_damage = 13;
+    {::_pbi::TcParser::FastF64S1,
+     {105, 63, 0, PROTOBUF_FIELD_OFFSET(Skill, _impl_.min_damage_)}},
+    // double max_damage = 14;
+    {::_pbi::TcParser::FastF64S1,
+     {113, 63, 0, PROTOBUF_FIELD_OFFSET(Skill, _impl_.max_damage_)}},
+    // string code_name = 15;
+    {::_pbi::TcParser::FastUS1,
+     {122, 63, 0, PROTOBUF_FIELD_OFFSET(Skill, _impl_.code_name_)}},
   }}, {{
     65535, 65535
   }}, {{
@@ -492,15 +524,34 @@ const ::_pbi::TcParseTable<4, 9, 0, 55, 2> Skill::_table_ = {
     // string desc_id = 9;
     {PROTOBUF_FIELD_OFFSET(Skill, _impl_.desc_id_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // double duration = 10;
+    {PROTOBUF_FIELD_OFFSET(Skill, _impl_.duration_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kDouble)},
+    // double hieght = 11;
+    {PROTOBUF_FIELD_OFFSET(Skill, _impl_.hieght_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kDouble)},
+    // double range = 12;
+    {PROTOBUF_FIELD_OFFSET(Skill, _impl_.range_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kDouble)},
+    // double min_damage = 13;
+    {PROTOBUF_FIELD_OFFSET(Skill, _impl_.min_damage_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kDouble)},
+    // double max_damage = 14;
+    {PROTOBUF_FIELD_OFFSET(Skill, _impl_.max_damage_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kDouble)},
+    // string code_name = 15;
+    {PROTOBUF_FIELD_OFFSET(Skill, _impl_.code_name_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
   }},
   // no aux_entries
   {{
-    "\16\0\4\0\0\0\6\0\7\7\0\0\0\0\0\0"
+    "\16\0\4\0\0\0\6\0\7\7\0\0\0\0\0\11"
     "gamedata.Skill"
     "type"
     "effect"
     "name_id"
     "desc_id"
+    "code_name"
   }},
 };
 
@@ -515,6 +566,7 @@ PROTOBUF_NOINLINE void Skill::Clear() {
   _impl_.effect_.ClearToEmpty();
   _impl_.name_id_.ClearToEmpty();
   _impl_.desc_id_.ClearToEmpty();
+  _impl_.code_name_.ClearToEmpty();
   ::memset(&_impl_.cooldown_, 0, static_cast<::size_t>(
       reinterpret_cast<char*>(&_impl_.id_) -
       reinterpret_cast<char*>(&_impl_.cooldown_)) + sizeof(_impl_.id_));
@@ -603,6 +655,49 @@ PROTOBUF_NOINLINE void Skill::Clear() {
             target = stream->WriteStringMaybeAliased(9, _s, target);
           }
 
+          // double duration = 10;
+          if (::absl::bit_cast<::uint64_t>(this_._internal_duration()) != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteDoubleToArray(
+                10, this_._internal_duration(), target);
+          }
+
+          // double hieght = 11;
+          if (::absl::bit_cast<::uint64_t>(this_._internal_hieght()) != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteDoubleToArray(
+                11, this_._internal_hieght(), target);
+          }
+
+          // double range = 12;
+          if (::absl::bit_cast<::uint64_t>(this_._internal_range()) != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteDoubleToArray(
+                12, this_._internal_range(), target);
+          }
+
+          // double min_damage = 13;
+          if (::absl::bit_cast<::uint64_t>(this_._internal_min_damage()) != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteDoubleToArray(
+                13, this_._internal_min_damage(), target);
+          }
+
+          // double max_damage = 14;
+          if (::absl::bit_cast<::uint64_t>(this_._internal_max_damage()) != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteDoubleToArray(
+                14, this_._internal_max_damage(), target);
+          }
+
+          // string code_name = 15;
+          if (!this_._internal_code_name().empty()) {
+            const std::string& _s = this_._internal_code_name();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "gamedata.Skill.code_name");
+            target = stream->WriteStringMaybeAliased(15, _s, target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -648,6 +743,11 @@ PROTOBUF_NOINLINE void Skill::Clear() {
               total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
                                               this_._internal_desc_id());
             }
+            // string code_name = 15;
+            if (!this_._internal_code_name().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_code_name());
+            }
             // double cooldown = 3;
             if (::absl::bit_cast<::uint64_t>(this_._internal_cooldown()) != 0) {
               total_size += 9;
@@ -662,6 +762,26 @@ PROTOBUF_NOINLINE void Skill::Clear() {
             }
             // double value = 7;
             if (::absl::bit_cast<::uint64_t>(this_._internal_value()) != 0) {
+              total_size += 9;
+            }
+            // double duration = 10;
+            if (::absl::bit_cast<::uint64_t>(this_._internal_duration()) != 0) {
+              total_size += 9;
+            }
+            // double hieght = 11;
+            if (::absl::bit_cast<::uint64_t>(this_._internal_hieght()) != 0) {
+              total_size += 9;
+            }
+            // double range = 12;
+            if (::absl::bit_cast<::uint64_t>(this_._internal_range()) != 0) {
+              total_size += 9;
+            }
+            // double min_damage = 13;
+            if (::absl::bit_cast<::uint64_t>(this_._internal_min_damage()) != 0) {
+              total_size += 9;
+            }
+            // double max_damage = 14;
+            if (::absl::bit_cast<::uint64_t>(this_._internal_max_damage()) != 0) {
               total_size += 9;
             }
             // int32 id = 1;
@@ -694,6 +814,9 @@ void Skill::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::p
   if (!from._internal_desc_id().empty()) {
     _this->_internal_set_desc_id(from._internal_desc_id());
   }
+  if (!from._internal_code_name().empty()) {
+    _this->_internal_set_code_name(from._internal_code_name());
+  }
   if (::absl::bit_cast<::uint64_t>(from._internal_cooldown()) != 0) {
     _this->_impl_.cooldown_ = from._impl_.cooldown_;
   }
@@ -705,6 +828,21 @@ void Skill::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::p
   }
   if (::absl::bit_cast<::uint64_t>(from._internal_value()) != 0) {
     _this->_impl_.value_ = from._impl_.value_;
+  }
+  if (::absl::bit_cast<::uint64_t>(from._internal_duration()) != 0) {
+    _this->_impl_.duration_ = from._impl_.duration_;
+  }
+  if (::absl::bit_cast<::uint64_t>(from._internal_hieght()) != 0) {
+    _this->_impl_.hieght_ = from._impl_.hieght_;
+  }
+  if (::absl::bit_cast<::uint64_t>(from._internal_range()) != 0) {
+    _this->_impl_.range_ = from._impl_.range_;
+  }
+  if (::absl::bit_cast<::uint64_t>(from._internal_min_damage()) != 0) {
+    _this->_impl_.min_damage_ = from._impl_.min_damage_;
+  }
+  if (::absl::bit_cast<::uint64_t>(from._internal_max_damage()) != 0) {
+    _this->_impl_.max_damage_ = from._impl_.max_damage_;
   }
   if (from._internal_id() != 0) {
     _this->_impl_.id_ = from._impl_.id_;
@@ -729,6 +867,7 @@ void Skill::InternalSwap(Skill* PROTOBUF_RESTRICT other) {
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.effect_, &other->_impl_.effect_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.name_id_, &other->_impl_.name_id_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.desc_id_, &other->_impl_.desc_id_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.code_name_, &other->_impl_.code_name_, arena);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(Skill, _impl_.id_)
       + sizeof(Skill::_impl_.id_)

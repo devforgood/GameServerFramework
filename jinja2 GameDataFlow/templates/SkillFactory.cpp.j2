@@ -1,0 +1,13 @@
+// This file is auto-generated. Do not modify directly.
+
+#include "SkillFactory.h"
+{%- for code_name in code_names %}
+#include "{{code_name}}.h"
+{%- endfor %}
+
+BaseSkill* SkillFactory::CreateSkill(const std::string& codeName) {
+{%- for code_name in code_names %}
+    if (codeName == "{{code_name}}") return new {{code_name}}();
+{%- endfor %}
+    return nullptr;
+}

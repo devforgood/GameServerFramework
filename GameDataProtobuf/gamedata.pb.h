@@ -230,10 +230,16 @@ class Skill final : public ::google::protobuf::Message
     kEffectFieldNumber = 6,
     kNameIdFieldNumber = 8,
     kDescIdFieldNumber = 9,
+    kCodeNameFieldNumber = 15,
     kCooldownFieldNumber = 3,
     kDamageFieldNumber = 4,
     kManaCostFieldNumber = 5,
     kValueFieldNumber = 7,
+    kDurationFieldNumber = 10,
+    kHieghtFieldNumber = 11,
+    kRangeFieldNumber = 12,
+    kMinDamageFieldNumber = 13,
+    kMaxDamageFieldNumber = 14,
     kIdFieldNumber = 1,
   };
   // string type = 2;
@@ -300,6 +306,22 @@ class Skill final : public ::google::protobuf::Message
   std::string* _internal_mutable_desc_id();
 
   public:
+  // string code_name = 15;
+  void clear_code_name() ;
+  const std::string& code_name() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_code_name(Arg_&& arg, Args_... args);
+  std::string* mutable_code_name();
+  PROTOBUF_NODISCARD std::string* release_code_name();
+  void set_allocated_code_name(std::string* value);
+
+  private:
+  const std::string& _internal_code_name() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_code_name(
+      const std::string& value);
+  std::string* _internal_mutable_code_name();
+
+  public:
   // double cooldown = 3;
   void clear_cooldown() ;
   double cooldown() const;
@@ -340,6 +362,56 @@ class Skill final : public ::google::protobuf::Message
   void _internal_set_value(double value);
 
   public:
+  // double duration = 10;
+  void clear_duration() ;
+  double duration() const;
+  void set_duration(double value);
+
+  private:
+  double _internal_duration() const;
+  void _internal_set_duration(double value);
+
+  public:
+  // double hieght = 11;
+  void clear_hieght() ;
+  double hieght() const;
+  void set_hieght(double value);
+
+  private:
+  double _internal_hieght() const;
+  void _internal_set_hieght(double value);
+
+  public:
+  // double range = 12;
+  void clear_range() ;
+  double range() const;
+  void set_range(double value);
+
+  private:
+  double _internal_range() const;
+  void _internal_set_range(double value);
+
+  public:
+  // double min_damage = 13;
+  void clear_min_damage() ;
+  double min_damage() const;
+  void set_min_damage(double value);
+
+  private:
+  double _internal_min_damage() const;
+  void _internal_set_min_damage(double value);
+
+  public:
+  // double max_damage = 14;
+  void clear_max_damage() ;
+  double max_damage() const;
+  void set_max_damage(double value);
+
+  private:
+  double _internal_max_damage() const;
+  void _internal_set_max_damage(double value);
+
+  public:
   // int32 id = 1;
   void clear_id() ;
   ::int32_t id() const;
@@ -355,8 +427,8 @@ class Skill final : public ::google::protobuf::Message
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      4, 9, 0,
-      55, 2>
+      4, 15, 0,
+      64, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -377,10 +449,16 @@ class Skill final : public ::google::protobuf::Message
     ::google::protobuf::internal::ArenaStringPtr effect_;
     ::google::protobuf::internal::ArenaStringPtr name_id_;
     ::google::protobuf::internal::ArenaStringPtr desc_id_;
+    ::google::protobuf::internal::ArenaStringPtr code_name_;
     double cooldown_;
     double damage_;
     double mana_cost_;
     double value_;
+    double duration_;
+    double hieght_;
+    double range_;
+    double min_damage_;
+    double max_damage_;
     ::int32_t id_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
@@ -1576,6 +1654,164 @@ inline void Skill::set_allocated_desc_id(std::string* value) {
     _impl_.desc_id_.Set("", GetArena());
   }
   // @@protoc_insertion_point(field_set_allocated:gamedata.Skill.desc_id)
+}
+
+// double duration = 10;
+inline void Skill::clear_duration() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.duration_ = 0;
+}
+inline double Skill::duration() const {
+  // @@protoc_insertion_point(field_get:gamedata.Skill.duration)
+  return _internal_duration();
+}
+inline void Skill::set_duration(double value) {
+  _internal_set_duration(value);
+  // @@protoc_insertion_point(field_set:gamedata.Skill.duration)
+}
+inline double Skill::_internal_duration() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.duration_;
+}
+inline void Skill::_internal_set_duration(double value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.duration_ = value;
+}
+
+// double hieght = 11;
+inline void Skill::clear_hieght() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.hieght_ = 0;
+}
+inline double Skill::hieght() const {
+  // @@protoc_insertion_point(field_get:gamedata.Skill.hieght)
+  return _internal_hieght();
+}
+inline void Skill::set_hieght(double value) {
+  _internal_set_hieght(value);
+  // @@protoc_insertion_point(field_set:gamedata.Skill.hieght)
+}
+inline double Skill::_internal_hieght() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.hieght_;
+}
+inline void Skill::_internal_set_hieght(double value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.hieght_ = value;
+}
+
+// double range = 12;
+inline void Skill::clear_range() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.range_ = 0;
+}
+inline double Skill::range() const {
+  // @@protoc_insertion_point(field_get:gamedata.Skill.range)
+  return _internal_range();
+}
+inline void Skill::set_range(double value) {
+  _internal_set_range(value);
+  // @@protoc_insertion_point(field_set:gamedata.Skill.range)
+}
+inline double Skill::_internal_range() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.range_;
+}
+inline void Skill::_internal_set_range(double value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.range_ = value;
+}
+
+// double min_damage = 13;
+inline void Skill::clear_min_damage() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.min_damage_ = 0;
+}
+inline double Skill::min_damage() const {
+  // @@protoc_insertion_point(field_get:gamedata.Skill.min_damage)
+  return _internal_min_damage();
+}
+inline void Skill::set_min_damage(double value) {
+  _internal_set_min_damage(value);
+  // @@protoc_insertion_point(field_set:gamedata.Skill.min_damage)
+}
+inline double Skill::_internal_min_damage() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.min_damage_;
+}
+inline void Skill::_internal_set_min_damage(double value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.min_damage_ = value;
+}
+
+// double max_damage = 14;
+inline void Skill::clear_max_damage() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.max_damage_ = 0;
+}
+inline double Skill::max_damage() const {
+  // @@protoc_insertion_point(field_get:gamedata.Skill.max_damage)
+  return _internal_max_damage();
+}
+inline void Skill::set_max_damage(double value) {
+  _internal_set_max_damage(value);
+  // @@protoc_insertion_point(field_set:gamedata.Skill.max_damage)
+}
+inline double Skill::_internal_max_damage() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.max_damage_;
+}
+inline void Skill::_internal_set_max_damage(double value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.max_damage_ = value;
+}
+
+// string code_name = 15;
+inline void Skill::clear_code_name() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.code_name_.ClearToEmpty();
+}
+inline const std::string& Skill::code_name() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:gamedata.Skill.code_name)
+  return _internal_code_name();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void Skill::set_code_name(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.code_name_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:gamedata.Skill.code_name)
+}
+inline std::string* Skill::mutable_code_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_code_name();
+  // @@protoc_insertion_point(field_mutable:gamedata.Skill.code_name)
+  return _s;
+}
+inline const std::string& Skill::_internal_code_name() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.code_name_.Get();
+}
+inline void Skill::_internal_set_code_name(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.code_name_.Set(value, GetArena());
+}
+inline std::string* Skill::_internal_mutable_code_name() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.code_name_.Mutable( GetArena());
+}
+inline std::string* Skill::release_code_name() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:gamedata.Skill.code_name)
+  return _impl_.code_name_.Release();
+}
+inline void Skill::set_allocated_code_name(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.code_name_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.code_name_.IsDefault()) {
+    _impl_.code_name_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:gamedata.Skill.code_name)
 }
 
 // -------------------------------------------------------------------

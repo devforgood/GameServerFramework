@@ -1,5 +1,5 @@
 
-public interface ISkill
+public interface BaseSkill
 {
     string Name { get; }
     void OnSelect(GameInputManager context);

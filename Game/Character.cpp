@@ -4,11 +4,18 @@
 #include "BaseSkill.h"
 #include "Vector3.h"
 #include "TimeStamp.h"
+#include "../GameDataProtobuf/ResourceLoader.h"
+#include "SkillFactory.h"
 
 Character::Character(World* world) : Actor(world)
 {
 	// todo : load skills from DB table
-	skills_[1] = new BaseSkill();
+	auto skills = ResourceLoader::Instance().GetSkills();
+	for (const auto& skill : skills)
+	{
+		skills_[skill.first] = SkillFactory::CreateSkill(skill.first);
+	}
+
 	is_input_locked_ = false;
 }
 

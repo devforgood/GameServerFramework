@@ -220,7 +220,7 @@ public class Session : MonoBehaviour
         }
 
 
-        SendMessage(MakeUseSkill(player_agnet_id, pos, type));
+        SendMessage(MakeUseSkill(2, player_agnet_id, pos, type));
 		GameObject game_object = null;
 		if (game_objects.TryGetValue(player_agnet_id, out game_object) == true)
 		{
@@ -384,11 +384,11 @@ public class Session : MonoBehaviour
         return body;
     }
 
-    public byte[] MakeUseSkill(int agentId, Vector3 pos, int type)
+    public byte[] MakeUseSkill(int skillId, int agentId, Vector3 pos, int type)
     {
         var builder = new FlatBufferBuilder(1024);
         UseSkill.StartUseSkill(builder);
-		UseSkill.AddSkillId(builder, 1);
+		UseSkill.AddSkillId(builder, skillId);
         UseSkill.AddId(builder, agentId);
         UseSkill.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
 		UseSkill.AddTargetId(builder, type);
