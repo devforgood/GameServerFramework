@@ -17,20 +17,24 @@ namespace Assets.Scripts.GameData
             return Resources.Load<T>(path);
         }
 
+
         /// <summary>
-        /// protobuf 리스트 데이터를 data-driven 방식으로 로드
+        /// protobuf 리스트 데이터를 data-driven 방식으로 로드하여 Dictionary에 저장
         /// </summary>
         /// <typeparam name="TList">protobuf 리스트 메시지 타입 (예: SkillList, ItemList)</typeparam>
         /// <typeparam name="TElement">리스트 요소 타입 (예: Skill, Item)</typeparam>
         /// <param name="resourcePath">Resources 폴더 내 경로</param>
         /// <param name="parser">파서 (bytes → TList)</param>
         /// <param name="getList">TList에서 IEnumerable<TElement> 추출 람다</param>
-        /// <returns>요소 리스트</returns>
+        /// <param name="getId">TElement에서 id 추출 람다</param>
+        /// <param name="outDict">결과를 담을 Dictionary</param>
+        /// <returns>성공 여부</returns>
         public bool of<TList, TElement>(
             string resourcePath,
             Func<byte[], TList> parser,
             Func<TList, IEnumerable<TElement>> getList,
-            List<TElement> outList)
+            Func<TElement, int> getId,
+            Dictionary<int, TElement> outDict)
         {
             TextAsset bin = Resources.Load<TextAsset>(resourcePath);
             if (bin == null)
@@ -40,22 +44,26 @@ namespace Assets.Scripts.GameData
             }
 
             var listObj = parser(bin.bytes);
-            outList.AddRange(getList(listObj));
+            foreach (var elem in getList(listObj))
+            {
+                outDict[getId(elem)] = elem;
+            }
             return true;
         }
 
         public void Load()
         {
             Debug.Log("ResourceLoader initialized.");
-            var skills = new List<Gamedata.Skill>();
-            var items = new List<Gamedata.Item>();
 
-            of("GameData/skill", bytes => SkillList.Parser.ParseFrom(bytes), skillList => skillList.Skills, skills);
-            of("GameData/item", bytes => ItemList.Parser.ParseFrom(bytes), itemList => itemList.Items, items);
+            of("GameData/skill", bytes => SkillList.Parser.ParseFrom(bytes), skillList => skillList.Skills, skill=>skill.Id, skills);
+            of("GameData/item", bytes => ItemList.Parser.ParseFrom(bytes), itemList => itemList.Items, item=>item.Id, items);
 
             // 게임 데이터 로드가 완료되었음을 로그로 남김
             Debug.Log("ResourceLoader: Game data loaded successfully.");
 
         }
+
+        public Dictionary<int, Gamedata.Skill> skills = new Dictionary<int, Gamedata.Skill>();
+        public Dictionary<int, Gamedata.Item> items = new Dictionary<int, Gamedata.Item>();
     }
 }
