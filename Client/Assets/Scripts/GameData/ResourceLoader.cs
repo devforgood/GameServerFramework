@@ -17,40 +17,45 @@ namespace Assets.Scripts.GameData
             return Resources.Load<T>(path);
         }
 
-        // Resources 폴더에서 protobuf 바이너리 파일을 읽어 SkillList 반환
-        public List<Skill> LoadSkills(string resourcePath)
+        /// <summary>
+        /// protobuf 리스트 데이터를 data-driven 방식으로 로드
+        /// </summary>
+        /// <typeparam name="TList">protobuf 리스트 메시지 타입 (예: SkillList, ItemList)</typeparam>
+        /// <typeparam name="TElement">리스트 요소 타입 (예: Skill, Item)</typeparam>
+        /// <param name="resourcePath">Resources 폴더 내 경로</param>
+        /// <param name="parser">파서 (bytes → TList)</param>
+        /// <param name="getList">TList에서 IEnumerable<TElement> 추출 람다</param>
+        /// <returns>요소 리스트</returns>
+        public bool of<TList, TElement>(
+            string resourcePath,
+            Func<byte[], TList> parser,
+            Func<TList, IEnumerable<TElement>> getList,
+            List<TElement> outList)
         {
             TextAsset bin = Resources.Load<TextAsset>(resourcePath);
             if (bin == null)
             {
-                Debug.LogError($"Skill 데이터 파일을 찾을 수 없습니다: {resourcePath}");
-                return new List<Skill>();
+                Debug.LogError($"{typeof(TElement).Name} 데이터 파일을 찾을 수 없습니다: {resourcePath}");
+                return false;
             }
 
-            var skillList = SkillList.Parser.ParseFrom(bin.bytes);
-            return new List<Skill>(skillList.Skills);
-        }
-
-        // Resources 폴더에서 protobuf 바이너리 파일을 읽어 ItemList 반환
-        public List<Item> LoadItems(string resourcePath)
-        {
-            TextAsset bin = Resources.Load<TextAsset>(resourcePath);
-            if (bin == null)
-            {
-                Debug.LogError($"Item 데이터 파일을 찾을 수 없습니다: {resourcePath}");
-                return new List<Item>();
-            }
-
-            var itemList = ItemList.Parser.ParseFrom(bin.bytes);
-            return new List<Item>(itemList.Items);
+            var listObj = parser(bin.bytes);
+            outList.AddRange(getList(listObj));
+            return true;
         }
 
         public void Load()
         {
-            // 초기화 작업이 필요하다면 여기에 작성
             Debug.Log("ResourceLoader initialized.");
-            var skills = LoadSkills("GameData/skill");
-            var items = LoadItems("GameData/item");
+            var skills = new List<Gamedata.Skill>();
+            var items = new List<Gamedata.Item>();
+
+            of("GameData/skill", bytes => SkillList.Parser.ParseFrom(bytes), skillList => skillList.Skills, skills);
+            of("GameData/item", bytes => ItemList.Parser.ParseFrom(bytes), itemList => itemList.Items, items);
+
+            // 게임 데이터 로드가 완료되었음을 로그로 남김
+            Debug.Log("ResourceLoader: Game data loaded successfully.");
+
         }
     }
 }
