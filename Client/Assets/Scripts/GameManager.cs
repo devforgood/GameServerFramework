@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Assets.Scripts.GameData;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -27,6 +28,8 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public ResourceLoader resource = new ResourceLoader();
+
     private void Awake()
     {
         if (_instance == null)
@@ -38,6 +41,9 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject);
         }
         DontDestroyOnLoad(gameObject);
+
+
+        resource.Load(); // Load resources on startup
     }
 
     async Task Start()
