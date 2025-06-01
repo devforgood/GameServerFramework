@@ -16,5 +16,5 @@ flatbuffers::Offset<syncnet::ActorInfo> Actor::get_actor_info(flatbuffers::FlatB
 	syncnet::ActorState* statePtr = changed_flag(flag, GameObjectChangeType::State) ? &state : nullptr;
 	syncnet::ActorHealth* healthPtr = changed_flag(flag, GameObjectChangeType::Health) ? &health : nullptr;
 
-	return syncnet::CreateActorInfo(_fbb, this->agent_id(), posPtr, this->type(), statePtr, healthPtr);
+	return syncnet::CreateActorInfo(_fbb, this->agent_id(), posPtr, this->type(), statePtr, healthPtr, this->is_input_locked_);
 }

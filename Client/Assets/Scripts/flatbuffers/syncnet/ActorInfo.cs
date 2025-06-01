@@ -24,13 +24,15 @@ public struct ActorInfo : IFlatbufferObject
   public syncnet.GameObjectType GameObjectType { get { int o = __p.__offset(8); return o != 0 ? (syncnet.GameObjectType)__p.bb.GetSbyte(o + __p.bb_pos) : syncnet.GameObjectType.Monster; } }
   public syncnet.ActorState? State { get { int o = __p.__offset(10); return o != 0 ? (syncnet.ActorState?)(new syncnet.ActorState()).__assign(o + __p.bb_pos, __p.bb) : null; } }
   public syncnet.ActorHealth? Health { get { int o = __p.__offset(12); return o != 0 ? (syncnet.ActorHealth?)(new syncnet.ActorHealth()).__assign(o + __p.bb_pos, __p.bb) : null; } }
+  public bool InputLocked { get { int o = __p.__offset(14); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)false; } }
 
-  public static void StartActorInfo(FlatBufferBuilder builder) { builder.StartTable(5); }
+  public static void StartActorInfo(FlatBufferBuilder builder) { builder.StartTable(6); }
   public static void AddAgentId(FlatBufferBuilder builder, int agentId) { builder.AddInt(0, agentId, 0); }
   public static void AddPos(FlatBufferBuilder builder, Offset<syncnet.Vec3> posOffset) { builder.AddStruct(1, posOffset.Value, 0); }
   public static void AddGameObjectType(FlatBufferBuilder builder, syncnet.GameObjectType gameObjectType) { builder.AddSbyte(2, (sbyte)gameObjectType, 1); }
   public static void AddState(FlatBufferBuilder builder, Offset<syncnet.ActorState> stateOffset) { builder.AddStruct(3, stateOffset.Value, 0); }
   public static void AddHealth(FlatBufferBuilder builder, Offset<syncnet.ActorHealth> healthOffset) { builder.AddStruct(4, healthOffset.Value, 0); }
+  public static void AddInputLocked(FlatBufferBuilder builder, bool inputLocked) { builder.AddBool(5, inputLocked, false); }
   public static Offset<syncnet.ActorInfo> EndActorInfo(FlatBufferBuilder builder) {
     int o = builder.EndTable();
     return new Offset<syncnet.ActorInfo>(o);

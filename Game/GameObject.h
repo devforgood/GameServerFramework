@@ -10,7 +10,8 @@ enum class GameObjectChangeType
 	Position = 1 << 0,
 	State = 1 << 1,
 	Health = 1 << 2,
-	All = Position | State | Health
+	InputLocked = 1 << 3, // 입력 잠금 상태
+	All = Position | State | Health | InputLocked
 };
 
 class send_message; // Forward declaration

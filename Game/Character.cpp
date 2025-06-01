@@ -34,7 +34,8 @@ void Character::use_skill(const syncnet::UseSkill* msg)
 	float serverClientTimeOffset = world_->time_stamp_->getServerClientTimeOffset(msg->timestamp());
 
 	// Implement skill usage logic here
-	LOG.info("Character {} using skill {} at position ({}, {}, {}) serverClientTimeOffset {}", player_id_, msg->skillId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z(), serverClientTimeOffset);
+	LOG.info("Character {} using skill {} at position ({}, {}, {}) serverClientTimeOffset {} timestamp {}"
+		, player_id_, msg->skillId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z(), serverClientTimeOffset, msg->timestamp());
 
 	auto itr = skills_.find(msg->skillId());
 

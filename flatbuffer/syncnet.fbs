@@ -78,6 +78,7 @@ table ActorInfo {
   gameObjectType:GameObjectType = Monster;
   state:ActorState;
   health:ActorHealth;
+  inputLocked:bool = false;
 }
 
 table DebugRaycast {

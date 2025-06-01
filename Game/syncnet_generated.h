@@ -610,7 +610,8 @@ struct ActorInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_POS = 6,
     VT_GAMEOBJECTTYPE = 8,
     VT_STATE = 10,
-    VT_HEALTH = 12
+    VT_HEALTH = 12,
+    VT_INPUTLOCKED = 14
   };
   int32_t agentId() const {
     return GetField<int32_t>(VT_AGENTID, 0);
@@ -627,6 +628,9 @@ struct ActorInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::ActorHealth *health() const {
     return GetStruct<const syncnet::ActorHealth *>(VT_HEALTH);
   }
+  bool inputLocked() const {
+    return GetField<uint8_t>(VT_INPUTLOCKED, 0) != 0;
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_AGENTID) &&
@@ -634,6 +638,7 @@ struct ActorInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int8_t>(verifier, VT_GAMEOBJECTTYPE) &&
            VerifyField<syncnet::ActorState>(verifier, VT_STATE) &&
            VerifyField<syncnet::ActorHealth>(verifier, VT_HEALTH) &&
+           VerifyField<uint8_t>(verifier, VT_INPUTLOCKED) &&
            verifier.EndTable();
   }
 };
@@ -657,6 +662,9 @@ struct ActorInfoBuilder {
   void add_health(const syncnet::ActorHealth *health) {
     fbb_.AddStruct(ActorInfo::VT_HEALTH, health);
   }
+  void add_inputLocked(bool inputLocked) {
+    fbb_.AddElement<uint8_t>(ActorInfo::VT_INPUTLOCKED, static_cast<uint8_t>(inputLocked), 0);
+  }
   explicit ActorInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -675,12 +683,14 @@ inline flatbuffers::Offset<ActorInfo> CreateActorInfo(
     const syncnet::Vec3 *pos = 0,
     syncnet::GameObjectType gameObjectType = syncnet::GameObjectType_Monster,
     const syncnet::ActorState *state = 0,
-    const syncnet::ActorHealth *health = 0) {
+    const syncnet::ActorHealth *health = 0,
+    bool inputLocked = false) {
   ActorInfoBuilder builder_(_fbb);
   builder_.add_health(health);
   builder_.add_state(state);
   builder_.add_pos(pos);
   builder_.add_agentId(agentId);
+  builder_.add_inputLocked(inputLocked);
   builder_.add_gameObjectType(gameObjectType);
   return builder_.Finish();
 }

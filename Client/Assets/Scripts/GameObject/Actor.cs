@@ -8,4 +8,5 @@ public class Actor : MonoBehaviour
     public Vector3 pos;
     public syncnet.AIState state;
     public int health;
+    public bool input_locked;
 }

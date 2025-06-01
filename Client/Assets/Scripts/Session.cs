@@ -210,25 +210,37 @@ public class Session : MonoBehaviour
     }
 	private void OnUseSkill(int agent_id, Vector3 pos, int type)
 	{
-		Debug.Log($"UseSkill agent_id: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+		var timestamp = unixTimestampMs;
+        Debug.Log($"UseSkill agent_id: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) timestamp({timestamp})");
 
 		if(isCasting == true)
 		{
 			Debug.Log("isCasting");
 			return;
         }
-
-
-        SendMessage(MakeUseSkill(2, player_agnet_id, pos, type));
-		GameObject game_object = null;
-		if (game_objects.TryGetValue(player_agnet_id, out game_object) == true)
+        GameObject game_object = null;
+        if (game_objects.TryGetValue(player_agnet_id, out game_object) == false)
 		{
-            jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, skill_duration, skill_height));
-
+			Debug.LogError("Player agent not found in game_objects dictionary.");
+			return;
         }
+		var actor = game_object.GetComponent<Actor>();
+		if (actor == null)
+		{
+			Debug.LogError("Actor component not found on player agent GameObject.");
+			return;
+        }
+		if(actor.input_locked == true)
+		{
+			Debug.Log("Player input is locked, cannot use skill.");
+			return;
+        }
+
+        SendMessage(MakeUseSkill(2, player_agnet_id, pos, type, timestamp));
+        jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, skill_duration, skill_height, timestamp));
 	}
 
-    private IEnumerator JumpToPosition(GameObject game_object, Vector3 start, Vector3 end, float duration, float height)
+    private IEnumerator JumpToPosition(GameObject game_object, Vector3 start, Vector3 end, float duration, float height, long timestamp)
     {
         float time = 0;
         float dropPoint = 0.7f; // 상승 구간 비율 (0~1)
@@ -262,6 +274,7 @@ public class Session : MonoBehaviour
         // 마지막 위치는 착지점
         game_object.transform.position = end;
 		isCasting = false;
+		Debug.Log($"JumpToPosition End: {game_object.name}, pos({end.x}, {end.y}, {end.z}), timestamp({timestamp})");
     }
 
     void Start()
@@ -383,7 +396,7 @@ public class Session : MonoBehaviour
         return body;
     }
 
-    public byte[] MakeUseSkill(int skillId, int agentId, Vector3 pos, int type)
+    public byte[] MakeUseSkill(int skillId, int agentId, Vector3 pos, int type, long timestamp)
     {
         var builder = new FlatBufferBuilder(1024);
         UseSkill.StartUseSkill(builder);
@@ -392,7 +405,7 @@ public class Session : MonoBehaviour
         UseSkill.AddPos(builder, Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
 		UseSkill.AddTargetId(builder, type);
 		UseSkill.AddDuration(builder, 1);
-		UseSkill.AddTimestamp(builder, unixTimestampMs);
+		UseSkill.AddTimestamp(builder, timestamp);
         var offset = UseSkill.EndUseSkill(builder);
         var msg = GameMessage.CreateGameMessage(builder, GameMessages.UseSkill, offset.Value);
         builder.Finish(msg.Value);
@@ -470,6 +483,7 @@ public class Session : MonoBehaviour
 
 
 						actor.pos = pos;
+						actor.input_locked = updatedActor.InputLocked;
 
                         if (updatedActor.State.HasValue)
                         {
@@ -537,7 +551,7 @@ public class Session : MonoBehaviour
                     GameObject game_object = null;
                     if (game_objects.TryGetValue(target_agent_id, out game_object) == true)
                     {
-                        jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, remote_player_skill_duration, skill_height));
+                        jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, remote_player_skill_duration, skill_height, useSkill.Timestamp));
 
                     }
                 }

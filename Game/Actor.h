@@ -53,7 +53,11 @@ public:
 	virtual flatbuffers::Offset<syncnet::ActorInfo> get_actor_info(flatbuffers::FlatBufferBuilder& _fbb, GameObjectChangeType flag);
 
 	bool is_input_locked() const { return is_input_locked_; }
-	void set_input_locked(bool locked) { is_input_locked_ = locked; }
+	void set_input_locked(bool locked) 
+	{ 
+		is_input_locked_ = locked; 
+		change_flag_ |= static_cast<long>(GameObjectChangeType::InputLocked);
+	}
 
 	float get_vecter2_x() const { return x; }
 	float get_vecter2_y() const { return z; }
