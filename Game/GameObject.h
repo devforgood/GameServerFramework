@@ -4,6 +4,15 @@
 class World;
 class Vector3;
 
+enum class GameObjectChangeType
+{
+	None = 0,
+	Position = 1 << 0,
+	State = 1 << 1,
+	Health = 1 << 2,
+	All = Position | State | Health
+};
+
 class GameObject
 {
 
@@ -11,7 +20,7 @@ class GameObject
 protected:
 	World* world_;
 	syncnet::AIState state_;
-	bool is_changed_;
+	long change_flag_;
 
 
 public:
@@ -24,7 +33,10 @@ public:
 	virtual void set_position(float x, float y, float z) {};
 	virtual bool is_changed_position(float x, float y, float z) { return false; }
 	virtual bool is_changed() { return false; }
-	virtual void set_changed(bool changed) { is_changed_ = changed; }
+	virtual void set_changed(GameObjectChangeType flag) { 
+		change_flag_ |= static_cast<long>(flag); 
+	}
+	virtual void reset_changed() { change_flag_ = static_cast<long>(GameObjectChangeType::None); }
 
 	virtual syncnet::GameObjectType type() { return syncnet::GameObjectType::GameObjectType_Monster; }
 	virtual int agent_id() { return -1; }
@@ -33,7 +45,7 @@ public:
 	World* world() { return world_; }
 	syncnet::AIState state() { return state_; }
 	void SetState(syncnet::AIState state) { 
-		is_changed_ = true;
+		change_flag_ |= static_cast<long>(GameObjectChangeType::State);
 		state_ = state; 
 	}
 

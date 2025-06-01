@@ -210,31 +210,37 @@ enum AIState {
   AIState_Patrol = 0,
   AIState_Detect = 1,
   AIState_Attack = 2,
+  AIState_Dead = 3,
+  AIState_Destroyed = 4,
   AIState_MIN = AIState_Patrol,
-  AIState_MAX = AIState_Attack
+  AIState_MAX = AIState_Destroyed
 };
 
-inline const AIState (&EnumValuesAIState())[3] {
+inline const AIState (&EnumValuesAIState())[5] {
   static const AIState values[] = {
     AIState_Patrol,
     AIState_Detect,
-    AIState_Attack
+    AIState_Attack,
+    AIState_Dead,
+    AIState_Destroyed
   };
   return values;
 }
 
 inline const char * const *EnumNamesAIState() {
-  static const char * const names[4] = {
+  static const char * const names[6] = {
     "Patrol",
     "Detect",
     "Attack",
+    "Dead",
+    "Destroyed",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameAIState(AIState e) {
-  if (flatbuffers::IsOutRange(e, AIState_Patrol, AIState_Attack)) return "";
+  if (flatbuffers::IsOutRange(e, AIState_Patrol, AIState_Destroyed)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesAIState()[index];
 }
@@ -565,7 +571,8 @@ struct AgentInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_AGENTID = 4,
     VT_POS = 6,
     VT_GAMEOBJECTTYPE = 8,
-    VT_STATE = 10
+    VT_STATE = 10,
+    VT_HEALTH = 12
   };
   int32_t agentId() const {
     return GetField<int32_t>(VT_AGENTID, 0);
@@ -579,12 +586,16 @@ struct AgentInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   syncnet::AIState state() const {
     return static_cast<syncnet::AIState>(GetField<int8_t>(VT_STATE, 0));
   }
+  int32_t health() const {
+    return GetField<int32_t>(VT_HEALTH, 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_AGENTID) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
            VerifyField<int8_t>(verifier, VT_GAMEOBJECTTYPE) &&
            VerifyField<int8_t>(verifier, VT_STATE) &&
+           VerifyField<int32_t>(verifier, VT_HEALTH) &&
            verifier.EndTable();
   }
 };
@@ -605,6 +616,9 @@ struct AgentInfoBuilder {
   void add_state(syncnet::AIState state) {
     fbb_.AddElement<int8_t>(AgentInfo::VT_STATE, static_cast<int8_t>(state), 0);
   }
+  void add_health(int32_t health) {
+    fbb_.AddElement<int32_t>(AgentInfo::VT_HEALTH, health, 0);
+  }
   explicit AgentInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -622,8 +636,10 @@ inline flatbuffers::Offset<AgentInfo> CreateAgentInfo(
     int32_t agentId = 0,
     const syncnet::Vec3 *pos = 0,
     syncnet::GameObjectType gameObjectType = syncnet::GameObjectType_Monster,
-    syncnet::AIState state = syncnet::AIState_Patrol) {
+    syncnet::AIState state = syncnet::AIState_Patrol,
+    int32_t health = 0) {
   AgentInfoBuilder builder_(_fbb);
+  builder_.add_health(health);
   builder_.add_pos(pos);
   builder_.add_agentId(agentId);
   builder_.add_state(state);

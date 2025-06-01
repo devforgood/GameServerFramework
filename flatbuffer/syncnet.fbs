@@ -39,6 +39,8 @@ enum AIState:byte
   Patrol = 0,
   Detect,
   Attack,
+  Dead,
+  Destroyed,
 }
 
 table GameMessage {
@@ -67,6 +69,7 @@ table AgentInfo {
   pos:Vec3;
   gameObjectType:GameObjectType = Monster;
   state:AIState = Patrol;
+  health:int;
 }
 
 table DebugRaycast {

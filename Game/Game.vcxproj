@@ -204,6 +204,7 @@
     <ClInclude Include="BehaviorTreeCPP.h" />
     <ClInclude Include="Character.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="GameObjectChangeTypeOperators.h" />
     <ClInclude Include="GameObjectFactory.h" />
     <ClInclude Include="GridManager.h" />
     <ClInclude Include="JumpSkill.h" />

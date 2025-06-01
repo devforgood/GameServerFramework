@@ -212,6 +212,7 @@
     <ClInclude Include="SkillManager.h">
       <Filter>skill</Filter>
     </ClInclude>
+    <ClInclude Include="GameObjectChangeTypeOperators.h" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

@@ -143,7 +143,7 @@ void World::SendWorldState()
 		if (!game_object->is_changed()) 
 			continue;
 
-		game_object->set_changed(false);
+		game_object->reset_changed();
 
 		auto pos = Vector3::of(agent->npos);
 		//std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
@@ -202,7 +202,7 @@ std::shared_ptr<GameObject> World::OnAddAgent(std::shared_ptr<Player> player, sy
 
 	auto itr = game_object_list_.insert(game_object_list_.end(), game_object);
 	game_object_map_.insert(std::make_pair(game_object->agent_id(), itr));
-	game_object->set_changed(true);
+	game_object->set_changed(GameObjectChangeType::All);
 
 	return game_object;
 }

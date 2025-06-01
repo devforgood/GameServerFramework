@@ -22,8 +22,20 @@ public:
 		this->x = x;
 		this->y = y;
 		this->z = z;
-		is_changed_ = true;
+		change_flag_ |= static_cast<long>(GameObjectChangeType::Position);
 	};
+
+	virtual void increment_health(int amount) 
+	{
+		health += amount;
+		change_flag_ |= static_cast<long>(GameObjectChangeType::Health);
+	}
+
+	virtual void decrement_health(int amount) 
+	{
+		health -= amount;
+		change_flag_ |= static_cast<long>(GameObjectChangeType::Health);
+	}
 
 	virtual bool is_changed_position(float x, float y, float z) 
 	{ 
@@ -32,7 +44,7 @@ public:
 
 	virtual bool is_changed() 
 	{ 
-		return is_changed_
+		return change_flag_ != static_cast<long>(GameObjectChangeType::None)
 			&& !is_input_locked_; // if input is locked, we don't want to change the position
 	}
 
@@ -49,6 +61,7 @@ public:
 	int gridX = -1;
 	int gridY = -1;
 	float speed = 0.0f;
+	int health = 100;
 
 private:
 	float x;
