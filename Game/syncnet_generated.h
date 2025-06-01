@@ -10,6 +10,10 @@ namespace syncnet {
 
 struct Vec3;
 
+struct ActorState;
+
+struct ActorHealth;
+
 struct GameMessage;
 struct GameMessageBuilder;
 
@@ -22,8 +26,8 @@ struct RemoveAgentBuilder;
 struct SetMoveTarget;
 struct SetMoveTargetBuilder;
 
-struct AgentInfo;
-struct AgentInfoBuilder;
+struct ActorInfo;
+struct ActorInfoBuilder;
 
 struct DebugRaycast;
 struct DebugRaycastBuilder;
@@ -48,7 +52,7 @@ enum GameMessages {
   GameMessages_AddAgent = 1,
   GameMessages_RemoveAgent = 2,
   GameMessages_SetMoveTarget = 3,
-  GameMessages_AgentInfo = 4,
+  GameMessages_ActorInfo = 4,
   GameMessages_UpdateActorNotify = 5,
   GameMessages_Ping = 6,
   GameMessages_SetRaycast = 7,
@@ -64,7 +68,7 @@ inline const GameMessages (&EnumValuesGameMessages())[10] {
     GameMessages_AddAgent,
     GameMessages_RemoveAgent,
     GameMessages_SetMoveTarget,
-    GameMessages_AgentInfo,
+    GameMessages_ActorInfo,
     GameMessages_UpdateActorNotify,
     GameMessages_Ping,
     GameMessages_SetRaycast,
@@ -80,7 +84,7 @@ inline const char * const *EnumNamesGameMessages() {
     "AddAgent",
     "RemoveAgent",
     "SetMoveTarget",
-    "AgentInfo",
+    "ActorInfo",
     "UpdateActorNotify",
     "Ping",
     "SetRaycast",
@@ -113,8 +117,8 @@ template<> struct GameMessagesTraits<syncnet::SetMoveTarget> {
   static const GameMessages enum_value = GameMessages_SetMoveTarget;
 };
 
-template<> struct GameMessagesTraits<syncnet::AgentInfo> {
-  static const GameMessages enum_value = GameMessages_AgentInfo;
+template<> struct GameMessagesTraits<syncnet::ActorInfo> {
+  static const GameMessages enum_value = GameMessages_ActorInfo;
 };
 
 template<> struct GameMessagesTraits<syncnet::UpdateActorNotify> {
@@ -272,6 +276,40 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Vec3 FLATBUFFERS_FINAL_CLASS {
 };
 FLATBUFFERS_STRUCT_END(Vec3, 12);
 
+FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(1) ActorState FLATBUFFERS_FINAL_CLASS {
+ private:
+  int8_t state_;
+
+ public:
+  ActorState() {
+    memset(static_cast<void *>(this), 0, sizeof(ActorState));
+  }
+  ActorState(syncnet::AIState _state)
+      : state_(flatbuffers::EndianScalar(static_cast<int8_t>(_state))) {
+  }
+  syncnet::AIState state() const {
+    return static_cast<syncnet::AIState>(flatbuffers::EndianScalar(state_));
+  }
+};
+FLATBUFFERS_STRUCT_END(ActorState, 1);
+
+FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) ActorHealth FLATBUFFERS_FINAL_CLASS {
+ private:
+  int32_t health_;
+
+ public:
+  ActorHealth() {
+    memset(static_cast<void *>(this), 0, sizeof(ActorHealth));
+  }
+  ActorHealth(int32_t _health)
+      : health_(flatbuffers::EndianScalar(_health)) {
+  }
+  int32_t health() const {
+    return flatbuffers::EndianScalar(health_);
+  }
+};
+FLATBUFFERS_STRUCT_END(ActorHealth, 4);
+
 struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef GameMessageBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -296,8 +334,8 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::SetMoveTarget *msg_as_SetMoveTarget() const {
     return msg_type() == syncnet::GameMessages_SetMoveTarget ? static_cast<const syncnet::SetMoveTarget *>(msg()) : nullptr;
   }
-  const syncnet::AgentInfo *msg_as_AgentInfo() const {
-    return msg_type() == syncnet::GameMessages_AgentInfo ? static_cast<const syncnet::AgentInfo *>(msg()) : nullptr;
+  const syncnet::ActorInfo *msg_as_ActorInfo() const {
+    return msg_type() == syncnet::GameMessages_ActorInfo ? static_cast<const syncnet::ActorInfo *>(msg()) : nullptr;
   }
   const syncnet::UpdateActorNotify *msg_as_UpdateActorNotify() const {
     return msg_type() == syncnet::GameMessages_UpdateActorNotify ? static_cast<const syncnet::UpdateActorNotify *>(msg()) : nullptr;
@@ -343,8 +381,8 @@ template<> inline const syncnet::SetMoveTarget *GameMessage::msg_as<syncnet::Set
   return msg_as_SetMoveTarget();
 }
 
-template<> inline const syncnet::AgentInfo *GameMessage::msg_as<syncnet::AgentInfo>() const {
-  return msg_as_AgentInfo();
+template<> inline const syncnet::ActorInfo *GameMessage::msg_as<syncnet::ActorInfo>() const {
+  return msg_as_ActorInfo();
 }
 
 template<> inline const syncnet::UpdateActorNotify *GameMessage::msg_as<syncnet::UpdateActorNotify>() const {
@@ -565,8 +603,8 @@ inline flatbuffers::Offset<SetMoveTarget> CreateSetMoveTarget(
   return builder_.Finish();
 }
 
-struct AgentInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef AgentInfoBuilder Builder;
+struct ActorInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef ActorInfoBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_AGENTID = 4,
     VT_POS = 6,
@@ -583,66 +621,66 @@ struct AgentInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   syncnet::GameObjectType gameObjectType() const {
     return static_cast<syncnet::GameObjectType>(GetField<int8_t>(VT_GAMEOBJECTTYPE, 1));
   }
-  syncnet::AIState state() const {
-    return static_cast<syncnet::AIState>(GetField<int8_t>(VT_STATE, 0));
+  const syncnet::ActorState *state() const {
+    return GetStruct<const syncnet::ActorState *>(VT_STATE);
   }
-  int32_t health() const {
-    return GetField<int32_t>(VT_HEALTH, 0);
+  const syncnet::ActorHealth *health() const {
+    return GetStruct<const syncnet::ActorHealth *>(VT_HEALTH);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_AGENTID) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
            VerifyField<int8_t>(verifier, VT_GAMEOBJECTTYPE) &&
-           VerifyField<int8_t>(verifier, VT_STATE) &&
-           VerifyField<int32_t>(verifier, VT_HEALTH) &&
+           VerifyField<syncnet::ActorState>(verifier, VT_STATE) &&
+           VerifyField<syncnet::ActorHealth>(verifier, VT_HEALTH) &&
            verifier.EndTable();
   }
 };
 
-struct AgentInfoBuilder {
-  typedef AgentInfo Table;
+struct ActorInfoBuilder {
+  typedef ActorInfo Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
   void add_agentId(int32_t agentId) {
-    fbb_.AddElement<int32_t>(AgentInfo::VT_AGENTID, agentId, 0);
+    fbb_.AddElement<int32_t>(ActorInfo::VT_AGENTID, agentId, 0);
   }
   void add_pos(const syncnet::Vec3 *pos) {
-    fbb_.AddStruct(AgentInfo::VT_POS, pos);
+    fbb_.AddStruct(ActorInfo::VT_POS, pos);
   }
   void add_gameObjectType(syncnet::GameObjectType gameObjectType) {
-    fbb_.AddElement<int8_t>(AgentInfo::VT_GAMEOBJECTTYPE, static_cast<int8_t>(gameObjectType), 1);
+    fbb_.AddElement<int8_t>(ActorInfo::VT_GAMEOBJECTTYPE, static_cast<int8_t>(gameObjectType), 1);
   }
-  void add_state(syncnet::AIState state) {
-    fbb_.AddElement<int8_t>(AgentInfo::VT_STATE, static_cast<int8_t>(state), 0);
+  void add_state(const syncnet::ActorState *state) {
+    fbb_.AddStruct(ActorInfo::VT_STATE, state);
   }
-  void add_health(int32_t health) {
-    fbb_.AddElement<int32_t>(AgentInfo::VT_HEALTH, health, 0);
+  void add_health(const syncnet::ActorHealth *health) {
+    fbb_.AddStruct(ActorInfo::VT_HEALTH, health);
   }
-  explicit AgentInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit ActorInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  AgentInfoBuilder &operator=(const AgentInfoBuilder &);
-  flatbuffers::Offset<AgentInfo> Finish() {
+  ActorInfoBuilder &operator=(const ActorInfoBuilder &);
+  flatbuffers::Offset<ActorInfo> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<AgentInfo>(end);
+    auto o = flatbuffers::Offset<ActorInfo>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<AgentInfo> CreateAgentInfo(
+inline flatbuffers::Offset<ActorInfo> CreateActorInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t agentId = 0,
     const syncnet::Vec3 *pos = 0,
     syncnet::GameObjectType gameObjectType = syncnet::GameObjectType_Monster,
-    syncnet::AIState state = syncnet::AIState_Patrol,
-    int32_t health = 0) {
-  AgentInfoBuilder builder_(_fbb);
+    const syncnet::ActorState *state = 0,
+    const syncnet::ActorHealth *health = 0) {
+  ActorInfoBuilder builder_(_fbb);
   builder_.add_health(health);
+  builder_.add_state(state);
   builder_.add_pos(pos);
   builder_.add_agentId(agentId);
-  builder_.add_state(state);
   builder_.add_gameObjectType(gameObjectType);
   return builder_.Finish();
 }
@@ -702,20 +740,20 @@ inline flatbuffers::Offset<DebugRaycast> CreateDebugRaycast(
 struct UpdateActorNotify FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef UpdateActorNotifyBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_AGENTS = 4,
+    VT_ACTORS = 4,
     VT_DEBUGS = 6
   };
-  const flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>> *agents() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>> *>(VT_AGENTS);
+  const flatbuffers::Vector<flatbuffers::Offset<syncnet::ActorInfo>> *actors() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::ActorInfo>> *>(VT_ACTORS);
   }
   const flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>> *debugs() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>> *>(VT_DEBUGS);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyOffset(verifier, VT_AGENTS) &&
-           verifier.VerifyVector(agents()) &&
-           verifier.VerifyVectorOfTables(agents()) &&
+           VerifyOffset(verifier, VT_ACTORS) &&
+           verifier.VerifyVector(actors()) &&
+           verifier.VerifyVectorOfTables(actors()) &&
            VerifyOffset(verifier, VT_DEBUGS) &&
            verifier.VerifyVector(debugs()) &&
            verifier.VerifyVectorOfTables(debugs()) &&
@@ -727,8 +765,8 @@ struct UpdateActorNotifyBuilder {
   typedef UpdateActorNotify Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_agents(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>>> agents) {
-    fbb_.AddOffset(UpdateActorNotify::VT_AGENTS, agents);
+  void add_actors(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::ActorInfo>>> actors) {
+    fbb_.AddOffset(UpdateActorNotify::VT_ACTORS, actors);
   }
   void add_debugs(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>>> debugs) {
     fbb_.AddOffset(UpdateActorNotify::VT_DEBUGS, debugs);
@@ -747,23 +785,23 @@ struct UpdateActorNotifyBuilder {
 
 inline flatbuffers::Offset<UpdateActorNotify> CreateUpdateActorNotify(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::AgentInfo>>> agents = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::ActorInfo>>> actors = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>>> debugs = 0) {
   UpdateActorNotifyBuilder builder_(_fbb);
   builder_.add_debugs(debugs);
-  builder_.add_agents(agents);
+  builder_.add_actors(actors);
   return builder_.Finish();
 }
 
 inline flatbuffers::Offset<UpdateActorNotify> CreateUpdateActorNotifyDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<syncnet::AgentInfo>> *agents = nullptr,
+    const std::vector<flatbuffers::Offset<syncnet::ActorInfo>> *actors = nullptr,
     const std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> *debugs = nullptr) {
-  auto agents__ = agents ? _fbb.CreateVector<flatbuffers::Offset<syncnet::AgentInfo>>(*agents) : 0;
+  auto actors__ = actors ? _fbb.CreateVector<flatbuffers::Offset<syncnet::ActorInfo>>(*actors) : 0;
   auto debugs__ = debugs ? _fbb.CreateVector<flatbuffers::Offset<syncnet::DebugRaycast>>(*debugs) : 0;
   return syncnet::CreateUpdateActorNotify(
       _fbb,
-      agents__,
+      actors__,
       debugs__);
 }
 
@@ -1046,8 +1084,8 @@ inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj,
       auto ptr = reinterpret_cast<const syncnet::SetMoveTarget *>(obj);
       return verifier.VerifyTable(ptr);
     }
-    case GameMessages_AgentInfo: {
-      auto ptr = reinterpret_cast<const syncnet::AgentInfo *>(obj);
+    case GameMessages_ActorInfo: {
+      auto ptr = reinterpret_cast<const syncnet::ActorInfo *>(obj);
       return verifier.VerifyTable(ptr);
     }
     case GameMessages_UpdateActorNotify: {

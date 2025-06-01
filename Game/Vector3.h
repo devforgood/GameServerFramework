@@ -26,6 +26,20 @@ public:
 
 	static std::shared_ptr<syncnet::Vec3> of(const float* pos)
 	{
-		return std::make_shared< syncnet::Vec3>(pos[0] * -1, pos[1], pos[2]);
+		return std::make_shared< syncnet::Vec3>(convert_x(pos[0]), convert_y(pos[1]), convert_z(pos[2]));
 	}
+
+	static float convert_x(float x)
+	{
+		return x * -1;
+	}
+	static float convert_y(float y)
+	{
+		return y;
+	}
+	static float convert_z(float z)
+	{
+		return z;
+	}
+
 };

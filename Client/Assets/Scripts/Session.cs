@@ -16,7 +16,6 @@ public class Session : MonoBehaviour
 	int message_count = 0;
 	float lastSendTime = 0f;
 
-	public Dictionary<int, Agent> agents = new Dictionary<int, Agent>();
 	public Dictionary<int, GameObject> game_objects = new Dictionary<int, GameObject>();
 
 	public Dictionary<int, Action<GameMessage>> responses = new Dictionary<int, Action<GameMessage>>();
@@ -433,36 +432,58 @@ public class Session : MonoBehaviour
 		{
 			case GameMessages.UpdateActorNotify:
 				{
-					agents.Clear();
                     UpdateActorNotify updateActorNotify = recv_msg.Msg<UpdateActorNotify>().Value;
-					for (int i = 0; i < updateActorNotify.AgentsLength; ++i)
+					for (int i = 0; i < updateActorNotify.ActorsLength; ++i)
 					{
-						var agent = updateActorNotify.Agents(i).Value;
-						var agent_id = agent.AgentId;
-						var pos = new Vector3(agent.Pos.Value.X, agent.Pos.Value.Y, agent.Pos.Value.Z);
-						agents[agent_id] = new Agent() { pos = pos, state = agent.State };
+						var updatedActor = updateActorNotify.Actors(i).Value;
+						var agent_id = updatedActor.AgentId;
+						var pos = new Vector3(updatedActor.Pos.Value.X, updatedActor.Pos.Value.Y, updatedActor.Pos.Value.Z);
+						//Debug.Log($"UpdateActorNotify agent_id: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
 
-						GameObject game_object = null;
-						if (game_objects.TryGetValue(agent_id, out game_object) == false)
+                        GameObject game_object = null;
+						Actor actor = null;
+                        if (game_objects.TryGetValue(agent_id, out game_object) == false)
 						{
-							switch (agent.GameObjectType)
+							switch (updatedActor.GameObjectType)
 							{
 								case GameObjectType.Monster:
 									game_object = (GameObject)Instantiate(Resources.Load("Monster"), pos, Quaternion.identity);
-									game_object.GetComponent<Monster>().agnet_id = agent_id;
+									actor = game_object.GetComponent<Monster>();
+                                    actor.agnet_id = agent_id;
 									break;
 								case GameObjectType.Character:
 									game_object = (GameObject)Instantiate(Resources.Load("Character2"), pos, Quaternion.identity);
-									game_object.GetComponent<Character>().agnet_id = agent_id;
+                                    actor = game_object.GetComponent<Character>();
+                                    actor.agnet_id = agent_id;
+									break;
+								default:
+									Debug.LogError("error game object type");
 									break;
 							}
 
 							game_objects[agent_id] = game_object;
-						}
-
-						if (agent.GameObjectType == GameObjectType.Monster)
+						} 
+						else
 						{
-							switch (agent.State)
+							actor = game_object.GetComponent<Actor>();
+                        }
+
+
+						actor.pos = pos;
+
+                        if (updatedActor.State.HasValue)
+                        {
+                            actor.state = updatedActor.State.Value.State;
+
+                        }
+                        if (updatedActor.Health.HasValue)
+                        {
+                            actor.health = updatedActor.Health.Value.Health;
+                        }
+
+                        if (updatedActor.GameObjectType == GameObjectType.Monster)
+						{
+							switch (updatedActor.State.Value.State)
 							{
 								case AIState.Detect:
 									game_objects[agent_id].GetComponent<MeshRenderer>().material.color = Color.red;
@@ -475,7 +496,7 @@ public class Session : MonoBehaviour
 									break;
 							}
 						}
-						else if (agent.GameObjectType == GameObjectType.Character)
+						else if (updatedActor.GameObjectType == GameObjectType.Character)
 						{
                             //Debug.Log($"Player Agent ID: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
 
@@ -542,13 +563,14 @@ public class Session : MonoBehaviour
 			OnReceive(result);
 		}
 
-		foreach (var agent in agents)
+		foreach (var game_object in game_objects.Values)
 		{
 			try
 			{
-				float lerpSpeed = 15f; // 원하는 값으로 조정 (5~15 정도가 적당함)
-                game_objects[agent.Key].transform.position =
-					Vector3.Lerp(game_objects[agent.Key].transform.position, agent.Value.pos, Time.deltaTime * lerpSpeed);
+				var actor = game_object.GetComponent<Actor>();
+                float lerpSpeed = 15f; // 원하는 값으로 조정 (5~15 정도가 적당함)
+                game_object.transform.position =
+					Vector3.Lerp(game_object.transform.position, actor.pos, Time.deltaTime * lerpSpeed);
 			}
 			catch
 			{

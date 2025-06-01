@@ -13,6 +13,8 @@ enum class GameObjectChangeType
 	All = Position | State | Health
 };
 
+class send_message; // Forward declaration
+
 class GameObject
 {
 
@@ -24,7 +26,7 @@ protected:
 
 
 public:
-	GameObject(World* world) : world_(world)
+	GameObject(World* world) : world_(world), change_flag_(0)
 	{
 
 	}
@@ -33,10 +35,13 @@ public:
 	virtual void set_position(float x, float y, float z) {};
 	virtual bool is_changed_position(float x, float y, float z) { return false; }
 	virtual bool is_changed() { return false; }
-	virtual void set_changed(GameObjectChangeType flag) { 
+	bool changed_flag(GameObjectChangeType flag) { return (change_flag_ & static_cast<long>(flag)) != 0; }
+	bool changed_flag(GameObjectChangeType myself_flag, GameObjectChangeType flag) { return  (static_cast<long>(myself_flag) & static_cast<long>(flag)) != 0; }
+	virtual void set_changed(GameObjectChangeType flag) {
 		change_flag_ |= static_cast<long>(flag); 
 	}
 	virtual void reset_changed() { change_flag_ = static_cast<long>(GameObjectChangeType::None); }
+	GameObjectChangeType get_changed_flag() { return static_cast<GameObjectChangeType>(change_flag_); }
 
 	virtual syncnet::GameObjectType type() { return syncnet::GameObjectType::GameObjectType_Monster; }
 	virtual int agent_id() { return -1; }
@@ -48,6 +53,10 @@ public:
 		change_flag_ |= static_cast<long>(GameObjectChangeType::State);
 		state_ = state; 
 	}
+	virtual int health() { return 0; }
+
+	// CreateActorInfo 호출시 필요한 정보 얻기
+	virtual flatbuffers::Offset<syncnet::ActorInfo> get_actor_info(flatbuffers::FlatBufferBuilder& _fbb, GameObjectChangeType flag) {return 0;}
 
 };
 

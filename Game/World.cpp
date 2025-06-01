@@ -83,7 +83,7 @@ void World::join(std::shared_ptr<Player> player)
 
 	// 유닛 상태 동기화
 	auto builder_ptr = std::make_shared<send_message>();
-	std::vector<flatbuffers::Offset<syncnet::AgentInfo>> agents;
+	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agents;
 	GetAgentsInfo(builder_ptr, agents);
 	auto updateActorNotify = syncnet::CreateUpdateActorNotifyDirect(*builder_ptr, &agents, nullptr);
 	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
@@ -107,26 +107,20 @@ void World::leave(std::shared_ptr<Player> player)
 	players_.erase(itr);
 }
 
-void World::GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::AgentInfo>>& agent_info_vector)
+void World::GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector)
 {
 	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
 	{
 		auto game_object = itr->get();
-		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(game_object->agent_id());
-		if (agent->active == false)
-			continue;
-		
-		auto pos = Vector3::of(agent->npos);
-		auto agent_info = syncnet::CreateAgentInfo(*msg, game_object->agent_id(), pos.get(), game_object->type(), game_object->state());
-		agent_info_vector.push_back(agent_info);
+		agent_info_vector.push_back(game_object->get_actor_info(*msg, GameObjectChangeType::All));
 	}
 }
 
 void World::SendWorldState()
 {
 	auto builder_ptr = std::make_shared<send_message>();
-	flatbuffers::Offset<syncnet::AgentInfo> agent_info;
-	std::vector<flatbuffers::Offset<syncnet::AgentInfo>> agent_info_vector;
+	flatbuffers::Offset<syncnet::ActorInfo> agent_info;
+	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agent_info_vector;
 	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
 	{
 		auto game_object = itr->get();
@@ -143,13 +137,10 @@ void World::SendWorldState()
 		if (!game_object->is_changed()) 
 			continue;
 
+
+		agent_info_vector.push_back(game_object->get_actor_info(*builder_ptr, game_object->get_changed_flag()));
+
 		game_object->reset_changed();
-
-		auto pos = Vector3::of(agent->npos);
-		//std::cout << "agent " << agent->active << " pos (" << pos.x() << "," << pos.y() << "," << pos.z() << ")" << std::endl;
-
-		agent_info = syncnet::CreateAgentInfo(*builder_ptr, game_object->agent_id(), pos.get(), game_object->type(), game_object->state());
-		agent_info_vector.push_back(agent_info);
 	}
 	auto agents = builder_ptr->CreateVector(agent_info_vector);
 

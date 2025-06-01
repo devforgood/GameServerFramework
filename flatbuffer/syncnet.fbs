@@ -6,7 +6,7 @@ union GameMessages
   AddAgent,
   RemoveAgent,
   SetMoveTarget,
-  AgentInfo,
+  ActorInfo,
   UpdateActorNotify,
   Ping,
   SetRaycast,
@@ -43,6 +43,14 @@ enum AIState:byte
   Destroyed,
 }
 
+struct ActorState {
+  state:AIState;
+}
+
+struct ActorHealth {
+  health:int;
+}
+
 table GameMessage {
   msg:GameMessages;
   id:int = 0;
@@ -64,12 +72,12 @@ table SetMoveTarget {
   pos:Vec3;
 }
 
-table AgentInfo {
+table ActorInfo {
   agentId:int;
   pos:Vec3;
   gameObjectType:GameObjectType = Monster;
-  state:AIState = Patrol;
-  health:int;
+  state:ActorState;
+  health:ActorHealth;
 }
 
 table DebugRaycast {
@@ -78,7 +86,7 @@ table DebugRaycast {
 }
 
 table UpdateActorNotify {
-  agents:[AgentInfo];
+  actors:[ActorInfo];
   debugs:[DebugRaycast];
 }
 
