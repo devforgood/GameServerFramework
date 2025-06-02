@@ -50,7 +50,7 @@ public:
 	}
 	virtual int health() { return health_; }
 
-	virtual flatbuffers::Offset<syncnet::ActorInfo> get_actor_info(flatbuffers::FlatBufferBuilder& _fbb, GameObjectChangeType flag);
+	virtual flatbuffers::Offset<syncnet::ActorInfo> get_actor_info(flatbuffers::FlatBufferBuilder& _fbb, long flag);
 
 	bool is_input_locked() const { return is_input_locked_; }
 	void set_input_locked(bool locked) 

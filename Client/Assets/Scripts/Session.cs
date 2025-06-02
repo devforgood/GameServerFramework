@@ -30,7 +30,6 @@ public class Session : MonoBehaviour
 	private float skill_height = 3f; // 스킬 점프 높이
 
     private Coroutine jumpCoroutine;
-	private bool isCasting = false;
     public int nextMesssagetId()
 	{
 		++last_message_id;
@@ -213,11 +212,6 @@ public class Session : MonoBehaviour
 		var timestamp = unixTimestampMs;
         Debug.Log($"UseSkill agent_id: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) timestamp({timestamp})");
 
-		if(isCasting == true)
-		{
-			Debug.Log("isCasting");
-			return;
-        }
         GameObject game_object = null;
         if (game_objects.TryGetValue(player_agnet_id, out game_object) == false)
 		{
@@ -247,7 +241,9 @@ public class Session : MonoBehaviour
         float fallDuration = duration * (1f - dropPoint); // 하강 구간 시간
         Vector3 lastPos = start;
 
-        isCasting = true;
+		var actor = game_object.GetComponent<Actor>();
+		actor.input_locked = true;
+
         while (time < duration)
         {
             float t = time / duration;
@@ -273,8 +269,7 @@ public class Session : MonoBehaviour
         }
         // 마지막 위치는 착지점
         game_object.transform.position = end;
-		isCasting = false;
-		Debug.Log($"JumpToPosition End: {game_object.name}, pos({end.x}, {end.y}, {end.z}), timestamp({timestamp})");
+        Debug.Log($"JumpToPosition End: {game_object.name}, pos({end.x}, {end.y}, {end.z}), timestamp({timestamp})");
     }
 
     void Start()
@@ -512,7 +507,7 @@ public class Session : MonoBehaviour
 						}
 						else if (updatedActor.GameObjectType == GameObjectType.Character)
 						{
-                            //Debug.Log($"Player Agent ID: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+                            Debug.Log($"Player Agent ID: {agent_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
 
                         }
 					}
@@ -582,9 +577,22 @@ public class Session : MonoBehaviour
 			try
 			{
 				var actor = game_object.GetComponent<Actor>();
+				if (actor.input_locked)
+				{
+                    //Debug.Log($"Actor {actor.agnet_id} input is locked, skipping position update.");
+                    continue;
+				}
+
                 float lerpSpeed = 15f; // 원하는 값으로 조정 (5~15 정도가 적당함)
-                game_object.transform.position =
-					Vector3.Lerp(game_object.transform.position, actor.pos, Time.deltaTime * lerpSpeed);
+    //            float threshold = 1f; // 원하는 값으로 조정 (1 정도가 적당함)
+    //            float dist = Vector3.Distance(game_object.transform.position, actor.pos);
+				//if (dist > threshold)
+				//{
+				//	Debug.Log($"Update Actor: {actor.agnet_id}, pos({game_object.transform.position.x}, {game_object.transform.position.y}, {game_object.transform.position.z}) -> ({actor.pos.x}, {actor.pos.y}, {actor.pos.z}) dist: {dist}");
+				//	game_object.transform.position = actor.pos;
+				//}
+				//else
+					game_object.transform.position = Vector3.Lerp(game_object.transform.position, actor.pos, Time.deltaTime * lerpSpeed);
 			}
 			catch
 			{

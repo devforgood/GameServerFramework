@@ -36,13 +36,11 @@ public:
 	virtual void set_position(float x, float y, float z) {};
 	virtual bool is_changed_position(float x, float y, float z) { return false; }
 	virtual bool is_changed() { return false; }
-	bool changed_flag(GameObjectChangeType flag) { return (change_flag_ & static_cast<long>(flag)) != 0; }
-	bool changed_flag(GameObjectChangeType myself_flag, GameObjectChangeType flag) { return  (static_cast<long>(myself_flag) & static_cast<long>(flag)) != 0; }
-	virtual void set_changed(GameObjectChangeType flag) {
-		change_flag_ |= static_cast<long>(flag); 
-	}
+	bool changed_flag(long flag) { return (change_flag_ & flag) != 0; }
+	bool changed_flag(long myself_flag, long flag) { return  (myself_flag & flag) != 0; }
+	void set_changed(long flag) { change_flag_ |= flag; }
 	virtual void reset_changed() { change_flag_ = static_cast<long>(GameObjectChangeType::None); }
-	GameObjectChangeType get_changed_flag() { return static_cast<GameObjectChangeType>(change_flag_); }
+	long get_changed_flag() { return change_flag_; }
 
 	virtual syncnet::GameObjectType type() { return syncnet::GameObjectType::GameObjectType_Monster; }
 	virtual int agent_id() { return -1; }
@@ -57,7 +55,7 @@ public:
 	virtual int health() { return 0; }
 
 	// CreateActorInfo 호출시 필요한 정보 얻기
-	virtual flatbuffers::Offset<syncnet::ActorInfo> get_actor_info(flatbuffers::FlatBufferBuilder& _fbb, GameObjectChangeType flag) {return 0;}
+	virtual flatbuffers::Offset<syncnet::ActorInfo> get_actor_info(flatbuffers::FlatBufferBuilder& _fbb, long flag) {return 0;}
 
 };
 

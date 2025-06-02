@@ -112,7 +112,7 @@ void World::GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbu
 	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
 	{
 		auto game_object = itr->get();
-		agent_info_vector.push_back(game_object->get_actor_info(*msg, GameObjectChangeType::All));
+		agent_info_vector.push_back(game_object->get_actor_info(*msg, static_cast<long>(GameObjectChangeType::All)));
 	}
 }
 
@@ -193,7 +193,7 @@ std::shared_ptr<GameObject> World::OnAddAgent(std::shared_ptr<Player> player, sy
 
 	auto itr = game_object_list_.insert(game_object_list_.end(), game_object);
 	game_object_map_.insert(std::make_pair(game_object->agent_id(), itr));
-	game_object->set_changed(GameObjectChangeType::All);
+	game_object->set_changed(static_cast<long>(GameObjectChangeType::All));
 
 	return game_object;
 }
