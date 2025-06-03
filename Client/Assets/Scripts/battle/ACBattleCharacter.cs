@@ -33,9 +33,9 @@ public class ACBattleCharacter : MonoBehaviour, INetCharacter
     {
         if (IsLocalCharacter)
         {
-            if (InputManager.Instance.GetState().mIsMove)
+            if (ActionGameInputManager.Instance.GetState().mIsMove)
             {
-                m_kCActor.mDirection = core.MathHelpers.DegreeToVector3Cached((int)InputManager.Instance.GetState().mDirection);
+                m_kCActor.mDirection = core.MathHelpers.DegreeToVector3Cached((int)ActionGameInputManager.Instance.GetState().mDirection);
                 m_vMoveDirection = m_kCActor.mDirection * m_playerSpeed;
                 m_kCActor.is_move = true;
             }

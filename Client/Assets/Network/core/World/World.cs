@@ -764,7 +764,7 @@ namespace core
             castleList.Clear();
             mGameObjects.Clear();
             mapNetGameObject.Clear();
-            InputManager.Instance.Clear();
+            ActionGameInputManager.Instance.Clear();
         }
 
         public void AddPlayer(int playerId, Actor actor)

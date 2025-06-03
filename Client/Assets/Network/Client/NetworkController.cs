@@ -130,7 +130,7 @@ namespace Assets.Network.Lobby
         void UpdateIngame()
         {
             Timing.sInstance.Update();
-            InputManager.Instance.Update();
+            ActionGameInputManager.Instance.Update();
             Engine.sInstance.DoFrame();
             World.LateUpdate();
 
@@ -140,7 +140,7 @@ namespace Assets.Network.Lobby
 
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
 
-            InputManager.Instance.KeyEvent();
+            ActionGameInputManager.Instance.KeyEvent();
 
 #endif
 

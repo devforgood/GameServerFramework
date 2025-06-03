@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 #endif
 
-public class InputManager 
+public class ActionGameInputManager 
 {
 
     /// <summary>
@@ -14,14 +14,14 @@ public class InputManager
     //public static InputManager sInstance = new InputManager();
 
 #region     INSTANCE
-    private static InputManager sInstance;
-    public  static InputManager Instance
+    private static ActionGameInputManager sInstance;
+    public  static ActionGameInputManager Instance
     {
         get
         {
             if (sInstance == null)
             {
-                sInstance = new InputManager();
+                sInstance = new ActionGameInputManager();
                 sInstance.Initialize();
             }
 
@@ -177,12 +177,12 @@ public class InputManager
 			if( key_event[ k ] )
 			{
 				Debug.Log( "key down " + k );
-				InputManager.Instance.HandleInput( core.InputAction.Pressed, k );
+                ActionGameInputManager.Instance.HandleInput( core.InputAction.Pressed, k );
 			}
 			else
 			{
 				Debug.Log( "key up " + k );
-				InputManager.Instance.HandleInput( core.InputAction.Released, k );
+                ActionGameInputManager.Instance.HandleInput( core.InputAction.Released, k );
 			}
 		}
 	}
