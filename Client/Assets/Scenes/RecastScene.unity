@@ -265,10 +265,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 489458938}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3f9c3423dde87084fbbf18b506c34076, type: 3}
+  m_Script: {fileID: 11500000, guid: 2a8a8dfa370fc3f4cbfc5c3e09933b13, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  camera: {fileID: 119188223}
   _addAgentChannel: {fileID: 11400000, guid: a6dfb2156d7484f459923920c65a6f81, type: 2}
   _removeAgentChannel: {fileID: 11400000, guid: 795a0c7ab3c102248a2e3e66cecb71b4,
     type: 2}
@@ -301,6 +300,19 @@ MonoBehaviour:
     type: 2}
   _OnLogin: {fileID: 11400000, guid: 07f2be63ac1f46148adf708c6187ae76, type: 2}
   _OnUseSkill: {fileID: 11400000, guid: e4dbea3cdf8beca4bb26040aee00ce40, type: 2}
+--- !u!114 &489458941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 489458938}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88e40a1c2fa8d484487ce9c595178e69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inputActions: []
 --- !u!1001 &1248347624
 PrefabInstance:
   m_ObjectHideFlags: 0
