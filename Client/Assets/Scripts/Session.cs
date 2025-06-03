@@ -59,99 +59,13 @@ public class Session : MonoBehaviour
         return BitConverter.GetBytes((ushort)body.Length);
 	}
 
-	private byte[] CreateAddAgentMessage(int messageId, Vector3 pos, GameObjectType gameObjectType = GameObjectType.Monster)
-	{
-		var builder = new FlatBufferBuilder(1024);
-		syncnet.AddAgent.StartAddAgent(builder);
-		syncnet.AddAgent.AddPos(builder, syncnet.Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
-		syncnet.AddAgent.AddGameObjectType(builder, gameObjectType);
-		var offset = syncnet.AddAgent.EndAddAgent(builder);
-		var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.AddAgent, offset.Value, messageId);
-		builder.Finish(msg.Value);
-		return builder.SizedByteArray();
-	}
-
-	private byte[] CreateRemoveAgentMessage(int agentId)
-	{
-		var builder = new FlatBufferBuilder(1024);
-		syncnet.RemoveAgent.StartRemoveAgent(builder);
-		syncnet.RemoveAgent.AddAgentId(builder, agentId);
-		var offset = syncnet.RemoveAgent.EndRemoveAgent(builder);
-		var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.RemoveAgent, offset.Value);
-		builder.Finish(msg.Value);
-		return builder.SizedByteArray();
-	}
-
-	private byte[] CreateSetMoveTargetMessage(int agentId, Vector3 pos)
-	{
-		var builder = new FlatBufferBuilder(1024);
-		syncnet.SetMoveTarget.StartSetMoveTarget(builder);
-		syncnet.SetMoveTarget.AddAgentId(builder, agentId);
-		syncnet.SetMoveTarget.AddPos(builder, syncnet.Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
-		var offset = syncnet.SetMoveTarget.EndSetMoveTarget(builder);
-		var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.SetMoveTarget, offset.Value);
-		builder.Finish(msg.Value);
-		return builder.SizedByteArray();
-	}
-
-	private byte[] CreatePingMessage()
-	{
-		var builder = new FlatBufferBuilder(1024);
-		syncnet.Ping.StartPing(builder);
-		syncnet.Ping.AddSeq(builder, seq++);
-		var offset = syncnet.Ping.EndPing(builder);
-		var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.Ping, offset.Value);
-		builder.Finish(msg.Value);
-		return builder.SizedByteArray();
-	}
-
-	private byte[] CreateSetRaycastMessage(Vector3 pos)
-	{
-		var builder = new FlatBufferBuilder(1024);
-		syncnet.SetRaycast.StartSetRaycast(builder);
-		syncnet.SetRaycast.AddPos(builder, syncnet.Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
-		var offset = syncnet.SetRaycast.EndSetRaycast(builder);
-		var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.SetRaycast, offset.Value);
-		builder.Finish(msg.Value);
-		return builder.SizedByteArray();
-	}
-
-	private byte[] CreateLoginMessage(int messageId)
-	{
-		var builder = new FlatBufferBuilder(1024);
-		var nameOffSet = builder.CreateString("test");
-		var passwordOffSet = builder.CreateString("1234");
-		syncnet.Login.StartLogin(builder);
-		syncnet.Login.AddUserId(builder, nameOffSet);
-		syncnet.Login.AddPassword(builder, passwordOffSet);
-		var offset = syncnet.Login.EndLogin(builder);
-		var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.Login, offset.Value, messageId);
-		builder.Finish(msg.Value);
-		return builder.SizedByteArray();
-	}
-
-	private byte[] CreateUseSkillMessage(int skillId, int agentId, Vector3 pos, int type, long timestamp)
-	{
-		var builder = new FlatBufferBuilder(1024);
-		syncnet.UseSkill.StartUseSkill(builder);
-		syncnet.UseSkill.AddSkillId(builder, skillId);
-		syncnet.UseSkill.AddId(builder, agentId);
-		syncnet.UseSkill.AddPos(builder, syncnet.Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
-		syncnet.UseSkill.AddTargetId(builder, type);
-		syncnet.UseSkill.AddDuration(builder, 1);
-		syncnet.UseSkill.AddTimestamp(builder, timestamp);
-		var offset = syncnet.UseSkill.EndUseSkill(builder);
-		var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.UseSkill, offset.Value);
-		builder.Finish(msg.Value);
-		return builder.SizedByteArray();
-	}
-
 	public void SendPing(float deltaTime)
 	{
 		lastSendTime += deltaTime;
 		if (lastSendTime >= 0.1f)
 		{
-			byte[] body = CreatePingMessage();
+			
+			byte[] body = PacketFactory.CreatePingMessage(seq++);
 
 			session.SendBytes(MakeHeader(body));
 			session.SendBytes(body);
@@ -360,7 +274,7 @@ public class Session : MonoBehaviour
     public void AddAgent(int agent_id, Vector3 pos, GameObjectType type)
     {
         int messageId = nextMesssagetId();
-        SendMessage(CreateAddAgentMessage(messageId, pos, type), response =>
+        SendMessage(PacketFactory.CreateAddAgentMessage(messageId, pos, type), response =>
         {
             if (response.MsgType == GameMessages.AddAgent)
             {
@@ -388,19 +302,19 @@ public class Session : MonoBehaviour
 
     public void RemoveAgent(int agentId)
     {
-        SendMessage(CreateRemoveAgentMessage(agentId));
+        SendMessage(PacketFactory.CreateRemoveAgentMessage(agentId));
     }
 
     public void SetMoveTarget(int agentId, Vector3 pos)
     {
         Debug.Log($"SetMoveTarget agent_id: {agentId}, pos({pos.x}, {pos.y}, {pos.z}) ");
-        SendMessage(CreateSetMoveTargetMessage(agentId, pos));
+        SendMessage(PacketFactory.CreateSetMoveTargetMessage(agentId, pos));
     }
 
     public void SetRaycast(Vector3 pos)
     {
         Debug.Log($"SetRaycast pos({pos.x}, {pos.y}, {pos.z}) ");
-        SendMessage(CreateSetRaycastMessage(pos));
+        SendMessage(PacketFactory.CreateSetRaycastMessage(pos));
     }
 
     public void UseSkill(int skillId, Vector3 pos, int type)
@@ -426,14 +340,14 @@ public class Session : MonoBehaviour
             return;
         }
 
-        SendMessage(CreateUseSkillMessage(skillId, player_agnet_id, pos, type, timestamp));
+        SendMessage(PacketFactory.CreateUseSkillMessage(skillId, player_agnet_id, pos, type, timestamp));
         jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, skill_duration, skill_height, timestamp));
     }
 
     public void Login()
     {
         int messageId = nextMesssagetId();
-        SendMessage(CreateLoginMessage(messageId), response => 
+        SendMessage(PacketFactory.CreateLoginMessage(messageId), response => 
         { 
             if (response.MsgType == GameMessages.Login)
             {
