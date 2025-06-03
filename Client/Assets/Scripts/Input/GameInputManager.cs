@@ -1,4 +1,4 @@
-using syncnet;
+Ôªøusing syncnet;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,7 +12,7 @@ public class GameInputManager : MonoBehaviour
     private Transform playerTransform;
     public Vector3? targetPosition = null;
 
-    // Ω∫≈≥ ∞¸∏Æ
+    // Ïä§ÌÇ¨ Í¥ÄÎ¶¨
     private Dictionary<KeyCode, BaseSkill> skillKeyMap = new Dictionary<KeyCode, BaseSkill>();
     private BaseSkill currentSkill = null;
     public bool IsSkillActive { get; set; } = false;
@@ -20,22 +20,79 @@ public class GameInputManager : MonoBehaviour
     public Transform PlayerTransform => playerTransform;
     public Vector3 PlayerPosition { get => playerTransform.position; set => playerTransform.position = value; }
 
+    public GameObject player = null;
+
+    // ÎîîÎ≤ÑÍ∑∏ ÎìúÎ°úÏûâÏùÑ ÏúÑÌïú Î≥ÄÏàòÎì§
+    private LineRenderer arcLineRenderer;
+    private const int ARC_POINT_COUNT = 21;
 
     void Start()
     {
         if (mainCamera == null)
             mainCamera = Camera.main;
 
-        GameObject player = GameObject.FindWithTag("Player");
+        player = GameObject.FindWithTag("Player");
         if (player != null)
             playerTransform = player.transform;
 
-        // Ω∫≈≥ µÓ∑œ
-        skillKeyMap[KeyCode.F1] = new JumpSkill();
-        skillKeyMap[KeyCode.F2] = new WhirlwindSkill();
-        skillKeyMap[KeyCode.F3] = new ExplosionNoPhysics();
+        // Ïä§ÌÇ¨ Îì±Î°ù
+        skillKeyMap[KeyCode.F1] = new NormalAttackSkill();
+        skillKeyMap[KeyCode.F2] = new JumpSkill();
+        skillKeyMap[KeyCode.F3] = new WhirlwindSkill();
+        skillKeyMap[KeyCode.F4] = new ExplosionNoPhysics();
 
-        currentSkill = skillKeyMap[KeyCode.F1]; // ±‚∫ª Ω∫≈≥ º≥¡§
+        currentSkill = skillKeyMap[KeyCode.F1]; // Í∏∞Î≥∏ Ïä§ÌÇ¨ ÏÑ§Ï†ï
+
+        // LineRenderer Ï¥àÍ∏∞Ìôî
+        InitializeArcLineRenderer();
+    }
+
+    private void InitializeArcLineRenderer()
+    {
+        GameObject lineObj = new GameObject("SkillArcLine");
+        lineObj.transform.parent = transform;
+        arcLineRenderer = lineObj.AddComponent<LineRenderer>();
+        arcLineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        arcLineRenderer.startColor = Color.red;
+        arcLineRenderer.endColor = Color.red;
+        arcLineRenderer.startWidth = 0.1f;
+        arcLineRenderer.endWidth = 0.1f;
+        arcLineRenderer.positionCount = ARC_POINT_COUNT;
+        arcLineRenderer.useWorldSpace = true;
+        arcLineRenderer.enabled = false;
+    }
+
+    public void DrawArc(Vector3 center, float radius, float startAngle, float endAngle, Color color)
+    {
+        if (arcLineRenderer == null)
+            InitializeArcLineRenderer();
+
+        arcLineRenderer.enabled = true;
+        arcLineRenderer.startColor = new Color(color.r, color.g, color.b, 0.5f);
+        arcLineRenderer.endColor = new Color(color.r, color.g, color.b, 0.5f);
+
+        float angleStep = (endAngle - startAngle) / (ARC_POINT_COUNT - 1);
+        
+        for (int i = 0; i < ARC_POINT_COUNT; i++)
+        {
+            float angle = (startAngle + angleStep * i) * Mathf.Deg2Rad;
+            float x = Mathf.Sin(angle) * radius;
+            float z = Mathf.Cos(angle) * radius;
+            Vector3 pos = center + new Vector3(x, 0.1f, z);
+            arcLineRenderer.SetPosition(i, pos);
+        }
+    }
+
+    public void ClearArcDraw()
+    {
+        if (arcLineRenderer != null)
+            arcLineRenderer.enabled = false;
+    }
+
+    void OnDestroy()
+    {
+        if (arcLineRenderer != null)
+            Destroy(arcLineRenderer.gameObject);
     }
 
     void Update()
@@ -43,7 +100,7 @@ public class GameInputManager : MonoBehaviour
         if (playerTransform == null)
             return;
 
-        // Ω∫≈≥ º±≈√
+        // Ïä§ÌÇ¨ ÏÑ†ÌÉù
         foreach (var kv in skillKeyMap)
         {
             if (Input.GetKeyDown(kv.Key))
@@ -55,7 +112,7 @@ public class GameInputManager : MonoBehaviour
             }
         }
 
-        // Ω∫≈≥ πﬂµø(øÏ≈¨∏Ø)
+        // Ïä§ÌÇ¨ Î∞úÎèô(Ïö∞ÌÅ¥Î¶≠)
         if (currentSkill != null)
         {
             if (Input.GetMouseButtonDown(1))
@@ -65,7 +122,7 @@ public class GameInputManager : MonoBehaviour
             currentSkill.Update(this);
         }
 
-        // ¿œπ› ¿Ãµø(¡¬≈¨∏Ø)
+        // ÏùºÎ∞ò Ïù¥Îèô(Ï¢åÌÅ¥Î¶≠)
         if (!IsSkillActive && Input.GetMouseButtonDown(0))
         {
             Vector3? dest = GetMouseGroundPosition();
@@ -89,7 +146,7 @@ public class GameInputManager : MonoBehaviour
         }
     }
 
-    // ∏∂øÏΩ∫ ¿ßƒ°¿« ¡ˆ∏È ¡¬«• π›»Ø
+    // ÎßàÏö∞Ïä§ ÏúÑÏπòÏùò ÏßÄÎ©¥ Ï¢åÌëú Î∞òÌôò
     public Vector3? GetMouseGroundPosition()
     {
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
@@ -106,21 +163,46 @@ public class GameInputManager : MonoBehaviour
 #if UNITY_EDITOR
     void OnDrawGizmos()
     {
-        // «ˆ¿Á Ω∫≈≥¿Ã ExplosionNoPhysics¿œ ∂ß∏∏
+        if (playerTransform == null || currentSkill == null) return;
+
+        Vector3? mousePos = GetMouseGroundPosition();
+        if (!mousePos.HasValue) return;
+
         if (currentSkill is ExplosionNoPhysics explosionSkill)
         {
-            Vector3? mousePos = GetMouseGroundPosition();
-            if (mousePos.HasValue)
-            {
-                float radius = explosionSkill.radius;
-                Vector3 center = mousePos.Value;
-                Gizmos.color = new Color(1f, 0.5f, 0f, 0.2f);
-                Gizmos.DrawSphere(center, 0.1f); // ¡ﬂΩ…¡° «•Ω√(º±≈√)
-                UnityEditor.Handles.color = new Color(1f, 0.5f, 0f, 0.3f);
-                UnityEditor.Handles.DrawSolidDisc(center, Vector3.up, radius);
-                UnityEditor.Handles.color = new Color(1f, 0.3f, 0f, 1f);
-                UnityEditor.Handles.DrawWireDisc(center, Vector3.up, radius);
-            }
+            float radius = explosionSkill.radius;
+            Vector3 center = mousePos.Value;
+            
+            UnityEditor.Handles.color = new Color(1f, 0.5f, 0f, 0.3f);
+            UnityEditor.Handles.DrawSolidDisc(center, Vector3.up, radius);
+            UnityEditor.Handles.color = new Color(1f, 0.3f, 0f, 1f);
+            UnityEditor.Handles.DrawWireDisc(center, Vector3.up, radius);
+        }
+        else if (currentSkill is NormalAttackSkill normalAttackSkill)
+        {
+            Vector3 center = playerTransform.position;
+            Vector3 direction = (mousePos.Value - center).normalized;
+            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+
+            float startAngle = targetAngle - normalAttackSkill.attackAngle / 2;
+
+            // Î∂ÄÏ±ÑÍº¥ Î©¥ Í∑∏Î¶¨Í∏∞ (Î∞òÌà¨Î™Ö)
+            UnityEditor.Handles.color = new Color(1f, 0f, 0f, 0.3f);
+            UnityEditor.Handles.DrawSolidArc(center, Vector3.up, 
+                Quaternion.Euler(0, startAngle, 0) * Vector3.forward, 
+                normalAttackSkill.attackAngle, normalAttackSkill.attackRadius);
+
+            // ÌÖåÎëêÎ¶¨ Í∑∏Î¶¨Í∏∞ (Ïã§ÏÑ†)
+            UnityEditor.Handles.color = new Color(1f, 0f, 0f, 1f);
+            UnityEditor.Handles.DrawWireArc(center, Vector3.up, 
+                Quaternion.Euler(0, startAngle, 0) * Vector3.forward, 
+                normalAttackSkill.attackAngle, normalAttackSkill.attackRadius);
+        }
+        else if (currentSkill is JumpSkill || currentSkill is WhirlwindSkill)
+        {
+            // Î™©Ìëú ÏßÄÏ†êÎßå Í∞ÑÎã®Ìûà ÌëúÏãú
+            Gizmos.color = currentSkill is JumpSkill ? Color.green : Color.blue;
+            Gizmos.DrawSphere(mousePos.Value, 0.1f);
         }
     }
 #endif
