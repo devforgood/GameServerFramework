@@ -7,18 +7,23 @@ using syncnet;
 /// </summary>
 public class InputHandler : MonoBehaviour
 {
-    [SerializeField] private SessionChannelSO _addAgentChannel;
-    [SerializeField] private SessionChannelSO _removeAgentChannel;
-    [SerializeField] private SessionChannelSO _setMoveTargetChannel;
-    [SerializeField] private SessionChannelSO _setRaycastChannel;
-    [SerializeField] private SessionChannelSO _setMoveCharacterChannel;
-    [SerializeField] private SessionChannelSO _setLoginChannel;
-    [SerializeField] private SessionChannelSO _setUseSkillChannel;
+    [SerializeField] private Session session;  // Session 참조
 
     private Dictionary<string, System.Action<MouseInputEvent>> actionHandlers;
 
     private void Start()
     {
+        if (session == null)
+        {
+            session = FindObjectOfType<Session>();
+            if (session == null)
+            {
+                Debug.LogError("Session component not found!");
+                enabled = false;
+                return;
+            }
+        }
+
         InitializeActionHandlers();
         InputManager.Instance.OnInputTriggered += HandleInput;
     }
@@ -35,7 +40,12 @@ public class InputHandler : MonoBehaviour
     {
         actionHandlers = new Dictionary<string, System.Action<MouseInputEvent>>
         {
-            { "spawn_monster", evt => _addAgentChannel.RaiseEvent(0, evt.HitPoint, (int)GameObjectType.Monster) },
+            // 몬스터 생성
+            { "spawn_monster", evt => 
+                session.AddAgent(0, evt.HitPoint, GameObjectType.Monster) 
+            },
+
+            // 몬스터 제거
             { "remove_monster", evt => 
                 {
                     if (evt.HitInfo.HasValue && evt.HitInfo.Value.transform != null)
@@ -43,16 +53,36 @@ public class InputHandler : MonoBehaviour
                         var monster = evt.HitInfo.Value.transform.GetComponent<Monster>();
                         if (monster != null)
                         {
-                            _removeAgentChannel.RaiseEvent(monster.agnet_id, Vector3.zero, 0);
+                            session.RemoveAgent(monster.agnet_id);
                         }
                     }
                 }
             },
-            { "use_skill", evt => _setUseSkillChannel.RaiseEvent(0, evt.HitPoint, 1) },
-            { "move_target", evt => _setMoveTargetChannel.RaiseEvent(-1, evt.HitPoint, 0) },
-            { "spawn_character", evt => _addAgentChannel.RaiseEvent(0, evt.HitPoint, (int)GameObjectType.Character) },
-            { "set_raycast", evt => _setRaycastChannel.RaiseEvent(0, evt.HitPoint, 0) },
-            { "move_character", evt => _setMoveCharacterChannel.RaiseEvent(0, evt.HitPoint, 0) }
+
+            // 스킬 사용
+            { "use_skill", evt => 
+                session.UseSkill(2, evt.HitPoint, 1) 
+            },
+
+            // 이동 타겟 설정
+            { "move_target", evt => 
+                session.SetMoveTarget(session.player_agnet_id, evt.HitPoint) 
+            },
+
+            // 캐릭터 생성
+            { "spawn_character", evt => 
+                session.AddAgent(0, evt.HitPoint, GameObjectType.Character) 
+            },
+
+            // 레이캐스트 설정
+            { "set_raycast", evt => 
+                session.SetRaycast(evt.HitPoint) 
+            },
+
+            // 캐릭터 이동
+            { "move_character", evt => 
+                session.SetMoveTarget(session.player_agnet_id, evt.HitPoint) 
+            }
         };
     }
 
@@ -68,7 +98,7 @@ public class InputHandler : MonoBehaviour
     {
         if (evt.Key == KeyCode.Space && evt.IsPressed)
         {
-            _setLoginChannel.RaiseEvent(0, evt.HitPoint, 0);
+            session.Login();
         }
     }
 } 
