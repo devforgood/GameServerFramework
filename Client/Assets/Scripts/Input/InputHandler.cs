@@ -61,7 +61,7 @@ public class InputHandler : MonoBehaviour
 
             // 스킬 사용
             { "use_skill", evt => 
-                session.UseSkill(2, evt.HitPoint, 1) 
+                session.UseSkill(1, evt.HitPoint, 1) 
             },
 
             // 이동 타겟 설정

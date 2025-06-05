@@ -339,9 +339,20 @@ public class Session : MonoBehaviour
             Debug.Log("Player input is locked, cannot use skill.");
             return;
         }
+		Gamedata.Skill resSkill = null;
+		if(!GameManager.Instance.resource.skills.TryGetValue(skillId, out resSkill))
+		{
+			Debug.LogError($"Skill with ID {skillId} not found in resource skills.");
+			return;
+        }
+
+
 
         SendMessage(PacketFactory.CreateUseSkillMessage(skillId, player_agnet_id, pos, type, timestamp));
-        jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, skill_duration, skill_height, timestamp));
+		if (resSkill.CodeName == "JumpSkill")
+		{
+			jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, skill_duration, skill_height, timestamp));
+		}
     }
 
     public void Login()
