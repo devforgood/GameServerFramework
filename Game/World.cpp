@@ -1,4 +1,4 @@
-#include "World.h"
+ï»¿#include "World.h"
 #include "syncnet_generated.h"
 #include "DetourCrowd.h"
 #include <iostream>
@@ -81,7 +81,7 @@ void World::join(std::shared_ptr<Player> player)
 	}
 	players_.insert(std::make_pair(player->player_id(), player));
 
-	// À¯´Ö »óÅÂ µ¿±âÈ­
+	// ìœ ë‹› ìƒíƒœ ë™ê¸°í™”
 	auto builder_ptr = std::make_shared<send_message>();
 	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agents;
 	GetAgentsInfo(builder_ptr, agents);
@@ -263,4 +263,12 @@ int World::DetectEnemy(Actor * actor)
 		}
 	}
 	return -1;
+}
+
+
+
+
+std::vector<Actor*> World::get_actors_in_range(Actor* actor, float range, float angle) 
+{ 
+	return grid_manager_->getEntitiesInAoEMask(actor->get_vecter2_x(), actor->get_vecter2_y(), range, angle);
 }

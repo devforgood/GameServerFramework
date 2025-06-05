@@ -1,16 +1,13 @@
-#pragma once
+ï»¿#pragma once
 #include <boost/noncopyable.hpp>
 #include <unordered_map>
+#include "gamedata.pb.h"
 
-namespace gamedata {
-    class Item;  // Forward declaration
-    class Skill; // Forward declaration
-}
 
 class ResourceLoader : private boost::noncopyable
 {
 private:
-    // Protobuf °´Ã¼¸¦ Á÷Á¢ ÀúÀå
+    // Protobuf ê°ì²´ë¥¼ ì§ì ‘ ì €ì¥
     std::unordered_map<long, gamedata::Item*> items;
     std::unordered_map<long, gamedata::Skill*> skills;
 
@@ -22,10 +19,10 @@ public:
 
     bool LoadResources();
 
-    // ÇÊ¿ä½Ã getter Ãß°¡
+    // í•„ìš”ì‹œ getter ì¶”ê°€
     const std::unordered_map<long, gamedata::Item*>& GetItems() const { return items; }
     const std::unordered_map<long, gamedata::Skill*>& GetSkills() const { return skills; }
-
+    const gamedata::Skill* GetSkills(long id) const { auto itr = skills.find(id); return itr != skills.end() ? itr->second : nullptr; }
 private:
     ResourceLoader() = default;
 };

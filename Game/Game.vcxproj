@@ -187,6 +187,7 @@
       <FileType>Document</FileType>
     </CopyFileToFolders>
     <None Include="SQL\generated\create_tables.sql" />
+    <None Include="Common.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BehaviorTree\BehaviorTree.vcxproj">

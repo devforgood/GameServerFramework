@@ -1,4 +1,4 @@
-#include "Character.h"
+﻿#include "Character.h"
 #include "World.h"
 #include "LogHelper.h"
 #include "BaseSkill.h"
@@ -89,7 +89,7 @@ bool Character::init(Vector3& pos)
 		return false;
 	}
 
-	this->set_position(pos.x(), pos.y(), pos.z());
+	this->set_position(pos.x, pos.y, pos.z);
 	this->agent_id_ = agent_id;
 	this->speed = speed;
 

@@ -1,4 +1,4 @@
-#include "Monster.h"
+ï»¿#include "Monster.h"
 #include <random>
 #include <functional>
 #include "World.h"
@@ -53,7 +53,7 @@ bool Monster::init(Vector3& pos)
 		return false;
 	}
 
-	this->set_position(pos.x(), pos.y(), pos.z());
+	this->set_position(pos.x, pos.y, pos.z);
 	agent_id_ = agent_id;
 	this->speed = speed;
 
@@ -121,7 +121,7 @@ int Monster::Resume()
 int lua_Attack(lua_State* L) {
 	Monster* monster = static_cast<Monster*>(lua_touserdata(L, 1));
 	std::cout << "Executing Attack! " << monster->name_ << std::endl;
-	lua_pushstring(L, "SUCCESS"); // °á°ú ¹ÝÈ¯
+	lua_pushstring(L, "SUCCESS"); // ê²°ê³¼ ë°˜í™˜
 	return 1;
 }
 

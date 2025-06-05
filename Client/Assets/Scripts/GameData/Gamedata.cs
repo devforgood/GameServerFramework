@@ -24,23 +24,23 @@ namespace Gamedata {
     static GamedataReflection() {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
-            "Cg5nYW1lZGF0YS5wcm90bxIIZ2FtZWRhdGEigwIKBVNraWxsEgoKAmlkGAEg",
+            "Cg5nYW1lZGF0YS5wcm90bxIIZ2FtZWRhdGEikgIKBVNraWxsEgoKAmlkGAEg",
             "ASgFEgwKBHR5cGUYAiABKAkSEAoIY29vbGRvd24YAyABKAESDgoGZGFtYWdl",
             "GAQgASgBEhEKCW1hbmFfY29zdBgFIAEoARIOCgZlZmZlY3QYBiABKAkSDQoF",
             "dmFsdWUYByABKAESDwoHbmFtZV9pZBgIIAEoCRIPCgdkZXNjX2lkGAkgASgJ",
             "EhAKCGR1cmF0aW9uGAogASgBEg4KBmhpZWdodBgLIAEoARINCgVyYW5nZRgM",
             "IAEoARISCgptaW5fZGFtYWdlGA0gASgBEhIKCm1heF9kYW1hZ2UYDiABKAES",
-            "EQoJY29kZV9uYW1lGA8gASgJIiwKCVNraWxsTGlzdBIfCgZza2lsbHMYASAD",
-            "KAsyDy5nYW1lZGF0YS5Ta2lsbCIjCgZPcHRpb24SCgoCaWQYASABKAUSDQoF",
-            "dmFsdWUYAiABKAEieAoESXRlbRIKCgJpZBgBIAEoBRIMCgR0eXBlGAIgASgJ",
-            "EgwKBGhlYWwYAyABKAUSDwoHbmFtZV9pZBgEIAEoCRIPCgdkZXNjX2lkGAUg",
-            "ASgJEiYKDGl0ZW1fb3B0aW9ucxgGIAMoCzIQLmdhbWVkYXRhLk9wdGlvbiIp",
-            "CghJdGVtTGlzdBIdCgVpdGVtcxgBIAMoCzIOLmdhbWVkYXRhLkl0ZW1iBnBy",
-            "b3RvMw=="));
+            "EQoJY29kZV9uYW1lGA8gASgJEg0KBWFuZ2xlGBAgASgBIiwKCVNraWxsTGlz",
+            "dBIfCgZza2lsbHMYASADKAsyDy5nYW1lZGF0YS5Ta2lsbCIjCgZPcHRpb24S",
+            "CgoCaWQYASABKAUSDQoFdmFsdWUYAiABKAEieAoESXRlbRIKCgJpZBgBIAEo",
+            "BRIMCgR0eXBlGAIgASgJEgwKBGhlYWwYAyABKAUSDwoHbmFtZV9pZBgEIAEo",
+            "CRIPCgdkZXNjX2lkGAUgASgJEiYKDGl0ZW1fb3B0aW9ucxgGIAMoCzIQLmdh",
+            "bWVkYXRhLk9wdGlvbiIpCghJdGVtTGlzdBIdCgVpdGVtcxgBIAMoCzIOLmdh",
+            "bWVkYXRhLkl0ZW1iBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.Skill), global::Gamedata.Skill.Parser, new[]{ "Id", "Type", "Cooldown", "Damage", "ManaCost", "Effect", "Value", "NameId", "DescId", "Duration", "Hieght", "Range", "MinDamage", "MaxDamage", "CodeName" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.Skill), global::Gamedata.Skill.Parser, new[]{ "Id", "Type", "Cooldown", "Damage", "ManaCost", "Effect", "Value", "NameId", "DescId", "Duration", "Hieght", "Range", "MinDamage", "MaxDamage", "CodeName", "Angle" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.SkillList), global::Gamedata.SkillList.Parser, new[]{ "Skills" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.Option), global::Gamedata.Option.Parser, new[]{ "Id", "Value" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.Item), global::Gamedata.Item.Parser, new[]{ "Id", "Type", "Heal", "NameId", "DescId", "ItemOptions" }, null, null, null, null),
@@ -101,6 +101,7 @@ namespace Gamedata {
       minDamage_ = other.minDamage_;
       maxDamage_ = other.maxDamage_;
       codeName_ = other.codeName_;
+      angle_ = other.angle_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -290,6 +291,18 @@ namespace Gamedata {
       }
     }
 
+    /// <summary>Field number for the "angle" field.</summary>
+    public const int AngleFieldNumber = 16;
+    private double angle_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public double Angle {
+      get { return angle_; }
+      set {
+        angle_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -320,6 +333,7 @@ namespace Gamedata {
       if (!pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.Equals(MinDamage, other.MinDamage)) return false;
       if (!pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.Equals(MaxDamage, other.MaxDamage)) return false;
       if (CodeName != other.CodeName) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.Equals(Angle, other.Angle)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -342,6 +356,7 @@ namespace Gamedata {
       if (MinDamage != 0D) hash ^= pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.GetHashCode(MinDamage);
       if (MaxDamage != 0D) hash ^= pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.GetHashCode(MaxDamage);
       if (CodeName.Length != 0) hash ^= CodeName.GetHashCode();
+      if (Angle != 0D) hash ^= pbc::ProtobufEqualityComparers.BitwiseDoubleEqualityComparer.GetHashCode(Angle);
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -420,6 +435,10 @@ namespace Gamedata {
         output.WriteRawTag(122);
         output.WriteString(CodeName);
       }
+      if (Angle != 0D) {
+        output.WriteRawTag(129, 1);
+        output.WriteDouble(Angle);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -490,6 +509,10 @@ namespace Gamedata {
         output.WriteRawTag(122);
         output.WriteString(CodeName);
       }
+      if (Angle != 0D) {
+        output.WriteRawTag(129, 1);
+        output.WriteDouble(Angle);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -544,6 +567,9 @@ namespace Gamedata {
       }
       if (CodeName.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(CodeName);
+      }
+      if (Angle != 0D) {
+        size += 2 + 8;
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -601,6 +627,9 @@ namespace Gamedata {
       }
       if (other.CodeName.Length != 0) {
         CodeName = other.CodeName;
+      }
+      if (other.Angle != 0D) {
+        Angle = other.Angle;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -681,6 +710,10 @@ namespace Gamedata {
             CodeName = input.ReadString();
             break;
           }
+          case 129: {
+            Angle = input.ReadDouble();
+            break;
+          }
         }
       }
     #endif
@@ -758,6 +791,10 @@ namespace Gamedata {
           }
           case 122: {
             CodeName = input.ReadString();
+            break;
+          }
+          case 129: {
+            Angle = input.ReadDouble();
             break;
           }
         }

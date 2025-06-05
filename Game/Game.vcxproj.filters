@@ -127,6 +127,7 @@
     <None Include="SQL\generated\create_tables.sql">
       <Filter>SQL</Filter>
     </None>
+    <None Include="Common.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Walker.h">

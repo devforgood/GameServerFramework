@@ -10,28 +10,23 @@ enum class GameObjectChangeType
 	Position = 1 << 0,
 	State = 1 << 1,
 	Health = 1 << 2,
-	InputLocked = 1 << 3, // ÀÔ·Â Àá±Ý »óÅÂ
+	InputLocked = 1 << 3, // ìž…ë ¥ ìž ê¸ˆ ìƒíƒœ
 	All = Position | State | Health | InputLocked
 };
 
 class send_message; // Forward declaration
 
-class GameObject
-{
-
-
+class GameObject {
 protected:
 	World* world_;
 	syncnet::AIState state_;
 	long change_flag_;
 
-
 public:
 	GameObject(World* world) : world_(world), change_flag_(0)
 	{
-
 	}
-	virtual ~GameObject() = default; // ¹Ýµå½Ã virtual ¼Ò¸êÀÚ¸¦ Ãß°¡
+	virtual ~GameObject() = default; // ë°˜ë“œì‹œ virtual ì†Œë©¸ìžë¥¼ ì¶”ê°€
 	virtual void update(float dt) {};
 	virtual void set_position(float x, float y, float z) {};
 	virtual bool is_changed_position(float x, float y, float z) { return false; }
@@ -54,8 +49,7 @@ public:
 	}
 	virtual int health() { return 0; }
 
-	// CreateActorInfo È£Ãâ½Ã ÇÊ¿äÇÑ Á¤º¸ ¾ò±â
+	// CreateActorInfo í˜¸ì¶œì‹œ í•„ìš”í•œ ì •ë³´ ìƒì„±
 	virtual flatbuffers::Offset<syncnet::ActorInfo> get_actor_info(flatbuffers::FlatBufferBuilder& _fbb, long flag) {return 0;}
-
 };
 

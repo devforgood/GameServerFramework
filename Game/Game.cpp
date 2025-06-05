@@ -7,15 +7,13 @@
 #include "LogHelper.h"
 //#include "BehaviorTreeCPP.h"
 #include "SqlClient.h"
-#include "../GameDataProtobuf/ResourceLoader.h"
-#include "../GameDataProtobuf/gamedata.pb.h"
+#include "Common.h"
 
 void test()
 {
 	//BehaviorTreeCPP::test();
 	//SqlClient::test();
 
-	ResourceLoader::Instance().LoadResources();
 	auto itr = ResourceLoader::Instance().GetItems().find(1);
 	if (itr != ResourceLoader::Instance().GetItems().end())
 	{
@@ -50,6 +48,7 @@ int main(int argc, char* argv[])
 			servers.emplace_back(io_context, endpoint);
 		}
 
+		ResourceLoader::Instance().LoadResources();
 		test();
 
 

@@ -240,6 +240,7 @@ class Skill final : public ::google::protobuf::Message
     kRangeFieldNumber = 12,
     kMinDamageFieldNumber = 13,
     kMaxDamageFieldNumber = 14,
+    kAngleFieldNumber = 16,
     kIdFieldNumber = 1,
   };
   // string type = 2;
@@ -412,6 +413,16 @@ class Skill final : public ::google::protobuf::Message
   void _internal_set_max_damage(double value);
 
   public:
+  // double angle = 16;
+  void clear_angle() ;
+  double angle() const;
+  void set_angle(double value);
+
+  private:
+  double _internal_angle() const;
+  void _internal_set_angle(double value);
+
+  public:
   // int32 id = 1;
   void clear_id() ;
   ::int32_t id() const;
@@ -427,8 +438,8 @@ class Skill final : public ::google::protobuf::Message
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      4, 15, 0,
-      64, 2>
+      4, 16, 0,
+      72, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -459,6 +470,7 @@ class Skill final : public ::google::protobuf::Message
     double range_;
     double min_damage_;
     double max_damage_;
+    double angle_;
     ::int32_t id_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
@@ -1812,6 +1824,28 @@ inline void Skill::set_allocated_code_name(std::string* value) {
     _impl_.code_name_.Set("", GetArena());
   }
   // @@protoc_insertion_point(field_set_allocated:gamedata.Skill.code_name)
+}
+
+// double angle = 16;
+inline void Skill::clear_angle() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.angle_ = 0;
+}
+inline double Skill::angle() const {
+  // @@protoc_insertion_point(field_get:gamedata.Skill.angle)
+  return _internal_angle();
+}
+inline void Skill::set_angle(double value) {
+  _internal_set_angle(value);
+  // @@protoc_insertion_point(field_set:gamedata.Skill.angle)
+}
+inline double Skill::_internal_angle() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.angle_;
+}
+inline void Skill::_internal_set_angle(double value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.angle_ = value;
 }
 
 // -------------------------------------------------------------------

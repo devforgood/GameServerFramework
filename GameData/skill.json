@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "id": 1,
     "type": "active",
@@ -7,7 +7,8 @@
     "range": 2,
     "name_id": "normal_attack_name",
     "desc_id": "normal_attack_desc",
-    "code_name": "NormalAttackSkill"
+    "code_name": "NormalAttackSkill",
+    "angle": 90
   }
   ,
   {

@@ -52,6 +52,7 @@ inline constexpr Skill::Impl_::Impl_(
         range_{0},
         min_damage_{0},
         max_damage_{0},
+        angle_{0},
         id_{0},
         _cached_size_{0} {}
 
@@ -217,6 +218,7 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.min_damage_),
         PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.max_damage_),
         PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.code_name_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Skill, _impl_.angle_),
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::gamedata::SkillList, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -264,10 +266,10 @@ const ::uint32_t
 static const ::_pbi::MigrationSchema
     schemas[] ABSL_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
         {0, -1, -1, sizeof(::gamedata::Skill)},
-        {23, -1, -1, sizeof(::gamedata::SkillList)},
-        {32, -1, -1, sizeof(::gamedata::Option)},
-        {42, -1, -1, sizeof(::gamedata::Item)},
-        {56, -1, -1, sizeof(::gamedata::ItemList)},
+        {24, -1, -1, sizeof(::gamedata::SkillList)},
+        {33, -1, -1, sizeof(::gamedata::Option)},
+        {43, -1, -1, sizeof(::gamedata::Item)},
+        {57, -1, -1, sizeof(::gamedata::ItemList)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::gamedata::_Skill_default_instance_._instance,
@@ -278,26 +280,26 @@ static const ::_pb::Message* const file_default_instances[] = {
 };
 const char descriptor_table_protodef_gamedata_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
     protodesc_cold) = {
-    "\n\016gamedata.proto\022\010gamedata\"\203\002\n\005Skill\022\n\n\002"
+    "\n\016gamedata.proto\022\010gamedata\"\222\002\n\005Skill\022\n\n\002"
     "id\030\001 \001(\005\022\014\n\004type\030\002 \001(\t\022\020\n\010cooldown\030\003 \001(\001"
     "\022\016\n\006damage\030\004 \001(\001\022\021\n\tmana_cost\030\005 \001(\001\022\016\n\006e"
     "ffect\030\006 \001(\t\022\r\n\005value\030\007 \001(\001\022\017\n\007name_id\030\010 "
     "\001(\t\022\017\n\007desc_id\030\t \001(\t\022\020\n\010duration\030\n \001(\001\022\016"
     "\n\006hieght\030\013 \001(\001\022\r\n\005range\030\014 \001(\001\022\022\n\nmin_dam"
     "age\030\r \001(\001\022\022\n\nmax_damage\030\016 \001(\001\022\021\n\tcode_na"
-    "me\030\017 \001(\t\",\n\tSkillList\022\037\n\006skills\030\001 \003(\0132\017."
-    "gamedata.Skill\"#\n\006Option\022\n\n\002id\030\001 \001(\005\022\r\n\005"
-    "value\030\002 \001(\001\"x\n\004Item\022\n\n\002id\030\001 \001(\005\022\014\n\004type\030"
-    "\002 \001(\t\022\014\n\004heal\030\003 \001(\005\022\017\n\007name_id\030\004 \001(\t\022\017\n\007"
-    "desc_id\030\005 \001(\t\022&\n\014item_options\030\006 \003(\0132\020.ga"
-    "medata.Option\")\n\010ItemList\022\035\n\005items\030\001 \003(\013"
-    "2\016.gamedata.Itemb\006proto3"
+    "me\030\017 \001(\t\022\r\n\005angle\030\020 \001(\001\",\n\tSkillList\022\037\n\006"
+    "skills\030\001 \003(\0132\017.gamedata.Skill\"#\n\006Option\022"
+    "\n\n\002id\030\001 \001(\005\022\r\n\005value\030\002 \001(\001\"x\n\004Item\022\n\n\002id"
+    "\030\001 \001(\005\022\014\n\004type\030\002 \001(\t\022\014\n\004heal\030\003 \001(\005\022\017\n\007na"
+    "me_id\030\004 \001(\t\022\017\n\007desc_id\030\005 \001(\t\022&\n\014item_opt"
+    "ions\030\006 \003(\0132\020.gamedata.Option\")\n\010ItemList"
+    "\022\035\n\005items\030\001 \003(\0132\016.gamedata.Itemb\006proto3"
 };
 static ::absl::once_flag descriptor_table_gamedata_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_gamedata_2eproto = {
     false,
     false,
-    544,
+    559,
     descriptor_table_protodef_gamedata_2eproto,
     "gamedata.proto",
     &descriptor_table_gamedata_2eproto_once,
@@ -430,15 +432,15 @@ const ::google::protobuf::internal::ClassData* Skill::GetClassData() const {
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<4, 15, 0, 64, 2> Skill::_table_ = {
+const ::_pbi::TcParseTable<4, 16, 0, 72, 2> Skill::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    15, 120,  // max_field_number, fast_idx_mask
+    16, 120,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294934528,  // skipmap
+    4294901760,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    15,  // num_field_entries
+    16,  // num_field_entries
     0,  // num_aux_entries
     offsetof(decltype(_table_), field_names),  // no aux_entries
     _class_data_.base(),
@@ -448,7 +450,9 @@ const ::_pbi::TcParseTable<4, 15, 0, 64, 2> Skill::_table_ = {
     ::_pbi::TcParser::GetTable<::gamedata::Skill>(),  // to_prefetch
     #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
   }, {{
-    {::_pbi::TcParser::MiniParse, {}},
+    // double angle = 16;
+    {::_pbi::TcParser::FastF64S2,
+     {385, 63, 0, PROTOBUF_FIELD_OFFSET(Skill, _impl_.angle_)}},
     // int32 id = 1;
     {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(Skill, _impl_.id_), 63>(),
      {8, 63, 0, PROTOBUF_FIELD_OFFSET(Skill, _impl_.id_)}},
@@ -542,10 +546,13 @@ const ::_pbi::TcParseTable<4, 15, 0, 64, 2> Skill::_table_ = {
     // string code_name = 15;
     {PROTOBUF_FIELD_OFFSET(Skill, _impl_.code_name_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // double angle = 16;
+    {PROTOBUF_FIELD_OFFSET(Skill, _impl_.angle_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kDouble)},
   }},
   // no aux_entries
   {{
-    "\16\0\4\0\0\0\6\0\7\7\0\0\0\0\0\11"
+    "\16\0\4\0\0\0\6\0\7\7\0\0\0\0\0\11\0\0\0\0\0\0\0\0"
     "gamedata.Skill"
     "type"
     "effect"
@@ -698,6 +705,13 @@ PROTOBUF_NOINLINE void Skill::Clear() {
             target = stream->WriteStringMaybeAliased(15, _s, target);
           }
 
+          // double angle = 16;
+          if (::absl::bit_cast<::uint64_t>(this_._internal_angle()) != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteDoubleToArray(
+                16, this_._internal_angle(), target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -784,6 +798,10 @@ PROTOBUF_NOINLINE void Skill::Clear() {
             if (::absl::bit_cast<::uint64_t>(this_._internal_max_damage()) != 0) {
               total_size += 9;
             }
+            // double angle = 16;
+            if (::absl::bit_cast<::uint64_t>(this_._internal_angle()) != 0) {
+              total_size += 10;
+            }
             // int32 id = 1;
             if (this_._internal_id() != 0) {
               total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
@@ -843,6 +861,9 @@ void Skill::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::p
   }
   if (::absl::bit_cast<::uint64_t>(from._internal_max_damage()) != 0) {
     _this->_impl_.max_damage_ = from._impl_.max_damage_;
+  }
+  if (::absl::bit_cast<::uint64_t>(from._internal_angle()) != 0) {
+    _this->_impl_.angle_ = from._impl_.angle_;
   }
   if (from._internal_id() != 0) {
     _this->_impl_.id_ = from._impl_.id_;

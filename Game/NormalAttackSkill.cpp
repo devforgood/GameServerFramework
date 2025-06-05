@@ -1,8 +1,13 @@
-#include "NormalAttackSkill.h"
+﻿#include "NormalAttackSkill.h"
 #include "Actor.h"
 #include "World.h"
 #include "Vector3.h"
 #include "LogHelper.h"
+#include "GridManager.h"
+#include "Common.h"
+
+#include <cmath>
+
 
 
 int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, float serverClientTimeOffset)
@@ -19,13 +24,37 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 		return -1; // Already casting a skill
 	}
 
-	actor_ = actor;
-	skill_id_ = msg->skillId();
-	target_pos_ = new Vector3(msg->pos());
-	duration_ = msg->duration() - serverClientTimeOffset; // Adjust duration with server-client time offset
+	// ResourceLoader에서 스킬 정보 로드
+	auto skill_data = ResourceLoader::Instance().GetSkills(1); // 1은 기본 공격 스킬 ID
+	if (!skill_data) {
+		LOG.error("Failed to load skill data for NormalAttackSkill.");
+		return -1; // 스킬 데이터 로드 실패
+	}
 
+
+	actor_ = actor;
 	is_casting_ = true;
-	actor_->set_input_locked(true); // Lock input while casting
+	duration_ = 0.5f; // 스킬 지속 시간 0.5초
+
+	// 공격 방향 설정 (메시지의 target_position을 기반으로)
+	Vector3 actor_pos = actor->get_position();
+	Vector3 target_pos(msg->pos());
+
+	// 캐릭터를 목표 지점 방향으로 회전
+	actor->rotate_to_target(target_pos, serverClientTimeOffset);
+	
+
+	// GridManager를 통해 범위 내 대상 검색
+	std::vector<Actor*> actors_in_range = actor->world()->get_actors_in_range(actor_, skill_data->range(), skill_data->angle());
+
+	// 부채꼴 범위 내 대상에게 데미지 적용
+	for (auto target : actors_in_range) {
+		if (target && target != actor) {
+			// 데미지 적용
+			target->decrement_health(skill_data->damage());
+		}
+	}
 
 	return 0;
 }
+

@@ -1,0 +1,2 @@
+﻿
+#include "../GameDataProtobuf/ResourceLoader.h"
