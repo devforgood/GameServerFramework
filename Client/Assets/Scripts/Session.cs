@@ -1,4 +1,4 @@
-﻿using FlatBuffers;
+using FlatBuffers;
 using syncnet;
 using System;
 using System.Collections;
@@ -186,6 +186,7 @@ public class Session : MonoBehaviour
 		if (updatedActor.Health.HasValue)
 		{
 			actor.health = updatedActor.Health.Value.Health;
+			actor.UpdateHealthUI(actor.health);
 		}
 
 		if (updatedActor.GameObjectType == GameObjectType.Monster)

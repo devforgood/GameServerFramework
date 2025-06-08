@@ -32,10 +32,6 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	}
 
 
-	actor_ = actor;
-	is_casting_ = true;
-	duration_ = 0.5f; // 스킬 지속 시간 0.5초
-
 	// 공격 방향 설정 (메시지의 target_position을 기반으로)
 	Vector3 actor_pos = actor->get_position();
 	Vector3 target_pos(msg->pos());
@@ -45,7 +41,7 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	
 
 	// GridManager를 통해 범위 내 대상 검색
-	std::vector<Actor*> actors_in_range = actor->world()->get_actors_in_range(actor_, skill_data->range(), skill_data->angle());
+	std::vector<Actor*> actors_in_range = actor->world()->get_actors_in_range(actor, skill_data->range(), skill_data->angle());
 
 	// 부채꼴 범위 내 대상에게 데미지 적용
 	for (auto target : actors_in_range) {
