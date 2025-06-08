@@ -115,6 +115,9 @@
     <ClCompile Include="SkillManager.cpp">
       <Filter>skill</Filter>
     </ClCompile>
+    <ClCompile Include="RandomUtil.cpp">
+      <Filter>core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -214,6 +217,9 @@
       <Filter>skill</Filter>
     </ClInclude>
     <ClInclude Include="GameObjectChangeTypeOperators.h" />
+    <ClInclude Include="RandomUtil.h">
+      <Filter>core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

@@ -1,39 +1,63 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class HealthBar : MonoBehaviour
 {
-    public Actor actor;
-    public GameObject healthBar;
-    public int health;
+    private RectTransform fillRectTransform;
+    private Image fillImage;
 
-    void Update()
+    public void Initialize()
     {
-        // 항상 카메라를 향하도록 회전 (Billboard 효과)
-        if (Camera.main != null)
-        {
-            transform.LookAt(transform.position + Camera.main.transform.rotation * Vector3.forward,
-                Camera.main.transform.rotation * Vector3.up);
-        }
+        // 캔버스 설정
+        Canvas canvas = gameObject.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.WorldSpace;
+        
+        // 캔버스 크기 설정
+        RectTransform canvasRect = GetComponent<RectTransform>();
+        canvasRect.sizeDelta = new Vector2(150f, 20f);
+        canvasRect.localScale = new Vector3(0.01f, 0.01f, 1f);
+        canvasRect.localPosition = new Vector3(0f, 2f, 0f);
+
+        // 배경 생성
+        GameObject background = new GameObject("Background");
+        background.transform.SetParent(transform, false);
+        Image backgroundImage = background.AddComponent<Image>();
+        backgroundImage.color = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+        RectTransform backgroundRect = background.GetComponent<RectTransform>();
+        backgroundRect.anchorMin = Vector2.zero;
+        backgroundRect.anchorMax = Vector2.one;
+        backgroundRect.offsetMin = Vector2.zero;
+        backgroundRect.offsetMax = Vector2.zero;
+        backgroundRect.localPosition = Vector3.zero;
+
+        // 체력바 생성
+        GameObject healthBarFill = new GameObject("HealthBarFill");
+        healthBarFill.transform.SetParent(background.transform, false);
+        fillImage = healthBarFill.AddComponent<Image>();
+        fillImage.color = Color.green;
+        fillRectTransform = healthBarFill.GetComponent<RectTransform>();
+        fillRectTransform.anchorMin = Vector2.zero;
+        fillRectTransform.anchorMax = Vector2.one;
+        fillRectTransform.offsetMin = Vector2.zero;
+        fillRectTransform.offsetMax = Vector2.zero;
+        fillRectTransform.localPosition = Vector3.zero;
+
+        // Billboard 효과 추가
+        gameObject.AddComponent<Billboard>();
     }
 
-    public void UpdateHealthUI(int currentHealth)
+    public void UpdateHealth(float healthPercent)
     {
-        health = currentHealth;
-        // 체력바 크기 업데이트 (x축 스케일만 변경)
-        Vector3 scale = healthBar.transform.localScale;
-        scale.x = Mathf.Clamp01(currentHealth / 100f);
-        healthBar.transform.localScale = scale;
-
-        // 체력에 따라 색상 변경
-        SpriteRenderer spriteRenderer = healthBar.GetComponentInChildren<SpriteRenderer>();
-        if (spriteRenderer != null)
+        if (fillRectTransform != null)
         {
-            if (currentHealth > 70)
-                spriteRenderer.color = Color.green;
-            else if (currentHealth > 30)
-                spriteRenderer.color = Color.yellow;
+            fillRectTransform.anchorMax = new Vector2(healthPercent, 1);
+            
+            if (healthPercent > 0.7f)
+                fillImage.color = Color.green;
+            else if (healthPercent > 0.3f)
+                fillImage.color = Color.yellow;
             else
-                spriteRenderer.color = Color.red;
+                fillImage.color = Color.red;
         }
     }
 } 

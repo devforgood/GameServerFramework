@@ -1,10 +1,11 @@
-﻿#include "NormalAttackSkill.h"
+#include "NormalAttackSkill.h"
 #include "Actor.h"
 #include "World.h"
 #include "Vector3.h"
 #include "LogHelper.h"
 #include "GridManager.h"
 #include "Common.h"
+#include "RandomUtil.h"
 
 #include <cmath>
 
@@ -38,6 +39,8 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 
 	// 캐릭터를 목표 지점 방향으로 회전
 	actor->rotate_to_target(target_pos, serverClientTimeOffset);
+
+	double damage = actor->world()->random_util()->GetRandomDouble(skill_data->min_damage(), skill_data->max_damage());
 	
 
 	// GridManager를 통해 범위 내 대상 검색
@@ -47,7 +50,7 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	for (auto target : actors_in_range) {
 		if (target && target != actor) {
 			// 데미지 적용
-			target->decrement_health(skill_data->damage());
+			target->decrement_health(damage);
 		}
 	}
 

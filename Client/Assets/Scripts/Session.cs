@@ -195,7 +195,7 @@ public class Session : MonoBehaviour
 		}
 		else if (updatedActor.GameObjectType == GameObjectType.Character)
 		{
-			Debug.Log($"Player Agent ID: {actor.agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+			//Debug.Log($"Player Agent ID: {actor.agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
 		}
 	}
 

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <vector>
 #include <list>
 #include <unordered_map>
@@ -16,6 +16,7 @@ class Actor;
 class GameObjectFactory;
 class TimeStamp;
 class send_message;
+class RandomUtil;
 
 class World
 {
@@ -31,6 +32,7 @@ private:
 
 	GridManager* grid_manager_;
 	TimeStamp* time_stamp_;
+	RandomUtil* random_util_;
 
 public:
 	World();
@@ -40,6 +42,7 @@ public:
 	void update(float deltaTime);
 
 	Map* map() { return map_; }
+	RandomUtil* random_util() { return random_util_; }
 
 	void SendWorldState();
 	void GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector);

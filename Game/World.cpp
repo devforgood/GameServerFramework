@@ -1,4 +1,4 @@
-﻿#include "World.h"
+#include "World.h"
 #include "syncnet_generated.h"
 #include "DetourCrowd.h"
 #include <iostream>
@@ -13,6 +13,7 @@
 #include "GridManager.h"
 #include "GameObjectFactory.h"
 #include "TimeStamp.h"
+#include "RandomUtil.h"
 
 //const float g_fDistance = std::powf(10.0f, 2);
 const float g_fDistance = 10.0f;
@@ -22,6 +23,7 @@ World::World()
 	map_ = nullptr;
 	grid_manager_ = nullptr;
 	time_stamp_ = nullptr;
+	random_util_ = nullptr;
 }
 
 World::~World()
@@ -41,6 +43,11 @@ World::~World()
 		delete time_stamp_;
 		time_stamp_ = nullptr;
 	}
+	if (random_util_)
+	{
+		delete random_util_;
+		random_util_ = nullptr;
+	}
 }
 
 void World::Init()
@@ -51,6 +58,7 @@ void World::Init()
 	Monster::registerLuaFunctionAll();
 	grid_manager_ = new GridManager(100, 100, 2);
 	time_stamp_ = new TimeStamp();
+	random_util_ = new RandomUtil();
 }
 
 void World::update(float deltaTime)

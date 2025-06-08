@@ -167,6 +167,7 @@
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="RandomUtil.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="BaseSkill.cpp" />
@@ -221,6 +222,7 @@
     <ClInclude Include="Monster.h" />
     <ClInclude Include="PerfTimer.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="RandomUtil.h" />
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
