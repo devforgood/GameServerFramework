@@ -1,4 +1,4 @@
-﻿#include "Character.h"
+#include "Character.h"
 #include "World.h"
 #include "LogHelper.h"
 #include "BaseSkill.h"
@@ -13,7 +13,7 @@ Character::Character(World* world) : Actor(world)
 	auto skills = ResourceLoader::Instance().GetSkills();
 	for (const auto& skill : skills)
 	{
-		skills_[skill.first] = SkillFactory::CreateSkill(skill.first);
+		skills_[skill.first] = SkillFactory::Create(skill.first);
 	}
 
 	is_input_locked_ = false;

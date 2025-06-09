@@ -2,8 +2,8 @@
   {
     "id": 1,
     "type": "active",
-    "min_damage": 1,
-    "max_damage": 3,
+    "min_damage": 5,
+    "max_damage": 20,
     "range": 2,
     "name_id": "normal_attack_name",
     "desc_id": "normal_attack_desc",
