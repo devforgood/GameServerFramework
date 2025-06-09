@@ -1,0 +1,16 @@
+// This file is auto-generated. Do not modify directly.
+
+#include "{{table_name}}Factory.h"
+{% for item_info in item_infos %}
+#include "{{item_info[0]}}.h"
+{% endfor %}
+
+
+Base{{table_name}}* {{table_name}}Factory::Create(int32_t id) {
+    switch (id) {
+        {% for item_info in item_infos %}
+        case {{item_info[1]}}: return new {{item_info[0]}}();
+        {% endfor %}
+        default: return nullptr;
+    }
+} 

@@ -23,13 +23,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GameDataFlow.py" />
-    <Compile Include="generate_skill_factory.py" />
+    <Compile Include="generate_factory.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="gamedata.proto" />
-    <Content Include="templates\SkillFactory.cpp.j2" />
-    <Content Include="templates\SkillFactory.cs.j2" />
-    <Content Include="templates\SkillFactory.h.j2" />
+    <Content Include="templates\Factory.cpp.j2" />
+    <Content Include="templates\Factory.cs.j2" />
+    <Content Include="templates\Factory.h.j2" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="templates\" />

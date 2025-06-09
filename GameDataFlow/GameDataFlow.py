@@ -1,33 +1,35 @@
 import json
 from google.protobuf import json_format
-from generate_skill_factory import generate_skill_factory
+from generate_factory import generate_factory
 import gamedata_pb2
 import shutil
 import os
 
-# º¯È¯ÇÒ JSON ÆÄÀÏ ¸ñ·Ï ¹× Á¤º¸
+# ë³€í™˜í•  JSON íŒŒì¼ ëª©ë¡ ë° ì •ë³´
 JSON_PROTO_MAP = [
     {
         "json_path": "../GameData/skill.json",
         "pb_cls": gamedata_pb2.SkillList,
         "repeated_field": "skills",
-        "out_path": "skill.bytes"
+        "out_path": "skill.bytes",
+        "table_name": "Skill"
     },
     {
         "json_path": "../GameData/item.json",
         "pb_cls": gamedata_pb2.ItemList,
         "repeated_field": "items",
-        "out_path": "item.bytes"
+        "out_path": "item.bytes",
+        "table_name": "Item"
     }
 ]
 
-# º¹»ç ´ë»ó Æú´õ
+# ë³µì‚¬ ëŒ€ìƒ í´ë”
 CLIENT_DIR = "../Client/Assets/Resources/GameData/"
 SERVER_DIR = "../Game/GameData/"
 SERVER_SRC_DIR = "../Game/"
 CLIENT_SRC_DIR = "../Client/Assets/Scripts/"
 
-def convert_json_to_protobuf(json_path, pb_cls, repeated_field, out_path):
+def convert_json_to_protobuf(json_path, pb_cls, repeated_field, out_path, table_name):
     try:
         with open(json_path, encoding="utf-8") as f:
             data = json.load(f)
@@ -46,11 +48,10 @@ def convert_json_to_protobuf(json_path, pb_cls, repeated_field, out_path):
         print(f"[ERROR] {json_path} -> {out_path} conversion error: {e}")
         return
 
-    # ½ºÅ³ Å×ÀÌºíÀÌ¶ó¸é ¸ñ·ÏÀ» ³Ñ°Ü ÄÚµå¸¦ »ı¼º
-    if os.path.basename(json_path) == "skill.json":
-        generate_skill_factory(SERVER_SRC_DIR, CLIENT_SRC_DIR, data)
+    # Factory ì½”ë“œ ìƒì„±
+    generate_factory(SERVER_SRC_DIR, CLIENT_SRC_DIR, table_name, data)
 
-    # ¹ÙÀÌ³Ê¸® ÆÄÀÏ º¹»ç
+    # ë°”ì´ë„ˆë¦¬ íŒŒì¼ ë³µì‚¬
     for target_dir in [CLIENT_DIR, SERVER_DIR]:
         try:
             os.makedirs(target_dir, exist_ok=True)
@@ -65,6 +66,7 @@ if __name__ == "__main__":
             json_path=info["json_path"],
             pb_cls=info["pb_cls"],
             repeated_field=info["repeated_field"],
-            out_path=info["out_path"]
+            out_path=info["out_path"],
+            table_name=info["table_name"]
         )
 

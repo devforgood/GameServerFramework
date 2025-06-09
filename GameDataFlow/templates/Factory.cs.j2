@@ -1,0 +1,17 @@
+// This file is auto-generated. Do not modify directly.
+
+using System;
+
+public static class {{table_name}}Factory
+{
+    public static Base{{table_name}} Create(int id)
+    {
+        switch (id)
+        {
+            {% for item_info in item_infos %}
+            case {{item_info[1]}}: return new {{item_info[0]}}();
+            {% endfor %}
+            default: return null;
+        }
+    }
+} 

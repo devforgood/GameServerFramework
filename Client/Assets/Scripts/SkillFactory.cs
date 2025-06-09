@@ -4,13 +4,16 @@ using System;
 
 public static class SkillFactory
 {
-    public static BaseSkill CreateSkill(int id)
+    public static BaseSkill Create(int id)
     {
         switch (id)
         {
+            
             case 2: return new JumpSkill();
+            
             case 1: return new NormalAttackSkill();
-            default: throw new ArgumentException($"Unknown skill id: {id}");
+            
+            default: return null;
         }
     }
-}
+} 
