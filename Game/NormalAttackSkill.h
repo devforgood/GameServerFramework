@@ -1,8 +1,8 @@
-﻿#pragma once
-#include "BaseSkill.h"
+#pragma once
+#include "Skill.h"
 #include "Vector3.h"
 
-class NormalAttackSkill : public BaseSkill
+class NormalAttackSkill : public Skill
 {
 public:
 

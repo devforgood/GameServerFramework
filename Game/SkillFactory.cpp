@@ -8,7 +8,7 @@
 
 
 
-BaseSkill* SkillFactory::Create(int32_t id) {
+Skill* SkillFactory::Create(int32_t id) {
     switch (id) {
         
         case 2: return new JumpSkill();

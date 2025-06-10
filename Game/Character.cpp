@@ -1,7 +1,7 @@
 #include "Character.h"
 #include "World.h"
 #include "LogHelper.h"
-#include "BaseSkill.h"
+#include "Skill.h"
 #include "Vector3.h"
 #include "TimeStamp.h"
 #include "../GameDataProtobuf/ResourceLoader.h"
@@ -41,7 +41,7 @@ void Character::use_skill(const syncnet::UseSkill* msg)
 
 	if (itr != skills_.end())
 	{
-		BaseSkill* skill = itr->second;
+		Skill* skill = itr->second;
 		int result = skill->cast_skill(this, msg, serverClientTimeOffset);
 		if (result == 0)
 		{
@@ -64,7 +64,7 @@ void Character::update(float dt)
 	Actor::update(dt);
 	for(auto itr = skills_.begin(); itr != skills_.end(); ++itr)
 	{
-		BaseSkill* skill = itr->second;
+		Skill* skill = itr->second;
 		skill->update(dt);
 	}
 }

@@ -170,7 +170,7 @@
     <ClCompile Include="RandomUtil.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="Server.cpp" />
-    <ClCompile Include="BaseSkill.cpp" />
+    <ClCompile Include="Skill.cpp" />
     <ClCompile Include="SkillFactory.cpp" />
     <ClCompile Include="SkillManager.cpp" />
     <ClCompile Include="SqlClient.cpp" />
@@ -226,7 +226,7 @@
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
-    <ClInclude Include="BaseSkill.h" />
+    <ClInclude Include="Skill.h" />
     <ClInclude Include="SkillFactory.h" />
     <ClInclude Include="SkillManager.h" />
     <ClInclude Include="SqlClient.h" />

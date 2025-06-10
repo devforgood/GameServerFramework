@@ -1,7 +1,7 @@
 #pragma once
-#include "BaseSkill.h"
+#include "Skill.h"
 
-class JumpSkill : public BaseSkill
+class JumpSkill : public Skill
 {
 private:
 	int skill_id_;

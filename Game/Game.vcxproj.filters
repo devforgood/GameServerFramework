@@ -85,7 +85,7 @@
     <ClCompile Include="PlayerController.cpp">
       <Filter>Controller</Filter>
     </ClCompile>
-    <ClCompile Include="BaseSkill.cpp">
+    <ClCompile Include="Skill.cpp">
       <Filter>skill</Filter>
     </ClCompile>
     <ClCompile Include="GameObjectFactory.cpp">
@@ -186,7 +186,7 @@
     <ClInclude Include="PlayerController.h">
       <Filter>Controller</Filter>
     </ClInclude>
-    <ClInclude Include="BaseSkill.h">
+    <ClInclude Include="Skill.h">
       <Filter>skill</Filter>
     </ClInclude>
     <ClInclude Include="GameObjectFactory.h">

@@ -1,14 +1,14 @@
 #pragma once
 #include "Actor.h"
 
-class BaseSkill;
+class Skill;
 class Vector3;
 
 class Character : public Actor
 {
 private:
 	long player_id_;
-	std::unordered_map<int, BaseSkill*> skills_;
+	std::unordered_map<int, Skill*> skills_;
 
 public:
 	Character(World* world);

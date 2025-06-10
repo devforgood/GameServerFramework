@@ -4,12 +4,12 @@
 
 #include <memory>
 #include <string>
-#include "BaseSkill.h"
+#include "Skill.h"
 
 class SkillFactory {
 public:
     SkillFactory() = default;
     ~SkillFactory() = default;
 
-    static BaseSkill* Create(int32_t id);
+    static Skill* Create(int32_t id);
 }; 
