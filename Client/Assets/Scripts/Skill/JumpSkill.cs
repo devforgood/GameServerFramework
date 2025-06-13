@@ -1,19 +1,19 @@
 using System.Collections;
 using UnityEngine;
 
-public class JumpSkill : BaseSkill
+public class JumpSkill : Skill
 {
     public float jumpDuration = 1f;
     public float jumpHeight = 3f;
     public string Name => "Jump";
     private Coroutine jumpCoroutine;
 
-    public void OnSelect(GameInputManager context) { }
-    public void OnDeselect(GameInputManager context) { }
+    override public void OnSelect(GameInputManager context) { }
+    override public void OnDeselect(GameInputManager context) { }
 
-    public void OnSkillButtonDown(GameInputManager context)
+    override public void OnSkillButtonDown(GameInputManager context)
     {
-        // Á¡ÇÁ´Â ¹öÆ° Down¿¡¼­¸¸ ¹ßµ¿
+        // ì í”„ëŠ” ë²„íŠ¼ Downì—ì„œë§Œ ë°œë™
         Vector3? dest = context.GetMouseGroundPosition();
         if (dest.HasValue && !context.IsSkillActive)
         {
@@ -23,15 +23,15 @@ public class JumpSkill : BaseSkill
         }
     }
 
-    public void OnSkillButtonUp(GameInputManager context) { }
+    override public void OnSkillButtonUp(GameInputManager context) { }
 
-    public void Update(GameInputManager context) { }
+    override public void Update(GameInputManager context) { }
 
     private IEnumerator JumpToPosition(GameInputManager context, Vector3 start, Vector3 end, float duration, float height)
     {
         float time = 0;
-        float dropPoint = 0.7f; // »ó½Â ±¸°£ ºñÀ² (0~1)
-        float fallDuration = duration * (1f - dropPoint); // ÇÏ°­ ±¸°£ ½Ã°£
+        float dropPoint = 0.7f; // ìƒìŠ¹ êµ¬ê°„ ë¹„ìœ¨ (0~1)
+        float fallDuration = duration * (1f - dropPoint); // í•˜ê°• êµ¬ê°„ ì‹œê°„
         Vector3 lastPos = start;
 
         while (time < duration)
@@ -41,12 +41,12 @@ public class JumpSkill : BaseSkill
 
             if (t < dropPoint)
             {
-                // ÃµÃµÈ÷ »ó½Â (°î¼± Á¶Á¤ °¡´É)
+                // ì²œì²œíˆ ìƒìŠ¹ (ê³¡ì„  ì¡°ì • ê°€ëŠ¥)
                 yOffset = Mathf.Lerp(0, height, t / dropPoint);
             }
             else
             {
-                // ¿Ï¸¸ÇÏ°Ô ÇÏ°­ (¼±Çü ÇÏ°­)
+                // ì™„ë§Œí•˜ê²Œ í•˜ê°• (ì„ í˜• í•˜ê°•)
                 float fallT = (t - dropPoint) / (1f - dropPoint); // 0~1
                 yOffset = Mathf.Lerp(height, 0, fallT);
             }
@@ -57,7 +57,7 @@ public class JumpSkill : BaseSkill
             time += Time.deltaTime;
             yield return null;
         }
-        // ¸¶Áö¸· À§Ä¡´Â ÂøÁöÁ¡
+        // ë§ˆì§€ë§‰ ìœ„ì¹˜ëŠ” ì°©ì§€ì 
         context.PlayerPosition = end;
         context.IsSkillActive = false;
     }

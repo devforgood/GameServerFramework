@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-public interface BaseItem
+public class Item
 {
+    public Gamedata.Item gamedata { get; set; }
+
 }

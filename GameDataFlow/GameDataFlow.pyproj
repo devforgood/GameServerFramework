@@ -26,6 +26,7 @@
     <Compile Include="generate_factory.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="build.bat" />
     <Content Include="gamedata.proto" />
     <Content Include="templates\Factory.cpp.j2" />
     <Content Include="templates\Factory.cs.j2" />

@@ -8,11 +8,19 @@ enum skillProperties
 	SKILL_JUMP = 1,
 };
 
+namespace gamedata
+{
+	class Skill; // Forward declaration of gamedata::Skill
+}
+
 class Actor; // Forward declaration
 class Vector3; // Forward declaration
 
 class Skill
 {
+public:
+	const gamedata::Skill* gamedata; // Pointer to gamedata for skill information
+
 protected:
 	int skill_id_;
 	std::vector<int> skill_properties_;

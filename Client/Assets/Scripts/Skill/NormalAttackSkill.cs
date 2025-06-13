@@ -1,7 +1,7 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
-public class NormalAttackSkill : BaseSkill
+public class NormalAttackSkill : Skill
 {
     public float jumpDuration = 1f;
     public float jumpHeight = 3f;
@@ -21,7 +21,7 @@ public class NormalAttackSkill : BaseSkill
     private Vector3 originalWeaponPosition;
     private bool isSwinging = false;
 
-    public void OnSelect(GameInputManager context) 
+    override public void OnSelect(GameInputManager context) 
     {
         Debug.Log($"[NormalAttackSkill] OnSelect");
         isSelected = true;
@@ -62,7 +62,7 @@ public class NormalAttackSkill : BaseSkill
         }
     }
 
-    public void OnDeselect(GameInputManager context) 
+    override public void OnDeselect(GameInputManager context) 
     {
         Debug.Log($"[NormalAttackSkill] OnDeselect");
         isSelected = false;
@@ -84,7 +84,7 @@ public class NormalAttackSkill : BaseSkill
         isSwinging = false;
     }
 
-    public void OnSkillButtonDown(GameInputManager context)
+    override public void OnSkillButtonDown(GameInputManager context)
     {
         Debug.Log($"[NormalAttackSkill] OnSkillButtonDown - isSelected: {isSelected}, isSwinging: {isSwinging}");
 
@@ -127,9 +127,9 @@ public class NormalAttackSkill : BaseSkill
         }
     }
 
-    public void OnSkillButtonUp(GameInputManager context) { }
+    override public void OnSkillButtonUp(GameInputManager context) { }
 
-    public void Update(GameInputManager context) 
+    override public void Update(GameInputManager context) 
     {
         if (isSelected)
         {

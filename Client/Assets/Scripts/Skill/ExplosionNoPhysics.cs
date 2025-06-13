@@ -1,20 +1,21 @@
 using System.Collections;
 using UnityEngine;
 
-public class ExplosionNoPhysics : BaseSkill
+public class ExplosionNoPhysics : Skill
 {
     public string Name => "ExplosionNoPhysics";
 
     public float radius = 5f;
     public float explosionForce = 15f;
-    public AnimationCurve forceOverDistance; // °Å¸®º° Èû Á¶Àı¿ë Ä¿ºê (¼±ÅÃ)
-    public float explosionDelay = 0.1f;      // Æø¹ß ¿¬Ãâ¿ë µô·¹ÀÌ(¼±ÅÃ)
-    public float upwardPowerRatio = 0.7f;    // À§·Î ¼Ú±¸Ä¡´Â Èû ºñÀ²
+    public AnimationCurve forceOverDistance; // ê±°ë¦¬ë³„ í˜ ì¡°ì ˆìš© ì»¤ë¸Œ (ì„ íƒ)
+    public float explosionDelay = 0.1f;      // í­ë°œ ì—°ì¶œìš© ë”œë ˆì´(ì„ íƒ)
+    public float upwardPowerRatio = 0.7f;    // ìœ„ë¡œ ì†Ÿêµ¬ì¹˜ëŠ” í˜ ë¹„ìœ¨
 
     private Coroutine explosionCoroutine;
 
-    public void OnSelect(GameInputManager context) { }
-    public void OnDeselect(GameInputManager context)
+    override public void OnSelect(GameInputManager context) { }
+
+    override public void OnDeselect(GameInputManager context)
     {
         if (explosionCoroutine != null)
         {
@@ -23,12 +24,12 @@ public class ExplosionNoPhysics : BaseSkill
         }
     }
 
-    public void OnSkillButtonDown(GameInputManager context)
+    override public void OnSkillButtonDown(GameInputManager context)
     {
         Vector3? pos = context.GetMouseGroundPosition();
         if (pos.HasValue)
         {
-            // ±âÁ¸ ÄÚ·çÆ¾ÀÌ ÀÖ´Ù¸é ÁßÁö
+            // ê¸°ì¡´ ì½”ë£¨í‹´ì´ ìˆë‹¤ë©´ ì¤‘ì§€
             if (explosionCoroutine != null)
                 context.StopCoroutine(explosionCoroutine);
 
@@ -36,8 +37,8 @@ public class ExplosionNoPhysics : BaseSkill
         }
     }
 
-    public void OnSkillButtonUp(GameInputManager context) { }
-    public void Update(GameInputManager context) { }
+    override public void OnSkillButtonUp(GameInputManager context) { }
+    override public void Update(GameInputManager context) { }
 
     private IEnumerator ExplosionRoutine(Vector3 position, GameInputManager context)
     {
@@ -58,7 +59,7 @@ public class ExplosionNoPhysics : BaseSkill
                 if (forceOverDistance != null && forceOverDistance.keys.Length > 0)
                     power *= forceOverDistance.Evaluate(1 - distanceRatio);
 
-                // À§·Î ¼Ú±¸Ä¡´Â ÈûÀ» ¸íÈ®È÷ Ãß°¡
+                // ìœ„ë¡œ ì†Ÿêµ¬ì¹˜ëŠ” í˜ì„ ëª…í™•íˆ ì¶”ê°€
                 Vector3 force = dir * power;
                 force.y = Mathf.Abs(force.y) + power * upwardPowerRatio;
 
@@ -69,7 +70,7 @@ public class ExplosionNoPhysics : BaseSkill
         explosionCoroutine = null;
     }
 
-    // À¯´ÖÀ» ¼Ú¾Æ¿À¸£°Ô ÇÏ´Â ÄÚ·çÆ¾
+    // ìœ ë‹›ì„ ì†Ÿì•„ì˜¤ë¥´ê²Œ í•˜ëŠ” ì½”ë£¨í‹´
     private IEnumerator JumpUp(FakePhysicsUnit unit, Vector3 velocity, float duration, float height)
     {
         Vector3 start = unit.transform.position;
@@ -82,10 +83,10 @@ public class ExplosionNoPhysics : BaseSkill
         while (time < randomDuration)
         {
             float t = time / randomDuration;
-            // Æ÷¹°¼± ±ËÀû
+            // í¬ë¬¼ì„  ê¶¤ì 
             float yOffset = 4f * randomHeight * t * (1 - t);
             unit.transform.position = Vector3.Lerp(start, end, t) + Vector3.up * yOffset;
-            // È¸Àü È¿°ú
+            // íšŒì „ íš¨ê³¼
             unit.transform.Rotate(Vector3.up, 180f * Time.deltaTime);
             time += Time.deltaTime;
             yield return null;

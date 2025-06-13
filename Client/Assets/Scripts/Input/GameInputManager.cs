@@ -1,4 +1,4 @@
-﻿using syncnet;
+using syncnet;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -13,8 +13,8 @@ public class GameInputManager : MonoBehaviour
     public Vector3? targetPosition = null;
 
     // 스킬 관리
-    private Dictionary<KeyCode, BaseSkill> skillKeyMap = new Dictionary<KeyCode, BaseSkill>();
-    private BaseSkill currentSkill = null;
+    private Dictionary<KeyCode, Skill> skillKeyMap = new Dictionary<KeyCode, Skill>();
+    private Skill currentSkill = null;
     public bool IsSkillActive { get; set; } = false;
 
     public Transform PlayerTransform => playerTransform;

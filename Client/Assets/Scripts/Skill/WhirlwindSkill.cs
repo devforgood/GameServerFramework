@@ -2,7 +2,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class WhirlwindSkill : BaseSkill
+public class WhirlwindSkill : Skill
 {
 
     public float whirlwindSpeed = 5f;
@@ -11,8 +11,8 @@ public class WhirlwindSkill : BaseSkill
     private Coroutine whirlwindCoroutine;
     private Vector3 target;
 
-    public void OnSelect(GameInputManager context) { }
-    public void OnDeselect(GameInputManager context)
+    override public void OnSelect(GameInputManager context) { }
+    override public void OnDeselect(GameInputManager context)
     {
         if (whirlwindCoroutine != null)
         {
@@ -22,7 +22,7 @@ public class WhirlwindSkill : BaseSkill
         }
     }
 
-    public void OnSkillButtonDown(GameInputManager context)
+    override public void OnSkillButtonDown(GameInputManager context)
     {
         Vector3? dest = context.GetMouseGroundPosition();
         if (dest.HasValue && !context.IsSkillActive)
@@ -34,7 +34,7 @@ public class WhirlwindSkill : BaseSkill
         }
     }
 
-    public void OnSkillButtonUp(GameInputManager context)
+    override public void OnSkillButtonUp(GameInputManager context)
     {
         if (whirlwindCoroutine != null)
         {
@@ -44,7 +44,7 @@ public class WhirlwindSkill : BaseSkill
         }
     }
 
-    public void Update(GameInputManager context)
+    override public void Update(GameInputManager context)
     {
         if (context.IsSkillActive && Input.GetMouseButton(1))
         {

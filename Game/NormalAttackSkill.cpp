@@ -25,13 +25,6 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 		return -1; // Already casting a skill
 	}
 
-	// ResourceLoader에서 스킬 정보 로드
-	auto skill_data = ResourceLoader::Instance().GetSkills(1); // 1은 기본 공격 스킬 ID
-	if (!skill_data) {
-		LOG.error("Failed to load skill data for NormalAttackSkill.");
-		return -1; // 스킬 데이터 로드 실패
-	}
-
 
 	// 공격 방향 설정 (메시지의 target_position을 기반으로)
 	Vector3 actor_pos = actor->get_position();
@@ -40,11 +33,11 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	// 캐릭터를 목표 지점 방향으로 회전
 	actor->rotate_to_target(target_pos, serverClientTimeOffset);
 
-	double damage = actor->world()->random_util()->GetRandomDouble(skill_data->min_damage(), skill_data->max_damage());
+	double damage = actor->world()->random_util()->GetRandomDouble(gamedata->min_damage(), gamedata->max_damage());
 	
 
 	// GridManager를 통해 범위 내 대상 검색
-	std::vector<Actor*> actors_in_range = actor->world()->get_actors_in_range(actor, skill_data->range(), skill_data->angle());
+	std::vector<Actor*> actors_in_range = actor->world()->get_actors_in_range(actor, gamedata->range(), gamedata->angle());
 
 	// 부채꼴 범위 내 대상에게 데미지 적용
 	for (auto target : actors_in_range) {

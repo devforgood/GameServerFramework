@@ -4,12 +4,12 @@
 
 #include <memory>
 #include <string>
-#include "BaseItem.h"
+#include "Item.h"
 
 class ItemFactory {
 public:
     ItemFactory() = default;
     ~ItemFactory() = default;
 
-    static BaseItem* Create(int32_t id);
+    static Item* Create(int32_t id);
 }; 

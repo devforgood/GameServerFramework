@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -55,15 +55,15 @@ namespace Assets.Scripts.GameData
         {
             Debug.Log("ResourceLoader initialized.");
 
-            of("GameData/skill", bytes => SkillList.Parser.ParseFrom(bytes), skillList => skillList.Skills, skill=>skill.Id, skills);
-            of("GameData/item", bytes => ItemList.Parser.ParseFrom(bytes), itemList => itemList.Items, item=>item.Id, items);
+            of("GameData/skill", bytes => SkillList.Parser.ParseFrom(bytes), skillList => skillList.Skills, skill=>skill.Id, Skills);
+            of("GameData/item", bytes => ItemList.Parser.ParseFrom(bytes), itemList => itemList.Items, item=>item.Id, Items);
 
             // 게임 데이터 로드가 완료되었음을 로그로 남김
             Debug.Log("ResourceLoader: Game data loaded successfully.");
 
         }
 
-        public Dictionary<int, Gamedata.Skill> skills = new Dictionary<int, Gamedata.Skill>();
-        public Dictionary<int, Gamedata.Item> items = new Dictionary<int, Gamedata.Item>();
+        public Dictionary<int, Gamedata.Skill> Skills = new Dictionary<int, Gamedata.Skill>();
+        public Dictionary<int, Gamedata.Item> Items = new Dictionary<int, Gamedata.Item>();
     }
 }

@@ -341,7 +341,7 @@ public class Session : MonoBehaviour
             return;
         }
 		Gamedata.Skill resSkill = null;
-		if(!GameManager.Instance.resource.skills.TryGetValue(skillId, out resSkill))
+		if(!GameManager.Instance.resource.Skills.TryGetValue(skillId, out resSkill))
 		{
 			Debug.LogError($"Skill with ID {skillId} not found in resource skills.");
 			return;

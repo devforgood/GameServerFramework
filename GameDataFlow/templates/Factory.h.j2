@@ -4,12 +4,12 @@
 
 #include <memory>
 #include <string>
-#include "Base{{table_name}}.h"
+#include "{{table_name}}.h"
 
 class {{table_name}}Factory {
 public:
     {{table_name}}Factory() = default;
     ~{{table_name}}Factory() = default;
 
-    static Base{{table_name}}* Create(int32_t id);
+    static {{table_name}}* Create(int32_t id);
 }; 
