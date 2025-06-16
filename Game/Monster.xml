@@ -1,18 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <root BTCPP_format="4" >
 
   <BehaviorTree ID="MainTree">
     <Fallback>
       <Sequence>
-        <ConditionDetectEnemy/>
+        <ConditionCheckHealth/>
         <Fallback>
           <Sequence>
-            <ConditionAttackRange/>
-            <ActionAttack/>
+            <ConditionDetectEnemy/>
+            <Fallback>
+              <Sequence>
+                <ConditionAttackRange/>
+                <ActionAttack/>
+              </Sequence>
+              <ActionChase/>
+            </Fallback>
           </Sequence>
-          <ActionChase/>
+          <ActionPatrol/>
         </Fallback>
       </Sequence>
-      <ActionPatrol/>
+      <Sequence>
+        <ActionDead/>
+        <Delay duration="2.0">
+          <ActionDestroyed/>
+        </Delay>
+      </Sequence>
     </Fallback>
   </BehaviorTree>
 

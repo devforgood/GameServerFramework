@@ -41,4 +41,15 @@ public class Actor : MonoBehaviour
         health = Mathf.Clamp(health - damage, 0, 100);
         UpdateHealthUI(health);
     }
+
+    public void UpdateState(syncnet.AIState newState)
+    {
+        state = newState;
+        // 추가적인 상태 변경 로직이 필요할 경우 여기에 작성
+        // 부모 오브젝트를 찾아서 파괴
+        if (transform.parent != null)
+        {
+            Destroy(transform.parent.gameObject);
+        }
+    }
 }

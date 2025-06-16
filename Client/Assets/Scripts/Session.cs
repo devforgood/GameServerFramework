@@ -181,7 +181,7 @@ public class Session : MonoBehaviour
 
 		if (updatedActor.State.HasValue)
 		{
-			actor.state = updatedActor.State.Value.State;
+			actor.UpdateState(updatedActor.State.Value.State);
 		}
 		if (updatedActor.Health.HasValue)
 		{

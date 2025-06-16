@@ -121,6 +121,63 @@ public:
 	}
 };
 
+class ConditionCheckHealth : public BT::ConditionNode
+{
+private:
+	Monster* monster_;
+
+public:
+	ConditionCheckHealth(const std::string& name, const BT::NodeConfig& config, Monster* monster) : 
+		BT::ConditionNode(name, config), monster_(monster)
+	{
+	}
+
+	BT::NodeStatus tick() override
+	{
+
+		// 체력이 0보다 크면 성공, 아니면 실패
+		return monster_->health() > 0 ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
+	}
+};
+
+class ActionDead : public BT::SyncActionNode
+{
+private:
+	Monster* monster_;
+
+public:
+	ActionDead(const std::string& name, const BT::NodeConfig& config, Monster* monster) :
+		BT::SyncActionNode(name, config), monster_(monster)
+	{
+	}
+
+	BT::NodeStatus tick() override
+	{
+		// 사망 상태로 변경
+		monster_->SetState(syncnet::AIState::AIState_Dead);
+		return BT::NodeStatus::SUCCESS;
+	}
+};
+
+class ActionDestroyed : public BT::SyncActionNode
+{
+private:
+	Monster* monster_;
+
+public:
+	ActionDestroyed(const std::string& name, const BT::NodeConfig& config, Monster* monster) :
+		BT::SyncActionNode(name, config), monster_(monster) 
+	{
+	}
+
+	BT::NodeStatus tick() override
+	{
+		// 파괴 상태로 변경
+		monster_->SetState(syncnet::AIState::AIState_Destroyed);
+		return BT::NodeStatus::SUCCESS;
+	}
+};
+
 std::string loadFile(std::string filename) 
 {
 	try {
@@ -172,6 +229,18 @@ BT::Tree* MonsterBT::createTree(Monster* monster)
 		return std::make_unique<ActionAttack>(name, config, monster);
 		});
 
+	factory.registerBuilder<ConditionCheckHealth>("ConditionCheckHealth", [monster](const std::string& name, const BT::NodeConfig& config) {
+		return std::make_unique<ConditionCheckHealth>(name, config, monster);
+		});
+
+	factory.registerBuilder<ActionDead>("ActionDead", [monster](const std::string& name, const BT::NodeConfig& config) {
+		return std::make_unique<ActionDead>(name, config, monster);
+		});
+
+	factory.registerBuilder<ActionDestroyed>("ActionDestroyed", [monster](const std::string& name, const BT::NodeConfig& config) {	
+		return std::make_unique<ActionDestroyed>(name, config, monster);
+		});
+		
 
 	return new BT::Tree(factory.createTreeFromText(loadFile("Monster.xml")));
 

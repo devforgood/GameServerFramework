@@ -129,9 +129,15 @@ void World::SendWorldState()
 	auto builder_ptr = std::make_shared<send_message>();
 	flatbuffers::Offset<syncnet::ActorInfo> agent_info;
 	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agent_info_vector;
+	std::vector<int> removed_agents;
 	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
 	{
 		auto game_object = itr->get();
+		if (game_object->state() == syncnet::AIState::AIState_Destroyed) {
+			removed_agents.push_back(game_object->agent_id());
+			continue;
+		}
+
 		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(game_object->agent_id());
 		if (agent->active == false)
 			continue;
@@ -170,6 +176,11 @@ void World::SendWorldState()
 	builder_ptr->Finish(send_msg);
 
 	SendBroadcast(builder_ptr);
+
+	for (auto& agent_id : removed_agents)
+	{
+		OnRemoveAgent(agent_id);
+	}
 }
 
 void World::SendBroadcast(std::shared_ptr<send_message> msg) 
