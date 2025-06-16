@@ -226,4 +226,9 @@
       <Filter>data</Filter>
     </CopyFileToFolders>
   </ItemGroup>
+  <ItemGroup>
+    <Xml Include="Monster.xml">
+      <Filter>data</Filter>
+    </Xml>
+  </ItemGroup>
 </Project>

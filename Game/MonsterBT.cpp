@@ -2,8 +2,11 @@
 #include "behaviortree_cpp/bt_factory.h"
 #include "Monster.h"
 #include "World.h"
-
-
+#include "LogHelper.h"
+#include <fstream> // std::ifstream
+#include <sstream> // std::stringstream
+#include <memory> // std::unique_ptr
+#include <iostream> // std::cerr
 
 
 class ConditionDetectEnemy : public BT::ConditionNode
@@ -118,38 +121,37 @@ public:
 	}
 };
 
-// clang-format off
-static const char* xml_text = R"(
-
- <root BTCPP_format="4" >
-
-     <BehaviorTree ID="MainTree">
-        <Fallback>
-			<Sequence>
-				<ConditionDetectEnemy/>
-				<Fallback>
-					<Sequence>
-						<ConditionAttackRange/>
-						<ActionAttack/>
-					</Sequence>
-					<ActionChase/>
-				</Fallback>
-			</Sequence>
-			<ActionPatrol/>
-        </Fallback>
-     </BehaviorTree>
-
- </root>
- )";
-// clang-format on
-
+std::string loadFile(std::string filename) 
+{
+	try {
+		std::ifstream file(filename);
+		if (file)
+		{
+			std::stringstream buffer;
+			buffer << file.rdbuf();
+			return buffer.str();
+		}
+		else
+		{
+			LOG.error("%s file not found.", filename.c_str());
+			return nullptr;
+		}
+	}
+	catch (std::exception& e)
+	{
+		// ì¼ë°˜ ì˜ˆì™¸ ì²˜ë¦¬
+		LOG.error("Exception: " + std::string(e.what()));
+		return nullptr;
+	}
+	return nullptr;
+}
 
 
 BT::Tree* MonsterBT::createTree(Monster* monster) 
 {
 	BT::BehaviorTreeFactory factory;
 
-	// DetectEnemy ³ëµå¸¦ µî·ÏÇÒ ¶§ Monster Æ÷ÀÎÅÍ¸¦ Àü´Þ
+	// DetectEnemy ë…¸ë“œë¥¼ ë“±ë¡í•  ë•Œ Monster í¬ì¸í„°ë¥¼ ì „ë‹¬
 	factory.registerBuilder<ConditionDetectEnemy>("ConditionDetectEnemy", [monster](const std::string& name, const BT::NodeConfig& config) {
 		return std::make_unique<ConditionDetectEnemy>(name, config, monster);
 		});
@@ -170,6 +172,9 @@ BT::Tree* MonsterBT::createTree(Monster* monster)
 		return std::make_unique<ActionAttack>(name, config, monster);
 		});
 
-	return new BT::Tree(factory.createTreeFromText(xml_text));
+
+	return new BT::Tree(factory.createTreeFromText(loadFile("Monster.xml")));
 
 }
+
+

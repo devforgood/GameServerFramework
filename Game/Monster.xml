@@ -1,0 +1,19 @@
+<root BTCPP_format="4" >
+
+  <BehaviorTree ID="MainTree">
+    <Fallback>
+      <Sequence>
+        <ConditionDetectEnemy/>
+        <Fallback>
+          <Sequence>
+            <ConditionAttackRange/>
+            <ActionAttack/>
+          </Sequence>
+          <ActionChase/>
+        </Fallback>
+      </Sequence>
+      <ActionPatrol/>
+    </Fallback>
+  </BehaviorTree>
+
+</root>
