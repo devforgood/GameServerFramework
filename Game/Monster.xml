@@ -21,7 +21,7 @@
       </Sequence>
       <Sequence>
         <ActionDead/>
-        <Delay duration="2.0">
+        <Delay delay_msec="2000">
           <ActionDestroyed/>
         </Delay>
       </Sequence>

@@ -155,6 +155,7 @@ public:
 	{
 		// 사망 상태로 변경
 		monster_->SetState(syncnet::AIState::AIState_Dead);
+		LOG.info("Monster dead");
 		return BT::NodeStatus::SUCCESS;
 	}
 };
@@ -174,6 +175,7 @@ public:
 	{
 		// 파괴 상태로 변경
 		monster_->SetState(syncnet::AIState::AIState_Destroyed);
+		LOG.info("Monster destoryed");
 		return BT::NodeStatus::SUCCESS;
 	}
 };

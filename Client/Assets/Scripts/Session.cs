@@ -179,11 +179,7 @@ public class Session : MonoBehaviour
 		actor.pos = pos;
 		actor.input_locked = updatedActor.InputLocked;
 
-		if (updatedActor.State.HasValue)
-		{
-			actor.UpdateState(updatedActor.State.Value.State);
-		}
-		if (updatedActor.Health.HasValue)
+        if (updatedActor.Health.HasValue)
 		{
 			actor.health = updatedActor.Health.Value.Health;
 			actor.UpdateHealthUI(actor.health);
@@ -197,7 +193,13 @@ public class Session : MonoBehaviour
 		{
 			//Debug.Log($"Player Agent ID: {actor.agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
 		}
-	}
+
+        if (updatedActor.State.HasValue)
+        {
+            Debug.Log($"Actor state {updatedActor.State.Value.State}");
+            actor.UpdateState(updatedActor.State.Value.State);
+        }
+    }
 
 	private void UpdateMonsterVisuals(GameObject monster, AIState state)
 	{
