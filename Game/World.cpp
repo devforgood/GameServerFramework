@@ -135,7 +135,6 @@ void World::SendWorldState()
 		auto game_object = itr->get();
 		if (game_object->state() == syncnet::AIState::AIState_Destroyed) {
 			removed_agents.push_back(game_object->agent_id());
-			continue;
 		}
 
 		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(game_object->agent_id());

@@ -42,18 +42,16 @@ public class Actor : MonoBehaviour
         UpdateHealthUI(health);
     }
 
-    public void UpdateState(syncnet.AIState newState)
+    public void UpdateState(GameObject game_object, syncnet.AIState newState)
     {
         state = newState;
         // 추가적인 상태 변경 로직이 필요할 경우 여기에 작성
         // 부모 오브젝트를 찾아서 파괴
         if (state == syncnet.AIState.Destroyed)
         {
-            if (transform.parent != null)
-            {
-                // 파괴 하지 않고 비활성화
-                transform.parent.gameObject.SetActive(false);
-            }
+
+            // 파괴 하지 않고 비활성화
+            game_object.SetActive(false);
         }
     }
 }

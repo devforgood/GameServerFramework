@@ -131,7 +131,7 @@ public class Session : MonoBehaviour
 
 			if (actor != null)
 			{
-				UpdateActorState(actor, updatedActor, pos);
+				UpdateActorState(game_object, actor, updatedActor, pos);
 			}
 		}
 
@@ -174,7 +174,7 @@ public class Session : MonoBehaviour
 		return game_object;
 	}
 
-	private void UpdateActorState(Actor actor, syncnet.ActorInfo updatedActor, Vector3 pos)
+	private void UpdateActorState(GameObject game_object, Actor actor, syncnet.ActorInfo updatedActor, Vector3 pos)
 	{
 		actor.pos = pos;
 		actor.input_locked = updatedActor.InputLocked;
@@ -187,7 +187,10 @@ public class Session : MonoBehaviour
 
 		if (updatedActor.GameObjectType == GameObjectType.Monster)
 		{
-			UpdateMonsterVisuals(actor.gameObject, updatedActor.State.Value.State);
+			if (updatedActor.State.HasValue)
+			{
+				UpdateMonsterVisuals(actor.gameObject, updatedActor.State.Value.State);
+			}
 		}
 		else if (updatedActor.GameObjectType == GameObjectType.Character)
 		{
@@ -197,7 +200,7 @@ public class Session : MonoBehaviour
         if (updatedActor.State.HasValue)
         {
             Debug.Log($"Actor state {updatedActor.State.Value.State}");
-            actor.UpdateState(updatedActor.State.Value.State);
+            actor.UpdateState(game_object, updatedActor.State.Value.State);
         }
     }
 
