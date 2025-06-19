@@ -37,13 +37,13 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	
 
 	// GridManager를 통해 범위 내 대상 검색
-	std::vector<Actor*> actors_in_range = actor->world()->get_actors_in_range(actor, gamedata->range(), gamedata->angle());
+	std::vector<IGridActor*> actors_in_range = actor->world()->get_actors_in_range(actor, gamedata->range(), gamedata->angle());
 
 	// 부채꼴 범위 내 대상에게 데미지 적용
 	for (auto target : actors_in_range) {
 		if (target && target != actor) {
 			// 데미지 적용
-			target->decrement_health(damage);
+			target->decrementHealth(damage);
 		}
 	}
 

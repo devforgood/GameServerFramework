@@ -1,9 +1,10 @@
-﻿#pragma once
+#pragma once
 #include "GameObject.h"
 #include "SendMessage.h"
 #include "Vector3.h"
+#include "..\Engine\IGridActor.h"
 
-class Actor : public GameObject
+class Actor : public GameObject, public IGridActor
 {
 protected:
 	int agent_id_ = -1;
@@ -12,6 +13,7 @@ protected:
 	float rotation_speed_ = 5.0f; // 회전 속도 (초당 회전 각도)
 	Vector3 position_;        // 위치 정보를 protected로 이동
 	int health_ = 100;
+	syncnet::GameObjectType game_object_type_;
 
 public:
 	Actor(World* world) : GameObject(world), front_vector_(0, 0, 1)  // 초기 방향은 z축 양의 방향
@@ -28,6 +30,45 @@ public:
 		position_.set(x, y, z);
 		change_flag_ |= static_cast<long>(GameObjectChangeType::Position);
 	};
+
+	virtual bool isCharacter() const
+	{
+		return game_object_type_ == syncnet::GameObjectType::GameObjectType_Character;
+	}
+
+	virtual void setGridX(int gridX)
+	{
+		this->gridX = gridX; 
+	}
+	virtual void setGridY(int gridY)
+	{
+		this->gridY = gridY; 
+	}
+	virtual int getGridX() const
+	{ 
+		return gridX; 
+	}
+	virtual int getGridY() const
+		{ 
+		return gridY; 
+	}
+	virtual float getVector2X() const
+	{
+		return get_vecter2_x();
+	}
+	virtual float getVector2Y() const
+	{
+		return get_vecter2_y();
+	}
+	virtual int getAgentID() const
+	{ 
+		return agent_id_; 
+	}
+
+	virtual void decrementHealth(int amount)
+	{ 
+		decrement_health(amount); 
+	}
 
 	// 위치 얻기
 	const Vector3& get_position() const { return position_; }

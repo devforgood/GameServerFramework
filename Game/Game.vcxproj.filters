@@ -78,7 +78,6 @@
     <ClCompile Include="SQL\generated\dao.cpp">
       <Filter>SQL</Filter>
     </ClCompile>
-    <ClCompile Include="GridManager.cpp" />
     <ClCompile Include="Actor.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
@@ -179,7 +178,6 @@
     <ClInclude Include="SQL\generated\dao.h">
       <Filter>SQL</Filter>
     </ClInclude>
-    <ClInclude Include="GridManager.h" />
     <ClInclude Include="Actor.h">
       <Filter>GameObject</Filter>
     </ClInclude>

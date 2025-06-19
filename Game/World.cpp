@@ -10,7 +10,7 @@
 #include "DetourCommon.h"
 #include "MathHelper.h"
 #include "Player.h"
-#include "GridManager.h"
+#include "..\Engine\GridManager.h"
 #include "GameObjectFactory.h"
 #include "TimeStamp.h"
 #include "RandomUtil.h"
@@ -269,15 +269,15 @@ int World::DetectEnemy(Actor * actor)
 
 	for (auto itr = targets.begin(); itr != targets.end(); ++itr)
 	{
-		if ((*itr)->type() != syncnet::GameObjectType_Character)
+		if (!(*itr)->isCharacter())
 			continue;
 
-		const dtCrowdAgent* agent = this->map()->crowd()->getAgent((*itr)->agent_id());
+		const dtCrowdAgent* agent = this->map()->crowd()->getAgent((*itr)->getAgentID());
 
 
 		if (this->map()->raycast(actor->agent_id(), agent->npos, hitPoint) == false)
 		{
-			return (*itr)->agent_id();
+			return (*itr)->getAgentID();
 		}
 	}
 	return -1;
@@ -286,7 +286,7 @@ int World::DetectEnemy(Actor * actor)
 
 
 
-std::vector<Actor*> World::get_actors_in_range(Actor* actor, float range, float angle) 
+std::vector<IGridActor*> World::get_actors_in_range(Actor* actor, float range, float angle) 
 { 
 	return grid_manager_->getEntitiesInAoEMask(actor->get_vecter2_x(), actor->get_vecter2_y(), range, angle);
 }

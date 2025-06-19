@@ -1,6 +1,4 @@
-﻿#include "GridManager.h"
-#include "Actor.h"
-#include "LogHelper.h"
+#include "GridManager.h"
 #include <array>
 #include <immintrin.h> // SIMD(Single Instruction Multiple Data) 연산을 위한 헤더
 
@@ -162,54 +160,54 @@ std::pair<int, int> GridManager::getCellCoord(float x, float y) {
     return { static_cast<int>(x+NEGATIVE_VALUE_OFFSET) / grid_->getCellSize(), static_cast<int>(y + NEGATIVE_VALUE_OFFSET) / grid_->getCellSize() };
 }
 
-void GridManager::enterCell(Actor* actor, int x, int y) {
+void GridManager::enterCell(IGridActor* actor, int x, int y) {
     if (x < 0 || x >= grid_->getWidth() || y < 0 || y >= grid_->getHeight()) return;
 
     auto& cell = grid_->get(x, y);
-    if (actor->type() == syncnet::GameObjectType::GameObjectType_Character)
+    if (actor->isCharacter())
         cell.characters.insert(actor);
     else
         cell.monsters.insert(actor);
 
-    LOG.info("Actor {} entered cell ({}, {})", actor->agent_id(), x, y);
+    //LOG.info("Actor {} entered cell ({}, {})", actor->agent_id(), x, y);
 }
 
-void GridManager::leaveCell(Actor* actor, int x, int y) {
+void GridManager::leaveCell(IGridActor* actor, int x, int y) {
     if (x < 0 || x >= grid_->getWidth() || y < 0 || y >= grid_->getHeight()) return;
 
     auto& cell =  grid_->get(x, y);;
-    if (actor->type() == syncnet::GameObjectType::GameObjectType_Character)
+    if (actor->isCharacter())
         cell.characters.erase(actor);
     else
         cell.monsters.erase(actor);
 
-    LOG.info("Actor {} left cell ({}, {})", actor->agent_id(), x, y);
+    //LOG.info("Actor {} left cell ({}, {})", actor->agent_id(), x, y);
 }
 
-void GridManager::add(Actor* actor) {
-    auto [cx, cy] = getCellCoord(actor->get_vecter2_x(), actor->get_vecter2_y());
-    actor->gridX = cx;
-    actor->gridY = cy;
+void GridManager::add(IGridActor* actor) {
+    auto [cx, cy] = getCellCoord(actor->getVector2X(), actor->getVector2Y());
+    actor->setGridX(cx);
+    actor->setGridY(cy);
     enterCell(actor, cx, cy);
 }
 
-void GridManager::move(Actor* actor, float newX, float newY) {
+void GridManager::move(IGridActor* actor, float newX, float newY) {
     auto [newCX, newCY] = getCellCoord(newX, newY);
-    if (newCX != actor->gridX || newCY != actor->gridY) {
-        leaveCell(actor, actor->gridX, actor->gridY);
+    if (newCX != actor->getGridX() || newCY != actor->getGridY()) {
+        leaveCell(actor, actor->getGridX(), actor->getGridY());
         enterCell(actor, newCX, newCY);
-        actor->gridX = newCX;
-        actor->gridY = newCY;
+        actor->setGridX(newCX);
+        actor->setGridY(newCY);
     }
 }
 
-void GridManager::remove(Actor* actor) {
-    leaveCell(actor, actor->gridX, actor->gridY);
+void GridManager::remove(IGridActor* actor) {
+    leaveCell(actor, actor->getGridX(), actor->getGridY());
 }
 
-std::vector<Actor*> GridManager::getEntitiesInViewRange(Actor* viewer, float range) {
-    std::vector<Actor*> result;
-    auto [cx, cy] = getCellCoord(viewer->get_vecter2_x(), viewer->get_vecter2_y());
+std::vector<IGridActor*> GridManager::getEntitiesInViewRange(IGridActor* viewer, float range) {
+    std::vector<IGridActor*> result;
+    auto [cx, cy] = getCellCoord(viewer->getVector2X(), viewer->getVector2Y());
     int cells = static_cast<int>(std::ceil(range / grid_->getCellSize()));
 
     for (int dx = -cells; dx <= cells; ++dx) {
@@ -231,13 +229,13 @@ std::vector<Actor*> GridManager::getEntitiesInViewRange(Actor* viewer, float ran
 void GridManager::broadcastToNearby(float x, float y, float range, const std::string& msg) {
     auto entities = getEntitiesInAoEMask(x, y, range, 0);
     for (auto* e : entities) {
-        std::cout << "Broadcast to Entity " << e->agent_id() << ": " << msg << "\n";
+        std::cout << "Broadcast to Entity " << e->getAgentID() << ": " << msg << "\n";
     }
 }
 
 // ===== AoE(Area of Effect) 범위 내의 엔티티들을 찾는 함수 =====
-std::vector<Actor*> GridManager::getEntitiesInAoEMask(float x, float y, float range, float angle) {
-    std::vector<Actor*> result;
+std::vector<IGridActor*> GridManager::getEntitiesInAoEMask(float x, float y, float range, float angle) {
+    std::vector<IGridActor*> result;
     auto [cx, cy] = getCellCoord(x, y);  // 중심점의 그리드 좌표 계산
     int cells = static_cast<int>(std::ceil(range / grid_->getCellSize()));  // 검사할 셀의 범위 계산
 
@@ -251,7 +249,7 @@ std::vector<Actor*> GridManager::getEntitiesInAoEMask(float x, float y, float ra
     alignas(32) float x_coords[MAX_BATCH_SIZE];    // x 좌표 배열 (32바이트 정렬)
     alignas(32) float y_coords[MAX_BATCH_SIZE];    // y 좌표 배열 (32바이트 정렬)
     alignas(32) float distances_sq[MAX_BATCH_SIZE]; // 거리 제곱 배열 (32바이트 정렬)
-    std::vector<Actor*> batch_actors;              // 배치 처리할 엔티티들의 임시 저장소
+    std::vector<IGridActor*> batch_actors;              // 배치 처리할 엔티티들의 임시 저장소
     batch_actors.reserve(MAX_BATCH_SIZE);
 
     // 주변 셀들을 순회
@@ -275,9 +273,9 @@ std::vector<Actor*> GridManager::getEntitiesInAoEMask(float x, float y, float ra
 
                 // 현재 배치의 좌표들을 배열에 수집
                 for (size_t i = 0; i < batch_size; ++i) {
-                    Actor* e = batch_actors[batch_start + i];
-                    x_coords[i] = e->get_vecter2_x();
-                    y_coords[i] = e->get_vecter2_y();
+                    IGridActor* e = batch_actors[batch_start + i];
+                    x_coords[i] = e->getVector2X();
+                    y_coords[i] = e->getVector2Y();
                 }
 
                 // SIMD를 사용하여 거리 계산
@@ -286,7 +284,7 @@ std::vector<Actor*> GridManager::getEntitiesInAoEMask(float x, float y, float ra
                 // 각 엔티티에 대한 결과 처리
                 for (size_t i = 0; i < batch_size; ++i) {
                     if (distances_sq[i] <= rangeSq) {  // 거리가 범위 내에 있는 경우
-                        Actor* e = batch_actors[batch_start + i];
+                        IGridActor* e = batch_actors[batch_start + i];
                         if (isFullCircle) {  // 완전한 원형인 경우
                             result.push_back(e);
                         } else {  // 부채꼴인 경우

@@ -156,7 +156,6 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GameObjectFactory.cpp" />
-    <ClCompile Include="GridManager.cpp" />
     <ClCompile Include="JumpSkill.cpp" />
     <ClCompile Include="LuaObject.cpp" />
     <ClCompile Include="Map.cpp" />
@@ -194,6 +193,9 @@
     <ProjectReference Include="..\BehaviorTree\BehaviorTree.vcxproj">
       <Project>{f441c4b3-58a8-4627-b07c-264c21891861}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Engine\Engine.vcxproj">
+      <Project>{9359d49d-1f4d-4140-a684-6a1fc6bc9c8d}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\GameDataProtobuf\GameDataProtobuf.vcxproj">
       <Project>{e4b71ef2-efbd-456c-b30d-22d40f00c989}</Project>
     </ProjectReference>
@@ -208,7 +210,6 @@
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameObjectChangeTypeOperators.h" />
     <ClInclude Include="GameObjectFactory.h" />
-    <ClInclude Include="GridManager.h" />
     <ClInclude Include="JumpSkill.h" />
     <ClInclude Include="LogHelper.h" />
     <ClInclude Include="LuaObject.h" />
