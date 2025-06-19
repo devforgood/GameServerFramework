@@ -1,4 +1,4 @@
-﻿#include "Monster.h"
+#include "Monster.h"
 #include <random>
 #include <functional>
 #include "World.h"
@@ -19,7 +19,7 @@ extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::defau
 Monster::Monster(World* world)
 	: Actor(world), bt_(nullptr), tree_(nullptr)
 {
-
+	game_object_type_ = syncnet::GameObjectType::GameObjectType_Monster;
 }
 
 Monster::~Monster()

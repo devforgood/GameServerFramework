@@ -17,6 +17,7 @@ Character::Character(World* world) : Actor(world)
 	}
 
 	is_input_locked_ = false;
+	game_object_type_ = syncnet::GameObjectType::GameObjectType_Character;
 }
 
 Character::~Character() 

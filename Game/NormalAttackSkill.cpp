@@ -3,7 +3,6 @@
 #include "World.h"
 #include "Vector3.h"
 #include "LogHelper.h"
-#include "GridManager.h"
 #include "Common.h"
 #include "RandomUtil.h"
 

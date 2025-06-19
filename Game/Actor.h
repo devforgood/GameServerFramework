@@ -147,6 +147,8 @@ public:
 	float get_vecter2_x() const { return position_.get_vecter2_x(); }
 	float get_vecter2_y() const { return position_.get_vecter2_y(); }
 
+	virtual syncnet::GameObjectType type() { return game_object_type_; }
+
 public:
 	int gridX = -1;
 	int gridY = -1;

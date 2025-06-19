@@ -14,7 +14,7 @@ public:
 	Character(World* world);
 	virtual ~Character();
 
-	virtual syncnet::GameObjectType type() { return syncnet::GameObjectType::GameObjectType_Character; }
+
 
 	void set_player_id(long player_id)
 	{

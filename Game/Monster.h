@@ -32,7 +32,6 @@ public:
 	Monster(World * world);
 	virtual ~Monster();
 	virtual void update(float dt);
-	virtual syncnet::GameObjectType type() { return syncnet::GameObjectType::GameObjectType_Monster; }
 	virtual bool init(Vector3& pos) override;
 
 

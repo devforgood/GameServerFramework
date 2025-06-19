@@ -10,7 +10,7 @@
 #include "DetourCommon.h"
 #include "MathHelper.h"
 #include "Player.h"
-#include "..\Engine\GridManager.h"
+#include "../Engine/GridManager.h"
 #include "GameObjectFactory.h"
 #include "TimeStamp.h"
 #include "RandomUtil.h"

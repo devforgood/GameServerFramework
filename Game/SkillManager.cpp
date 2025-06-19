@@ -1,6 +1,6 @@
 #include "SkillManager.h"
 #include "Actor.h"
-#include "..\Engine\GridManager.h"
+#include "../Engine/GridManager.h"
 
 void useAoESkill(Actor* caster, GridManager& grid, float range, float dirDeg) {
     auto targets = grid.getEntitiesInAoEMask(caster->get_vecter2_x(), caster->get_vecter2_y(), range, dirDeg);
