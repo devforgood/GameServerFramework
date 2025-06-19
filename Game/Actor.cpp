@@ -1,4 +1,4 @@
-﻿#include "Actor.h"
+#include "Actor.h"
 #include "Vector3.h"
 #include "LogHelper.h"
 
@@ -26,8 +26,8 @@ flatbuffers::Offset<syncnet::ActorInfo> Actor::get_actor_info(flatbuffers::FlatB
 	syncnet::ActorState* statePtr = changed_flag(flag, static_cast<long>(GameObjectChangeType::State)) ? &state : nullptr;
 	syncnet::ActorHealth* healthPtr = changed_flag(flag, static_cast<long>(GameObjectChangeType::Health)) ? &health : nullptr;
 
-	LOG.debug("Actor::get_actor_info: agent_id={}, pos=({}, {}, {}), type={}, state={}, health={}, is_input_locked={}",
-		this->agent_id(), pos.x(), pos.y(), pos.z(), this->type(), this->state_, this->health_, this->is_input_locked_);
+	//LOG.debug("Actor::get_actor_info: agent_id={}, pos=({}, {}, {}), type={}, state={}, health={}, is_input_locked={}",
+	//	this->agent_id(), pos.x(), pos.y(), pos.z(), this->type(), this->state_, this->health_, this->is_input_locked_);
 
 	return syncnet::CreateActorInfo(
 		_fbb, 

@@ -334,6 +334,7 @@ bool Map::raycast(int agent_idx, const float* endPos, float * hitPoint)
 		dtVadd(hitPoint, startPos, hitPoint);
 		return true;
 	}
+	/*
 	LOG.info("raycast hit t : {}, ret:{}", rayHit.t, ret);
 	LOG.info("raycast dtStatusSucceed {}", dtStatusSucceed(ret));
 	LOG.info("raycast dtStatusFailed {}", dtStatusFailed(ret));
@@ -347,7 +348,7 @@ bool Map::raycast(int agent_idx, const float* endPos, float * hitPoint)
 	LOG.info("raycast dtStatusDetail DT_OUT_OF_NODES {}", dtStatusDetail(ret, DT_OUT_OF_NODES));
 	LOG.info("raycast dtStatusDetail DT_PARTIAL_RESULT {}", dtStatusDetail(ret, DT_PARTIAL_RESULT));
 	LOG.info("raycast dtStatusDetail DT_ALREADY_OCCUPIED {}", dtStatusDetail(ret, DT_ALREADY_OCCUPIED));
-
+	*/
 	return false;
 }
 
@@ -373,7 +374,7 @@ const dtCrowdAgent* Map::getAgent(const int agent_idx)
 	return m_crowd->getAgent(agent_idx);
 }
 
-// ¿¡ÀÌÀüÆ®¸¦ ÁöÁ¤µÈ À§Ä¡·Î ¼ø°£ÀÌµ¿ÇÕ´Ï´Ù.
+// ì—ì´ì „íŠ¸ë¥¼ ì§€ì •ëœ ìœ„ì¹˜ë¡œ ìˆœê°„ì´ë™í•©ë‹ˆë‹¤.
 bool Map::teleportAgent(int agent_idx, const float* pos)
 {
 	dtCrowd* crowd = m_crowd;
