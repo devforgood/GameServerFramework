@@ -18,6 +18,116 @@
 ./vcpkg install protobuf:x64-windows
 ```
 
+
+## 🛠️ MMORPG 데이터 기반 설계 및 자동 코드 생성 파이프라인
+
+이 프로젝트는 MMORPG 게임에 필요한 다양한 게임 데이터를 **유연하고 재사용 가능하며 유지보수가 쉬운 방식으로 설계하고 자동화**하는 것을 목표로 합니다.
+
+데이터 파이프라인은 JSON → Protobuf 변환 → 코드 자동 생성 → 런타임에서 ID 기반 팩토리 생성으로 이어집니다. 이 구조는 복잡한 게임 로직에서도 **일관된 데이터 처리**, **타입 안정성**, **유연한 확장성**을 제공합니다.
+
+---
+
+### 📈 전체 데이터 파이프라인 개요
+
+1. **디자이너가 JSON으로 게임 데이터를 작성**
+
+   * 사람이 읽고 편집하기 쉬운 형태
+   * 예: 스킬, 아이템, 퀘스트, 몬스터 등
+
+2. **JSON → Protobuf 변환 및 바이너리 시리얼라이징**
+
+   * `.proto` 파일 기반 정의
+   * 빠른 로딩과 코드 자동 생성을 위해 protobuf 사용
+
+3. **자동 코드 생성 (Factory 패턴 기반)**
+
+   * 각 ID에 해당하는 클래스를 자동으로 매핑하는 C++ 팩토리 코드 생성
+   * `SkillFactory::Create(id)` 형태로 객체 생성
+
+---
+
+### ⚙️ 자동 생성된 팩토리 코드 예시
+
+```cpp
+#include "Common.h" 
+#include "SkillFactory.h"
+
+#include "JumpSkill.h"
+#include "NormalAttackSkill.h"
+
+Skill* SkillFactory::Create(int32_t id) {
+    Skill* obj = nullptr;
+    switch (id) {
+        case 2: obj = new JumpSkill(); break;
+        case 1: obj = new NormalAttackSkill(); break;
+        default: return nullptr;
+    }
+
+    obj->gamedata = ResourceLoader::Instance().GetSkills(id);
+    return obj;
+}
+```
+
+* `Create()` 함수는 **스킬 ID를 기반으로 해당 스킬 객체를 생성**
+* `gamedata`는 ID에 해당하는 시리얼라이즈된 데이터 (`protobuf`)를 로드
+* 새로운 스킬 추가 시, `.proto` + JSON + 정의만 하면 이 코드가 자동으로 갱신됨
+
+---
+
+### 💡 사용 예시
+
+```cpp
+for (const auto& skill : skills) {
+    skills_[skill.first] = SkillFactory::Create(skill.first);
+}
+```
+
+* `skills`는 로드된 데이터의 ID 집합
+* 런타임에서 ID를 기준으로 Skill 인스턴스를 생성하여 `skills_` 맵에 저장
+
+---
+
+### 📦 Protobuf의 장점
+
+* **이진 포맷**: 메모리 효율 + 빠른 로딩
+* **유연한 스키마 변경**: 필드 추가/삭제에 강함
+* **코드 자동 생성**: 서버/클라이언트 모두 동일 구조 사용 가능
+* **멀티 플랫폼 대응**: C++, C#, Python 등에서 활용 가능
+
+---
+
+### 🔁 재사용 가능한 속성 구조 (Property 기반 설계)
+
+* 예: `hp`, `attack`, `defense` 등의 속성은 공통으로 여러 엔티티에서 사용
+* 공통 속성을 별도 테이블/구조로 분리하고 참조 방식으로 설계
+* 컴포넌트 시스템(Component-based Design)과 궁합이 좋음
+
+```json
+{
+  "property_id": 2001,
+  "hp": 300,
+  "attack": 45
+}
+```
+
+---
+
+### ✅ 핵심 요약
+
+| 항목            | 설명                                    |
+| ------------- | ------------------------------------- |
+| JSON          | 사람이 작성, 직관적 버전 관리                     |
+| Protobuf      | 빠른 로딩, 코드 자동 생성, 버전 안정성               |
+| Factory 자동 생성 | ID 기반 객체 생성 코드 자동화                    |
+| 재사용 구조        | 공통 속성(Property) 및 컴포넌트 기반 설계          |
+| 런타임 사용        | `SkillFactory::Create(id)` 형태로 코드 단순화 |
+
+---
+
+이 시스템은 MMORPG의 복잡한 데이터 구조를 **정형화된 파이프라인과 코드 자동화**로 효율적으로 관리할 수 있게 해줍니다. 디자이너와 개발자 간 협업은 쉬워지고, 유지보수성과 확장성은 극대화됩니다.
+
+
+
 ## Server Architecture
 ![severArchitecture](https://user-images.githubusercontent.com/17477292/115057890-8e971280-9f1f-11eb-8043-6dbc64521900.png)
 
