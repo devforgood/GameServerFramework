@@ -220,7 +220,7 @@ std::vector<IGridActor*> GridManager::getEntitiesInViewRange(IGridActor* viewer,
             for (auto* e : cell.characters)
                 if (e != viewer) result.push_back(e);
             for (auto* e : cell.monsters)
-                result.push_back(e);
+                if (e != viewer) result.push_back(e);  // 몬스터도 자신을 제외
         }
     }
     return result;
