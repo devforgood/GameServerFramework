@@ -27,6 +27,7 @@ public:
     virtual float getVector2X() const override { return x; }
     virtual float getVector2Y() const override { return y; }
     virtual int getAgentID() const override { return agentId; }
+	virtual void decrementHealth(int amount) override {} 
 
     // 위치 설정 메서드
     void setPosition(float newX, float newY) {
