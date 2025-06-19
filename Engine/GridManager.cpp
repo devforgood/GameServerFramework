@@ -168,8 +168,6 @@ void GridManager::enterCell(IGridActor* actor, int x, int y) {
         cell.characters.insert(actor);
     else
         cell.monsters.insert(actor);
-
-    //LOG.info("Actor {} entered cell ({}, {})", actor->agent_id(), x, y);
 }
 
 void GridManager::leaveCell(IGridActor* actor, int x, int y) {
@@ -180,8 +178,6 @@ void GridManager::leaveCell(IGridActor* actor, int x, int y) {
         cell.characters.erase(actor);
     else
         cell.monsters.erase(actor);
-
-    //LOG.info("Actor {} left cell ({}, {})", actor->agent_id(), x, y);
 }
 
 void GridManager::add(IGridActor* actor) {
@@ -292,10 +288,12 @@ std::vector<IGridActor*> GridManager::getEntitiesInAoEMask(float x, float y, flo
                         if (isFullCircle) {  // 완전한 원형인 경우
                             result.push_back(e);
                         } else {  // 부채꼴인 경우
-                            // 엔티티의 각도 계산
+                            // 엔티티의 각도 계산 (표준 수학 좌표계 사용)
                             float dx = x_coords[i] - x;
                             float dy = y_coords[i] - y;
-                            float entityAngle = trigTable.atan2(dy, dx);
+                            // 표준 수학 좌표계: atan2(y, x) 사용 (0도는 동쪽, 90도는 북쪽)
+                            float entityAngle = std::atan2(dy, dx);
+                            if (entityAngle < 0) entityAngle += TWO_PI;  // 0-2π 범위로 정규화
                             
                             // 각도 차이 계산 및 보정
                             float angleDiff = std::abs(entityAngle - dirRad);

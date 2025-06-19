@@ -286,7 +286,7 @@ int World::DetectEnemy(Actor * actor)
 
 
 
-std::vector<IGridActor*> World::get_actors_in_range(Actor* actor, float range, float angle) 
+std::vector<IGridActor*> World::get_actors_in_range(Actor* actor, float range, float dirDeg, float angle) 
 { 
-	return grid_manager_->getEntitiesInAoEMask(actor->get_vecter2_x(), actor->get_vecter2_y(), range, angle);
+	return grid_manager_->getEntitiesInAoEMask(actor->get_vecter2_x(), actor->get_vecter2_y(), range, dirDeg, angle);
 }

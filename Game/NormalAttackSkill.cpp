@@ -35,8 +35,9 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	double damage = actor->world()->random_util()->GetRandomDouble(gamedata->min_damage(), gamedata->max_damage());
 	
 
-	// GridManager를 통해 범위 내 대상 검색
-	std::vector<IGridActor*> actors_in_range = actor->world()->get_actors_in_range(actor, gamedata->range(), gamedata->angle());
+	// GridManager를 통해 범위 내 대상 검색 (공격자의 방향 사용)
+	float attack_direction = actor->get_front_angle_degrees();
+	std::vector<IGridActor*> actors_in_range = actor->world()->get_actors_in_range(actor, gamedata->range(), attack_direction, gamedata->angle());
 
 	// 부채꼴 범위 내 대상에게 데미지 적용
 	for (auto target : actors_in_range) {

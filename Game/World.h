@@ -56,7 +56,7 @@ public:
 	int DetectEnemy(Actor* actor);
 	void SendBroadcast(std::shared_ptr<send_message> msg);	
 	void SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except);
-	std::vector<IGridActor*> get_actors_in_range(Actor* actor, float range, float dirDeg);
+	std::vector<IGridActor*> get_actors_in_range(Actor* actor, float range, float dirDeg, float angle);
 
 	void join(std::shared_ptr<Player> player);
 	void leave(std::shared_ptr<Player> player);

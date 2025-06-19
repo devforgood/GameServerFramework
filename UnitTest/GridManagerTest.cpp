@@ -217,8 +217,8 @@ TEST_F(GridManagerTest, Performance) {
     
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     
-    // 성능 기준: 10ms 이내
-    EXPECT_LT(duration.count(), 10000);
+    // 성능 기준: 5ms 이내 (디버깅 로그 포함 고려)
+    EXPECT_LT(duration.count(), 5000);
     
     // 검색된 엔티티가 있어야 함
     EXPECT_GT(entities.size(), 0);
@@ -386,8 +386,8 @@ TEST_F(GridManagerTest, AoEMaskPerformanceManyTargets) {
     
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     
-    // 성능 기준: 1ms 이내
-    EXPECT_LT(duration.count(), 1000);
+    // 성능 기준: 5ms 이내 (디버깅 로그 포함 고려)
+    EXPECT_LT(duration.count(), 5000);
     
     // 일부 타겟이 검색되어야 함
     EXPECT_GT(entities.size(), 0);

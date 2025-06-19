@@ -78,6 +78,22 @@ public:
 	void set_front_vector(const Vector3& front) { front_vector_ = front.normalized(); }
 	void set_front_vector(float x, float y, float z) { front_vector_ = Vector3(x, y, z).normalized(); }
 
+	// front vector를 각도로 변환 (도 단위, 0도는 동쪽, 90도는 북쪽)
+	float get_front_angle_degrees() const
+	{
+		// front vector를 2D 평면에서 각도로 변환 (표준 수학 좌표계)
+		// 표준 수학 좌표계: atan2(y, x) 사용 (0도는 동쪽, 90도는 북쪽)
+		float angle_rad = std::atan2(front_vector_.z, front_vector_.x);
+		float angle_deg = angle_rad * 180.0f / 3.14159f;
+		
+		// 각도를 0-360도 범위로 정규화
+		if (angle_deg < 0) {
+			angle_deg += 360.0f;
+		}
+		
+		return angle_deg;
+	}
+
 	// 목표 지점을 향해 front vector를 회전
 	void rotate_to_target(const Vector3& target_pos, float dt)
 	{
