@@ -31,6 +31,7 @@ public:
     std::vector<IGridActor*> getEntitiesInViewRange(IGridActor* viewer, float range);
     void broadcastToNearby(float x, float y, float range, const std::string& msg);
     std::vector<IGridActor*> getEntitiesInAoEMask(float x, float y, float range, float dirDeg);
+    std::vector<IGridActor*> getEntitiesInAoEMask(float x, float y, float range, float dirDeg, float angle);
 
     struct Cell {
         std::unordered_set<IGridActor*> characters;

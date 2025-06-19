@@ -234,13 +234,17 @@ void GridManager::broadcastToNearby(float x, float y, float range, const std::st
 }
 
 // ===== AoE(Area of Effect) 범위 내의 엔티티들을 찾는 함수 =====
-std::vector<IGridActor*> GridManager::getEntitiesInAoEMask(float x, float y, float range, float angle) {
+std::vector<IGridActor*> GridManager::getEntitiesInAoEMask(float x, float y, float range, float dirDeg) {
+    return getEntitiesInAoEMask(x, y, range, dirDeg, 360.0f); // 기본값은 완전한 원형
+}
+
+std::vector<IGridActor*> GridManager::getEntitiesInAoEMask(float x, float y, float range, float dirDeg, float angle) {
     std::vector<IGridActor*> result;
     auto [cx, cy] = getCellCoord(x, y);  // 중심점의 그리드 좌표 계산
     int cells = static_cast<int>(std::ceil(range / grid_->getCellSize()));  // 검사할 셀의 범위 계산
 
     float rangeSq = range * range;  // 거리 비교를 위해 제곱값 미리 계산
-    float dirRad = angle * PI_180;  // 각도를 라디안으로 변환
+    float dirRad = dirDeg * PI_180;  // 방향을 라디안으로 변환
     bool isFullCircle = angle >= 360.0f || angle <= 0.0f;  // 완전한 원형 여부 확인
     float halfAngleRad = (angle * 0.5f) * PI_180;  // 부채꼴의 반각 계산
 

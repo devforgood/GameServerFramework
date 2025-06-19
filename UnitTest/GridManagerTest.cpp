@@ -301,6 +301,212 @@ TEST_F(GridManagerTest, MoveAndSearch) {
     EXPECT_TRUE(foundTarget2);
 }
 
+// AoE 마스크 상세 테스트 - 거리 기반 필터링
+TEST_F(GridManagerTest, AoEMaskDistanceFiltering) {
+    float centerX = 50.0f;
+    float centerY = 50.0f;
+    
+    // 다양한 거리에 타겟들 배치 (GridManager의 NEGATIVE_VALUE_OFFSET을 고려하여 조정)
+    auto target1 = std::make_unique<MockGridActor>(1, 55.0f, 50.0f, false); // 거리 5
+    auto target2 = std::make_unique<MockGridActor>(2, 60.0f, 50.0f, false); // 거리 10
+    auto target3 = std::make_unique<MockGridActor>(3, 65.0f, 50.0f, false); // 거리 15
+    auto target4 = std::make_unique<MockGridActor>(4, 70.0f, 50.0f, false); // 거리 20
+    auto target5 = std::make_unique<MockGridActor>(5, 75.0f, 50.0f, false); // 거리 25
+    
+    gridManager->add(target1.get());
+    gridManager->add(target2.get());
+    gridManager->add(target3.get());
+    gridManager->add(target4.get());
+    gridManager->add(target5.get());
+    
+    // 범위 12로 설정하여 거리 기반 필터링 테스트
+    auto entities = gridManager->getEntitiesInAoEMask(centerX, centerY, 12.0f, 0.0f, 360.0f);
+    
+    // 거리 12 이내의 타겟만 검색되어야 함 (실제로는 2개만 검색됨)
+    EXPECT_EQ(entities.size(), 2);
+    
+    std::vector<int> foundIds;
+    for (auto entity : entities) {
+        foundIds.push_back(entity->getAgentID());
+    }
+    
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 1) != foundIds.end()); // 거리 5
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 2) != foundIds.end()); // 거리 10
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 3) == foundIds.end()); // 거리 15 (범위 밖)
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 4) == foundIds.end()); // 거리 20 (범위 밖)
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 5) == foundIds.end()); // 거리 25 (범위 밖)
+}
+
+// AoE 마스크 상세 테스트 - 경계 케이스
+TEST_F(GridManagerTest, AoEMaskEdgeCases) {
+    float centerX = 50.0f;
+    float centerY = 50.0f;
+    
+    // 경계 케이스들
+    auto target1 = std::make_unique<MockGridActor>(1, 50.0f, 50.0f, false); // 정확히 같은 위치
+    auto target2 = std::make_unique<MockGridActor>(2, 50.0f, 50.1f, false); // 매우 가까운 위치
+    auto target3 = std::make_unique<MockGridActor>(3, 49.9f, 50.0f, false); // 매우 가까운 위치
+    
+    gridManager->add(target1.get());
+    gridManager->add(target2.get());
+    gridManager->add(target3.get());
+    
+    // 매우 작은 범위로 테스트
+    auto entities = gridManager->getEntitiesInAoEMask(centerX, centerY, 0.1f, 0.0f, 360.0f);
+    
+    // 매우 가까운 타겟들만 검색되어야 함
+    EXPECT_GE(entities.size(), 1);
+    
+    // 0도 각도 테스트 (angle <= 0.0f이면 완전한 원형으로 처리됨)
+    auto entities2 = gridManager->getEntitiesInAoEMask(centerX, centerY, 10.0f, 0.0f, 0.0f);
+    EXPECT_EQ(entities2.size(), 3); // 0도는 완전한 원형으로 처리되어 모든 타겟이 검색됨
+}
+
+// AoE 마스크 성능 테스트 - 많은 타겟
+TEST_F(GridManagerTest, AoEMaskPerformanceManyTargets) {
+    float centerX = 50.0f;
+    float centerY = 50.0f;
+    
+    // 많은 타겟을 원형으로 배치
+    std::vector<std::unique_ptr<MockGridActor>> targets;
+    for (int i = 0; i < 100; ++i) {
+        float angle = (i * 3.6f) * 3.14159f / 180.0f; // 360도를 100개로 나눔
+        float distance = 10.0f + (i % 3) * 5.0f; // 거리 변화
+        float x = centerX + distance * std::cos(angle);
+        float y = centerY + distance * std::sin(angle);
+        
+        targets.push_back(std::make_unique<MockGridActor>(i, x, y, false));
+        gridManager->add(targets.back().get());
+    }
+    
+    // 성능 측정
+    auto start = std::chrono::high_resolution_clock::now();
+    auto entities = gridManager->getEntitiesInAoEMask(centerX, centerY, 20.0f, 0.0f, 90.0f);
+    auto end = std::chrono::high_resolution_clock::now();
+    
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    
+    // 성능 기준: 1ms 이내
+    EXPECT_LT(duration.count(), 1000);
+    
+    // 일부 타겟이 검색되어야 함
+    EXPECT_GT(entities.size(), 0);
+    
+    std::cout << "  - AoE search time with 100 targets: " << duration.count() << " microseconds" << std::endl;
+    std::cout << "  - Number of targets found: " << entities.size() << std::endl;
+}
+
+// AoE 마스크 상세 테스트 - 완전한 원형 공격
+TEST_F(GridManagerTest, AoEMaskFullCircle) {
+    // 중앙에 공격자 배치
+    float centerX = 50.0f;
+    float centerY = 50.0f;
+    
+    // 원형으로 여러 타겟 배치
+    auto target1 = std::make_unique<MockGridActor>(1, 60.0f, 50.0f, false); // 동쪽
+    auto target2 = std::make_unique<MockGridActor>(2, 40.0f, 50.0f, false); // 서쪽
+    auto target3 = std::make_unique<MockGridActor>(3, 50.0f, 60.0f, false); // 북쪽
+    auto target4 = std::make_unique<MockGridActor>(4, 50.0f, 40.0f, false); // 남쪽
+    auto target5 = std::make_unique<MockGridActor>(5, 200.0f, 200.0f, false); // 범위 밖
+    
+    gridManager->add(target1.get());
+    gridManager->add(target2.get());
+    gridManager->add(target3.get());
+    gridManager->add(target4.get());
+    gridManager->add(target5.get());
+    
+    // 완전한 원형 공격 (360도)
+    auto entities = gridManager->getEntitiesInAoEMask(centerX, centerY, 15.0f, 0.0f, 360.0f);
+    
+    // 범위 내의 모든 타겟이 검색되어야 함
+    EXPECT_EQ(entities.size(), 4);
+    
+    // 각 방향의 타겟이 모두 포함되어야 함
+    std::vector<int> foundIds;
+    for (auto entity : entities) {
+        foundIds.push_back(entity->getAgentID());
+    }
+    
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 1) != foundIds.end());
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 2) != foundIds.end());
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 3) != foundIds.end());
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 4) != foundIds.end());
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 5) == foundIds.end()); // 범위 밖
+}
+
+// AoE 마스크 상세 테스트 - 90도 부채꼴 공격 (동쪽)
+TEST_F(GridManagerTest, AoEMask90DegreeEast) {
+    float centerX = 50.0f;
+    float centerY = 50.0f;
+    
+    // 동쪽 방향에 타겟들 배치
+    auto target1 = std::make_unique<MockGridActor>(1, 60.0f, 50.0f, false); // 정동쪽
+    auto target2 = std::make_unique<MockGridActor>(2, 55.0f, 55.0f, false); // 동북쪽 (90도 내)
+    auto target3 = std::make_unique<MockGridActor>(3, 55.0f, 45.0f, false); // 동남쪽 (90도 내)
+    auto target4 = std::make_unique<MockGridActor>(4, 40.0f, 50.0f, false); // 서쪽 (90도 밖)
+    auto target5 = std::make_unique<MockGridActor>(5, 50.0f, 60.0f, false); // 북쪽 (90도 밖)
+    
+    gridManager->add(target1.get());
+    gridManager->add(target2.get());
+    gridManager->add(target3.get());
+    gridManager->add(target4.get());
+    gridManager->add(target5.get());
+    
+    // 90도 부채꼴 공격 (동쪽 방향, 0도)
+    auto entities = gridManager->getEntitiesInAoEMask(centerX, centerY, 15.0f, 0.0f, 90.0f);
+    
+    // 90도 범위 내의 타겟만 검색되어야 함
+    EXPECT_EQ(entities.size(), 3);
+    
+    std::vector<int> foundIds;
+    for (auto entity : entities) {
+        foundIds.push_back(entity->getAgentID());
+    }
+    
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 1) != foundIds.end()); // 정동쪽
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 2) != foundIds.end()); // 동북쪽
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 3) != foundIds.end()); // 동남쪽
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 4) == foundIds.end()); // 서쪽 (범위 밖)
+    EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 5) == foundIds.end()); // 북쪽 (범위 밖)
+}
+
+// 새로운 테스트: 다양한 방향의 부채꼴 공격
+TEST_F(GridManagerTest, AoEMaskVariousDirections) {
+    float centerX = 50.0f;
+    float centerY = 50.0f;
+    
+    // 8방향에 타겟 배치
+    auto target1 = std::make_unique<MockGridActor>(1, 60.0f, 50.0f, false); // 동쪽 (0도)
+    auto target2 = std::make_unique<MockGridActor>(2, 60.0f, 60.0f, false); // 북동쪽 (45도)
+    auto target3 = std::make_unique<MockGridActor>(3, 50.0f, 60.0f, false); // 북쪽 (90도)
+    auto target4 = std::make_unique<MockGridActor>(4, 40.0f, 60.0f, false); // 북서쪽 (135도)
+    auto target5 = std::make_unique<MockGridActor>(5, 40.0f, 50.0f, false); // 서쪽 (180도)
+    auto target6 = std::make_unique<MockGridActor>(6, 40.0f, 40.0f, false); // 남서쪽 (225도)
+    auto target7 = std::make_unique<MockGridActor>(7, 50.0f, 40.0f, false); // 남쪽 (270도)
+    auto target8 = std::make_unique<MockGridActor>(8, 60.0f, 40.0f, false); // 남동쪽 (315도)
+    
+    gridManager->add(target1.get());
+    gridManager->add(target2.get());
+    gridManager->add(target3.get());
+    gridManager->add(target4.get());
+    gridManager->add(target5.get());
+    gridManager->add(target6.get());
+    gridManager->add(target7.get());
+    gridManager->add(target8.get());
+    
+    // 북쪽 방향 90도 부채꼴 공격
+    auto entitiesNorth = gridManager->getEntitiesInAoEMask(centerX, centerY, 15.0f, 90.0f, 90.0f);
+    EXPECT_EQ(entitiesNorth.size(), 3); // 북쪽, 북동쪽, 북서쪽
+    
+    // 서쪽 방향 90도 부채꼴 공격
+    auto entitiesWest = gridManager->getEntitiesInAoEMask(centerX, centerY, 15.0f, 180.0f, 90.0f);
+    EXPECT_EQ(entitiesWest.size(), 3); // 서쪽, 북서쪽, 남서쪽
+    
+    // 남동쪽 방향 45도 부채꼴 공격
+    auto entitiesSoutheast = gridManager->getEntitiesInAoEMask(centerX, centerY, 15.0f, 315.0f, 45.0f);
+    EXPECT_EQ(entitiesSoutheast.size(), 1); // 남동쪽만
+}
+
 // 메인 함수 (gtest 실행용)
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
