@@ -1,4 +1,4 @@
-using FlatBuffers;
+﻿using FlatBuffers;
 using syncnet;
 using System;
 using System.Collections;
@@ -24,6 +24,7 @@ public class Session : MonoBehaviour
 
     public int player_agnet_id = 0;
 	private int last_message_id = 0;
+	private bool isConnected = false;  // 연결 상태 추적
 
     // todo : 스킬 테이블 생성시 스킬별 지속 시간 설정
     private float skill_duration = 1f; // 스킬 지속 시간
@@ -48,9 +49,32 @@ public class Session : MonoBehaviour
 
 	public void startServer()
 	{
+		Debug.Log($"서버 연결 시작: {GameManager.Instance.server_address}");
 		session = new TcpConnection(core.NetworkHelper.CreateIPEndPoint(GameManager.Instance.server_address));
 		session.Receiver = this;
+		Debug.Log("TcpConnection 생성 완료, 연결 시도 중...");
 		session.Connect();
+		Debug.Log("Connect() 호출 완료");
+	}
+	
+	// 연결 완료 시 호출되는 메서드
+	public void OnConnected()
+	{
+		Debug.Log("OnConnected() 메서드가 호출되었습니다.");
+		isConnected = true;
+		Debug.Log("서버에 연결되었습니다.");
+		Debug.Log($"TcpConnection.IsConnected: {session?.IsConnected}");
+		
+		// 연결 완료 시 자동 로그인
+		Debug.Log("자동 로그인 시작...");
+		Login();
+	}
+	
+	// 연결 해제 시 호출되는 메서드
+	public void OnDisconnected()
+	{
+		isConnected = false;
+		Debug.Log("서버와의 연결이 해제되었습니다.");
 	}
 
 	private byte[] MakeHeader(byte[] body)
@@ -61,6 +85,8 @@ public class Session : MonoBehaviour
 
 	public void SendPing(float deltaTime)
 	{
+		if (!isConnected) return;  // 연결되지 않은 경우 ping 전송하지 않음
+		
 		lastSendTime += deltaTime;
 		if (lastSendTime >= 0.1f)
 		{
@@ -76,6 +102,19 @@ public class Session : MonoBehaviour
 
 	public void SendMessage(byte[] msg, Action<GameMessage> response = null)
 	{
+		if (!isConnected)
+		{
+			Debug.LogWarning("서버에 연결되지 않았습니다. 메시지 전송을 건너뜁니다.");
+			return;
+		}
+		
+		// TcpConnection의 실제 연결 상태도 확인
+		if (session != null && !session.IsConnected)
+		{
+			Debug.LogWarning("TcpConnection이 연결되지 않았습니다. 메시지 전송을 건너뜁니다.");
+			return;
+		}
+		
 		session.SendBytes(MakeHeader(msg));
 		session.SendBytes(msg);
 		if (response != null)
@@ -107,7 +146,7 @@ public class Session : MonoBehaviour
 	private void HandleUpdateActorNotify(syncnet.GameMessage recv_msg)
 	{
 		syncnet.UpdateActorNotify updateActorNotify = recv_msg.Msg<syncnet.UpdateActorNotify>().Value;
-		for (int i = 0; i < updateActorNotify.ActorsLength; ++i)
+		for (int i = 0; i < updateActorNotify.ActorsLength; ++i)	
 		{
 			var updatedActor = updateActorNotify.Actors(i).Value;
 			var agent_id = updatedActor.AgentId;
@@ -131,7 +170,7 @@ public class Session : MonoBehaviour
 
 			if (actor != null)
 			{
-				UpdateActorState(game_object, actor, updatedActor, pos);
+				UpdateActorState(actor, updatedActor, pos);
 			}
 		}
 
@@ -174,35 +213,39 @@ public class Session : MonoBehaviour
 		return game_object;
 	}
 
-	private void UpdateActorState(GameObject game_object, Actor actor, syncnet.ActorInfo updatedActor, Vector3 pos)
+	private void UpdateActorState(Actor actor, syncnet.ActorInfo updatedActor, Vector3 pos)
 	{
 		actor.pos = pos;
 		actor.input_locked = updatedActor.InputLocked;
 
-        if (updatedActor.Health.HasValue)
+		if (updatedActor.State.HasValue)
+		{
+			actor.state = updatedActor.State.Value.State;
+		}
+		if (updatedActor.Health.HasValue)
 		{
 			actor.health = updatedActor.Health.Value.Health;
-			actor.UpdateHealthUI(actor.health);
+			// 체력 표시 UI 업데이트
+			UpdateHealthUI(actor.gameObject, actor.health);
 		}
 
 		if (updatedActor.GameObjectType == GameObjectType.Monster)
 		{
-			if (updatedActor.State.HasValue)
-			{
-				UpdateMonsterVisuals(actor.gameObject, updatedActor.State.Value.State);
-			}
+			UpdateMonsterVisuals(actor.gameObject, updatedActor.State.Value.State);
 		}
 		else if (updatedActor.GameObjectType == GameObjectType.Character)
 		{
-			//Debug.Log($"Player Agent ID: {actor.agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+			Debug.Log($"Player Agent ID: {actor.agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
 		}
+	}
 
-        if (updatedActor.State.HasValue)
-        {
-            Debug.Log($"Actor state {updatedActor.State.Value.State}");
-            actor.UpdateState(game_object, updatedActor.State.Value.State);
-        }
-    }
+	private void UpdateHealthUI(GameObject gameObject, int health)
+	{
+		// 체력 UI 업데이트 로직
+		// TODO: 실제 UI 컴포넌트와 연동하여 체력 바 업데이트
+		// 예시: gameObject.GetComponent<HealthBar>()?.UpdateHealth(health);
+		Debug.Log($"Health updated for {gameObject.name}: {health}");
+	}
 
 	private void UpdateMonsterVisuals(GameObject monster, AIState state)
 	{
@@ -241,12 +284,43 @@ public class Session : MonoBehaviour
 
 	void Update()
 	{
-		//SendPing(Time.deltaTime);
-		byte[] result;
-		while (session.queue.TryDequeue(out result))
+		// 연결 상태 디버깅 (연결 상태가 변경될 때만 출력)
+		if (session != null && session.IsConnected != isConnected)
 		{
-			OnReceive(result);
+			Debug.Log($"연결 상태 변경 - isConnected: {isConnected} -> {session.IsConnected}");
+			// OnConnected에서 로그인을 처리하므로 여기서는 하지 않음
 		}
+		
+		// 통합 큐 처리 (네트워크 데이터 + 이벤트)
+		if (session != null)
+		{
+			object item;
+			while (session.queue.TryDequeue(out item))
+			{
+				if (item is byte[])
+				{
+					// 네트워크 데이터 처리
+					OnReceive((byte[])item);
+				}
+				else if (item is string)
+				{
+					// 이벤트 처리
+					string eventName = (string)item;
+					Debug.Log($"이벤트 처리: {eventName}");
+					switch (eventName)
+					{
+						case "OnConnected":
+							OnConnected();
+							break;
+						case "OnDisconnected":
+							OnDisconnected();
+							break;
+					}
+				}
+			}
+		}
+		
+		//SendPing(Time.deltaTime);
 
 		foreach (var game_object in game_objects.Values)
 		{

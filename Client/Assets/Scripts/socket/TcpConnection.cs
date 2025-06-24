@@ -28,8 +28,11 @@ public class TcpConnection : IDisposable
     IPEndPoint RemoteEndPoint;
     public Component Receiver;
 
-    public ConcurrentQueue<byte[]> queue = new ConcurrentQueue<byte[]>();
-
+    public ConcurrentQueue<object> queue = new ConcurrentQueue<object>();
+    
+    // 연결 상태 추적
+    private bool isConnected = false;
+    public bool IsConnected => isConnected;
 
     /// <summary>
     ///     Creates a new TCP connection.
@@ -84,6 +87,29 @@ public class TcpConnection : IDisposable
 
                     Debug.Log($"Socket connected to {tcpConnection.socket.RemoteEndPoint.ToString()}");
 
+                    // 연결 상태 설정
+                    tcpConnection.isConnected = true;
+
+                    // 연결 완료 이벤트 호출
+                    if (tcpConnection.Receiver != null)
+                    {
+                        // Unity의 메인 스레드에서 실행하기 위해 통합 큐 사용
+                        var session = tcpConnection.Receiver as Session;
+                        if (session != null)
+                        {
+                            Debug.Log("연결 완료 이벤트를 큐에 추가합니다.");
+                            tcpConnection.queue.Enqueue("OnConnected");
+                        }
+                        else
+                        {
+                            Debug.LogError("Receiver가 Session 타입이 아닙니다.");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError("Receiver가 null입니다.");
+                    }
+
                     //Start receiving data
                     try
                     {
@@ -106,7 +132,7 @@ public class TcpConnection : IDisposable
         }
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     /// <remarks>
     ///     <include file="DocInclude/common.xml" path="docs/item[@name='Connection_SendBytes_General']/*" />
     ///     <para>
@@ -267,6 +293,20 @@ public class TcpConnection : IDisposable
     void HandleDisconnect(Exception e = null)
     {
         Debug.LogError($"HandleDisconnect {e}");
+        
+        // 연결 상태 설정
+        isConnected = false;
+        
+        // 연결 해제 이벤트 호출
+        if (Receiver != null)
+        {
+            var session = Receiver as Session;
+            if (session != null)
+            {
+                Debug.Log("연결 해제 이벤트를 큐에 추가합니다.");
+                queue.Enqueue("OnDisconnected");
+            }
+        }
     }
 
 
