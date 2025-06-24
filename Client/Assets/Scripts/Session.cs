@@ -1,4 +1,4 @@
-using FlatBuffers;
+﻿using FlatBuffers;
 using syncnet;
 using System;
 using System.Collections;
@@ -244,10 +244,14 @@ public class Session : MonoBehaviour
 	private void HandleUpdateActorNotify(syncnet.GameMessage recv_msg)
 	{
 		syncnet.UpdateActorNotify updateActorNotify = recv_msg.Msg<syncnet.UpdateActorNotify>().Value;
+		Debug.Log($"HandleUpdateActorNotify: {updateActorNotify.ActorsLength} actors received");
+		
 		for (int i = 0; i < updateActorNotify.ActorsLength; ++i)	
 		{
 			var updatedActor = updateActorNotify.Actors(i).Value;
 			var agent_id = updatedActor.AgentId;
+
+			Debug.Log($"Processing Actor {agent_id}: Type={updatedActor.GameObjectType}, State={updatedActor.State?.State}, Health={updatedActor.Health?.Health}");
 
 			// Pos가 null인 경우 처리
 			Vector3 pos = new Vector3();
@@ -269,6 +273,7 @@ public class Session : MonoBehaviour
 				{
 					game_objects[agent_id] = game_object;
 					actor = game_object.GetComponent<Actor>();
+					Debug.Log($"Created new {updatedActor.GameObjectType} object for agent {agent_id}");
 				}
 			}
 			else
@@ -286,6 +291,10 @@ public class Session : MonoBehaviour
 			if (actor != null)
 			{
 				UpdateActorState(actor, updatedActor, pos);
+			}
+			else
+			{
+				Debug.LogError($"Failed to get Actor component for agent {agent_id}");
 			}
 		}
 
@@ -342,10 +351,14 @@ public class Session : MonoBehaviour
 		actor.pos = pos;
 		actor.input_locked = updatedActor.InputLocked;
 
+		// 상태 업데이트
 		if (updatedActor.State.HasValue)
 		{
-			actor.state = updatedActor.State.Value.State;
+			var newState = updatedActor.State.Value.State;
+			actor.UpdateState(actor.gameObject, newState);
 		}
+		
+		// HP 업데이트
 		if (updatedActor.Health.HasValue)
 		{
 			actor.health = updatedActor.Health.Value.Health;
@@ -353,13 +366,17 @@ public class Session : MonoBehaviour
 			UpdateHealthUI(actor.gameObject, actor.health);
 		}
 
+		// 몬스터 특별 처리
 		if (updatedActor.GameObjectType == GameObjectType.Monster)
 		{
-			// State가 null이 아닌 경우에만 UpdateMonsterVisuals 호출
+			// 몬스터 상태에 따른 시각적 업데이트
 			if (updatedActor.State.HasValue)
 			{
 				UpdateMonsterVisuals(actor.gameObject, updatedActor.State.Value.State);
 			}
+			
+			// 몬스터 상태 변경 로그
+			Debug.Log($"Monster {actor.agnet_id} - State: {actor.state}, Health: {actor.health}, Pos: ({pos.x}, {pos.y}, {pos.z})");
 		}
 		else if (updatedActor.GameObjectType == GameObjectType.Character)
 		{
@@ -370,8 +387,11 @@ public class Session : MonoBehaviour
 	private void UpdateHealthUI(GameObject gameObject, int health)
 	{
 		// 체력 UI 업데이트 로직
-		// TODO: 실제 UI 컴포넌트와 연동하여 체력 바 업데이트
-		// 예시: gameObject.GetComponent<HealthBar>()?.UpdateHealth(health);
+		var actor = gameObject.GetComponent<Actor>();
+		if (actor != null)
+		{
+			actor.UpdateHealthUI(health);
+		}
 		Debug.Log($"Health updated for {gameObject.name}: {health}");
 	}
 
