@@ -10,10 +10,8 @@
 #include "DetourCommon.h"
 #include "MathHelper.h"
 #include "Player.h"
-#include "../Engine/GridManager.h"
 #include "GameObjectFactory.h"
-#include "TimeStamp.h"
-#include "RandomUtil.h"
+#include "Common.h"
 
 //const float g_fDistance = std::powf(10.0f, 2);
 const float g_fDistance = 10.0f;

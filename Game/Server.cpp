@@ -8,7 +8,7 @@
 #include "SqlClient.h"
 #include "SqlClientManager.h"
 #include "PlayerController.h"
-#include "RingBuffer.h"
+#include "Common.h"
 
 game_room::game_room()
 {
@@ -218,7 +218,7 @@ void game_session::do_write()
 
 game_server::game_server(std::shared_ptr<boost::asio::io_context> io_context, const tcp::endpoint& endpoint)
 	: acceptor_(*io_context, endpoint)
-	, timer_(*io_context, boost::posix_time::milliseconds(100)) // 10 ÇÁ·¹ÀÓ
+	, timer_(*io_context, boost::posix_time::milliseconds(100)) // 10 í”„ë ˆì„
 	, io_context_(io_context)
 	, db_thread_pool_(DB_THREAD_POOL_SIZE)
 {
@@ -231,7 +231,7 @@ game_server::game_server(std::shared_ptr<boost::asio::io_context> io_context, co
 }
 
 
-std::atomic<int> initialized_threads(0); // ÃÊ±âÈ­µÈ ½º·¹µå ¼ö ÃßÀû
+std::atomic<int> initialized_threads(0); // ì´ˆê¸°í™”ëœ ìŠ¤ë ˆë“œ ìˆ˜ ì¶”ì 
 
 void game_server::initialize_db_thread_pool()
 {
@@ -239,23 +239,23 @@ void game_server::initialize_db_thread_pool()
 		<< " on Thread " << std::this_thread::get_id() << std::endl;
 
 
-	// °¢ ½º·¹µå¿¡¼­ ÃÊ±âÈ­ ÀÛ¾÷ ¼öÇà
+	// ê° ìŠ¤ë ˆë“œì—ì„œ ì´ˆê¸°í™” ì‘ì—… ìˆ˜í–‰
 	for (int i = 0; i < DB_THREAD_POOL_SIZE; ++i) {
 		boost::asio::post(db_thread_pool_, [i]() {
 			static thread_local bool initialized = false;
 			if (!initialized) {
 				LOG.info("DB thread pool initialized on thread: {}, thread ID {}", i, std::hash<std::thread::id>{}(std::this_thread::get_id()));
 
-				// ½º·¹µåº° ÃÊ±âÈ­ ÀÛ¾÷
+				// ìŠ¤ë ˆë“œë³„ ì´ˆê¸°í™” ì‘ì—…
 				SqlClientManager::getInstance().init();
 				initialized = true;
 
-				// ÃÊ±âÈ­ ¿Ï·á¸¦ semaphore·Î ¾Ë¸²
+				// ì´ˆê¸°í™” ì™„ë£Œë¥¼ semaphoreë¡œ ì•Œë¦¼
 				initialized_threads.fetch_add(1, std::memory_order_relaxed);
 				while (initialized_threads.load(std::memory_order_relaxed) < DB_THREAD_POOL_SIZE)
 				{
 					LOG.info("Waiting for other threads to initialize... {}", i);
-					std::this_thread::yield(); // ´Ù¸¥ ½º·¹µå°¡ ÃÊ±âÈ­ ¿Ï·á¸¦ ±â´Ù¸®µµ·Ï ÇÔ
+					std::this_thread::yield(); // ë‹¤ë¥¸ ìŠ¤ë ˆë“œê°€ ì´ˆê¸°í™” ì™„ë£Œë¥¼ ê¸°ë‹¤ë¦¬ë„ë¡ í•¨
 				}
 				LOG.info("threads initialized. Proceeding with DB operations. {}", i);
 			}

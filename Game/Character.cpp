@@ -3,8 +3,7 @@
 #include "LogHelper.h"
 #include "Skill.h"
 #include "Vector3.h"
-#include "TimeStamp.h"
-#include "../GameDataProtobuf/ResourceLoader.h"
+#include "Common.h"
 #include "SkillFactory.h"
 
 Character::Character(World* world) : Actor(world)
