@@ -166,8 +166,6 @@
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Player.cpp" />
-    <ClCompile Include="RandomUtil.cpp" />
-    <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="Skill.cpp" />
     <ClCompile Include="SkillFactory.cpp" />
@@ -175,7 +173,6 @@
     <ClCompile Include="SqlClient.cpp" />
     <ClCompile Include="SqlClientManager.cpp" />
     <ClCompile Include="SQL\generated\dao.cpp" />
-    <ClCompile Include="TimeStamp.cpp" />
     <ClCompile Include="WalkerTest.cpp" />
     <ClCompile Include="World.cpp" />
   </ItemGroup>
@@ -223,8 +220,6 @@
     <ClInclude Include="Monster.h" />
     <ClInclude Include="PerfTimer.h" />
     <ClInclude Include="Player.h" />
-    <ClInclude Include="RandomUtil.h" />
-    <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="Skill.h" />
@@ -234,7 +229,6 @@
     <ClInclude Include="SqlClientManager.h" />
     <ClInclude Include="SQL\generated\dao.h" />
     <ClInclude Include="syncnet_generated.h" />
-    <ClInclude Include="TimeStamp.h" />
     <ClInclude Include="Vector3.h" />
     <ClInclude Include="Walker.h" />
     <ClInclude Include="World.h" />

@@ -32,9 +32,6 @@
     <Filter Include="SQL">
       <UniqueIdentifier>{cf05b3ec-c90a-4800-b9ab-fe562019ed30}</UniqueIdentifier>
     </Filter>
-    <Filter Include="core">
-      <UniqueIdentifier>{77aa5725-e40d-4c26-be00-8aa5e4c7a915}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Controller">
       <UniqueIdentifier>{ce6fade7-ea59-4be4-9fb6-55eb8bdd1100}</UniqueIdentifier>
     </Filter>
@@ -96,12 +93,6 @@
     <ClCompile Include="MonsterCodeBaseBT.cpp">
       <Filter>AI</Filter>
     </ClCompile>
-    <ClCompile Include="RingBuffer.cpp">
-      <Filter>core</Filter>
-    </ClCompile>
-    <ClCompile Include="TimeStamp.cpp">
-      <Filter>core</Filter>
-    </ClCompile>
     <ClCompile Include="JumpSkill.cpp">
       <Filter>skill</Filter>
     </ClCompile>
@@ -113,9 +104,6 @@
     </ClCompile>
     <ClCompile Include="SkillManager.cpp">
       <Filter>skill</Filter>
-    </ClCompile>
-    <ClCompile Include="RandomUtil.cpp">
-      <Filter>core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -196,12 +184,6 @@
     <ClInclude Include="MonsterCodeBaseBT.h">
       <Filter>AI</Filter>
     </ClInclude>
-    <ClInclude Include="RingBuffer.h">
-      <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="TimeStamp.h">
-      <Filter>core</Filter>
-    </ClInclude>
     <ClInclude Include="JumpSkill.h">
       <Filter>skill</Filter>
     </ClInclude>
@@ -215,9 +197,6 @@
       <Filter>skill</Filter>
     </ClInclude>
     <ClInclude Include="GameObjectChangeTypeOperators.h" />
-    <ClInclude Include="RandomUtil.h">
-      <Filter>core</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

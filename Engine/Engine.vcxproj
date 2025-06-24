@@ -21,9 +21,15 @@
   <ItemGroup>
     <ClCompile Include="IGridActor.h" />
     <ClCompile Include="GridManager.cpp" />
+    <ClCompile Include="RandomUtil.cpp" />
+    <ClCompile Include="RingBuffer.cpp" />
+    <ClCompile Include="TimeStamp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GridManager.h" />
+    <ClInclude Include="RandomUtil.h" />
+    <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="TimeStamp.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
