@@ -128,7 +128,7 @@ void game_session::process_packets() {
 
 		ring_buf_->read(nullptr, game_message::header_length);  // consume header
 
-		auto body_view = ring_buf_->try_peek_span(body_len);
+		auto body_view = ring_buf_->try_peek_span_cpp20(body_len);
 		if (body_view) {
 			handle_packet(*body_view);
 			ring_buf_->read(nullptr, body_len);  // consume body
