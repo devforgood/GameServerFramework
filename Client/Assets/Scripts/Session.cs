@@ -1,4 +1,4 @@
-﻿using FlatBuffers;
+using FlatBuffers;
 using syncnet;
 using System;
 using System.Collections;
@@ -248,13 +248,23 @@ public class Session : MonoBehaviour
 		{
 			var updatedActor = updateActorNotify.Actors(i).Value;
 			var agent_id = updatedActor.AgentId;
-			var pos = new Vector3(updatedActor.Pos.Value.X, updatedActor.Pos.Value.Y, updatedActor.Pos.Value.Z);
 
+			// Pos가 null인 경우 처리
+			Vector3 pos = new Vector3();
 			GameObject game_object = null;
 			Actor actor = null;
 			if (!game_objects.TryGetValue(agent_id, out game_object))
 			{
-				game_object = CreateGameObject(updatedActor.GameObjectType, pos, agent_id);
+                if (updatedActor.Pos.HasValue)
+                {
+                    pos = new Vector3(updatedActor.Pos.Value.X, updatedActor.Pos.Value.Y, updatedActor.Pos.Value.Z);
+                }
+                else
+                {
+                    Debug.LogWarning($"Actor {agent_id} has no position, skipping creation");
+                }
+
+					game_object = CreateGameObject(updatedActor.GameObjectType, pos, agent_id);
 				if (game_object != null)
 				{
 					game_objects[agent_id] = game_object;
@@ -264,7 +274,14 @@ public class Session : MonoBehaviour
 			else
 			{
 				actor = game_object.GetComponent<Actor>();
-			}
+                if (updatedActor.Pos.HasValue)
+                {
+                    pos = new Vector3(updatedActor.Pos.Value.X, updatedActor.Pos.Value.Y, updatedActor.Pos.Value.Z);
+                } else
+				{
+					pos = actor.pos; // Pos가 null인 경우 기존 위치 유지
+                }
+            }
 
 			if (actor != null)
 			{
@@ -275,10 +292,19 @@ public class Session : MonoBehaviour
 		// Debug lines 처리
 		for (int i = 0; i < updateActorNotify.DebugsLength; ++i)
 		{
+			var debugInfo = updateActorNotify.Debugs(i).Value;
+			
+			// EndPos가 null인 경우 처리
+			if (!debugInfo.EndPos.HasValue)
+			{
+				Debug.LogWarning($"Debug {i}: EndPos is null, skipping debug line");
+				continue;
+			}
+			
 			Vector3 pos;
-			pos.x = updateActorNotify.Debugs(i).Value.EndPos.Value.X;
-			pos.y = updateActorNotify.Debugs(i).Value.EndPos.Value.Y;
-			pos.z = updateActorNotify.Debugs(i).Value.EndPos.Value.Z;
+			pos.x = debugInfo.EndPos.Value.X;
+			pos.y = debugInfo.EndPos.Value.Y;
+			pos.z = debugInfo.EndPos.Value.Z;
 			var obj = (GameObject)Instantiate(Resources.Load("DebugTarget"), pos, Quaternion.identity);
 		}
 	}
@@ -329,7 +355,11 @@ public class Session : MonoBehaviour
 
 		if (updatedActor.GameObjectType == GameObjectType.Monster)
 		{
-			UpdateMonsterVisuals(actor.gameObject, updatedActor.State.Value.State);
+			// State가 null이 아닌 경우에만 UpdateMonsterVisuals 호출
+			if (updatedActor.State.HasValue)
+			{
+				UpdateMonsterVisuals(actor.gameObject, updatedActor.State.Value.State);
+			}
 		}
 		else if (updatedActor.GameObjectType == GameObjectType.Character)
 		{
@@ -368,6 +398,14 @@ public class Session : MonoBehaviour
 	private void HandleUseSkillNotify(syncnet.GameMessage recv_msg)
 	{
 		syncnet.UseSkill useSkill = recv_msg.Msg<syncnet.UseSkill>().Value;
+		
+		// Pos가 null인 경우 처리
+		if (!useSkill.Pos.HasValue)
+		{
+			Debug.LogWarning("UseSkill: Pos is null, skipping skill effect");
+			return;
+		}
+		
 		var pos = new Vector3(useSkill.Pos.Value.X, useSkill.Pos.Value.Y, useSkill.Pos.Value.Z);
 		var obj = (GameObject)Instantiate(Resources.Load("DebugTarget"), pos, Quaternion.identity);
 
