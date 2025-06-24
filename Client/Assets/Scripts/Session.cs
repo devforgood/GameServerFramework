@@ -26,6 +26,20 @@ public class Session : MonoBehaviour
 	private int last_message_id = 0;
 	private bool isConnected = false;  // 연결 상태 추적
 
+    // 자동 재접속 관련 변수
+    private bool isReconnecting = false;  // 재접속 중인지 확인
+    private float reconnectDelay = 3f;    // 재접속 대기 시간 (초)
+    private float lastReconnectTime = 0f; // 마지막 재접속 시도 시간
+    private int reconnectAttempts = 0;    // 재접속 시도 횟수
+    private int maxReconnectAttempts = 5; // 최대 재접속 시도 횟수
+    
+    // Ping 기반 연결 상태 확인
+    private float pingInterval = 5f;      // ping 전송 간격 (초)
+    private float lastPingTime = 0f;      // 마지막 ping 전송 시간
+    private float pingTimeout = 10f;      // ping 응답 대기 시간 (초)
+    private float lastPongTime = 0f;      // 마지막 pong 수신 시간
+    private bool pingEnabled = true;      // ping 활성화 여부
+
     // todo : 스킬 테이블 생성시 스킬별 지속 시간 설정
     private float skill_duration = 1f; // 스킬 지속 시간
 	private float skill_height = 3f; // 스킬 점프 높이
@@ -65,6 +79,15 @@ public class Session : MonoBehaviour
 		Debug.Log("서버에 연결되었습니다.");
 		Debug.Log($"TcpConnection.IsConnected: {session?.IsConnected}");
 		
+		// 재접속 중이었다면 재접속 성공 처리
+		if (isReconnecting)
+		{
+			OnReconnectSuccess();
+		}
+		
+		// 연결 성공 시 ping 타이머 초기화
+		lastPongTime = Time.time;
+		
 		// 연결 완료 시 자동 로그인
 		Debug.Log("자동 로그인 시작...");
 		Login();
@@ -73,8 +96,79 @@ public class Session : MonoBehaviour
 	// 연결 해제 시 호출되는 메서드
 	public void OnDisconnected()
 	{
+		bool wasConnected = isConnected;
 		isConnected = false;
-		Debug.Log("서버와의 연결이 해제되었습니다.");
+		
+		if (wasConnected)
+		{
+			Debug.Log("서버와의 연결이 해제되었습니다.");
+		}
+		else
+		{
+			Debug.Log("서버 연결에 실패했습니다.");
+		}
+		
+		// 자동 재접속 시작 (이미 재접속 중이면 하지 않음)
+		if (!isReconnecting && reconnectAttempts < maxReconnectAttempts)
+		{
+			StartReconnect();
+		}
+		else if (reconnectAttempts >= maxReconnectAttempts)
+		{
+			Debug.LogError($"최대 재접속 시도 횟수({maxReconnectAttempts})에 도달했습니다. 수동으로 재접속해주세요.");
+		}
+		else if (isReconnecting)
+		{
+			Debug.Log("이미 재접속 중입니다.");
+		}
+	}
+
+	// 자동 재접속 시작
+	private void StartReconnect()
+	{
+		if (isReconnecting) return;
+		
+		isReconnecting = true;
+		reconnectAttempts++;
+		lastReconnectTime = Time.time;
+		
+		Debug.Log($"자동 재접속 시도 {reconnectAttempts}/{maxReconnectAttempts} - {reconnectDelay}초 후 시도");
+		
+		// 기존 연결 정리
+		if (session != null)
+		{
+			session.Dispose();
+			session = null;
+		}
+	}
+	
+	// 재접속 시도
+	private void AttemptReconnect()
+	{
+		if (!isReconnecting) return;
+		
+		Debug.Log($"재접속 시도 중... ({reconnectAttempts}/{maxReconnectAttempts})");
+		startServer();
+		
+		// 재접속 시도 후 타이머 리셋 (다음 시도까지 대기)
+		lastReconnectTime = Time.time;
+	}
+	
+	// 재접속 성공 시 호출
+	private void OnReconnectSuccess()
+	{
+		isReconnecting = false;
+		reconnectAttempts = 0;
+		lastPongTime = Time.time; // ping 타이머 리셋
+		Debug.Log("재접속 성공!");
+	}
+	
+	// 수동 재접속 (최대 시도 횟수 초과 시 사용)
+	public void ManualReconnect()
+	{
+		reconnectAttempts = 0;
+		isReconnecting = false;
+		StartReconnect();
 	}
 
 	private byte[] MakeHeader(byte[] body)
@@ -133,6 +227,10 @@ public class Session : MonoBehaviour
 				break;
 			case syncnet.GameMessages.UseSkill:
 				HandleUseSkillNotify(recv_msg);
+				break;
+			case syncnet.GameMessages.Ping:
+				// Ping 응답 처리
+				HandlePong();
 				break;
 		}
 
@@ -289,6 +387,25 @@ public class Session : MonoBehaviour
 		{
 			Debug.Log($"연결 상태 변경 - isConnected: {isConnected} -> {session.IsConnected}");
 			// OnConnected에서 로그인을 처리하므로 여기서는 하지 않음
+		}
+		
+		// 자동 재접속 처리
+		if (isReconnecting && Time.time - lastReconnectTime >= reconnectDelay)
+		{
+			AttemptReconnect();
+		}
+		
+		// Ping 기반 연결 상태 확인
+		if (isConnected && pingEnabled)
+		{
+			// Ping 전송 (주기적)
+			if (Time.time - lastPingTime >= pingInterval)
+			{
+				SendPing();
+			}
+			
+			// Ping 타임아웃 확인
+			CheckPingTimeout();
 		}
 		
 		// 통합 큐 처리 (네트워크 데이터 + 이벤트)
@@ -495,5 +612,38 @@ public class Session : MonoBehaviour
         // 마지막 위치는 착지점
         game_object.transform.position = end;
         Debug.Log($"JumpToPosition End: {game_object.name}, pos({end.x}, {end.y}, {end.z}), timestamp({timestamp})");
+    }
+
+    // Ping 전송
+    private void SendPing()
+    {
+        if (!isConnected || !pingEnabled) return;
+        
+        lastPingTime = Time.time;
+        byte[] body = PacketFactory.CreatePingMessage(seq++);
+        session.SendBytes(MakeHeader(body));
+        session.SendBytes(body);
+        Debug.Log("Ping 전송");
+    }
+    
+    // Pong 수신 처리
+    private void HandlePong()
+    {
+        lastPongTime = Time.time;
+        Debug.Log("Pong 수신");
+    }
+    
+    // Ping 타임아웃 확인
+    private void CheckPingTimeout()
+    {
+        if (!isConnected || !pingEnabled || isReconnecting) return;
+        
+        float timeSinceLastPong = Time.time - lastPongTime;
+        if (timeSinceLastPong > pingTimeout)
+        {
+            Debug.LogWarning($"Ping 타임아웃! 마지막 Pong 수신 후 {timeSinceLastPong:F1}초 경과");
+            // 연결 끊김으로 간주하고 재접속 시작
+            OnDisconnected();
+        }
     }
 }

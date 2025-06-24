@@ -32,7 +32,7 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 	auto status = syncnet::StatusCode::StatusCode_Success;
 	int agent_id = 0;
 	if (!game_object) {
-		LOG.error("OnAddAgent ½ÇÆĞ: GameObject »ı¼º¿¡ ½ÇÆĞÇß½À´Ï´Ù.");
+		LOG.error("OnAddAgent ì‹¤íŒ¨: GameObject ìƒì„±ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.");
 		status = syncnet::StatusCode::StatusCode_Failed;
 	}
 	else
@@ -85,6 +85,13 @@ void PlayerController::handle(const syncnet::SetMoveTarget* msg)
 void PlayerController::handle(const syncnet::Ping* msg)
 {
 	//std::cout << "ping seq : " << msg->seq() << std::endl;
+	player_->send(
+		syncnet::CreatePing
+		, syncnet::GameMessages_Ping
+		, last_message_id_
+		, syncnet::StatusCode::StatusCode_Success
+		, msg->seq()
+	);
 }
 
 

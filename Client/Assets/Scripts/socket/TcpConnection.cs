@@ -82,6 +82,17 @@ public class TcpConnection : IDisposable
                     catch (Exception e)
                     {
                         Debug.LogError($"An exception occured while EndConnect {e}");
+                        
+                        // 연결 실패 시에도 OnDisconnected 이벤트 발생
+                        if (tcpConnection.Receiver != null)
+                        {
+                            var session = tcpConnection.Receiver as Session;
+                            if (session != null)
+                            {
+                                Debug.Log("연결 실패 이벤트를 큐에 추가합니다.");
+                                tcpConnection.queue.Enqueue("OnDisconnected");
+                            }
+                        }
                         return;
                     }
 
