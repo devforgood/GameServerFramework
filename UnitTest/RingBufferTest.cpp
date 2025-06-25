@@ -605,21 +605,110 @@ TEST_F(RingBufferTest, TryPeekSpanCpp20Test) {
     std::memcpy(write_ptr, test_data, data_len);
     rb->commit_write(data_len);
     
-    // try_peek_span 테스트 (기존 함수 사용)
-    auto span_opt = rb->try_peek_span(data_len);
+    // try_peek_span_cpp20 테스트
+    auto span_opt = rb->try_peek_span_cpp20(data_len);
     ASSERT_TRUE(span_opt.has_value());
-    EXPECT_EQ(span_opt->length, data_len);
-    EXPECT_EQ(std::memcmp(span_opt->ptr, test_data, data_len), 0);
+    EXPECT_EQ(span_opt->size(), data_len);
+    EXPECT_EQ(std::memcmp(span_opt->data(), test_data, data_len), 0);
     
     // 범위를 벗어난 크기로 테스트
-    auto large_span_opt = rb->try_peek_span(data_len + 100);
+    auto large_span_opt = rb->try_peek_span_cpp20(data_len + 100);
     ASSERT_TRUE(large_span_opt.has_value());
-    EXPECT_EQ(large_span_opt->length, data_len); // 실제 크기만큼만 반환
+    EXPECT_EQ(large_span_opt->size(), data_len); // 실제 크기만큼만 반환
     
     // 빈 버퍼에서 테스트
     rb->read(nullptr, data_len); // 데이터 소비
-    auto empty_span_opt = rb->try_peek_span(10);
+    auto empty_span_opt = rb->try_peek_span_cpp20(10);
     EXPECT_FALSE(empty_span_opt.has_value());
+}
+
+// C++20 span 고급 테스트
+TEST_F(RingBufferTest, Cpp20SpanAdvancedTest) {
+    // 바이너리 데이터로 테스트
+    std::vector<char> binary_data(50);
+    for (size_t i = 0; i < binary_data.size(); ++i) {
+        binary_data[i] = static_cast<char>(i % 256);
+    }
+    
+    // 데이터 쓰기
+    RingBuffer::size_type write_size;
+    char* write_ptr = rb->write_ptr(write_size);
+    std::memcpy(write_ptr, binary_data.data(), binary_data.size());
+    rb->commit_write(binary_data.size());
+    
+    // try_peek_span_cpp20로 데이터 접근
+    auto span_opt = rb->try_peek_span_cpp20(binary_data.size());
+    ASSERT_TRUE(span_opt.has_value());
+    
+    // std::span의 기능들 테스트
+    auto span = *span_opt;
+    EXPECT_EQ(span.size(), binary_data.size());
+    EXPECT_EQ(span.size_bytes(), binary_data.size());
+    EXPECT_FALSE(span.empty());
+    
+    // span의 반복자 테스트
+    std::vector<char> span_data;
+    for (char c : span) {
+        span_data.push_back(c);
+    }
+    EXPECT_EQ(std::memcmp(span_data.data(), binary_data.data(), binary_data.size()), 0);
+    
+    // span의 인덱스 접근 테스트
+    for (size_t i = 0; i < span.size(); ++i) {
+        EXPECT_EQ(span[i], binary_data[i]);
+    }
+    
+    // span의 subspan 테스트 (C++20 기능)
+    if (span.size() >= 10) {
+        auto subspan = span.subspan(5, 10);
+        EXPECT_EQ(subspan.size(), 10);
+        EXPECT_EQ(std::memcmp(subspan.data(), binary_data.data() + 5, 10), 0);
+    }
+    
+    // 데이터는 그대로 유지되어야 함
+    EXPECT_EQ(rb->size(), binary_data.size());
+    
+    // 실제 읽기로 데이터 소비
+    rb->read(nullptr, binary_data.size());
+    EXPECT_EQ(rb->size(), 0);
+}
+
+// C++20 span 경계 조건 테스트
+TEST_F(RingBufferTest, Cpp20SpanBoundaryTest) {
+    // 버퍼를 거의 가득 채우기
+    const size_t write_size = buffer_size - 20;
+    std::vector<char> test_data(write_size, 'X');
+    
+    RingBuffer::size_type available_size;
+    char* write_ptr = rb->write_ptr(available_size);
+    std::memcpy(write_ptr, test_data.data(), write_size);
+    rb->commit_write(write_size);
+    
+    // 일부 데이터 읽기 (순환 발생)
+    const size_t read_size = write_size - 50;
+    rb->read(nullptr, read_size);
+    
+    // 순환된 데이터에서 try_peek_span_cpp20 테스트
+    const size_t remaining_data = write_size - read_size;
+    
+    // 연속된 데이터가 있는 경우에만 span이 반환됨
+    auto span_opt = rb->try_peek_span_cpp20(remaining_data);
+    
+    std::cout << "DEBUG: remaining_data = " << remaining_data << std::endl;
+    std::cout << "DEBUG: contiguous_read_size = " << rb->contiguous_read_size() << std::endl;
+    std::cout << "DEBUG: span_opt.has_value() = " << (span_opt.has_value() ? "true" : "false") << std::endl;
+    
+    if (span_opt.has_value()) {
+        // 연속된 데이터가 있는 경우
+        auto span = *span_opt;
+        EXPECT_GT(span.size(), 0);
+        EXPECT_LE(span.size(), remaining_data);
+        std::cout << "DEBUG: span.size() = " << span.size() << std::endl;
+    } else {
+        // 순환된 데이터로 인해 연속된 span을 제공할 수 없는 경우
+        std::cout << "Note: Data is wrapped around buffer, cannot provide contiguous span" << std::endl;
+        EXPECT_EQ(rb->contiguous_read_size(), 0);
+    }
 }
 
 // commit_write 경계 테스트
