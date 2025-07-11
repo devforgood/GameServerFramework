@@ -14655,7 +14655,7 @@ GameObject:
   - component: {fileID: 641515929}
   m_Layer: 0
   m_Name: CustomBase
-  m_TagString: Untagged
+  m_TagString: floor
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -18292,6 +18292,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 764995527}
+  - component: {fileID: 764995530}
+  - component: {fileID: 764995529}
+  - component: {fileID: 764995528}
   m_Layer: 0
   m_Name: SampleTerrain_Custom
   m_TagString: Untagged
@@ -18349,6 +18352,45 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &764995528
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 764995526}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88e40a1c2fa8d484487ce9c595178e69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inputActions: []
+--- !u!114 &764995529
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 764995526}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a8a8dfa370fc3f4cbfc5c3e09933b13, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  session: {fileID: 0}
+--- !u!114 &764995530
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 764995526}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d6ae1b1381871c478f3b638cd99d5e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player_agnet_id: 0
 --- !u!43 &767806165
 Mesh:
   m_ObjectHideFlags: 0
