@@ -51,16 +51,19 @@ public class DamageText : MonoBehaviour
     
     void Update()
     {
-        // Make text always face the camera (only for world space canvas)
-        if (mainCamera != null && GetComponentInParent<Canvas>()?.renderMode == RenderMode.WorldSpace)
-        {
-            transform.LookAt(mainCamera.transform);
-            transform.Rotate(0, 180, 0); // Flip the text to face the camera properly
-        }
+        // Billboard component handles camera-facing automatically
+        // No manual camera tracking needed
     }
     
     public void ShowDamage(int damage, bool isCritical = false, bool isHeal = false)
     {
+        // Ensure GameObject is active before starting coroutines
+        if (!gameObject.activeInHierarchy)
+        {
+            Debug.LogWarning("DamageText: GameObject is not active, activating it first.");
+            gameObject.SetActive(true);
+        }
+        
         // Null check and initialization
         if (damageText == null)
         {
@@ -68,6 +71,22 @@ public class DamageText : MonoBehaviour
             if (damageText == null)
             {
                 Debug.LogError("DamageText: TextMeshProUGUI component not found!");
+                return;
+            }
+        }
+        
+        // Ensure font is set before setting text
+        if (damageText.font == null)
+        {
+            TMP_FontAsset defaultFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+            if (defaultFont != null)
+            {
+                damageText.font = defaultFont;
+                damageText.fontSharedMaterial = defaultFont.material;
+            }
+            else
+            {
+                Debug.LogError("DamageText: No font asset available for TextMeshPro!");
                 return;
             }
         }
@@ -99,6 +118,9 @@ public class DamageText : MonoBehaviour
         {
             damageText.color = damageColor;
         }
+        
+        // Force mesh update to ensure text renders properly
+        damageText.ForceMeshUpdate();
         
         // Set initial position and scale
         startPosition = transform.localPosition;
@@ -216,6 +238,7 @@ public class DamageText : MonoBehaviour
         Canvas canvas = FindObjectOfType<Canvas>();
         if (canvas == null)
         {
+            // Create new canvas for damage texts
             GameObject canvasObj = new GameObject("DamageCanvas");
             canvas = canvasObj.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
@@ -230,17 +253,19 @@ public class DamageText : MonoBehaviour
             // Add GraphicRaycaster
             canvasObj.AddComponent<GraphicRaycaster>();
             
-            // Set canvas size
+            // Set canvas size and position
             RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-            canvasRect.sizeDelta = new Vector2(100, 100);
+            canvasRect.sizeDelta = new Vector2(20, 20); // Increased from 10x10 to 20x20 for larger text
+            canvasRect.position = Vector3.zero;
         }
         
         // Create damage text prefab
         GameObject damageTextObj = new GameObject("DamageText");
         damageTextObj.transform.SetParent(canvas.transform);
         
-        // Set world position
-        damageTextObj.transform.position = worldPosition;
+        // Set world position - convert to local position relative to canvas
+        Vector3 localPosition = canvas.transform.InverseTransformPoint(worldPosition);
+        damageTextObj.transform.localPosition = localPosition;
         
         // Create text object first
         GameObject textObj = new GameObject("Text");
@@ -250,17 +275,44 @@ public class DamageText : MonoBehaviour
         
         // Add TextMeshPro component
         TextMeshProUGUI textComponent = textObj.AddComponent<TextMeshProUGUI>();
-        textComponent.fontSize = 24;
+        textComponent.fontSize = 48; // Increased from 24 to 48 for better visibility
         textComponent.fontStyle = FontStyles.Bold;
         textComponent.alignment = TextAlignmentOptions.Center;
         textComponent.text = "0";
         textComponent.color = Color.white;
         textComponent.enableAutoSizing = false;
-        textComponent.fontSharedMaterial = null; // Use default material
+        
+        // Set default font asset to prevent NullReferenceException
+        if (textComponent.font == null)
+        {
+            // Try to find a default TMP font asset
+            TMP_FontAsset defaultFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+            if (defaultFont == null)
+            {
+                // If the default font is not found, try to find any TMP font asset
+                TMP_FontAsset[] fonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+                if (fonts.Length > 0)
+                {
+                    defaultFont = fonts[0];
+                }
+            }
+            
+            if (defaultFont != null)
+            {
+                textComponent.font = defaultFont;
+                textComponent.fontSharedMaterial = defaultFont.material;
+            }
+            else
+            {
+                Debug.LogWarning("No TMP font asset found. TextMeshPro may not render properly.");
+                // Try to force a rebuild to see if it helps
+                textComponent.ForceMeshUpdate();
+            }
+        }
         
         // Set RectTransform for proper sizing
         RectTransform textRect = textComponent.GetComponent<RectTransform>();
-        textRect.sizeDelta = new Vector2(200, 50);
+        textRect.sizeDelta = new Vector2(400, 100); // Increased from 200x50 to 400x100 for larger text
         textRect.anchorMin = new Vector2(0.5f, 0.5f);
         textRect.anchorMax = new Vector2(0.5f, 0.5f);
         textRect.pivot = new Vector2(0.5f, 0.5f);
@@ -269,12 +321,17 @@ public class DamageText : MonoBehaviour
         DamageText damageText = damageTextObj.AddComponent<DamageText>();
         CanvasGroup canvasGroup = damageTextObj.AddComponent<CanvasGroup>();
         
+        // Add Billboard component for consistent camera-facing behavior (same as HealthBar)
+        damageTextObj.AddComponent<Billboard>();
+        
         // Set references immediately
         damageText.damageText = textComponent;
         damageText.canvasGroup = canvasGroup;
         
         // Force Awake to be called to ensure proper initialization
         damageText.Awake();
+        
+        Debug.Log($"Created DamageText at position: {worldPosition}");
         
         return damageText;
     }
@@ -320,16 +377,44 @@ public class DamageText : MonoBehaviour
         
         // Add TextMeshPro component
         TextMeshProUGUI textComponent = textObj.AddComponent<TextMeshProUGUI>();
-        textComponent.fontSize = 24;
+        textComponent.fontSize = 48; // Increased from 24 to 48 for better visibility
         textComponent.fontStyle = FontStyles.Bold;
         textComponent.alignment = TextAlignmentOptions.Center;
         textComponent.text = "0";
         textComponent.color = Color.white;
         textComponent.enableAutoSizing = false;
         
+        // Set default font asset to prevent NullReferenceException
+        if (textComponent.font == null)
+        {
+            // Try to find a default TMP font asset
+            TMP_FontAsset defaultFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+            if (defaultFont == null)
+            {
+                // If the default font is not found, try to find any TMP font asset
+                TMP_FontAsset[] fonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+                if (fonts.Length > 0)
+                {
+                    defaultFont = fonts[0];
+                }
+            }
+            
+            if (defaultFont != null)
+            {
+                textComponent.font = defaultFont;
+                textComponent.fontSharedMaterial = defaultFont.material;
+            }
+            else
+            {
+                Debug.LogWarning("No TMP font asset found. TextMeshPro may not render properly.");
+                // Try to force a rebuild to see if it helps
+                textComponent.ForceMeshUpdate();
+            }
+        }
+        
         // Set RectTransform for proper sizing
         RectTransform textRect = textComponent.GetComponent<RectTransform>();
-        textRect.sizeDelta = new Vector2(200, 50);
+        textRect.sizeDelta = new Vector2(400, 100); // Increased from 200x50 to 400x100 for larger text
         textRect.anchorMin = new Vector2(0.5f, 0.5f);
         textRect.anchorMax = new Vector2(0.5f, 0.5f);
         textRect.pivot = new Vector2(0.5f, 0.5f);

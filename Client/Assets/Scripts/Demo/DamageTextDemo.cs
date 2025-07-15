@@ -43,10 +43,14 @@ public class DamageTextDemo : MonoBehaviour
         // Heal
         if (Input.GetKeyDown(healKey))
         {
-            // For demo purposes, we'll show heal text directly
-            Vector3 healPosition = transform.position + Vector3.up * 2.5f;
-            AdvancedDamageText healText = AdvancedDamageText.CreateDamageText(healPosition);
-            healText.ShowAdvancedDamage(healAmount, false, true, DamageType.Heal);
+            // Show heal text near health bar position
+            if (actor != null && actor.healthBar != null)
+            {
+                Vector3 healthBarPosition = actor.healthBar.transform.position;
+                Vector3 healPosition = healthBarPosition + Vector3.up * 0.5f;
+                AdvancedDamageText healText = AdvancedDamageText.CreateDamageText(healPosition);
+                healText.ShowAdvancedDamage(healAmount, false, true, DamageType.Heal);
+            }
             Debug.Log($"Healed {healAmount} HP");
         }
         

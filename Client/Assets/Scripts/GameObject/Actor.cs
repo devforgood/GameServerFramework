@@ -8,13 +8,19 @@ public class Actor : MonoBehaviour
     public int health = 100;
     public bool input_locked;
     
-    protected HealthBar healthBar;
+    public HealthBar healthBar;
     private Session session;
+    private DamageTextManager damageTextManager;
+    
+    // Damage text cooldown to prevent spam
+    private float lastDamageTime = 0f;
+    private const float DAMAGE_TEXT_COOLDOWN = 0.1f; // 100ms cooldown
 
     void Awake()
     {
         CreateHealthBar();
         session = FindObjectOfType<Session>();
+        damageTextManager = DamageTextManager.Instance;
     }
 
     void CreateHealthBar()
@@ -35,7 +41,6 @@ public class Actor : MonoBehaviour
         {
             float healthPercent = Mathf.Clamp01(currentHealth / 100f);
             healthBar.UpdateHealth(healthPercent);
-            Debug.Log($"HealthBar updated for {gameObject.name}: {currentHealth} ({healthPercent * 100}%)");
         }
         else
         {
@@ -51,7 +56,7 @@ public class Actor : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        // Show damage text UI
+        // Show damage text UI with cooldown check
         ShowDamageText(damage);
         
         // Optional: Add screen shake or other effects
@@ -60,11 +65,29 @@ public class Actor : MonoBehaviour
     
     private void ShowDamageText(int damage)
     {
+        // Check cooldown to prevent spam
+        if (Time.time - lastDamageTime < DAMAGE_TEXT_COOLDOWN)
+        {
+            return;
+        }
+        
+        lastDamageTime = Time.time;
+        
         // Determine if it's a critical hit (you can implement your own logic)
         bool isCritical = damage > 20; // Example: damage over 20 is critical
         
-        // Use DamageTextManager for better performance and organization
-        DamageTextManager.Instance.ShowDamage(agnet_id, transform.position, damage, isCritical);
+        // Use current actor position instead of potentially outdated healthBar position
+        Vector3 damageTextPosition = transform.position + Vector3.up * 2.5f; // Show above the actor
+        
+        // Use cached DamageTextManager instance
+        if (damageTextManager != null)
+        {
+            damageTextManager.ShowDamage(agnet_id, damageTextPosition, damage, isCritical);
+        }
+        else
+        {
+            Debug.LogError("DamageTextManager is null, cannot show damage text");
+        }
     }
 
     public virtual void UpdateState(GameObject game_object, syncnet.AIState newState)
@@ -72,19 +95,17 @@ public class Actor : MonoBehaviour
         var oldState = state;
         state = newState;
         
-        Debug.Log($"Actor {agnet_id} state changed: {oldState} -> {newState}");
-        
         // 상태별 처리
         switch (state)
         {
             case syncnet.AIState.Dead:
-                Debug.Log($"Actor {agnet_id} is dead, showing death effect...");
+                Debug.LogWarning($"Actor {agnet_id} is dead, showing death effect...");
                 // 사망 시 시각적 효과 (예: 색상 변경, 애니메이션 등)
                 ShowDeathEffect();
                 break;
                 
             case syncnet.AIState.Destroyed:
-                Debug.Log($"Actor {agnet_id} is destroyed, removing from scene...");
+                Debug.LogWarning($"Actor {agnet_id} is destroyed, removing from scene...");
                 // 파괴 시 오브젝트 제거
                 RemoveFromScene();
                 break;
@@ -114,7 +135,6 @@ public class Actor : MonoBehaviour
         if (session != null && session.game_objects.ContainsKey(agnet_id))
         {
             session.game_objects.Remove(agnet_id);
-            Debug.Log($"Removed actor {agnet_id} from game_objects");
         }
         
         // 오브젝트 파괴
@@ -123,25 +143,15 @@ public class Actor : MonoBehaviour
 
     public void UpdateHealth(int health) 
     {
-        Debug.Log($"Health updated for {gameObject.name}: {health}");
-
         var oldHealth = this.health;
         if(oldHealth > health)
         {
-            Debug.Log($"Actor {agnet_id} took damage: {oldHealth} -> {health}");
-            TakeDamage(oldHealth - health);
-        }
-        else if(oldHealth < health)
-        {
-            Debug.Log($"Actor {agnet_id} healed: {oldHealth} -> {health}");
+            int damage = oldHealth - health;
+            TakeDamage(damage);
         }
 
         this.health = health;
         UpdateHealthUI(health);
-
-
-
-
     }
 
 }

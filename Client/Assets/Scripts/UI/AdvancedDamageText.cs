@@ -24,10 +24,37 @@ public class AdvancedDamageText : DamageText
     private Color originalColor;
     private Vector3 originalPosition;
     
-
+    void Update()
+    {
+        // Billboard component handles camera-facing automatically
+        // No manual camera tracking needed
+    }
     
     public void ShowAdvancedDamage(int damage, bool isCritical = false, bool isHeal = false, DamageType damageType = DamageType.Normal)
     {
+        // Ensure GameObject is active before starting coroutines
+        if (!gameObject.activeInHierarchy)
+        {
+            Debug.LogWarning("AdvancedDamageText: GameObject is not active, activating it first.");
+            gameObject.SetActive(true);
+        }
+        
+        // Ensure font is set before setting text
+        if (damageText.font == null)
+        {
+            TMP_FontAsset defaultFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+            if (defaultFont != null)
+            {
+                damageText.font = defaultFont;
+                damageText.fontSharedMaterial = defaultFont.material;
+            }
+            else
+            {
+                Debug.LogError("AdvancedDamageText: No font asset available for TextMeshPro!");
+                return;
+            }
+        }
+        
         // Set text and color
         damageText.text = damage.ToString();
         
@@ -54,6 +81,9 @@ public class AdvancedDamageText : DamageText
                 damageText.color = damageColor;
                 break;
         }
+        
+        // Force mesh update to ensure text renders properly
+        damageText.ForceMeshUpdate();
         
         originalColor = damageText.color;
         originalPosition = transform.localPosition;
@@ -189,6 +219,9 @@ public class AdvancedDamageText : DamageText
         AdvancedDamageText damageText = damageTextObj.AddComponent<AdvancedDamageText>();
         CanvasGroup canvasGroup = damageTextObj.AddComponent<CanvasGroup>();
         
+        // Add Billboard component for consistent camera-facing behavior (same as HealthBar)
+        damageTextObj.AddComponent<Billboard>();
+        
         // Create text object
         GameObject textObj = new GameObject("Text");
         textObj.transform.SetParent(damageTextObj.transform);
@@ -197,10 +230,45 @@ public class AdvancedDamageText : DamageText
         
         // Add TextMeshPro component
         TextMeshProUGUI textComponent = textObj.AddComponent<TextMeshProUGUI>();
-        textComponent.fontSize = 24;
+        textComponent.fontSize = 48; // Increased from 24 to 48 for better visibility
         textComponent.fontStyle = FontStyles.Bold;
         textComponent.alignment = TextAlignmentOptions.Center;
         textComponent.text = "0";
+        
+        // Set default font asset to prevent NullReferenceException
+        if (textComponent.font == null)
+        {
+            // Try to find a default TMP font asset
+            TMP_FontAsset defaultFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+            if (defaultFont == null)
+            {
+                // If the default font is not found, try to find any TMP font asset
+                TMP_FontAsset[] fonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+                if (fonts.Length > 0)
+                {
+                    defaultFont = fonts[0];
+                }
+            }
+            
+            if (defaultFont != null)
+            {
+                textComponent.font = defaultFont;
+                textComponent.fontSharedMaterial = defaultFont.material;
+            }
+            else
+            {
+                Debug.LogWarning("No TMP font asset found. TextMeshPro may not render properly.");
+                // Try to force a rebuild to see if it helps
+                textComponent.ForceMeshUpdate();
+            }
+        }
+        
+        // Set RectTransform for proper sizing
+        RectTransform textRect = textComponent.GetComponent<RectTransform>();
+        textRect.sizeDelta = new Vector2(400, 100); // Increased from 200x50 to 400x100 for larger text
+        textRect.anchorMin = new Vector2(0.5f, 0.5f);
+        textRect.anchorMax = new Vector2(0.5f, 0.5f);
+        textRect.pivot = new Vector2(0.5f, 0.5f);
         
         // Set references
         damageText.damageText = textComponent;

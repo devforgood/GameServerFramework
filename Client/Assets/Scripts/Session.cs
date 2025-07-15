@@ -244,14 +244,14 @@ public class Session : MonoBehaviour
 	private void HandleUpdateActorNotify(syncnet.GameMessage recv_msg)
 	{
 		syncnet.UpdateActorNotify updateActorNotify = recv_msg.Msg<syncnet.UpdateActorNotify>().Value;
-		Debug.Log($"HandleUpdateActorNotify: {updateActorNotify.ActorsLength} actors received");
+		//Debug.LogWarning($"HandleUpdateActorNotify: {updateActorNotify.ActorsLength} actors received");
 		
 		for (int i = 0; i < updateActorNotify.ActorsLength; ++i)	
 		{
 			var updatedActor = updateActorNotify.Actors(i).Value;
 			var agent_id = updatedActor.AgentId;
 
-			Debug.Log($"Processing Actor {agent_id}: Type={updatedActor.GameObjectType}, State={updatedActor.State?.State}, Health={updatedActor.Health?.Health}");
+			//Debug.LogWarning($"Processing Actor {agent_id}: Type={updatedActor.GameObjectType}, State={updatedActor.State?.State}, Health={updatedActor.Health?.Health}");
 
 			// Pos가 null인 경우 처리
 			Vector3 pos = new Vector3();
@@ -273,7 +273,7 @@ public class Session : MonoBehaviour
 				{
 					game_objects[agent_id] = game_object;
 					actor = game_object.GetComponent<Actor>();
-					Debug.Log($"Created new {updatedActor.GameObjectType} object for agent {agent_id}");
+					Debug.LogWarning($"Created new {updatedActor.GameObjectType} object for agent {agent_id}");
 				}
 			}
 			else
@@ -361,6 +361,12 @@ public class Session : MonoBehaviour
 		// HP 업데이트
 		if (updatedActor.Health.HasValue)
 		{
+            int oldHealth = actor.health;
+            int newHealth = updatedActor.Health.Value.Health;
+            if (oldHealth > newHealth)
+            {
+                Debug.LogWarning($"=== DAMAGE EVENT === Session: Actor {actor.agnet_id} ({actor.gameObject.name}) health: {oldHealth} -> {newHealth}");
+            }
             actor.UpdateHealth(updatedActor.Health.Value.Health);
 		}
 
@@ -372,13 +378,6 @@ public class Session : MonoBehaviour
 			{
 				UpdateMonsterVisuals(actor.gameObject, updatedActor.State.Value.State);
 			}
-			
-			// 몬스터 상태 변경 로그
-			Debug.Log($"Monster {actor.agnet_id} - State: {actor.state}, Health: {actor.health}, Pos: ({pos.x}, {pos.y}, {pos.z})");
-		}
-		else if (updatedActor.GameObjectType == GameObjectType.Character)
-		{
-			Debug.Log($"Player Agent ID: {actor.agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
 		}
 	}
 
