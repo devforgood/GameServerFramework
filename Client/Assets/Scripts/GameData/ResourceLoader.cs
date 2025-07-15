@@ -57,6 +57,7 @@ namespace Assets.Scripts.GameData
 
             of("GameData/skill", bytes => SkillList.Parser.ParseFrom(bytes), skillList => skillList.Skills, skill=>skill.Id, Skills);
             of("GameData/item", bytes => ItemList.Parser.ParseFrom(bytes), itemList => itemList.Items, item=>item.Id, Items);
+            of("GameData/quest", bytes => QuestList.Parser.ParseFrom(bytes), questList => questList.Quests, quest=>quest.Id, GameManager.Instance.resource.Quests);
 
             // 게임 데이터 로드가 완료되었음을 로그로 남김
             Debug.Log("ResourceLoader: Game data loaded successfully.");
@@ -65,5 +66,6 @@ namespace Assets.Scripts.GameData
 
         public Dictionary<int, Gamedata.Skill> Skills = new Dictionary<int, Gamedata.Skill>();
         public Dictionary<int, Gamedata.Item> Items = new Dictionary<int, Gamedata.Item>();
+        public Dictionary<int, Gamedata.Quest> Quests = new Dictionary<int, Gamedata.Quest>();
     }
 }
