@@ -51,8 +51,20 @@ public class Actor : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        health = Mathf.Clamp(health - damage, 0, 100);
-        UpdateHealthUI(health);
+        // Show damage text UI
+        ShowDamageText(damage);
+        
+        // Optional: Add screen shake or other effects
+        // AddScreenShake(damage);
+    }
+    
+    private void ShowDamageText(int damage)
+    {
+        // Determine if it's a critical hit (you can implement your own logic)
+        bool isCritical = damage > 20; // Example: damage over 20 is critical
+        
+        // Use DamageTextManager for better performance and organization
+        DamageTextManager.Instance.ShowDamage(agnet_id, transform.position, damage, isCritical);
     }
 
     public virtual void UpdateState(GameObject game_object, syncnet.AIState newState)
@@ -108,4 +120,28 @@ public class Actor : MonoBehaviour
         // 오브젝트 파괴
         Destroy(gameObject);
     }
+
+    public void UpdateHealth(int health) 
+    {
+        Debug.Log($"Health updated for {gameObject.name}: {health}");
+
+        var oldHealth = this.health;
+        if(oldHealth > health)
+        {
+            Debug.Log($"Actor {agnet_id} took damage: {oldHealth} -> {health}");
+            TakeDamage(oldHealth - health);
+        }
+        else if(oldHealth < health)
+        {
+            Debug.Log($"Actor {agnet_id} healed: {oldHealth} -> {health}");
+        }
+
+        this.health = health;
+        UpdateHealthUI(health);
+
+
+
+
+    }
+
 }

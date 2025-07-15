@@ -1,4 +1,4 @@
-﻿using FlatBuffers;
+using FlatBuffers;
 using syncnet;
 using System;
 using System.Collections;
@@ -361,9 +361,7 @@ public class Session : MonoBehaviour
 		// HP 업데이트
 		if (updatedActor.Health.HasValue)
 		{
-			actor.health = updatedActor.Health.Value.Health;
-			// 체력 표시 UI 업데이트
-			UpdateHealthUI(actor.gameObject, actor.health);
+            actor.UpdateHealth(updatedActor.Health.Value.Health);
 		}
 
 		// 몬스터 특별 처리
@@ -384,16 +382,7 @@ public class Session : MonoBehaviour
 		}
 	}
 
-	private void UpdateHealthUI(GameObject gameObject, int health)
-	{
-		// 체력 UI 업데이트 로직
-		var actor = gameObject.GetComponent<Actor>();
-		if (actor != null)
-		{
-			actor.UpdateHealthUI(health);
-		}
-		Debug.Log($"Health updated for {gameObject.name}: {health}");
-	}
+
 
 	private void UpdateMonsterVisuals(GameObject monster, AIState state)
 	{
