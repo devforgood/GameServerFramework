@@ -76,6 +76,51 @@ struct SkillDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SkillDefaultTypeInternal _Skill_default_instance_;
 
+inline constexpr Quest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : reward_item_ids_{},
+        _reward_item_ids_cached_byte_size_{0},
+        type_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        name_id_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        desc_id_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        objective_type_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        id_{0},
+        level_requirement_{0},
+        reward_exp_{0},
+        reward_gold_{0},
+        is_repeatable_{false},
+        objective_count_{0},
+        objective_target_id_{0},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR Quest::Quest(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct QuestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR QuestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~QuestDefaultTypeInternal() {}
+  union {
+    Quest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 QuestDefaultTypeInternal _Quest_default_instance_;
+
 inline constexpr Option::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : value_{0},
@@ -126,6 +171,31 @@ struct SkillListDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 SkillListDefaultTypeInternal _SkillList_default_instance_;
+
+inline constexpr QuestList::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : quests_{},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR QuestList::QuestList(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct QuestListDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR QuestListDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~QuestListDefaultTypeInternal() {}
+  union {
+    QuestList _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 QuestListDefaultTypeInternal _QuestList_default_instance_;
 
 inline constexpr Item::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
@@ -261,6 +331,35 @@ const ::uint32_t
         ~0u,  // no _split_
         ~0u,  // no sizeof(Split)
         PROTOBUF_FIELD_OFFSET(::gamedata::ItemList, _impl_.items_),
+        ~0u,  // no _has_bits_
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.id_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.type_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.name_id_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.desc_id_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.level_requirement_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.reward_item_ids_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.reward_exp_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.reward_gold_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.is_repeatable_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.objective_type_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.objective_count_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.objective_target_id_),
+        ~0u,  // no _has_bits_
+        PROTOBUF_FIELD_OFFSET(::gamedata::QuestList, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        ~0u,  // no _inlined_string_donated_
+        ~0u,  // no _split_
+        ~0u,  // no sizeof(Split)
+        PROTOBUF_FIELD_OFFSET(::gamedata::QuestList, _impl_.quests_),
 };
 
 static const ::_pbi::MigrationSchema
@@ -270,6 +369,8 @@ static const ::_pbi::MigrationSchema
         {33, -1, -1, sizeof(::gamedata::Option)},
         {43, -1, -1, sizeof(::gamedata::Item)},
         {57, -1, -1, sizeof(::gamedata::ItemList)},
+        {66, -1, -1, sizeof(::gamedata::Quest)},
+        {86, -1, -1, sizeof(::gamedata::QuestList)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::gamedata::_Skill_default_instance_._instance,
@@ -277,6 +378,8 @@ static const ::_pb::Message* const file_default_instances[] = {
     &::gamedata::_Option_default_instance_._instance,
     &::gamedata::_Item_default_instance_._instance,
     &::gamedata::_ItemList_default_instance_._instance,
+    &::gamedata::_Quest_default_instance_._instance,
+    &::gamedata::_QuestList_default_instance_._instance,
 };
 const char descriptor_table_protodef_gamedata_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
     protodesc_cold) = {
@@ -293,19 +396,27 @@ const char descriptor_table_protodef_gamedata_2eproto[] ABSL_ATTRIBUTE_SECTION_V
     "\030\001 \001(\005\022\014\n\004type\030\002 \001(\t\022\014\n\004heal\030\003 \001(\005\022\017\n\007na"
     "me_id\030\004 \001(\t\022\017\n\007desc_id\030\005 \001(\t\022&\n\014item_opt"
     "ions\030\006 \003(\0132\020.gamedata.Option\")\n\010ItemList"
-    "\022\035\n\005items\030\001 \003(\0132\016.gamedata.Itemb\006proto3"
+    "\022\035\n\005items\030\001 \003(\0132\016.gamedata.Item\"\205\002\n\005Ques"
+    "t\022\n\n\002id\030\001 \001(\005\022\014\n\004type\030\002 \001(\t\022\017\n\007name_id\030\003"
+    " \001(\t\022\017\n\007desc_id\030\004 \001(\t\022\031\n\021level_requireme"
+    "nt\030\005 \001(\005\022\027\n\017reward_item_ids\030\006 \003(\005\022\022\n\nrew"
+    "ard_exp\030\007 \001(\005\022\023\n\013reward_gold\030\010 \001(\005\022\025\n\ris"
+    "_repeatable\030\t \001(\010\022\026\n\016objective_type\030\n \001("
+    "\t\022\027\n\017objective_count\030\013 \001(\005\022\033\n\023objective_"
+    "target_id\030\014 \001(\005\",\n\tQuestList\022\037\n\006quests\030\001"
+    " \003(\0132\017.gamedata.Questb\006proto3"
 };
 static ::absl::once_flag descriptor_table_gamedata_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_gamedata_2eproto = {
     false,
     false,
-    559,
+    869,
     descriptor_table_protodef_gamedata_2eproto,
     "gamedata.proto",
     &descriptor_table_gamedata_2eproto_once,
     nullptr,
     0,
-    5,
+    7,
     schemas,
     file_default_instances,
     TableStruct_gamedata_2eproto::offsets,
@@ -2020,6 +2131,779 @@ void ItemList::InternalSwap(ItemList* PROTOBUF_RESTRICT other) {
 }
 
 ::google::protobuf::Metadata ItemList::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class Quest::_Internal {
+ public:
+};
+
+Quest::Quest(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:gamedata.Quest)
+}
+inline PROTOBUF_NDEBUG_INLINE Quest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::gamedata::Quest& from_msg)
+      : reward_item_ids_{visibility, arena, from.reward_item_ids_},
+        _reward_item_ids_cached_byte_size_{0},
+        type_(arena, from.type_),
+        name_id_(arena, from.name_id_),
+        desc_id_(arena, from.desc_id_),
+        objective_type_(arena, from.objective_type_),
+        _cached_size_{0} {}
+
+Quest::Quest(
+    ::google::protobuf::Arena* arena,
+    const Quest& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  Quest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  ::memcpy(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, id_),
+           reinterpret_cast<const char *>(&from._impl_) +
+               offsetof(Impl_, id_),
+           offsetof(Impl_, objective_target_id_) -
+               offsetof(Impl_, id_) +
+               sizeof(Impl_::objective_target_id_));
+
+  // @@protoc_insertion_point(copy_constructor:gamedata.Quest)
+}
+inline PROTOBUF_NDEBUG_INLINE Quest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : reward_item_ids_{visibility, arena},
+        _reward_item_ids_cached_byte_size_{0},
+        type_(arena),
+        name_id_(arena),
+        desc_id_(arena),
+        objective_type_(arena),
+        _cached_size_{0} {}
+
+inline void Quest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, id_),
+           0,
+           offsetof(Impl_, objective_target_id_) -
+               offsetof(Impl_, id_) +
+               sizeof(Impl_::objective_target_id_));
+}
+Quest::~Quest() {
+  // @@protoc_insertion_point(destructor:gamedata.Quest)
+  SharedDtor(*this);
+}
+inline void Quest::SharedDtor(MessageLite& self) {
+  Quest& this_ = static_cast<Quest&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.type_.Destroy();
+  this_._impl_.name_id_.Destroy();
+  this_._impl_.desc_id_.Destroy();
+  this_._impl_.objective_type_.Destroy();
+  this_._impl_.~Impl_();
+}
+
+inline void* Quest::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) Quest(arena);
+}
+constexpr auto Quest::InternalNewImpl_() {
+  constexpr auto arena_bits = ::google::protobuf::internal::EncodePlacementArenaOffsets({
+      PROTOBUF_FIELD_OFFSET(Quest, _impl_.reward_item_ids_) +
+          decltype(Quest::_impl_.reward_item_ids_)::
+              InternalGetArenaOffset(
+                  ::google::protobuf::Message::internal_visibility()),
+  });
+  if (arena_bits.has_value()) {
+    return ::google::protobuf::internal::MessageCreator::CopyInit(
+        sizeof(Quest), alignof(Quest), *arena_bits);
+  } else {
+    return ::google::protobuf::internal::MessageCreator(&Quest::PlacementNew_,
+                                 sizeof(Quest),
+                                 alignof(Quest));
+  }
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull Quest::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_Quest_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &Quest::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<Quest>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &Quest::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<Quest>(), &Quest::ByteSizeLong,
+            &Quest::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(Quest, _impl_._cached_size_),
+        false,
+    },
+    &Quest::kDescriptorMethods,
+    &descriptor_table_gamedata_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* Quest::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<4, 12, 0, 63, 2> Quest::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    12, 120,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294963200,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    12,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::gamedata::Quest>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // int32 id = 1;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(Quest, _impl_.id_), 63>(),
+     {8, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.id_)}},
+    // string type = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.type_)}},
+    // string name_id = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.name_id_)}},
+    // string desc_id = 4;
+    {::_pbi::TcParser::FastUS1,
+     {34, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.desc_id_)}},
+    // int32 level_requirement = 5;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(Quest, _impl_.level_requirement_), 63>(),
+     {40, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.level_requirement_)}},
+    // repeated int32 reward_item_ids = 6;
+    {::_pbi::TcParser::FastV32P1,
+     {50, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.reward_item_ids_)}},
+    // int32 reward_exp = 7;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(Quest, _impl_.reward_exp_), 63>(),
+     {56, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.reward_exp_)}},
+    // int32 reward_gold = 8;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(Quest, _impl_.reward_gold_), 63>(),
+     {64, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.reward_gold_)}},
+    // bool is_repeatable = 9;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(Quest, _impl_.is_repeatable_), 63>(),
+     {72, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.is_repeatable_)}},
+    // string objective_type = 10;
+    {::_pbi::TcParser::FastUS1,
+     {82, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.objective_type_)}},
+    // int32 objective_count = 11;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(Quest, _impl_.objective_count_), 63>(),
+     {88, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.objective_count_)}},
+    // int32 objective_target_id = 12;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(Quest, _impl_.objective_target_id_), 63>(),
+     {96, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.objective_target_id_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // int32 id = 1;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+    // string type = 2;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.type_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string name_id = 3;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.name_id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string desc_id = 4;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.desc_id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // int32 level_requirement = 5;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.level_requirement_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+    // repeated int32 reward_item_ids = 6;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.reward_item_ids_), 0, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kPackedInt32)},
+    // int32 reward_exp = 7;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.reward_exp_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+    // int32 reward_gold = 8;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.reward_gold_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+    // bool is_repeatable = 9;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.is_repeatable_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBool)},
+    // string objective_type = 10;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.objective_type_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // int32 objective_count = 11;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.objective_count_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+    // int32 objective_target_id = 12;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.objective_target_id_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+  }},
+  // no aux_entries
+  {{
+    "\16\0\4\7\7\0\0\0\0\0\16\0\0\0\0\0"
+    "gamedata.Quest"
+    "type"
+    "name_id"
+    "desc_id"
+    "objective_type"
+  }},
+};
+
+PROTOBUF_NOINLINE void Quest::Clear() {
+// @@protoc_insertion_point(message_clear_start:gamedata.Quest)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.reward_item_ids_.Clear();
+  _impl_.type_.ClearToEmpty();
+  _impl_.name_id_.ClearToEmpty();
+  _impl_.desc_id_.ClearToEmpty();
+  _impl_.objective_type_.ClearToEmpty();
+  ::memset(&_impl_.id_, 0, static_cast<::size_t>(
+      reinterpret_cast<char*>(&_impl_.objective_target_id_) -
+      reinterpret_cast<char*>(&_impl_.id_)) + sizeof(_impl_.objective_target_id_));
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* Quest::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const Quest& this_ = static_cast<const Quest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* Quest::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const Quest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:gamedata.Quest)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          // int32 id = 1;
+          if (this_._internal_id() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt32ToArrayWithField<1>(
+                    stream, this_._internal_id(), target);
+          }
+
+          // string type = 2;
+          if (!this_._internal_type().empty()) {
+            const std::string& _s = this_._internal_type();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "gamedata.Quest.type");
+            target = stream->WriteStringMaybeAliased(2, _s, target);
+          }
+
+          // string name_id = 3;
+          if (!this_._internal_name_id().empty()) {
+            const std::string& _s = this_._internal_name_id();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "gamedata.Quest.name_id");
+            target = stream->WriteStringMaybeAliased(3, _s, target);
+          }
+
+          // string desc_id = 4;
+          if (!this_._internal_desc_id().empty()) {
+            const std::string& _s = this_._internal_desc_id();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "gamedata.Quest.desc_id");
+            target = stream->WriteStringMaybeAliased(4, _s, target);
+          }
+
+          // int32 level_requirement = 5;
+          if (this_._internal_level_requirement() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt32ToArrayWithField<5>(
+                    stream, this_._internal_level_requirement(), target);
+          }
+
+          // repeated int32 reward_item_ids = 6;
+          {
+            int byte_size = this_._impl_._reward_item_ids_cached_byte_size_.Get();
+            if (byte_size > 0) {
+              target = stream->WriteInt32Packed(
+                  6, this_._internal_reward_item_ids(), byte_size, target);
+            }
+          }
+
+          // int32 reward_exp = 7;
+          if (this_._internal_reward_exp() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt32ToArrayWithField<7>(
+                    stream, this_._internal_reward_exp(), target);
+          }
+
+          // int32 reward_gold = 8;
+          if (this_._internal_reward_gold() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt32ToArrayWithField<8>(
+                    stream, this_._internal_reward_gold(), target);
+          }
+
+          // bool is_repeatable = 9;
+          if (this_._internal_is_repeatable() != 0) {
+            target = stream->EnsureSpace(target);
+            target = ::_pbi::WireFormatLite::WriteBoolToArray(
+                9, this_._internal_is_repeatable(), target);
+          }
+
+          // string objective_type = 10;
+          if (!this_._internal_objective_type().empty()) {
+            const std::string& _s = this_._internal_objective_type();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "gamedata.Quest.objective_type");
+            target = stream->WriteStringMaybeAliased(10, _s, target);
+          }
+
+          // int32 objective_count = 11;
+          if (this_._internal_objective_count() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt32ToArrayWithField<11>(
+                    stream, this_._internal_objective_count(), target);
+          }
+
+          // int32 objective_target_id = 12;
+          if (this_._internal_objective_target_id() != 0) {
+            target = ::google::protobuf::internal::WireFormatLite::
+                WriteInt32ToArrayWithField<12>(
+                    stream, this_._internal_objective_target_id(), target);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:gamedata.Quest)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t Quest::ByteSizeLong(const MessageLite& base) {
+          const Quest& this_ = static_cast<const Quest&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t Quest::ByteSizeLong() const {
+          const Quest& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:gamedata.Quest)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // repeated int32 reward_item_ids = 6;
+            {
+              total_size +=
+                  ::_pbi::WireFormatLite::Int32SizeWithPackedTagSize(
+                      this_._internal_reward_item_ids(), 1,
+                      this_._impl_._reward_item_ids_cached_byte_size_);
+            }
+          }
+           {
+            // string type = 2;
+            if (!this_._internal_type().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_type());
+            }
+            // string name_id = 3;
+            if (!this_._internal_name_id().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_name_id());
+            }
+            // string desc_id = 4;
+            if (!this_._internal_desc_id().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_desc_id());
+            }
+            // string objective_type = 10;
+            if (!this_._internal_objective_type().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_objective_type());
+            }
+            // int32 id = 1;
+            if (this_._internal_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+                  this_._internal_id());
+            }
+            // int32 level_requirement = 5;
+            if (this_._internal_level_requirement() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+                  this_._internal_level_requirement());
+            }
+            // int32 reward_exp = 7;
+            if (this_._internal_reward_exp() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+                  this_._internal_reward_exp());
+            }
+            // int32 reward_gold = 8;
+            if (this_._internal_reward_gold() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+                  this_._internal_reward_gold());
+            }
+            // bool is_repeatable = 9;
+            if (this_._internal_is_repeatable() != 0) {
+              total_size += 2;
+            }
+            // int32 objective_count = 11;
+            if (this_._internal_objective_count() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+                  this_._internal_objective_count());
+            }
+            // int32 objective_target_id = 12;
+            if (this_._internal_objective_target_id() != 0) {
+              total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+                  this_._internal_objective_target_id());
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void Quest::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<Quest*>(&to_msg);
+  auto& from = static_cast<const Quest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:gamedata.Quest)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_internal_mutable_reward_item_ids()->MergeFrom(from._internal_reward_item_ids());
+  if (!from._internal_type().empty()) {
+    _this->_internal_set_type(from._internal_type());
+  }
+  if (!from._internal_name_id().empty()) {
+    _this->_internal_set_name_id(from._internal_name_id());
+  }
+  if (!from._internal_desc_id().empty()) {
+    _this->_internal_set_desc_id(from._internal_desc_id());
+  }
+  if (!from._internal_objective_type().empty()) {
+    _this->_internal_set_objective_type(from._internal_objective_type());
+  }
+  if (from._internal_id() != 0) {
+    _this->_impl_.id_ = from._impl_.id_;
+  }
+  if (from._internal_level_requirement() != 0) {
+    _this->_impl_.level_requirement_ = from._impl_.level_requirement_;
+  }
+  if (from._internal_reward_exp() != 0) {
+    _this->_impl_.reward_exp_ = from._impl_.reward_exp_;
+  }
+  if (from._internal_reward_gold() != 0) {
+    _this->_impl_.reward_gold_ = from._impl_.reward_gold_;
+  }
+  if (from._internal_is_repeatable() != 0) {
+    _this->_impl_.is_repeatable_ = from._impl_.is_repeatable_;
+  }
+  if (from._internal_objective_count() != 0) {
+    _this->_impl_.objective_count_ = from._impl_.objective_count_;
+  }
+  if (from._internal_objective_target_id() != 0) {
+    _this->_impl_.objective_target_id_ = from._impl_.objective_target_id_;
+  }
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void Quest::CopyFrom(const Quest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:gamedata.Quest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void Quest::InternalSwap(Quest* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.reward_item_ids_.InternalSwap(&other->_impl_.reward_item_ids_);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.type_, &other->_impl_.type_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.name_id_, &other->_impl_.name_id_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.desc_id_, &other->_impl_.desc_id_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.objective_type_, &other->_impl_.objective_type_, arena);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(Quest, _impl_.objective_target_id_)
+      + sizeof(Quest::_impl_.objective_target_id_)
+      - PROTOBUF_FIELD_OFFSET(Quest, _impl_.id_)>(
+          reinterpret_cast<char*>(&_impl_.id_),
+          reinterpret_cast<char*>(&other->_impl_.id_));
+}
+
+::google::protobuf::Metadata Quest::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class QuestList::_Internal {
+ public:
+};
+
+QuestList::QuestList(::google::protobuf::Arena* arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:gamedata.QuestList)
+}
+inline PROTOBUF_NDEBUG_INLINE QuestList::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from, const ::gamedata::QuestList& from_msg)
+      : quests_{visibility, arena, from.quests_},
+        _cached_size_{0} {}
+
+QuestList::QuestList(
+    ::google::protobuf::Arena* arena,
+    const QuestList& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, _class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  QuestList* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+
+  // @@protoc_insertion_point(copy_constructor:gamedata.QuestList)
+}
+inline PROTOBUF_NDEBUG_INLINE QuestList::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : quests_{visibility, arena},
+        _cached_size_{0} {}
+
+inline void QuestList::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+}
+QuestList::~QuestList() {
+  // @@protoc_insertion_point(destructor:gamedata.QuestList)
+  SharedDtor(*this);
+}
+inline void QuestList::SharedDtor(MessageLite& self) {
+  QuestList& this_ = static_cast<QuestList&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.~Impl_();
+}
+
+inline void* QuestList::PlacementNew_(const void*, void* mem,
+                                        ::google::protobuf::Arena* arena) {
+  return ::new (mem) QuestList(arena);
+}
+constexpr auto QuestList::InternalNewImpl_() {
+  constexpr auto arena_bits = ::google::protobuf::internal::EncodePlacementArenaOffsets({
+      PROTOBUF_FIELD_OFFSET(QuestList, _impl_.quests_) +
+          decltype(QuestList::_impl_.quests_)::
+              InternalGetArenaOffset(
+                  ::google::protobuf::Message::internal_visibility()),
+  });
+  if (arena_bits.has_value()) {
+    return ::google::protobuf::internal::MessageCreator::ZeroInit(
+        sizeof(QuestList), alignof(QuestList), *arena_bits);
+  } else {
+    return ::google::protobuf::internal::MessageCreator(&QuestList::PlacementNew_,
+                                 sizeof(QuestList),
+                                 alignof(QuestList));
+  }
+}
+PROTOBUF_CONSTINIT
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::google::protobuf::internal::ClassDataFull QuestList::_class_data_ = {
+    ::google::protobuf::internal::ClassData{
+        &_QuestList_default_instance_._instance,
+        &_table_.header,
+        nullptr,  // OnDemandRegisterArenaDtor
+        nullptr,  // IsInitialized
+        &QuestList::MergeImpl,
+        ::google::protobuf::Message::GetNewImpl<QuestList>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        &QuestList::SharedDtor,
+        ::google::protobuf::Message::GetClearImpl<QuestList>(), &QuestList::ByteSizeLong,
+            &QuestList::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+        PROTOBUF_FIELD_OFFSET(QuestList, _impl_._cached_size_),
+        false,
+    },
+    &QuestList::kDescriptorMethods,
+    &descriptor_table_gamedata_2eproto,
+    nullptr,  // tracker
+};
+const ::google::protobuf::internal::ClassData* QuestList::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(_class_data_.tc_table);
+  return _class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<0, 1, 1, 0, 2> QuestList::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    1, 0,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967294,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    1,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    _class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::gamedata::QuestList>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // repeated .gamedata.Quest quests = 1;
+    {::_pbi::TcParser::FastMtR1,
+     {10, 63, 0, PROTOBUF_FIELD_OFFSET(QuestList, _impl_.quests_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // repeated .gamedata.Quest quests = 1;
+    {PROTOBUF_FIELD_OFFSET(QuestList, _impl_.quests_), 0, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::gamedata::Quest>()},
+  }}, {{
+  }},
+};
+
+PROTOBUF_NOINLINE void QuestList::Clear() {
+// @@protoc_insertion_point(message_clear_start:gamedata.QuestList)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.quests_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::uint8_t* QuestList::_InternalSerialize(
+            const MessageLite& base, ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) {
+          const QuestList& this_ = static_cast<const QuestList&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::uint8_t* QuestList::_InternalSerialize(
+            ::uint8_t* target,
+            ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+          const QuestList& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(serialize_to_array_start:gamedata.QuestList)
+          ::uint32_t cached_has_bits = 0;
+          (void)cached_has_bits;
+
+          // repeated .gamedata.Quest quests = 1;
+          for (unsigned i = 0, n = static_cast<unsigned>(
+                                   this_._internal_quests_size());
+               i < n; i++) {
+            const auto& repfield = this_._internal_quests().Get(i);
+            target =
+                ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+                    1, repfield, repfield.GetCachedSize(),
+                    target, stream);
+          }
+
+          if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+            target =
+                ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+                    this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+          }
+          // @@protoc_insertion_point(serialize_to_array_end:gamedata.QuestList)
+          return target;
+        }
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+        ::size_t QuestList::ByteSizeLong(const MessageLite& base) {
+          const QuestList& this_ = static_cast<const QuestList&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+        ::size_t QuestList::ByteSizeLong() const {
+          const QuestList& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          // @@protoc_insertion_point(message_byte_size_start:gamedata.QuestList)
+          ::size_t total_size = 0;
+
+          ::uint32_t cached_has_bits = 0;
+          // Prevent compiler warnings about cached_has_bits being unused
+          (void)cached_has_bits;
+
+          ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+           {
+            // repeated .gamedata.Quest quests = 1;
+            {
+              total_size += 1UL * this_._internal_quests_size();
+              for (const auto& msg : this_._internal_quests()) {
+                total_size += ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
+              }
+            }
+          }
+          return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                                     &this_._impl_._cached_size_);
+        }
+
+void QuestList::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<QuestList*>(&to_msg);
+  auto& from = static_cast<const QuestList&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:gamedata.QuestList)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_internal_mutable_quests()->MergeFrom(
+      from._internal_quests());
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void QuestList::CopyFrom(const QuestList& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:gamedata.QuestList)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void QuestList::InternalSwap(QuestList* PROTOBUF_RESTRICT other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.quests_.InternalSwap(&other->_impl_.quests_);
+}
+
+::google::protobuf::Metadata QuestList::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // @@protoc_insertion_point(namespace_scope)

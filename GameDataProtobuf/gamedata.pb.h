@@ -61,6 +61,12 @@ extern ItemListDefaultTypeInternal _ItemList_default_instance_;
 class Option;
 struct OptionDefaultTypeInternal;
 extern OptionDefaultTypeInternal _Option_default_instance_;
+class Quest;
+struct QuestDefaultTypeInternal;
+extern QuestDefaultTypeInternal _Quest_default_instance_;
+class QuestList;
+struct QuestListDefaultTypeInternal;
+extern QuestListDefaultTypeInternal _QuestList_default_instance_;
 class Skill;
 struct SkillDefaultTypeInternal;
 extern SkillDefaultTypeInternal _Skill_default_instance_;
@@ -480,6 +486,361 @@ class Skill final : public ::google::protobuf::Message
 };
 // -------------------------------------------------------------------
 
+class Quest final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:gamedata.Quest) */ {
+ public:
+  inline Quest() : Quest(nullptr) {}
+  ~Quest() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(Quest* msg, std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(Quest));
+  }
+#endif
+
+  template <typename = void>
+  explicit PROTOBUF_CONSTEXPR Quest(
+      ::google::protobuf::internal::ConstantInitialized);
+
+  inline Quest(const Quest& from) : Quest(nullptr, from) {}
+  inline Quest(Quest&& from) noexcept
+      : Quest(nullptr, std::move(from)) {}
+  inline Quest& operator=(const Quest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Quest& operator=(Quest&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const Quest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const Quest* internal_default_instance() {
+    return reinterpret_cast<const Quest*>(
+        &_Quest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages = 5;
+  friend void swap(Quest& a, Quest& b) { a.Swap(&b); }
+  inline void Swap(Quest* other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Quest* other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  Quest* New(::google::protobuf::Arena* arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<Quest>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const Quest& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const Quest& from) { Quest::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(
+      ::google::protobuf::MessageLite& to_msg,
+      const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  static ::uint8_t* _InternalSerialize(
+      const MessageLite& msg, ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream);
+
+  public:
+  ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  ::size_t ByteSizeLong() const final;
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(Quest* other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(
+      ::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "gamedata.Quest"; }
+
+ protected:
+  explicit Quest(::google::protobuf::Arena* arena);
+  Quest(::google::protobuf::Arena* arena, const Quest& from);
+  Quest(::google::protobuf::Arena* arena, Quest&& from) noexcept
+      : Quest(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* GetClassData() const PROTOBUF_FINAL;
+  static void* PlacementNew_(const void*, void* mem,
+                             ::google::protobuf::Arena* arena);
+  static constexpr auto InternalNewImpl_();
+  static const ::google::protobuf::internal::ClassDataFull _class_data_;
+
+ public:
+  ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kRewardItemIdsFieldNumber = 6,
+    kTypeFieldNumber = 2,
+    kNameIdFieldNumber = 3,
+    kDescIdFieldNumber = 4,
+    kObjectiveTypeFieldNumber = 10,
+    kIdFieldNumber = 1,
+    kLevelRequirementFieldNumber = 5,
+    kRewardExpFieldNumber = 7,
+    kRewardGoldFieldNumber = 8,
+    kIsRepeatableFieldNumber = 9,
+    kObjectiveCountFieldNumber = 11,
+    kObjectiveTargetIdFieldNumber = 12,
+  };
+  // repeated int32 reward_item_ids = 6;
+  int reward_item_ids_size() const;
+  private:
+  int _internal_reward_item_ids_size() const;
+
+  public:
+  void clear_reward_item_ids() ;
+  ::int32_t reward_item_ids(int index) const;
+  void set_reward_item_ids(int index, ::int32_t value);
+  void add_reward_item_ids(::int32_t value);
+  const ::google::protobuf::RepeatedField<::int32_t>& reward_item_ids() const;
+  ::google::protobuf::RepeatedField<::int32_t>* mutable_reward_item_ids();
+
+  private:
+  const ::google::protobuf::RepeatedField<::int32_t>& _internal_reward_item_ids() const;
+  ::google::protobuf::RepeatedField<::int32_t>* _internal_mutable_reward_item_ids();
+
+  public:
+  // string type = 2;
+  void clear_type() ;
+  const std::string& type() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_type(Arg_&& arg, Args_... args);
+  std::string* mutable_type();
+  PROTOBUF_NODISCARD std::string* release_type();
+  void set_allocated_type(std::string* value);
+
+  private:
+  const std::string& _internal_type() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_type(
+      const std::string& value);
+  std::string* _internal_mutable_type();
+
+  public:
+  // string name_id = 3;
+  void clear_name_id() ;
+  const std::string& name_id() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_name_id(Arg_&& arg, Args_... args);
+  std::string* mutable_name_id();
+  PROTOBUF_NODISCARD std::string* release_name_id();
+  void set_allocated_name_id(std::string* value);
+
+  private:
+  const std::string& _internal_name_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_name_id(
+      const std::string& value);
+  std::string* _internal_mutable_name_id();
+
+  public:
+  // string desc_id = 4;
+  void clear_desc_id() ;
+  const std::string& desc_id() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_desc_id(Arg_&& arg, Args_... args);
+  std::string* mutable_desc_id();
+  PROTOBUF_NODISCARD std::string* release_desc_id();
+  void set_allocated_desc_id(std::string* value);
+
+  private:
+  const std::string& _internal_desc_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_desc_id(
+      const std::string& value);
+  std::string* _internal_mutable_desc_id();
+
+  public:
+  // string objective_type = 10;
+  void clear_objective_type() ;
+  const std::string& objective_type() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_objective_type(Arg_&& arg, Args_... args);
+  std::string* mutable_objective_type();
+  PROTOBUF_NODISCARD std::string* release_objective_type();
+  void set_allocated_objective_type(std::string* value);
+
+  private:
+  const std::string& _internal_objective_type() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_objective_type(
+      const std::string& value);
+  std::string* _internal_mutable_objective_type();
+
+  public:
+  // int32 id = 1;
+  void clear_id() ;
+  ::int32_t id() const;
+  void set_id(::int32_t value);
+
+  private:
+  ::int32_t _internal_id() const;
+  void _internal_set_id(::int32_t value);
+
+  public:
+  // int32 level_requirement = 5;
+  void clear_level_requirement() ;
+  ::int32_t level_requirement() const;
+  void set_level_requirement(::int32_t value);
+
+  private:
+  ::int32_t _internal_level_requirement() const;
+  void _internal_set_level_requirement(::int32_t value);
+
+  public:
+  // int32 reward_exp = 7;
+  void clear_reward_exp() ;
+  ::int32_t reward_exp() const;
+  void set_reward_exp(::int32_t value);
+
+  private:
+  ::int32_t _internal_reward_exp() const;
+  void _internal_set_reward_exp(::int32_t value);
+
+  public:
+  // int32 reward_gold = 8;
+  void clear_reward_gold() ;
+  ::int32_t reward_gold() const;
+  void set_reward_gold(::int32_t value);
+
+  private:
+  ::int32_t _internal_reward_gold() const;
+  void _internal_set_reward_gold(::int32_t value);
+
+  public:
+  // bool is_repeatable = 9;
+  void clear_is_repeatable() ;
+  bool is_repeatable() const;
+  void set_is_repeatable(bool value);
+
+  private:
+  bool _internal_is_repeatable() const;
+  void _internal_set_is_repeatable(bool value);
+
+  public:
+  // int32 objective_count = 11;
+  void clear_objective_count() ;
+  ::int32_t objective_count() const;
+  void set_objective_count(::int32_t value);
+
+  private:
+  ::int32_t _internal_objective_count() const;
+  void _internal_set_objective_count(::int32_t value);
+
+  public:
+  // int32 objective_target_id = 12;
+  void clear_objective_target_id() ;
+  ::int32_t objective_target_id() const;
+  void set_objective_target_id(::int32_t value);
+
+  private:
+  ::int32_t _internal_objective_target_id() const;
+  void _internal_set_objective_target_id(::int32_t value);
+
+  public:
+  // @@protoc_insertion_point(class_scope:gamedata.Quest)
+ private:
+  class _Internal;
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<
+      4, 12, 0,
+      63, 2>
+      _table_;
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(
+        ::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                          ::google::protobuf::Arena* arena);
+    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                          ::google::protobuf::Arena* arena, const Impl_& from,
+                          const Quest& from_msg);
+    ::google::protobuf::RepeatedField<::int32_t> reward_item_ids_;
+    ::google::protobuf::internal::CachedSize _reward_item_ids_cached_byte_size_;
+    ::google::protobuf::internal::ArenaStringPtr type_;
+    ::google::protobuf::internal::ArenaStringPtr name_id_;
+    ::google::protobuf::internal::ArenaStringPtr desc_id_;
+    ::google::protobuf::internal::ArenaStringPtr objective_type_;
+    ::int32_t id_;
+    ::int32_t level_requirement_;
+    ::int32_t reward_exp_;
+    ::int32_t reward_gold_;
+    bool is_repeatable_;
+    ::int32_t objective_count_;
+    ::int32_t objective_target_id_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_gamedata_2eproto;
+};
+// -------------------------------------------------------------------
+
 class Option final : public ::google::protobuf::Message
 /* @@protoc_insertion_point(class_definition:gamedata.Option) */ {
  public:
@@ -871,6 +1232,203 @@ class SkillList final : public ::google::protobuf::Message
                           ::google::protobuf::Arena* arena, const Impl_& from,
                           const SkillList& from_msg);
     ::google::protobuf::RepeatedPtrField< ::gamedata::Skill > skills_;
+    ::google::protobuf::internal::CachedSize _cached_size_;
+    PROTOBUF_TSAN_DECLARE_MEMBER
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_gamedata_2eproto;
+};
+// -------------------------------------------------------------------
+
+class QuestList final : public ::google::protobuf::Message
+/* @@protoc_insertion_point(class_definition:gamedata.QuestList) */ {
+ public:
+  inline QuestList() : QuestList(nullptr) {}
+  ~QuestList() PROTOBUF_FINAL;
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+  void operator delete(QuestList* msg, std::destroying_delete_t) {
+    SharedDtor(*msg);
+    ::google::protobuf::internal::SizedDelete(msg, sizeof(QuestList));
+  }
+#endif
+
+  template <typename = void>
+  explicit PROTOBUF_CONSTEXPR QuestList(
+      ::google::protobuf::internal::ConstantInitialized);
+
+  inline QuestList(const QuestList& from) : QuestList(nullptr, from) {}
+  inline QuestList(QuestList&& from) noexcept
+      : QuestList(nullptr, std::move(from)) {}
+  inline QuestList& operator=(const QuestList& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline QuestList& operator=(QuestList&& from) noexcept {
+    if (this == &from) return *this;
+    if (::google::protobuf::internal::CanMoveWithInternalSwap(GetArena(), from.GetArena())) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance);
+  }
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields()
+      ABSL_ATTRIBUTE_LIFETIME_BOUND {
+    return _internal_metadata_.mutable_unknown_fields<::google::protobuf::UnknownFieldSet>();
+  }
+
+  static const ::google::protobuf::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::google::protobuf::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::google::protobuf::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const QuestList& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const QuestList* internal_default_instance() {
+    return reinterpret_cast<const QuestList*>(
+        &_QuestList_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages = 6;
+  friend void swap(QuestList& a, QuestList& b) { a.Swap(&b); }
+  inline void Swap(QuestList* other) {
+    if (other == this) return;
+    if (::google::protobuf::internal::CanUseInternalSwap(GetArena(), other->GetArena())) {
+      InternalSwap(other);
+    } else {
+      ::google::protobuf::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(QuestList* other) {
+    if (other == this) return;
+    ABSL_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  QuestList* New(::google::protobuf::Arena* arena = nullptr) const {
+    return ::google::protobuf::Message::DefaultConstruct<QuestList>(arena);
+  }
+  using ::google::protobuf::Message::CopyFrom;
+  void CopyFrom(const QuestList& from);
+  using ::google::protobuf::Message::MergeFrom;
+  void MergeFrom(const QuestList& from) { QuestList::MergeImpl(*this, from); }
+
+  private:
+  static void MergeImpl(
+      ::google::protobuf::MessageLite& to_msg,
+      const ::google::protobuf::MessageLite& from_msg);
+
+  public:
+  bool IsInitialized() const {
+    return true;
+  }
+  ABSL_ATTRIBUTE_REINITIALIZES void Clear() PROTOBUF_FINAL;
+  #if defined(PROTOBUF_CUSTOM_VTABLE)
+  private:
+  static ::size_t ByteSizeLong(const ::google::protobuf::MessageLite& msg);
+  static ::uint8_t* _InternalSerialize(
+      const MessageLite& msg, ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream);
+
+  public:
+  ::size_t ByteSizeLong() const { return ByteSizeLong(*this); }
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+    return _InternalSerialize(*this, target, stream);
+  }
+  #else   // PROTOBUF_CUSTOM_VTABLE
+  ::size_t ByteSizeLong() const final;
+  ::uint8_t* _InternalSerialize(
+      ::uint8_t* target,
+      ::google::protobuf::io::EpsCopyOutputStream* stream) const final;
+  #endif  // PROTOBUF_CUSTOM_VTABLE
+  int GetCachedSize() const { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::google::protobuf::Arena* arena);
+  static void SharedDtor(MessageLite& self);
+  void InternalSwap(QuestList* other);
+ private:
+  template <typename T>
+  friend ::absl::string_view(
+      ::google::protobuf::internal::GetAnyMessageName)();
+  static ::absl::string_view FullMessageName() { return "gamedata.QuestList"; }
+
+ protected:
+  explicit QuestList(::google::protobuf::Arena* arena);
+  QuestList(::google::protobuf::Arena* arena, const QuestList& from);
+  QuestList(::google::protobuf::Arena* arena, QuestList&& from) noexcept
+      : QuestList(arena) {
+    *this = ::std::move(from);
+  }
+  const ::google::protobuf::internal::ClassData* GetClassData() const PROTOBUF_FINAL;
+  static void* PlacementNew_(const void*, void* mem,
+                             ::google::protobuf::Arena* arena);
+  static constexpr auto InternalNewImpl_();
+  static const ::google::protobuf::internal::ClassDataFull _class_data_;
+
+ public:
+  ::google::protobuf::Metadata GetMetadata() const;
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+  enum : int {
+    kQuestsFieldNumber = 1,
+  };
+  // repeated .gamedata.Quest quests = 1;
+  int quests_size() const;
+  private:
+  int _internal_quests_size() const;
+
+  public:
+  void clear_quests() ;
+  ::gamedata::Quest* mutable_quests(int index);
+  ::google::protobuf::RepeatedPtrField<::gamedata::Quest>* mutable_quests();
+
+  private:
+  const ::google::protobuf::RepeatedPtrField<::gamedata::Quest>& _internal_quests() const;
+  ::google::protobuf::RepeatedPtrField<::gamedata::Quest>* _internal_mutable_quests();
+  public:
+  const ::gamedata::Quest& quests(int index) const;
+  ::gamedata::Quest* add_quests();
+  const ::google::protobuf::RepeatedPtrField<::gamedata::Quest>& quests() const;
+  // @@protoc_insertion_point(class_scope:gamedata.QuestList)
+ private:
+  class _Internal;
+  friend class ::google::protobuf::internal::TcParser;
+  static const ::google::protobuf::internal::TcParseTable<
+      0, 1, 1,
+      0, 2>
+      _table_;
+
+  friend class ::google::protobuf::MessageLite;
+  friend class ::google::protobuf::Arena;
+  template <typename T>
+  friend class ::google::protobuf::Arena::InternalHelper;
+  using InternalArenaConstructable_ = void;
+  using DestructorSkippable_ = void;
+  struct Impl_ {
+    inline explicit constexpr Impl_(
+        ::google::protobuf::internal::ConstantInitialized) noexcept;
+    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                          ::google::protobuf::Arena* arena);
+    inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
+                          ::google::protobuf::Arena* arena, const Impl_& from,
+                          const QuestList& from_msg);
+    ::google::protobuf::RepeatedPtrField< ::gamedata::Quest > quests_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -2241,6 +2799,454 @@ inline ::google::protobuf::RepeatedPtrField<::gamedata::Item>*
 ItemList::_internal_mutable_items() {
   ::google::protobuf::internal::TSanRead(&_impl_);
   return &_impl_.items_;
+}
+
+// -------------------------------------------------------------------
+
+// Quest
+
+// int32 id = 1;
+inline void Quest::clear_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.id_ = 0;
+}
+inline ::int32_t Quest::id() const {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.id)
+  return _internal_id();
+}
+inline void Quest::set_id(::int32_t value) {
+  _internal_set_id(value);
+  // @@protoc_insertion_point(field_set:gamedata.Quest.id)
+}
+inline ::int32_t Quest::_internal_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.id_;
+}
+inline void Quest::_internal_set_id(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.id_ = value;
+}
+
+// string type = 2;
+inline void Quest::clear_type() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.type_.ClearToEmpty();
+}
+inline const std::string& Quest::type() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.type)
+  return _internal_type();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void Quest::set_type(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.type_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:gamedata.Quest.type)
+}
+inline std::string* Quest::mutable_type() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_type();
+  // @@protoc_insertion_point(field_mutable:gamedata.Quest.type)
+  return _s;
+}
+inline const std::string& Quest::_internal_type() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.type_.Get();
+}
+inline void Quest::_internal_set_type(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.type_.Set(value, GetArena());
+}
+inline std::string* Quest::_internal_mutable_type() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.type_.Mutable( GetArena());
+}
+inline std::string* Quest::release_type() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:gamedata.Quest.type)
+  return _impl_.type_.Release();
+}
+inline void Quest::set_allocated_type(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.type_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.type_.IsDefault()) {
+    _impl_.type_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:gamedata.Quest.type)
+}
+
+// string name_id = 3;
+inline void Quest::clear_name_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.name_id_.ClearToEmpty();
+}
+inline const std::string& Quest::name_id() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.name_id)
+  return _internal_name_id();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void Quest::set_name_id(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.name_id_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:gamedata.Quest.name_id)
+}
+inline std::string* Quest::mutable_name_id() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_name_id();
+  // @@protoc_insertion_point(field_mutable:gamedata.Quest.name_id)
+  return _s;
+}
+inline const std::string& Quest::_internal_name_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.name_id_.Get();
+}
+inline void Quest::_internal_set_name_id(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.name_id_.Set(value, GetArena());
+}
+inline std::string* Quest::_internal_mutable_name_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.name_id_.Mutable( GetArena());
+}
+inline std::string* Quest::release_name_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:gamedata.Quest.name_id)
+  return _impl_.name_id_.Release();
+}
+inline void Quest::set_allocated_name_id(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.name_id_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.name_id_.IsDefault()) {
+    _impl_.name_id_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:gamedata.Quest.name_id)
+}
+
+// string desc_id = 4;
+inline void Quest::clear_desc_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.desc_id_.ClearToEmpty();
+}
+inline const std::string& Quest::desc_id() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.desc_id)
+  return _internal_desc_id();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void Quest::set_desc_id(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.desc_id_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:gamedata.Quest.desc_id)
+}
+inline std::string* Quest::mutable_desc_id() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_desc_id();
+  // @@protoc_insertion_point(field_mutable:gamedata.Quest.desc_id)
+  return _s;
+}
+inline const std::string& Quest::_internal_desc_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.desc_id_.Get();
+}
+inline void Quest::_internal_set_desc_id(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.desc_id_.Set(value, GetArena());
+}
+inline std::string* Quest::_internal_mutable_desc_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.desc_id_.Mutable( GetArena());
+}
+inline std::string* Quest::release_desc_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:gamedata.Quest.desc_id)
+  return _impl_.desc_id_.Release();
+}
+inline void Quest::set_allocated_desc_id(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.desc_id_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.desc_id_.IsDefault()) {
+    _impl_.desc_id_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:gamedata.Quest.desc_id)
+}
+
+// int32 level_requirement = 5;
+inline void Quest::clear_level_requirement() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.level_requirement_ = 0;
+}
+inline ::int32_t Quest::level_requirement() const {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.level_requirement)
+  return _internal_level_requirement();
+}
+inline void Quest::set_level_requirement(::int32_t value) {
+  _internal_set_level_requirement(value);
+  // @@protoc_insertion_point(field_set:gamedata.Quest.level_requirement)
+}
+inline ::int32_t Quest::_internal_level_requirement() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.level_requirement_;
+}
+inline void Quest::_internal_set_level_requirement(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.level_requirement_ = value;
+}
+
+// repeated int32 reward_item_ids = 6;
+inline int Quest::_internal_reward_item_ids_size() const {
+  return _internal_reward_item_ids().size();
+}
+inline int Quest::reward_item_ids_size() const {
+  return _internal_reward_item_ids_size();
+}
+inline void Quest::clear_reward_item_ids() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.reward_item_ids_.Clear();
+}
+inline ::int32_t Quest::reward_item_ids(int index) const {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.reward_item_ids)
+  return _internal_reward_item_ids().Get(index);
+}
+inline void Quest::set_reward_item_ids(int index, ::int32_t value) {
+  _internal_mutable_reward_item_ids()->Set(index, value);
+  // @@protoc_insertion_point(field_set:gamedata.Quest.reward_item_ids)
+}
+inline void Quest::add_reward_item_ids(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _internal_mutable_reward_item_ids()->Add(value);
+  // @@protoc_insertion_point(field_add:gamedata.Quest.reward_item_ids)
+}
+inline const ::google::protobuf::RepeatedField<::int32_t>& Quest::reward_item_ids() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_list:gamedata.Quest.reward_item_ids)
+  return _internal_reward_item_ids();
+}
+inline ::google::protobuf::RepeatedField<::int32_t>* Quest::mutable_reward_item_ids()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_mutable_list:gamedata.Quest.reward_item_ids)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _internal_mutable_reward_item_ids();
+}
+inline const ::google::protobuf::RepeatedField<::int32_t>&
+Quest::_internal_reward_item_ids() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.reward_item_ids_;
+}
+inline ::google::protobuf::RepeatedField<::int32_t>* Quest::_internal_mutable_reward_item_ids() {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return &_impl_.reward_item_ids_;
+}
+
+// int32 reward_exp = 7;
+inline void Quest::clear_reward_exp() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.reward_exp_ = 0;
+}
+inline ::int32_t Quest::reward_exp() const {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.reward_exp)
+  return _internal_reward_exp();
+}
+inline void Quest::set_reward_exp(::int32_t value) {
+  _internal_set_reward_exp(value);
+  // @@protoc_insertion_point(field_set:gamedata.Quest.reward_exp)
+}
+inline ::int32_t Quest::_internal_reward_exp() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.reward_exp_;
+}
+inline void Quest::_internal_set_reward_exp(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.reward_exp_ = value;
+}
+
+// int32 reward_gold = 8;
+inline void Quest::clear_reward_gold() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.reward_gold_ = 0;
+}
+inline ::int32_t Quest::reward_gold() const {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.reward_gold)
+  return _internal_reward_gold();
+}
+inline void Quest::set_reward_gold(::int32_t value) {
+  _internal_set_reward_gold(value);
+  // @@protoc_insertion_point(field_set:gamedata.Quest.reward_gold)
+}
+inline ::int32_t Quest::_internal_reward_gold() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.reward_gold_;
+}
+inline void Quest::_internal_set_reward_gold(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.reward_gold_ = value;
+}
+
+// bool is_repeatable = 9;
+inline void Quest::clear_is_repeatable() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_repeatable_ = false;
+}
+inline bool Quest::is_repeatable() const {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.is_repeatable)
+  return _internal_is_repeatable();
+}
+inline void Quest::set_is_repeatable(bool value) {
+  _internal_set_is_repeatable(value);
+  // @@protoc_insertion_point(field_set:gamedata.Quest.is_repeatable)
+}
+inline bool Quest::_internal_is_repeatable() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.is_repeatable_;
+}
+inline void Quest::_internal_set_is_repeatable(bool value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.is_repeatable_ = value;
+}
+
+// string objective_type = 10;
+inline void Quest::clear_objective_type() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.objective_type_.ClearToEmpty();
+}
+inline const std::string& Quest::objective_type() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.objective_type)
+  return _internal_objective_type();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void Quest::set_objective_type(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.objective_type_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:gamedata.Quest.objective_type)
+}
+inline std::string* Quest::mutable_objective_type() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_objective_type();
+  // @@protoc_insertion_point(field_mutable:gamedata.Quest.objective_type)
+  return _s;
+}
+inline const std::string& Quest::_internal_objective_type() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.objective_type_.Get();
+}
+inline void Quest::_internal_set_objective_type(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.objective_type_.Set(value, GetArena());
+}
+inline std::string* Quest::_internal_mutable_objective_type() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.objective_type_.Mutable( GetArena());
+}
+inline std::string* Quest::release_objective_type() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:gamedata.Quest.objective_type)
+  return _impl_.objective_type_.Release();
+}
+inline void Quest::set_allocated_objective_type(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.objective_type_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.objective_type_.IsDefault()) {
+    _impl_.objective_type_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:gamedata.Quest.objective_type)
+}
+
+// int32 objective_count = 11;
+inline void Quest::clear_objective_count() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.objective_count_ = 0;
+}
+inline ::int32_t Quest::objective_count() const {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.objective_count)
+  return _internal_objective_count();
+}
+inline void Quest::set_objective_count(::int32_t value) {
+  _internal_set_objective_count(value);
+  // @@protoc_insertion_point(field_set:gamedata.Quest.objective_count)
+}
+inline ::int32_t Quest::_internal_objective_count() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.objective_count_;
+}
+inline void Quest::_internal_set_objective_count(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.objective_count_ = value;
+}
+
+// int32 objective_target_id = 12;
+inline void Quest::clear_objective_target_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.objective_target_id_ = 0;
+}
+inline ::int32_t Quest::objective_target_id() const {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.objective_target_id)
+  return _internal_objective_target_id();
+}
+inline void Quest::set_objective_target_id(::int32_t value) {
+  _internal_set_objective_target_id(value);
+  // @@protoc_insertion_point(field_set:gamedata.Quest.objective_target_id)
+}
+inline ::int32_t Quest::_internal_objective_target_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.objective_target_id_;
+}
+inline void Quest::_internal_set_objective_target_id(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.objective_target_id_ = value;
+}
+
+// -------------------------------------------------------------------
+
+// QuestList
+
+// repeated .gamedata.Quest quests = 1;
+inline int QuestList::_internal_quests_size() const {
+  return _internal_quests().size();
+}
+inline int QuestList::quests_size() const {
+  return _internal_quests_size();
+}
+inline void QuestList::clear_quests() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.quests_.Clear();
+}
+inline ::gamedata::Quest* QuestList::mutable_quests(int index)
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_mutable:gamedata.QuestList.quests)
+  return _internal_mutable_quests()->Mutable(index);
+}
+inline ::google::protobuf::RepeatedPtrField<::gamedata::Quest>* QuestList::mutable_quests()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_mutable_list:gamedata.QuestList.quests)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _internal_mutable_quests();
+}
+inline const ::gamedata::Quest& QuestList::quests(int index) const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:gamedata.QuestList.quests)
+  return _internal_quests().Get(index);
+}
+inline ::gamedata::Quest* QuestList::add_quests() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::gamedata::Quest* _add = _internal_mutable_quests()->Add();
+  // @@protoc_insertion_point(field_add:gamedata.QuestList.quests)
+  return _add;
+}
+inline const ::google::protobuf::RepeatedPtrField<::gamedata::Quest>& QuestList::quests() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_list:gamedata.QuestList.quests)
+  return _internal_quests();
+}
+inline const ::google::protobuf::RepeatedPtrField<::gamedata::Quest>&
+QuestList::_internal_quests() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.quests_;
+}
+inline ::google::protobuf::RepeatedPtrField<::gamedata::Quest>*
+QuestList::_internal_mutable_quests() {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return &_impl_.quests_;
 }
 
 #ifdef __GNUC__

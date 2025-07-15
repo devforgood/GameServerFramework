@@ -5,28 +5,57 @@ import gamedata_pb2
 import shutil
 import os
 
-# ANSI 이스케이프 코드
+# ANSI escape codes
 RED = '\033[91m'
 GREEN = '\033[92m'
 RESET = '\033[0m'
 
-# 변환할 JSON 파일 목록 및 정보
-JSON_PROTO_MAP = [
-    {
-        "json_path": "../GameData/skill.json",
-        "pb_cls": gamedata_pb2.SkillList,
-        "repeated_field": "skills",
-        "out_path": "skill.bytes",
-        "table_name": "Skill"
-    },
-    {
-        "json_path": "../GameData/item.json",
-        "pb_cls": gamedata_pb2.ItemList,
-        "repeated_field": "items",
-        "out_path": "item.bytes",
-        "table_name": "Item"
-    }
-]
+# Protobuf class mapping
+PB_CLASS_MAP = {
+    "SkillList": gamedata_pb2.SkillList,
+    "ItemList": gamedata_pb2.ItemList,
+    "QuestList": gamedata_pb2.QuestList  # Future use
+}
+
+def load_table_meta():
+    """Load table meta information from JSON file"""
+    try:
+        with open("../GameData/table_meta.json", encoding="utf-8") as f:
+            meta_data = json.load(f)
+        return meta_data
+    except Exception as e:
+        print(f"{RED}[ERROR] Failed to load table_meta.json: {e}{RESET}")
+        return None
+
+def initialize_json_proto_map():
+    """Initialize JSON_PROTO_MAP from meta table"""
+    meta_data = load_table_meta()
+    if not meta_data:
+        return []
+    
+    json_proto_map = []
+    for table in meta_data.get("tables", []):
+        # Skip disabled tables
+        if table.get("enabled", True) == False:
+            continue
+            
+        pb_class_name = table.get("pb_class")
+        if pb_class_name not in PB_CLASS_MAP:
+            print(f"{RED}[WARNING] Unknown protobuf class: {pb_class_name}{RESET}")
+            continue
+            
+        json_proto_map.append({
+            "json_path": f"../GameData/{table['json_path']}",
+            "pb_cls": PB_CLASS_MAP[pb_class_name],
+            "repeated_field": table["repeated_field"],
+            "out_path": table["output_file"],
+            "table_name": table["name"]
+        })
+    
+    return json_proto_map
+
+# Initialize JSON_PROTO_MAP from meta table
+JSON_PROTO_MAP = initialize_json_proto_map()
 
 # 복사 대상 폴더
 CLIENT_DIR = "../Client/Assets/Resources/GameData/"

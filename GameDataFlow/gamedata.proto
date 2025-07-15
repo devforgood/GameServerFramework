@@ -42,3 +42,22 @@ message Item {
 message ItemList {
   repeated Item items = 1;
 }
+
+message Quest {
+  int32 id = 1;
+  string type = 2;
+  string name_id = 3;
+  string desc_id = 4;
+  int32 level_requirement = 5;
+  repeated int32 reward_item_ids = 6;
+  int32 reward_exp = 7;
+  int32 reward_gold = 8;
+  bool is_repeatable = 9;
+  string objective_type = 10;
+  int32 objective_count = 11;
+  int32 objective_target_id = 12;
+}
+
+message QuestList {
+  repeated Quest quests = 1;
+}

@@ -1,0 +1,32 @@
+{
+  "tables": [
+    {
+      "name": "Skill",
+      "json_path": "skill.json",
+      "pb_class": "SkillList",
+      "repeated_field": "skills",
+      "output_file": "skill.bytes",
+      "description": "Game skill definitions and properties"
+    },
+    {
+      "name": "Item", 
+      "json_path": "item.json",
+      "pb_class": "ItemList",
+      "repeated_field": "items",
+      "output_file": "item.bytes",
+      "description": "Game item definitions and properties"
+    },
+    {
+      "name": "Quest",
+      "json_path": "quest.json", 
+      "pb_class": "QuestList",
+      "repeated_field": "quests",
+      "output_file": "quest.bytes",
+      "description": "Game quest definitions and properties",
+      "enabled": true
+    }
+  ],
+  "version": "1.0.0",
+  "last_updated": "2024-01-01",
+  "description": "Meta information for GameData JSON tables"
+} 
