@@ -1,99 +1,104 @@
 # Battle Server
 
-인게임 캐릭터 이동 및 스킬 동기화를 담당하는 배틀 서버입니다.
+Battle server responsible for in-game character movement and skill synchronization.
 
-## 🎯 주요 기능
+## 🌍 Language Selection
 
-### 캐릭터 이동 동기화
-- **클라이언트 키입력 동기화**: 일정 주기마다 샘플링된 키값을 큐잉하여 서버로 송신
-- **서버 시뮬레이션**: 키입력을 수신받아 이동 시뮬레이션 수행
-- **클라이언트 수정**: 서버로부터 받은 타임스탬프, 좌표로 수정하고 큐에 저장된 키입력 중 타임스탬프 이후 키입력 반영 (이동 되감기)
+- [English](README.md) (Default)
+- [한국어](README.ko.md)
 
-### 스킬 동기화
-- **RPC 호출**: 각 스킬 고유한 정보를 RPC 호출로 동기화
-- **스킬 효과**: AoE, 타겟팅, 버프/디버프 등 다양한 스킬 타입 지원
+## 🎯 Key Features
 
-### 상태 동기화
-- **리플리케이션**: 일정 주기마다 월드에서 상태가 변경된 오브젝트만 동기화
-- **변수 복제**: 게임 오브젝트 상태 동기화
+### Character Movement Synchronization
+- **Client Key Input Sync**: Queue sampled key values at regular intervals and send to server
+- **Server Simulation**: Perform movement simulation upon receiving key input
+- **Client Correction**: Correct with timestamp and coordinates from server, apply key inputs stored in queue after timestamp (movement rewind)
 
-## 🏗️ 아키텍처
+### Skill Synchronization
+- **RPC Calls**: Synchronize unique information for each skill via RPC calls
+- **Skill Effects**: Support various skill types including AoE, targeting, buff/debuff
 
-### 핵심 컴포넌트
-- **GridManager**: 공간 분할 및 엔티티 관리
-- **Actor System**: 캐릭터, 몬스터, NPC 등 게임 엔티티 관리
-- **Skill System**: 스킬 정의 및 실행
-- **Network Layer**: gRPC 기반 통신
+### State Synchronization
+- **Replication**: Periodically synchronize only objects with changed states in the world
+- **Variable Replication**: Game object state synchronization
 
-### 동기화 방식
-1. **클라이언트 → 서버**: 키입력, 스킬 사용 요청
-2. **서버 → 클라이언트**: 위치 업데이트, 스킬 효과, 상태 변경
+## 🏗️ Architecture
 
-## 📊 성능 최적화
+### Core Components
+- **GridManager**: Spatial partitioning and entity management
+- **Actor System**: Game entity management (characters, monsters, NPCs)
+- **Skill System**: Skill definition and execution
+- **Network Layer**: gRPC-based communication
 
-### 공간 분할
-- **GridManager**: SIMD 최적화된 공간 분할 시스템
-- **시야 범위 검색**: 효율적인 주변 엔티티 검색
-- **AoE 마스크**: 원형 및 부채꼴 범위 내 엔티티 검색
+### Synchronization Method
+1. **Client → Server**: Key input, skill usage requests
+2. **Server → Client**: Position updates, skill effects, state changes
 
-### 네트워크 최적화
-- **RUDP**: TCP의 불필요한 처리 없이 latency 확보
-- **Multiplexing**: 한 소켓을 용도별 요청 가능 (채널)
-- **QoS**: 패킷 유실 보장
+## 📊 Performance Optimization
 
-## 🚀 사용 예시
+### Spatial Partitioning
+- **GridManager**: SIMD-optimized spatial partitioning system
+- **Line of Sight Range Search**: Efficient nearby entity search
+- **AoE Masks**: Circular and sector range entity search
 
-### 서버 시작
+### Network Optimization
+- **RUDP**: Secure latency without unnecessary TCP processing
+- **Multiplexing**: Multiple purpose requests possible on single socket (channels)
+- **QoS**: Packet loss guarantee
+
+## 🚀 Usage Examples
+
+### Server Startup
 ```bash
 cd Battle
 dotnet run
 ```
 
-### 설정 파일
-- `appsettings.json`: 기본 설정
-- `appsettings.Release.json`: 배포 환경 설정
+### Configuration Files
+- `appsettings.json`: Default configuration
+- `appsettings.Release.json`: Production environment configuration
 
-## 📁 프로젝트 구조
+## 📁 Project Structure
 
 ```
 Battle/
-├── Battle.csproj          # 프로젝트 파일
-├── appsettings.json       # 기본 설정
-├── battle-server          # 실행 파일
-├── Cache/                 # 캐시 관련
+├── Battle.csproj          # Project file
+├── appsettings.json       # Default configuration
+├── battle-server          # Executable file
+├── Cache/                 # Cache related
 │   ├── Cache.cs
 │   ├── CacheThread.cs
 │   └── Subscribe.cs
-└── bin/                   # 빌드 출력
+└── bin/                   # Build output
 ```
 
-## 🔧 개발 환경
+## 🔧 Development Environment
 
-### 요구사항
-- .NET 6.0 이상
+### Requirements
+- .NET 6.0 or higher
 - gRPC
-- Redis (캐시용)
+- Redis (for caching)
 
-### 의존성
-- gRPC 통신
-- GridManager (Engine 프로젝트)
-- GameData (데이터 로딩)
+### Dependencies
+- gRPC communication
+- GridManager (Engine project)
+- GameData (data loading)
 
-## 📈 모니터링
+## 📈 Monitoring
 
-### 로그
-- 구조화된 로깅 지원
-- 성능 메트릭 수집
-- 에러 추적
+### Logging
+- Structured logging support
+- Performance metric collection
+- Error tracking
 
-### 메트릭
-- 동시 접속자 수
-- 패킷 처리량
-- 응답 시간
-- 스킬 사용 빈도
+### Metrics
+- Concurrent user count
+- Packet processing rate
+- Response time
+- Skill usage frequency
 
-## 🔗 관련 프로젝트
+## 🔗 Related Projects
 
-- **[Engine/](../Engine/README.md)** - GridManager 및 공간 분할 시스템
-- **[Game/](../Game/README.md)** - 게임 로직 (Actor, 스킬 시스템)
-- **[Lobby/](../Lobby/README.md)** - 매칭 및 로비 서버 
+- **[Engine/](../Engine/README.md)** - GridManager and spatial partitioning system
+- **[Game/](../Game/README.md)** - Game logic (Actor, skill system)
+- **[Lobby/](../Lobby/README.md)** - Matching and lobby server 

@@ -1,43 +1,48 @@
 # IAP (In-App Purchase) Server
 
-인앱 결제 서버입니다. Google Play, Apple App Store 등의 결제 시스템을 지원합니다.
+In-app purchase server. Supports payment systems like Google Play, Apple App Store, etc.
 
-## 🎯 주요 기능
+## 🌍 Language Selection
 
-### 결제 처리
-- **Google Play 결제**: Google Play Store 결제 검증
-- **Apple App Store 결제**: iOS 앱스토어 결제 검증
-- **영수증 검증**: 서버 사이드 영수증 검증
-- **결제 완료 처리**: 아이템 지급 및 상태 업데이트
+- [English](README.md) (Default)
+- [한국어](README.ko.md)
 
-### 보안
-- **서명 검증**: 결제 영수증 서명 검증
-- **중복 결제 방지**: 동일 결제 중복 처리 방지
-- **환불 처리**: 환불 요청 처리
+## 🎯 Key Features
 
-## 📁 프로젝트 구조
+### Payment Processing
+- **Google Play Payments**: Google Play Store payment verification
+- **Apple App Store Payments**: iOS App Store payment verification
+- **Receipt Verification**: Server-side receipt verification
+- **Payment Completion**: Item delivery and status updates
+
+### Security
+- **Signature Verification**: Payment receipt signature verification
+- **Duplicate Payment Prevention**: Prevent duplicate processing of same payment
+- **Refund Processing**: Refund request handling
+
+## 📁 Project Structure
 
 ```
 IAP/
-├── IAP.csproj               # 프로젝트 파일
-├── InAppPurchase.cs         # 인앱 결제 클래스
-├── GooglePlayReceipt.cs     # Google Play 영수증 처리
-└── bin/                     # 빌드 출력
+├── IAP.csproj               # Project file
+├── InAppPurchase.cs         # In-app purchase class
+├── GooglePlayReceipt.cs     # Google Play receipt processing
+└── bin/                     # Build output
 ```
 
-## 🔧 개발 환경
+## 🔧 Development Environment
 
-### 요구사항
-- .NET 6.0 이상
+### Requirements
+- .NET 6.0 or higher
 - Google Play Developer API
 - Apple App Store Connect API
 
-### 의존성
+### Dependencies
 - Google.Apis.AndroidPublisher
 - Apple App Store Connect API
-- JSON 웹 토큰 (JWT)
+- JSON Web Tokens (JWT)
 
-## 🔗 관련 프로젝트
+## 🔗 Related Projects
 
-- **[Lobby/](../Lobby/README.md)** - 로비 서버 (결제 후 아이템 지급)
-- **[Cache/](../Cache/README.md)** - 캐시 서버 (결제 정보 캐시) 
+- **[Lobby/](../Lobby/README.md)** - Lobby server (item delivery after payment)
+- **[Cache/](../Cache/README.md)** - Cache server (payment information cache) 
