@@ -5,8 +5,8 @@
 #include "Monster.h"
 #include "World.h"
 #include "LogHelper.h"
-#include "GridManager.h"
 #include "Vector3.h"
+#include "Common.h"
 
 std::shared_ptr<GameObject> GameObjectFactory::CreateGameObject(World* world, std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
@@ -16,7 +16,7 @@ std::shared_ptr<GameObject> GameObjectFactory::CreateGameObject(World* world, st
 	{
 	case syncnet::GameObjectType::GameObjectType_Character:
 	{
-		// ÀÌ¹Ì »ý¼ºµÈ Ä³¸¯ÅÍ°¡ ÀÖ´ÂÁö È®ÀÎÇÏ°í, ÀÖ´Ù¸é ÇØ´ç Ä³¸¯ÅÍ¸¦ ¹ÝÈ¯ÇÏµµ·Ï ¼öÁ¤ ÇÊ¿ä
+		// ì´ë¯¸ ìƒì„±ëœ ìºë¦­í„°ê°€ ìžˆëŠ”ì§€ í™•ì¸í•˜ê³ , ìžˆë‹¤ë©´ í•´ë‹¹ ìºë¦­í„°ë¥¼ ë°˜í™˜í•˜ë„ë¡ ìˆ˜ì • í•„ìš”
 		if (player->character() != nullptr)
 		{
 			LOG.error("OnAddAgent error: player already has a character");
