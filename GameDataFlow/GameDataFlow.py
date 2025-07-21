@@ -10,12 +10,17 @@ RED = '\033[91m'
 GREEN = '\033[92m'
 RESET = '\033[0m'
 
-# Protobuf class mapping
-PB_CLASS_MAP = {
-    "SkillList": gamedata_pb2.SkillList,
-    "ItemList": gamedata_pb2.ItemList,
-    "QuestList": gamedata_pb2.QuestList  # Future use
-}
+# Dynamic protobuf class mapping
+def get_pb_class(class_name):
+    """Dynamically get protobuf class by name"""
+    try:
+        # Handle gamedata_pb2. prefix
+        if class_name.startswith("gamedata_pb2."):
+            class_name = class_name.replace("gamedata_pb2.", "")
+        return getattr(gamedata_pb2, class_name)
+    except AttributeError:
+        print(f"{RED}[ERROR] Protobuf class '{class_name}' not found in gamedata_pb2{RESET}")
+        return None
 
 def load_table_meta():
     """Load table meta information from JSON file"""
@@ -40,13 +45,14 @@ def initialize_json_proto_map():
             continue
             
         pb_class_name = table.get("pb_class")
-        if pb_class_name not in PB_CLASS_MAP:
+        pb_cls = get_pb_class(pb_class_name)
+        if pb_cls is None:
             print(f"{RED}[WARNING] Unknown protobuf class: {pb_class_name}{RESET}")
             continue
             
         json_proto_map.append({
             "json_path": f"../GameData/{table['json_path']}",
-            "pb_cls": PB_CLASS_MAP[pb_class_name],
+            "pb_cls": pb_cls,
             "repeated_field": table["repeated_field"],
             "out_path": table["output_file"],
             "table_name": table["name"]

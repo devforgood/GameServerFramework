@@ -61,3 +61,123 @@ message Quest {
 message QuestList {
   repeated Quest quests = 1;
 }
+
+// Game Mode related messages
+message GameModeRules {
+  int32 time_limit = 1;
+  bool has_time_limit = 2;
+  string end_condition = 3;
+  int32 max_players = 4;
+  int32 min_level = 5;
+  bool allow_pvp = 6;
+  bool allow_trading = 7;
+  bool respawn_enabled = 8;
+  int32 respawn_time = 9;
+}
+
+message GameModeRewards {
+  double exp_multiplier = 1;
+  double gold_multiplier = 2;
+  double drop_rate_multiplier = 3;
+}
+
+message BossInfo {
+  int32 boss_id = 1;
+  string boss_name_id = 2;
+  int32 boss_level = 3;
+  int32 boss_hp = 4;
+}
+
+message GameMode {
+  int32 id = 1;
+  string name = 2;
+  string name_id = 3;
+  string desc_id = 4;
+  string category = 5;
+  string type = 6;
+  GameModeRules rules = 7;
+  repeated int32 maps = 8;
+  GameModeRewards rewards = 9;
+  BossInfo boss_info = 10;
+}
+
+message GameModeList {
+  repeated GameMode game_modes = 1;
+}
+
+// Map related messages
+message Vec3 {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+}
+
+message MapSize {
+  double width = 1;
+  double height = 2;
+}
+
+message Gate {
+  int32 id = 1;
+  string name = 2;
+  Vec3 position = 3;
+  int32 target_map_id = 4;
+  int32 target_gate_id = 5;
+  int32 required_level = 6;
+}
+
+message SpawnPoint {
+  Vec3 position = 1;
+  int32 monster_id = 2;
+  int32 spawn_interval = 3;
+  int32 boss_id = 4;
+  int32 spawn_delay = 5;
+}
+
+message MapSpawnPoints {
+  repeated SpawnPoint player_spawn = 1;
+  repeated SpawnPoint monster_spawn = 2;
+  repeated SpawnPoint boss_spawn = 3;
+}
+
+message StaticObject {
+  int32 id = 1;
+  string type = 2;
+  string name = 3;
+  Vec3 position = 4;
+  Vec3 size = 5;
+  bool collision = 6;
+  int32 damage = 7;
+  int32 loot_table_id = 8;
+}
+
+message MovableObject {
+  int32 id = 1;
+  string type = 2;
+  string name = 3;
+  Vec3 position = 4;
+  double movement_range = 5;
+  double movement_speed = 6;
+  repeated Vec3 patrol_path = 7;
+}
+
+message MapObjects {
+  repeated StaticObject static_objects = 1;
+  repeated MovableObject movable_objects = 2;
+}
+
+message Map {
+  int32 id = 1;
+  string name = 2;
+  string name_id = 3;
+  string desc_id = 4;
+  int32 game_mode_id = 5;
+  MapSize size = 6;
+  repeated Gate gates = 7;
+  MapSpawnPoints spawn_points = 8;
+  MapObjects objects = 9;
+}
+
+message MapList {
+  repeated Map maps = 1;
+}
