@@ -4,9 +4,9 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public static class MapDataManager
+public static class {{table_name}}DataManager
 {
-    private static Dictionary<int, Gamedata.Map> _data = new Dictionary<int, Gamedata.Map>();
+    private static Dictionary<int, Gamedata.{{table_name}}> _data = new Dictionary<int, Gamedata.{{table_name}}>();
     
     public static void Initialize()
     {
@@ -14,23 +14,23 @@ public static class MapDataManager
         // 데이터 로딩은 GameManager에서 처리됨
     }
     
-    public static Gamedata.Map Get(int id)
+    public static Gamedata.{{table_name}} Get(int id)
     {
         if (_data.TryGetValue(id, out var data))
         {
             return data;
         }
         
-        Debug.LogWarning($"Map with ID {id} not found.");
+        Debug.LogWarning($"{{table_name}} with ID {id} not found.");
         return null;
     }
     
-    public static Dictionary<int, Gamedata.Map> GetAll()
+    public static Dictionary<int, Gamedata.{{table_name}}> GetAll()
     {
-        return new Dictionary<int, Gamedata.Map>(_data);
+        return new Dictionary<int, Gamedata.{{table_name}}>(_data);
     }
     
-    public static void SetData(Dictionary<int, Gamedata.Map> data)
+    public static void SetData(Dictionary<int, Gamedata.{{table_name}}> data)
     {
         _data = data;
     }

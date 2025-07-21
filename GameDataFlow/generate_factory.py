@@ -26,7 +26,13 @@ def generate_factory(server_src_dir, client_cs_dir, table_name, items):
 
     # Factory.cs 생성 (클라이언트용)
     os.makedirs(client_cs_dir, exist_ok=True)
-    template_cs = env.get_template('Factory.cs.j2')
+    
+    # GameMode와 Map은 Factory 패턴이 아닌 데이터 매니저로 처리
+    if table_name in ['GameMode', 'Map']:
+        template_cs = env.get_template('DataManager.cs.j2')
+    else:
+        template_cs = env.get_template('Factory.cs.j2')
+    
     cs_path = os.path.join(client_cs_dir, f'{table_name}Factory.cs')
     with open(cs_path, 'w', encoding='utf-8') as f:
         f.write(template_cs.render(table_name=table_name, item_infos=item_infos))
