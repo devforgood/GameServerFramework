@@ -69,10 +69,10 @@ namespace GameServerFramework.Editor
         private Color gridColor = Color.white;
         private Color nodeColor = Color.yellow;
 
-        [MenuItem("Tools/Advanced Terrain Generator")]
+        [MenuItem("Tools/Terrain Generator (Legacy)")]
         public static void ShowWindow()
         {
-            GetWindow<AdvancedTerrainGenerator>("Advanced Terrain Generator");
+            GetWindow<AdvancedTerrainGenerator>("Advanced Terrain Generator (Legacy)");
         }
 
         private void OnEnable()

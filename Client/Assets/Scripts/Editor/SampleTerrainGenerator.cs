@@ -33,18 +33,44 @@ namespace GameServerFramework.Editor
         private Material obstacleMaterial;
         private Material waterMaterial;
 
-        [MenuItem("Tools/Sample Terrain Generator")]
+        [MenuItem("Tools/Terrain Generator (Legacy)")]
         public static void ShowWindow()
         {
-            GetWindow<SampleTerrainGenerator>("Sample Terrain Generator");
+            GetWindow<SampleTerrainGenerator>("Sample Terrain Generator (Legacy)");
         }
 
         private void OnEnable()
         {
-            // Load default materials
-            terrainMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Materials/TerrainMaterial.mat");
-            obstacleMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Materials/ObstacleMaterial.mat");
-            waterMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Materials/WaterMaterial.mat");
+            // Load default materials with error handling
+            try
+            {
+                terrainMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Materials/TerrainMaterial.mat");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Failed to load TerrainMaterial.mat: {e.Message}");
+                terrainMaterial = null;
+            }
+            
+            try
+            {
+                obstacleMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Materials/ObstacleMaterial.mat");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Failed to load ObstacleMaterial.mat: {e.Message}");
+                obstacleMaterial = null;
+            }
+            
+            try
+            {
+                waterMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/Materials/WaterMaterial.mat");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Failed to load WaterMaterial.mat: {e.Message}");
+                waterMaterial = null;
+            }
             
             // Create default materials if they don't exist
             if (terrainMaterial == null)
@@ -66,6 +92,19 @@ namespace GameServerFramework.Editor
             Material material = new Material(Shader.Find("Standard"));
             material.name = name;
             material.color = color;
+            
+            // Save material as asset
+            string directory = "Assets/Resources/Materials";
+            if (!AssetDatabase.IsValidFolder(directory))
+            {
+                AssetDatabase.CreateFolder("Assets/Resources", "Materials");
+            }
+            
+            string assetPath = $"{directory}/{name}.mat";
+            AssetDatabase.CreateAsset(material, assetPath);
+            AssetDatabase.SaveAssets();
+            
+            Debug.Log($"Created default material: {assetPath}");
             return material;
         }
 

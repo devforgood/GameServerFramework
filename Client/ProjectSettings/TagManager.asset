@@ -8,6 +8,8 @@ TagManager:
   - monster
   - character
   - weapon
+  - Spawn
+  - Gate
   layers:
   - Default
   - TransparentFX
