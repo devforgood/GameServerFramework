@@ -356,7 +356,7 @@ public class ObjExportor
 				mf[i] = (MeshFilter)mfList[i];
 			}
 
-			string filename = EditorSceneManager.GetActiveScene().name + "_" + exportedObjects;
+			string filename = EditorSceneManager.GetActiveScene().name;
 
 			int stripIndex = filename.LastIndexOf(Path.PathSeparator);
 
