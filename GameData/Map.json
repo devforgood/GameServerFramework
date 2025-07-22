@@ -146,7 +146,8 @@
           "movement_speed": 1.0
         }
       ]
-    }
+    },
+    "navmesh_path": null
   },
   {
     "id": 2,
@@ -279,7 +280,8 @@
           "movement_speed": 1.5
         }
       ]
-    }
+    },
+    "navmesh_path": null
   },
   {
     "id": 6,
@@ -381,7 +383,8 @@
         }
       ],
       "movable_objects": []
-    }
+    },
+    "navmesh_path": null
   },
   {
     "id": 9,
@@ -553,7 +556,8 @@
           ]
         }
       ]
-    }
+    },
+    "navmesh_path": null
   },
   {
     "id": 12,
@@ -665,7 +669,8 @@
         }
       ],
       "movable_objects": []
-    }
+    },
+    "navmesh_path": null
   },
   {
     "id": 13,
@@ -682,7 +687,7 @@
         "id": 1,
         "name": "Gate",
         "position": {
-          "x": 0.0,
+          "x": 23.71,
           "y": 0.0,
           "z": 0.0
         },
@@ -711,7 +716,8 @@
     "objects": {
       "static_objects": [],
       "movable_objects": []
-    }
+    },
+    "navmesh_path": "Field1_navmesh.bin"
   },
   {
     "id": 14,
@@ -745,6 +751,7 @@
     "objects": {
       "static_objects": [],
       "movable_objects": []
-    }
+    },
+    "navmesh_path": "Field2_navmesh.bin"
   }
 ]

@@ -68,6 +68,7 @@ public class MapJsonUpdater : EditorWindow
         public List<Gate> gates = new List<Gate>();
         public MapSpawnPoints spawn_points = new MapSpawnPoints();
         public MapObjects objects = new MapObjects();
+        public string navmesh_path; // NavMesh 파일 경로
     }
 
     [System.Serializable]
@@ -185,6 +186,8 @@ public class MapJsonUpdater : EditorWindow
                 EditorGUILayout.LabelField($"Game Mode ID: {map.game_mode_id}");
                 EditorGUILayout.LabelField($"Size: {map.size.width} x {map.size.height}");
             }
+
+            EditorGUILayout.LabelField($"NavMesh: {map.navmesh_path}");
             
             EditorGUILayout.EndVertical();
             EditorGUILayout.Space();
@@ -238,7 +241,15 @@ public class MapJsonUpdater : EditorWindow
         // Spawn 태그 찾기
         var spawnObjects = allObjects.Where(obj => obj.CompareTag("Spawn")).ToArray();
         UpdateSpawns(currentMap, spawnObjects);
-        
+
+        // 현재 씬의 NavMesh 데이터 찾기
+        string navmesh_file_name = $"{sceneName}_navmesh.bin";
+        var path = Path.Combine(Application.dataPath, "GeneratedNavMeshes", navmesh_file_name);
+        if (File.Exists(path))
+        {
+            currentMap.navmesh_path = navmesh_file_name;
+        }
+
         Debug.Log($"Scan complete. Found {gateObjects.Length} gates and {spawnObjects.Length} spawns in scene '{sceneName}'");
     }
 
