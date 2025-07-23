@@ -30,6 +30,10 @@
     <ClInclude Include="RandomUtil.h" />
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="TimeStamp.h" />
+    <ClInclude Include="ECS.h" />
+    <ClInclude Include="SystemManager.h" />
+    <ClInclude Include="Components.h" />
+    <ClInclude Include="Systems.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
