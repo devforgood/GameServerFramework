@@ -63,5 +63,8 @@
     <ClInclude Include="TimeStamp.h">
       <Filter>Time</Filter>
     </ClInclude>
+    <ClInclude Include="CacheOptimizedSystem.h">
+      <Filter>ECS</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
