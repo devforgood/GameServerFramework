@@ -18,6 +18,9 @@ class TimeStamp;
 class send_message;
 class RandomUtil;
 class IGridActor;
+namespace Engine {
+	class SystemManager;
+}
 
 class World
 {
@@ -34,6 +37,7 @@ private:
 	GridManager* grid_manager_;
 	TimeStamp* time_stamp_;
 	RandomUtil* random_util_;
+	Engine::SystemManager* system_manager_;
 
 public:
 	World();

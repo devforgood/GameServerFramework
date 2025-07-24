@@ -17,6 +17,10 @@ Character::Character(World* world) : Actor(world)
 
 	is_input_locked_ = false;
 	game_object_type_ = syncnet::GameObjectType::GameObjectType_Character;
+
+
+	auto& entityManager = world_->system_manager_->GetEntityManager();
+	entityManager.AddComponent(entity_id_, Engine::TimerComponent());
 }
 
 Character::~Character() 

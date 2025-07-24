@@ -1,6 +1,20 @@
 #include "Actor.h"
 #include "Vector3.h"
 #include "LogHelper.h"
+#include "World.h"
+#include "Common.h"
+
+void Actor::init()
+{
+	auto& entityManager = world_->system_manager_->GetEntityManager();
+	entity_id_ = entityManager.CreateEntity();
+}
+
+void Actor::clear()
+{
+	auto& entityManager = world_->system_manager_->GetEntityManager();
+	entityManager.DestroyEntity(entity_id_);
+}
 
 void Actor::update(float dt)
 {

@@ -22,6 +22,7 @@ World::World()
 	grid_manager_ = nullptr;
 	time_stamp_ = nullptr;
 	random_util_ = nullptr;
+	system_manager_ = nullptr;
 }
 
 World::~World()
@@ -46,6 +47,11 @@ World::~World()
 		delete random_util_;
 		random_util_ = nullptr;
 	}
+	if(system_manager_)
+	{
+		delete system_manager_;
+		system_manager_ = nullptr;
+	}
 }
 
 void World::Init()
@@ -57,11 +63,33 @@ void World::Init()
 	grid_manager_ = new GridManager(100, 100, 2);
 	time_stamp_ = new TimeStamp();
 	random_util_ = new RandomUtil();
+	system_manager_ = new Engine::SystemManager();
+
+	auto& entityManager = system_manager_->GetEntityManager();
+
+	// 모든 컴포넌트 타입 등록
+	entityManager.RegisterComponent<Engine::PositionComponent>();
+	entityManager.RegisterComponent<Engine::VelocityComponent>();
+	entityManager.RegisterComponent<Engine::HealthComponent>();
+	entityManager.RegisterComponent<Engine::PhysicsComponent>();
+	entityManager.RegisterComponent<Engine::AIComponent>();
+	entityManager.RegisterComponent<Engine::CollisionComponent>();
+	entityManager.RegisterComponent<Engine::InputComponent>();
+	entityManager.RegisterComponent<Engine::AnimationComponent>();
+	entityManager.RegisterComponent<Engine::TimerComponent>();
+	entityManager.RegisterComponent<Engine::ParticleComponent>();
+	entityManager.RegisterComponent<Engine::NetworkComponent>();
+
+	system_manager_->RegisterSystem<Engine::TimerComponent>(
+		[](float deltaTime, Engine::TimerComponent& timer) {
+			Engine::TimerSystem::Update(deltaTime, timer);
+		});
 }
 
 void World::update(float deltaTime)
 {
 	time_stamp_->update();
+	system_manager_->Update(deltaTime);
 
 	//LOG.info("World update begin");
 	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin();itr!= game_object_list_.end();++itr)

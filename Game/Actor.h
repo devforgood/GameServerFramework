@@ -14,13 +14,23 @@ protected:
 	Vector3 position_;        // 위치 정보를 protected로 이동
 	int health_ = 100;
 	syncnet::GameObjectType game_object_type_;
+	int32_t entity_id_ = -1; // 엔티티 ID (필요시 사용)
 
 public:
 	Actor(World* world) : GameObject(world), front_vector_(0, 0, 1)  // 초기 방향은 z축 양의 방향
 	{
+		init();
 	}
 
-	virtual ~Actor() {}
+	virtual ~Actor() 
+	{
+		clear();
+	}
+
+	void init();
+	void clear();
+
+
 	virtual void update(float dt) override;
 
 	virtual int agent_id() override { return agent_id_; }
