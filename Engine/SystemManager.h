@@ -30,14 +30,11 @@ namespace Engine
             // Get the minimum size among all component arrays
             size_t minSize = GetMinArraySize(componentArrays);
             
-            // Get raw pointers for maximum cache efficiency
-            auto rawArrays = GetRawArrays(componentArrays);
-            
-            // Cache-friendly iteration over packed arrays using raw pointers
+            // Cache-friendly iteration over packed arrays
             for (size_t i = 0; i < minSize; ++i)
             {
-                // Get components at current index using direct pointer access
-                auto components = GetComponentsAtIndexDirect(rawArrays, i);
+                // Get components at current index
+                auto components = GetComponentsAtIndex(componentArrays, i);
                 
                 // Call update function with components
                 std::apply(m_UpdateFunction, std::tuple_cat(std::make_tuple(deltaTime), components));
@@ -79,33 +76,6 @@ namespace Engine
             const std::tuple<ComponentArray<Components>*...>& arrays, size_t index)
         {
             return GetComponentsAtIndexImpl(arrays, index, std::make_index_sequence<sizeof...(Components)>{});
-        }
-        
-        // Get raw array pointers for maximum cache efficiency
-        std::tuple<Components*...> GetRawArrays(const std::tuple<ComponentArray<Components>*...>& arrays)
-        {
-            return GetRawArraysImpl(arrays, std::make_index_sequence<sizeof...(Components)>{});
-        }
-        
-        template<size_t... Is>
-        std::tuple<Components*...> GetRawArraysImpl(
-            const std::tuple<ComponentArray<Components>*...>& arrays, std::index_sequence<Is...>)
-        {
-            return std::make_tuple(std::get<Is>(arrays)->GetArray()...);
-        }
-        
-        // Get components using direct pointer access
-        std::tuple<Components&...> GetComponentsAtIndexDirect(
-            const std::tuple<Components*...>& rawArrays, size_t index)
-        {
-            return GetComponentsAtIndexDirectImpl(rawArrays, index, std::make_index_sequence<sizeof...(Components)>{});
-        }
-        
-        template<size_t... Is>
-        std::tuple<Components&...> GetComponentsAtIndexDirectImpl(
-            const std::tuple<Components*...>& rawArrays, size_t index, std::index_sequence<Is...>)
-        {
-            return std::make_tuple(std::ref(std::get<Is>(rawArrays)[index])...);
         }
     };
     

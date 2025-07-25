@@ -141,4 +141,31 @@ namespace Engine
         uint32_t tagID = 0;
         uint32_t layerID = 0;
     };
+
+    // Dirty tracking component - for change detection
+    struct DirtyComponent
+    {
+        uint32_t changedFlags = 0;
+        bool isDirty = false;
+        bool isPositionDirty = false;
+        bool isStateDirty = false;
+    };
+
+    // Actor component - for game object actor information
+    struct ActorComponent
+    {
+        int agentID = -1;
+        uint32_t gameObjectType = 0;
+        uint32_t aiState = 0;
+        int playerID = -1;
+    };
+
+    // Position sync component - for position synchronization
+    struct PositionSyncComponent
+    {
+        float lastSyncX = 0.0f;
+        float lastSyncY = 0.0f;
+        float lastSyncZ = 0.0f;
+        float syncThreshold = 0.01f; // minimum distance to trigger sync
+    };
 } 

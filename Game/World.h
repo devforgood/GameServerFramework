@@ -20,6 +20,10 @@ class RandomUtil;
 class IGridActor;
 namespace Engine {
 	class SystemManager;
+	using EntityID = uint32_t;
+	struct ActorComponent;
+	struct PositionComponent;
+	struct DirtyComponent;
 }
 
 class World
@@ -33,6 +37,9 @@ private:
 	std::vector<syncnet::Vec3> raycasts_;
 
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
+
+	// GameObject와 ECS Entity 간 매핑
+	std::unordered_map<int, Engine::EntityID> game_object_to_entity_map_;
 
 	GridManager* grid_manager_;
 	TimeStamp* time_stamp_;
@@ -50,7 +57,24 @@ public:
 	RandomUtil* random_util() { return random_util_; }
 
 	void SendWorldState();
+	void SendWorldStateECS(); // ECS-based world state synchronization
 	void GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector);
+
+private:
+	// ECS helper functions
+	flatbuffers::Offset<syncnet::ActorInfo> CreateActorInfoFromECS(
+		std::shared_ptr<send_message>& builder_ptr, 
+		const Engine::ActorComponent& actor, 
+		const Engine::PositionComponent& position, 
+		const Engine::DirtyComponent& dirty);
+	
+	// GameObject to ECS entity conversion
+	Engine::EntityID ConvertGameObjectToEntity(std::shared_ptr<GameObject> gameObject);
+	void SyncGameObjectToEntity(std::shared_ptr<GameObject> gameObject, Engine::EntityID entityID);
+	void UpdateECSFromDetourAgent(std::shared_ptr<GameObject> gameObject, Engine::EntityID entityID, const struct dtCrowdAgent* agent);
+	void ResetChangeFlags(std::shared_ptr<GameObject> gameObject, Engine::EntityID entityID);
+
+public:
 
 	std::shared_ptr<GameObject> OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
 	void OnRemoveAgent(int agent_id);

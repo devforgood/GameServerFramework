@@ -230,4 +230,67 @@ namespace Engine
             }
         }
     };
+
+    // Position synchronization system - detects position changes
+    class PositionSyncSystem
+    {
+    public:
+        static void Update(float deltaTime, PositionComponent& position, PositionSyncComponent& posSync, DirtyComponent& dirty)
+        {
+            // Calculate position difference
+            float dx = position.x - posSync.lastSyncX;
+            float dy = position.y - posSync.lastSyncY;
+            float dz = position.z - posSync.lastSyncZ;
+            float distanceSqr = dx * dx + dy * dy + dz * dz;
+            
+            // Check if position changed beyond threshold
+            if (distanceSqr > posSync.syncThreshold * posSync.syncThreshold)
+            {
+                // Update last synced position
+                posSync.lastSyncX = position.x;
+                posSync.lastSyncY = position.y;
+                posSync.lastSyncZ = position.z;
+                
+                // Mark as dirty for network sync
+                dirty.isPositionDirty = true;
+                dirty.isDirty = true;
+            }
+        }
+    };
+
+    // Network sync system - handles network message creation and broadcasting
+    class NetworkSyncSystem
+    {
+    public:
+        static void Update(float deltaTime, ActorComponent& actor, DirtyComponent& dirty, NetworkComponent& network)
+        {
+            // Only process if entity is dirty and network update interval has passed
+            if (dirty.isDirty && network.lastUpdateTime >= network.updateInterval)
+            {
+                // Reset dirty flags after processing
+                dirty.isDirty = false;
+                dirty.isPositionDirty = false;
+                dirty.isStateDirty = false;
+                dirty.changedFlags = 0;
+                
+                // Reset network timer
+                network.lastUpdateTime = 0.0f;
+            }
+        }
+    };
+
+    // Dirty tracking system - manages change detection flags
+    class DirtyTrackingSystem
+    {
+    public:
+        static void Update(float deltaTime, DirtyComponent& dirty)
+        {
+            // Reset dirty flags if they've been processed
+            // This system can be used to manage dirty flag lifecycle
+            if (dirty.isDirty)
+            {
+                // Accumulate dirty time or implement cleanup logic
+            }
+        }
+    };
 } 
