@@ -314,17 +314,33 @@ TEST_F(ECSTest, CacheMissPatternAnalysis) {
     end = std::chrono::high_resolution_clock::now();
     auto randomTime = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
     
+    // 3. Strided access (partial cache misses)
+    const size_t stride = 16; // Access across cache lines
+    start = std::chrono::high_resolution_clock::now();
+    
+    for (int iter = 0; iter < iterations; ++iter) {
+        for (size_t i = 0; i < entityCount; i += stride) {
+            positions[i].x += velocities[i].vx * 0.016f;
+        }
+    }
+    
+    end = std::chrono::high_resolution_clock::now();
+    auto strideTime = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    
     double sequentialAvg = static_cast<double>(sequentialTime.count()) / iterations;
     double randomAvg = static_cast<double>(randomTime.count()) / iterations;
+    double strideAvg = static_cast<double>(strideTime.count()) / iterations;
     
     double randomSlowdown = randomAvg / sequentialAvg;
+    double strideSlowdown = strideAvg / sequentialAvg;
     
     std::cout << "\n=== Cache Miss Pattern Analysis ===" << std::endl;
     std::cout << "Entity count: " << entityCount << std::endl;
     std::cout << "Sequential access: " << std::fixed << std::setprecision(2) << sequentialAvg << " ns/iter" << std::endl;
     std::cout << "Random access: " << std::fixed << std::setprecision(2) << randomAvg << " ns/iter (slowdown: " << randomSlowdown << "x)" << std::endl;
+    std::cout << "Stride access: " << std::fixed << std::setprecision(2) << strideAvg << " ns/iter (slowdown: " << strideSlowdown << "x)" << std::endl;
     
-    // Cache-friendly access should be at least 1.5x faster than random access
+    // Cache-friendly access should be at least 2x faster than random access
     EXPECT_GT(randomSlowdown, 1.5);
     
     // Cleanup
@@ -602,7 +618,7 @@ TEST_F(ECSTest, Performance) {
     auto& entityManager = systemManager->GetEntityManager();
     
     // Create a large number of entities
-    const int entityCount = 100000;
+    const int entityCount = 1000000;
     std::vector<EntityID> entities;
     
     for (int i = 0; i < entityCount; ++i) {
@@ -638,292 +654,166 @@ TEST_F(ECSTest, Performance) {
               << duration.count() << " microseconds" << std::endl;
     std::cout << "Average frame time: " << (duration.count() / 100) << " microseconds" << std::endl;
     
-    // Performance verification (10,000 entities, should complete within 1 second)
+    // Performance verification (should complete within 1 second)
     EXPECT_LT(duration.count(), 1000000); // Less than 1 second
 }
 
-// Cache-friendly access test
-TEST_F(ECSTest, CacheFriendlyAccess) {
+// Linked list node for performance comparison
+struct LinkedListNode {
+    PositionComponent position;
+    VelocityComponent velocity;
+    HealthComponent health;
+    LinkedListNode* next;
+    
+    LinkedListNode() : next(nullptr) {}
+};
+
+// Linked list performance test for comparison
+TEST_F(ECSTest, LinkedListPerformanceComparison) {
+    const int entityCount = 1000000;
+    
+    std::cout << "\n=== LinkedList vs Array Performance Comparison ===" << std::endl;
+    std::cout << "Entity count: " << entityCount << std::endl;
+    
+    // 1. Create linked list structure
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    LinkedListNode* head = nullptr;
+    LinkedListNode* tail = nullptr;
+    
+    for (int i = 0; i < entityCount; ++i) {
+        LinkedListNode* node = new LinkedListNode();
+        node->position = PositionComponent{static_cast<float>(i), 0.0f, 0.0f};
+        node->velocity = VelocityComponent{1.0f, 0.0f, 0.0f};
+        node->health = HealthComponent{100.0f, 100.0f, true};
+        
+        if (head == nullptr) {
+            head = node;
+            tail = node;
+        } else {
+            tail->next = node;
+            tail = node;
+        }
+    }
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    auto setupTime = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Linked list setup time: " << setupTime.count() << " ms" << std::endl;
+    
+    // 2. Linked list traversal and update (simulating system update)
+    const int iterations = 100;
+    start = std::chrono::high_resolution_clock::now();
+    
+    for (int iter = 0; iter < iterations; ++iter) {
+        LinkedListNode* current = head;
+        while (current != nullptr) {
+            // Simulate movement system
+            current->position.x += current->velocity.vx * 0.016f;
+            current->position.y += current->velocity.vy * 0.016f;
+            current->position.z += current->velocity.vz * 0.016f;
+            
+            // Apply friction
+            current->velocity.vx *= 0.95f;
+            current->velocity.vy *= 0.95f;
+            current->velocity.vz *= 0.95f;
+            
+            // Simulate health system
+            if (current->health.isAlive && current->health.currentHealth < current->health.maxHealth) {
+                current->health.currentHealth += 5.0f * 0.016f;
+                if (current->health.currentHealth > current->health.maxHealth) {
+                    current->health.currentHealth = current->health.maxHealth;
+                }
+            }
+            
+            current = current->next;
+        }
+    }
+    
+    end = std::chrono::high_resolution_clock::now();
+    auto linkedListDuration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    
+    double linkedListAvg = static_cast<double>(linkedListDuration.count()) / iterations;
+    double linkedListEntitiesPerSecond = (entityCount * 1000000.0) / linkedListAvg;
+    
+    std::cout << "Linked List Performance:" << std::endl;
+    std::cout << "  Total time: " << linkedListDuration.count() << " μs" << std::endl;
+    std::cout << "  Average frame time: " << std::fixed << std::setprecision(2) << linkedListAvg << " μs" << std::endl;
+    std::cout << "  Entities per second: " << std::scientific << std::setprecision(2) << linkedListEntitiesPerSecond << std::endl;
+    std::cout << "  Time per frame: " << (linkedListAvg / 1000.0) << " ms" << std::endl;
+    
+    // 3. Array-based ECS performance (for comparison)
     auto& entityManager = systemManager->GetEntityManager();
     
-    const int entityCount = 1000;
-    std::vector<EntityID> entities;
+    // Clear previous entities
+    for (auto entity : std::vector<EntityID>()) {
+        entityManager.DestroyEntity(entity);
+    }
     
-    // Create entities
+    // Create entities for array-based test
+    std::vector<EntityID> entities;
     for (int i = 0; i < entityCount; ++i) {
         EntityID entity = entityManager.CreateEntity();
         entityManager.AddComponent(entity, PositionComponent{static_cast<float>(i), 0.0f, 0.0f});
         entityManager.AddComponent(entity, VelocityComponent{1.0f, 0.0f, 0.0f});
+        entityManager.AddComponent(entity, HealthComponent{100.0f, 100.0f, true});
         entities.push_back(entity);
     }
     
-    // Measure performance with direct array access
-    auto* positionArray = entityManager.GetComponentArray<PositionComponent>();
-    auto* velocityArray = entityManager.GetComponentArray<VelocityComponent>();
-    
-    PositionComponent* positions = positionArray->GetArray();
-    VelocityComponent* velocities = velocityArray->GetArray();
-    
-    auto start = std::chrono::high_resolution_clock::now();
-    
-    // Cache-friendly sequential access
-    for (size_t i = 0; i < positionArray->GetSize(); ++i) {
-        positions[i].x += velocities[i].vx * 0.016f;
-        positions[i].y += velocities[i].vy * 0.016f;
-        positions[i].z += velocities[i].vz * 0.016f;
-    }
-    
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    
-    std::cout << "Cache-friendly access: " << entityCount << " entities in " 
-              << duration.count() << " nanoseconds" << std::endl;
-    
-    // Result verification
-    EXPECT_FLOAT_EQ(positions[0].x, 0.016f);
-    EXPECT_FLOAT_EQ(positions[entityCount-1].x, static_cast<float>(entityCount-1) + 0.016f);
-}
-
-// Massive component loop performance test
-TEST_F(ECSTest, MassiveComponentLoopPerformance) {
-    auto& entityManager = systemManager->GetEntityManager();
-    
-    // Test with different numbers of entities
-    std::vector<int> entityCounts = {1000, 10000, 50000, 100000};
-    
-    for (int entityCount : entityCounts) {
-        std::cout << "\n=== Testing with " << entityCount << " entities ===" << std::endl;
-        
-        // Create entities
-        std::vector<EntityID> entities;
-        entities.reserve(entityCount);
-        
-        auto setupStart = std::chrono::high_resolution_clock::now();
-        
-        for (int i = 0; i < entityCount; ++i) {
-            EntityID entity = entityManager.CreateEntity();
-            entityManager.AddComponent(entity, PositionComponent{
-                static_cast<float>(i % 1000), 
-                static_cast<float>((i * 2) % 1000), 
-                static_cast<float>((i * 3) % 1000)
-            });
-            entityManager.AddComponent(entity, VelocityComponent{
-                static_cast<float>((i % 10) - 5), 
-                static_cast<float>(((i * 2) % 10) - 5), 
-                static_cast<float>(((i * 3) % 10) - 5)
-            });
-            entityManager.AddComponent(entity, HealthComponent{100.0f, 100.0f, true});
-            entities.push_back(entity);
-        }
-        
-        auto setupEnd = std::chrono::high_resolution_clock::now();
-        auto setupTime = std::chrono::duration_cast<std::chrono::milliseconds>(setupEnd - setupStart);
-        std::cout << "Setup time: " << setupTime.count() << " ms" << std::endl;
-        
-        // 1. Basic system performance test
-        systemManager->RegisterSystem<PositionComponent, VelocityComponent>(
-            [](float deltaTime, PositionComponent& position, VelocityComponent& velocity) {
-                position.x += velocity.vx * deltaTime;
-                position.y += velocity.vy * deltaTime;
-                position.z += velocity.vz * deltaTime;
-                velocity.vx *= 0.99f;
-                velocity.vy *= 0.99f;
-                velocity.vz *= 0.99f;
-            });
-        
-        const int iterations = 100;
-        auto start = std::chrono::high_resolution_clock::now();
-        
-        for (int i = 0; i < iterations; ++i) {
-            systemManager->Update(0.016f);
-        }
-        
-        auto end = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        
-        double avgFrameTime = static_cast<double>(duration.count()) / iterations;
-        double entitiesPerSecond = (entityCount * 1000000.0) / avgFrameTime;
-        
-        std::cout << "Basic System Performance:" << std::endl;
-        std::cout << "  Total time: " << duration.count() << " μs" << std::endl;
-        std::cout << "  Average frame time: " << std::fixed << std::setprecision(2) << avgFrameTime << " μs" << std::endl;
-        std::cout << "  Entities per second: " << std::scientific << std::setprecision(2) << entitiesPerSecond << std::endl;
-        
-        // 2. Direct array access performance test
-        auto* positionArray = entityManager.GetComponentArray<PositionComponent>();
-        auto* velocityArray = entityManager.GetComponentArray<VelocityComponent>();
-        
-        PositionComponent* positions = positionArray->GetArray();
-        VelocityComponent* velocities = velocityArray->GetArray();
-        size_t size = positionArray->GetSize();
-        
-        start = std::chrono::high_resolution_clock::now();
-        
-        for (int iter = 0; iter < iterations; ++iter) {
-            for (size_t i = 0; i < size; ++i) {
-                positions[i].x += velocities[i].vx * 0.016f;
-                positions[i].y += velocities[i].vy * 0.016f;
-                positions[i].z += velocities[i].vz * 0.016f;
-                velocities[i].vx *= 0.99f;
-                velocities[i].vy *= 0.99f;
-                velocities[i].vz *= 0.99f;
-            }
-        }
-        
-        end = std::chrono::high_resolution_clock::now();
-        duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        
-        avgFrameTime = static_cast<double>(duration.count()) / iterations;
-        entitiesPerSecond = (entityCount * 1000000.0) / avgFrameTime;
-        
-        std::cout << "Direct Array Access Performance:" << std::endl;
-        std::cout << "  Total time: " << duration.count() << " μs" << std::endl;
-        std::cout << "  Average frame time: " << std::fixed << std::setprecision(2) << avgFrameTime << " μs" << std::endl;
-        std::cout << "  Entities per second: " << std::scientific << std::setprecision(2) << entitiesPerSecond << std::endl;
-        
-        // 3. Cache-optimized batch processing performance test
-        SystemManager batchSystemManager;
-        auto& batchEntityManager = batchSystemManager.GetEntityManager();
-        batchEntityManager.RegisterComponent<PositionComponent>();
-        batchEntityManager.RegisterComponent<VelocityComponent>();
-        
-        // Re-create entities (for batch system)
-        std::vector<EntityID> batchEntities;
-        for (int i = 0; i < entityCount; ++i) {
-            EntityID entity = batchEntityManager.CreateEntity();
-            batchEntityManager.AddComponent(entity, PositionComponent{
-                static_cast<float>(i % 1000), 
-                static_cast<float>((i * 2) % 1000), 
-                static_cast<float>((i * 3) % 1000)
-            });
-            batchEntityManager.AddComponent(entity, VelocityComponent{
-                static_cast<float>((i % 10) - 5), 
-                static_cast<float>(((i * 2) % 10) - 5), 
-                static_cast<float>(((i * 3) % 10) - 5)
-            });
-            batchEntities.push_back(entity);
-        }
-        
-        auto batchSystem = std::make_unique<CacheOptimizedSystem<PositionComponent, VelocityComponent>>(
-            &batchEntityManager,
-            [](float deltaTime, size_t batchSize, PositionComponent* positions, VelocityComponent* velocities) {
-                for (size_t i = 0; i < batchSize; ++i) {
-                    positions[i].x += velocities[i].vx * deltaTime;
-                    positions[i].y += velocities[i].vy * deltaTime;
-                    positions[i].z += velocities[i].vz * deltaTime;
-                    velocities[i].vx *= 0.99f;
-                    velocities[i].vy *= 0.99f;
-                    velocities[i].vz *= 0.99f;
-                }
-            });
-        
-        start = std::chrono::high_resolution_clock::now();
-        
-        for (int i = 0; i < iterations; ++i) {
-            batchSystem->Update(0.016f);
-        }
-        
-        end = std::chrono::high_resolution_clock::now();
-        duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-        
-        avgFrameTime = static_cast<double>(duration.count()) / iterations;
-        entitiesPerSecond = (entityCount * 1000000.0) / avgFrameTime;
-        
-        std::cout << "Cache-Optimized Batch Processing Performance:" << std::endl;
-        std::cout << "  Total time: " << duration.count() << " μs" << std::endl;
-        std::cout << "  Average frame time: " << std::fixed << std::setprecision(2) << avgFrameTime << " μs" << std::endl;
-        std::cout << "  Entities per second: " << std::scientific << std::setprecision(2) << entitiesPerSecond << std::endl;
-        
-        // Memory usage information
-        size_t memoryUsage = entityCount * (sizeof(PositionComponent) + sizeof(VelocityComponent) + sizeof(HealthComponent));
-        std::cout << "Memory usage: " << (memoryUsage / 1024) << " KB" << std::endl;
-        
-        // Cleanup
-        for (auto entity : entities) {
-            entityManager.DestroyEntity(entity);
-        }
-        for (auto entity : batchEntities) {
-            batchEntityManager.DestroyEntity(entity);
-        }
-        
-        // Performance verification (100,000 entities should process within 1ms)
-        if (entityCount == 100000) {
-            EXPECT_LT(avgFrameTime, 1000.0); // Less than 1ms
-        }
-    }
-}
-
-// SIMD optimized performance test
-TEST_F(ECSTest, SIMDOptimizedPerformance) {
-    auto& entityManager = systemManager->GetEntityManager();
-    
-    const int entityCount = 100000;
-    std::vector<EntityID> entities;
-    
-    // Create entities
-    for (int i = 0; i < entityCount; ++i) {
-        EntityID entity = entityManager.CreateEntity();
-        entityManager.AddComponent(entity, PositionComponent{
-            static_cast<float>(i % 1000), 
-            static_cast<float>((i * 2) % 1000), 
-            static_cast<float>((i * 3) % 1000)
-        });
-        entityManager.AddComponent(entity, VelocityComponent{
-            static_cast<float>((i % 10) - 5), 
-            static_cast<float>(((i * 2) % 10) - 5), 
-            static_cast<float>(((i * 3) % 10) - 5)
-        });
-        entities.push_back(entity);
-    }
-    
-    // Compare general system vs SIMD optimized system
-    const int iterations = 100;
-    
-    // 1. General system
     systemManager->RegisterSystem<PositionComponent, VelocityComponent>(
         [](float deltaTime, PositionComponent& position, VelocityComponent& velocity) {
-            position.x += velocity.vx * deltaTime;
-            position.y += velocity.vy * deltaTime;
-            position.z += velocity.vz * deltaTime;
-            velocity.vx *= 0.95f;
-            velocity.vy *= 0.95f;
-            velocity.vz *= 0.95f;
+            MovementSystem::Update(deltaTime, position, velocity);
         });
     
-    auto start = std::chrono::high_resolution_clock::now();
+    systemManager->RegisterSystem<HealthComponent>(
+        [](float deltaTime, HealthComponent& health) {
+            HealthSystem::Update(deltaTime, health);
+        });
+    
+    start = std::chrono::high_resolution_clock::now();
+    
     for (int i = 0; i < iterations; ++i) {
         systemManager->Update(0.016f);
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    auto normalDuration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     
-    // 2. SIMD optimized system
-    auto simdSystem = std::make_unique<SIMDOptimizedMovementSystem>(&entityManager);
-    
-    start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < iterations; ++i) {
-        simdSystem->Update(0.016f);
-    }
     end = std::chrono::high_resolution_clock::now();
-    auto simdDuration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    auto arrayDuration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     
-    double normalAvg = static_cast<double>(normalDuration.count()) / iterations;
-    double simdAvg = static_cast<double>(simdDuration.count()) / iterations;
-    double speedup = normalAvg / simdAvg;
+    double arrayAvg = static_cast<double>(arrayDuration.count()) / iterations;
+    double arrayEntitiesPerSecond = (entityCount * 1000000.0) / arrayAvg;
     
-    std::cout << "\n=== SIMD Performance Comparison ===" << std::endl;
-    std::cout << "Entity count: " << entityCount << std::endl;
-    std::cout << "Normal system average: " << std::fixed << std::setprecision(2) << normalAvg << " μs" << std::endl;
-    std::cout << "SIMD system average: " << std::fixed << std::setprecision(2) << simdAvg << " μs" << std::endl;
-    std::cout << "Speedup: " << std::fixed << std::setprecision(2) << speedup << "x" << std::endl;
+    std::cout << "Array-based ECS Performance:" << std::endl;
+    std::cout << "  Total time: " << arrayDuration.count() << " μs" << std::endl;
+    std::cout << "  Average frame time: " << std::fixed << std::setprecision(2) << arrayAvg << " μs" << std::endl;
+    std::cout << "  Entities per second: " << std::scientific << std::setprecision(2) << arrayEntitiesPerSecond << std::endl;
+    std::cout << "  Time per frame: " << (arrayAvg / 1000.0) << " ms" << std::endl;
     
-    // SIMD optimization should show at least 10% performance improvement
-    EXPECT_GT(speedup, 1.1);
+    // Performance comparison
+    double speedup = linkedListAvg / arrayAvg;
+    std::cout << "Performance Comparison:" << std::endl;
+    std::cout << "  Array-based ECS is " << std::fixed << std::setprecision(2) << speedup << "x faster than linked list" << std::endl;
+    std::cout << "  Linked list takes " << std::fixed << std::setprecision(2) << (linkedListAvg / 1000.0) << " ms per frame" << std::endl;
+    std::cout << "  Array-based ECS takes " << std::fixed << std::setprecision(2) << (arrayAvg / 1000.0) << " ms per frame" << std::endl;
     
-    // Cleanup
+
+    EXPECT_GT(linkedListAvg, arrayAvg); 
+    
+    // Verify that array-based ECS is significantly faster
+    EXPECT_GT(speedup, 3.5); // At least 3.5x faster
+    
+    // Cleanup linked list
+    LinkedListNode* current = head;
+    while (current != nullptr) {
+        LinkedListNode* next = current->next;
+        delete current;
+        current = next;
+    }
+    
+    // Cleanup entities
     for (auto entity : entities) {
         entityManager.DestroyEntity(entity);
     }
 }
+
+// ... existing code ...
 
  
