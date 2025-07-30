@@ -19,6 +19,8 @@ class send_message; // Forward declaration
 class GameObject {
 protected:
 	World* world_;
+
+private:
 	syncnet::AIState state_;
 	long change_flag_;
 
@@ -31,11 +33,12 @@ public:
 	virtual void set_position(float x, float y, float z) {};
 	virtual bool is_changed_position(float x, float y, float z) { return false; }
 	virtual bool is_changed() { return false; }
-	bool changed_flag(long flag) { return (change_flag_ & flag) != 0; }
+	bool changed_flag(long flag) { return (get_changed_flag() & flag) != 0; }
 	bool changed_flag(long myself_flag, long flag) { return  (myself_flag & flag) != 0; }
-	void set_changed(long flag) { change_flag_ |= flag; }
-	virtual void reset_changed() { change_flag_ = static_cast<long>(GameObjectChangeType::None); }
+	virtual void set_changed(long flag) { change_flag_ = flag; }
+	virtual void reset_changed() { set_changed(static_cast<long>(GameObjectChangeType::None)); }
 	long get_changed_flag() { return change_flag_; }
+	void add_changed_flag(long flag) { set_changed(get_changed_flag() | flag); }
 
 	virtual syncnet::GameObjectType type() { return syncnet::GameObjectType::GameObjectType_Monster; }
 	virtual int agent_id() { return -1; }
@@ -43,8 +46,8 @@ public:
 
 	World* world() { return world_; }
 	syncnet::AIState state() { return state_; }
-	void SetState(syncnet::AIState state) { 
-		change_flag_ |= static_cast<long>(GameObjectChangeType::State);
+	virtual void SetState(syncnet::AIState state) { 
+		add_changed_flag(static_cast<long>(GameObjectChangeType::State));
 		state_ = state; 
 	}
 	virtual int health() { return 0; }

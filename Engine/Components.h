@@ -141,4 +141,11 @@ namespace Engine
         uint32_t tagID = 0;
         uint32_t layerID = 0;
     };
+
+    struct StateComponent
+    {
+        uint32_t stateID = 0; // 상태 ID
+		uint32_t changeFlag = 0; // 변경 플래그
+		uint32_t agentID = 0; // 에이전트 ID
+	};
 } 

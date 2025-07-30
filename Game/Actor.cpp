@@ -8,6 +8,10 @@ void Actor::init()
 {
 	auto& entityManager = world_->system_manager_->GetEntityManager();
 	entity_id_ = entityManager.CreateEntity();
+
+	entityManager.AddComponent(entity_id_, Engine::TimerComponent());
+	entityManager.AddComponent(entity_id_, Engine::StateComponent());
+	entityManager.AddComponent(entity_id_, Engine::PositionComponent());
 }
 
 void Actor::clear()
@@ -30,10 +34,36 @@ void Actor::update(float dt)
 	}
 }
 
+void Actor::set_position(float x, float y, float z)
+{
+	position_.set(x, y, z);
+	add_changed_flag(static_cast<long>(GameObjectChangeType::Position));
+	auto& entityManager = world_->system_manager_->GetEntityManager();
+	Engine::PositionComponent& transform = entityManager.GetComponent<Engine::PositionComponent>(entity_id_);
+	transform.x = x;
+	transform.y = y;
+	transform.z = z;
+};
+
+
+void Actor::SetState(syncnet::AIState state) {
+	GameObject::SetState(state);
+	auto& entityManager = world_->system_manager_->GetEntityManager();
+	entityManager.GetComponent<Engine::StateComponent>(entity_id_).stateID = static_cast<int>(state);
+}
+
+void Actor::set_changed(long flag)
+{
+	GameObject::set_changed(flag);
+	auto& entityManager = world_->system_manager_->GetEntityManager();
+	entityManager.GetComponent<Engine::StateComponent>(entity_id_).changeFlag = get_changed_flag();
+}
+
+
 flatbuffers::Offset<syncnet::ActorInfo> Actor::get_actor_info(flatbuffers::FlatBufferBuilder& _fbb, long flag)
 { 
 	syncnet::Vec3 pos(position_.convert_x(), position_.convert_y(), position_.convert_z());
-	syncnet::ActorState state(this->state_);
+	syncnet::ActorState state(this->state());
 	syncnet::ActorHealth health(this->health_);
 
 	syncnet::Vec3* posPtr = &pos;

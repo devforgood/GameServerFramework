@@ -9,8 +9,7 @@
 #include "LogHelper.h"
 #include "MonsterBT.h"
 #include "MonsterCodeBaseBT.h"
-#include "behaviortree_cpp/bt_factory.h"
-#include "../BehaviorTree/BehaviorTree.h"
+#include "Common.h"
 
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
@@ -56,6 +55,8 @@ bool Monster::init(Vector3& pos)
 	this->set_position(pos.x, pos.y, pos.z);
 	agent_id_ = agent_id;
 	this->speed = speed;
+	auto& entityManager = world_->system_manager_->GetEntityManager();
+	entityManager.GetComponent<Engine::StateComponent>(entity_id_).agentID = agent_id;
 
 
 	bt_ = MonsterCodeBaseBT::createTree(this);

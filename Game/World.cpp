@@ -79,6 +79,7 @@ void World::Init()
 	entityManager.RegisterComponent<Engine::TimerComponent>();
 	entityManager.RegisterComponent<Engine::ParticleComponent>();
 	entityManager.RegisterComponent<Engine::NetworkComponent>();
+	entityManager.RegisterComponent<Engine::StateComponent>();
 
 	system_manager_->RegisterSystem<Engine::TimerComponent>(
 		[](float deltaTime, Engine::TimerComponent& timer) {
@@ -156,30 +157,49 @@ void World::SendWorldState()
 	flatbuffers::Offset<syncnet::ActorInfo> agent_info;
 	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agent_info_vector;
 	std::vector<int> removed_agents;
-	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
+
+
+	auto& entityManager = system_manager_->GetEntityManager();
+	auto* positionArray = entityManager.GetComponentArray<Engine::PositionComponent>();
+	auto* stateArray = entityManager.GetComponentArray<Engine::StateComponent>();
+
+
+	for (int i = 0; i < stateArray->GetSize(); ++i)
 	{
-		auto game_object = itr->get();
-		if (game_object->state() == syncnet::AIState::AIState_Destroyed) {
-			removed_agents.push_back(game_object->agent_id());
+		auto& state = stateArray->GetArray()[i];
+		auto& position = positionArray->GetArray()[i];
+
+
+		if (state.stateID == syncnet::AIState::AIState_Destroyed) {
+			removed_agents.push_back(state.agentID);
 		}
 
-		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(game_object->agent_id());
+		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(state.agentID);
 		if (agent->active == false)
 			continue;
 
-		if (game_object->is_changed_position(agent->npos[0], agent->npos[1], agent->npos[2]))
-		{
-			game_object->set_position(agent->npos[0], agent->npos[1], agent->npos[2]);
-			grid_manager_->move((Actor*)itr->get(), agent->npos[0], agent->npos[2]);
-		}
-		
-		if (!game_object->is_changed()) 
+		bool changed_position = !Vector3::equal(position.x, position.y, position.z, agent->npos[0], agent->npos[1], agent->npos[2]);
+		if (state.changeFlag == 0 && !changed_position)
 			continue;
 
 
-		agent_info_vector.push_back(game_object->get_actor_info(*builder_ptr, game_object->get_changed_flag()));
+		auto itr = game_object_map_.find(state.agentID);
+		if (itr == game_object_map_.end())
+		{
+			LOG.error("SendWorldState error agent not found in game_object_map_");
+			continue;
+		}
+		auto actor = (Actor*)itr->second->get();
 
-		game_object->reset_changed();
+		if (changed_position)
+		{
+			actor->set_position(agent->npos[0], agent->npos[1], agent->npos[2]);
+			grid_manager_->move(actor, agent->npos[0], agent->npos[2]);
+		}
+
+		agent_info_vector.push_back(actor->get_actor_info(*builder_ptr, actor->get_changed_flag()));
+
+		actor->reset_changed();
 	}
 	auto agents = builder_ptr->CreateVector(agent_info_vector);
 

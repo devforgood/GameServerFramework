@@ -35,11 +35,7 @@ public:
 
 	virtual int agent_id() override { return agent_id_; }
 
-	virtual void set_position(float x, float y, float z) 
-	{
-		position_.set(x, y, z);
-		change_flag_ |= static_cast<long>(GameObjectChangeType::Position);
-	};
+	virtual void set_position(float x, float y, float z);
 
 	virtual bool isCharacter() const
 	{
@@ -140,13 +136,13 @@ public:
 	virtual void increment_health(int amount) 
 	{
 		health_ += amount;
-		change_flag_ |= static_cast<long>(GameObjectChangeType::Health);
+		add_changed_flag(static_cast<long>(GameObjectChangeType::Health));
 	}
 
 	virtual void decrement_health(int amount) 
 	{
 		health_ -= amount;
-		change_flag_ |= static_cast<long>(GameObjectChangeType::Health);
+		add_changed_flag(static_cast<long>(GameObjectChangeType::Health));
 	}
 
 	virtual bool is_changed_position(float x, float y, float z) 
@@ -156,7 +152,7 @@ public:
 
 	virtual bool is_changed() 
 	{ 
-		return change_flag_ != static_cast<long>(GameObjectChangeType::None)
+		return get_changed_flag() != static_cast<long>(GameObjectChangeType::None)
 			&& !is_input_locked_; // if input is locked, we don't want to change the position
 	}
 	virtual int health() { return health_; }
@@ -167,13 +163,17 @@ public:
 	void set_input_locked(bool locked) 
 	{ 
 		is_input_locked_ = locked; 
-		change_flag_ |= static_cast<long>(GameObjectChangeType::InputLocked);
+		add_changed_flag(static_cast<long>(GameObjectChangeType::InputLocked));
 	}
 
 	float get_vecter2_x() const { return position_.get_vecter2_x(); }
 	float get_vecter2_y() const { return position_.get_vecter2_y(); }
 
 	virtual syncnet::GameObjectType type() { return game_object_type_; }
+
+	virtual void SetState(syncnet::AIState state);
+
+	virtual void set_changed(long flag);
 
 public:
 	int gridX = -1;
