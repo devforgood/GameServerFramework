@@ -38,6 +38,9 @@
     <Filter Include="skill">
       <UniqueIdentifier>{9c6d76e4-1915-4245-a42b-da9c4c31da6a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="System">
+      <UniqueIdentifier>{66087256-9230-454e-8ff0-5b187d1e6083}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">

@@ -31,6 +31,9 @@ private:
 	std::unordered_map<int, std::list<std::shared_ptr<GameObject>>::iterator> game_object_map_;
 
 	std::vector<syncnet::Vec3> raycasts_;
+	std::shared_ptr<send_message> builder_ptr_;
+	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agent_info_vector_;
+	std::vector<int> removed_agents_;
 
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
 

@@ -63,6 +63,8 @@ void World::Init()
 	grid_manager_ = new GridManager(100, 100, 2);
 	time_stamp_ = new TimeStamp();
 	random_util_ = new RandomUtil();
+	builder_ptr_ = std::make_shared<send_message>();
+
 	system_manager_ = new Engine::SystemManager();
 
 	auto& entityManager = system_manager_->GetEntityManager();
@@ -85,18 +87,55 @@ void World::Init()
 		[](float deltaTime, Engine::TimerComponent& timer) {
 			Engine::TimerSystem::Update(deltaTime, timer);
 		});
+
+	World* world = this;
+	system_manager_->RegisterSystem<Engine::StateComponent, Engine::PositionComponent>(
+		[world](float deltaTime, Engine::StateComponent& state, Engine::PositionComponent& position) {
+			if (state.stateID == syncnet::AIState::AIState_Destroyed) {
+				world->removed_agents_.push_back(state.agentID);
+			}
+
+			const dtCrowdAgent* agent = world->map()->crowd()->getAgent(state.agentID);
+			if (agent->active == false)
+				return;
+
+			bool changed_position = !Vector3::equal(position.x, position.y, position.z, agent->npos[0], agent->npos[1], agent->npos[2]);
+			if (state.changeFlag == 0 && !changed_position)
+				return;
+
+
+			auto itr = world->game_object_map_.find(state.agentID);
+			if (itr == world->game_object_map_.end())
+			{
+				LOG.error("SendWorldState error agent not found in game_object_map_");
+				return;
+			}
+			auto actor = (Actor*)itr->second->get();
+
+			if (changed_position)
+			{
+				actor->set_position(agent->npos[0], agent->npos[1], agent->npos[2]);
+				world->grid_manager_->move(actor, agent->npos[0], agent->npos[2]);
+			}
+
+			world->agent_info_vector_.push_back(actor->get_actor_info(*world->builder_ptr_, actor->get_changed_flag()));
+
+			actor->reset_changed();
+		});
 }
 
 void World::update(float deltaTime)
 {
 	time_stamp_->update();
-	system_manager_->Update(deltaTime);
 
 	//LOG.info("World update begin");
 	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin();itr!= game_object_list_.end();++itr)
 		(*itr)->update(deltaTime);
 
 	map_->update(deltaTime);
+
+	system_manager_->Update(deltaTime);
+
 	SendWorldState();
 	//LOG.info("World update end");
 }
@@ -153,79 +192,35 @@ void World::GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbu
 
 void World::SendWorldState()
 {
-	auto builder_ptr = std::make_shared<send_message>();
-	flatbuffers::Offset<syncnet::ActorInfo> agent_info;
-	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agent_info_vector;
-	std::vector<int> removed_agents;
-
-
-	auto& entityManager = system_manager_->GetEntityManager();
-	auto* positionArray = entityManager.GetComponentArray<Engine::PositionComponent>();
-	auto* stateArray = entityManager.GetComponentArray<Engine::StateComponent>();
-
-
-	for (int i = 0; i < stateArray->GetSize(); ++i)
-	{
-		auto& state = stateArray->GetArray()[i];
-		auto& position = positionArray->GetArray()[i];
-
-
-		if (state.stateID == syncnet::AIState::AIState_Destroyed) {
-			removed_agents.push_back(state.agentID);
-		}
-
-		const dtCrowdAgent* agent = this->map()->crowd()->getAgent(state.agentID);
-		if (agent->active == false)
-			continue;
-
-		bool changed_position = !Vector3::equal(position.x, position.y, position.z, agent->npos[0], agent->npos[1], agent->npos[2]);
-		if (state.changeFlag == 0 && !changed_position)
-			continue;
-
-
-		auto itr = game_object_map_.find(state.agentID);
-		if (itr == game_object_map_.end())
-		{
-			LOG.error("SendWorldState error agent not found in game_object_map_");
-			continue;
-		}
-		auto actor = (Actor*)itr->second->get();
-
-		if (changed_position)
-		{
-			actor->set_position(agent->npos[0], agent->npos[1], agent->npos[2]);
-			grid_manager_->move(actor, agent->npos[0], agent->npos[2]);
-		}
-
-		agent_info_vector.push_back(actor->get_actor_info(*builder_ptr, actor->get_changed_flag()));
-
-		actor->reset_changed();
-	}
-	auto agents = builder_ptr->CreateVector(agent_info_vector);
+	auto agents = builder_ptr_->CreateVector(agent_info_vector_);
 
 	// ----------------------------
 	flatbuffers::Offset<syncnet::DebugRaycast> debug_raycast;
 	std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> debug_raycast_vector;
 	for (int i = 0; i < this->raycasts_.size(); ++i)
 	{
-		debug_raycast = syncnet::CreateDebugRaycast(*builder_ptr, 0, &this->raycasts_[i]);
+		debug_raycast = syncnet::CreateDebugRaycast(*builder_ptr_, 0, &this->raycasts_[i]);
 		debug_raycast_vector.push_back(debug_raycast);
 	}
 	this->raycasts_.clear();
-	auto debug_raycasts = builder_ptr->CreateVector(debug_raycast_vector);
+	auto debug_raycasts = builder_ptr_->CreateVector(debug_raycast_vector);
 	// ----------------------------
 
-	auto updateActorNotify = syncnet::CreateUpdateActorNotify(*builder_ptr, agents, debug_raycasts);
+	auto updateActorNotify = syncnet::CreateUpdateActorNotify(*builder_ptr_, agents, debug_raycasts);
 
-	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
-	builder_ptr->Finish(send_msg);
+	auto send_msg = syncnet::CreateGameMessage(*builder_ptr_, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
+	builder_ptr_->Finish(send_msg);
 
-	SendBroadcast(builder_ptr);
+	SendBroadcast(builder_ptr_);
 
-	for (auto& agent_id : removed_agents)
+	for (auto& agent_id : removed_agents_)
 	{
 		OnRemoveAgent(agent_id);
 	}
+
+	builder_ptr_ = std::make_shared<send_message>();
+	agent_info_vector_.clear();
+	removed_agents_.clear();
 }
 
 void World::SendBroadcast(std::shared_ptr<send_message> msg) 
