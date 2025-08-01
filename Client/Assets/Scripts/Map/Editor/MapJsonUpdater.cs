@@ -28,7 +28,7 @@ public class MapJsonUpdater : EditorWindow
     }
 
     [System.Serializable]
-    public class Gate
+    public class GateInfo
     {
         public int id;
         public string name;
@@ -39,7 +39,7 @@ public class MapJsonUpdater : EditorWindow
     }
 
     [System.Serializable]
-    public class SpawnPoint
+    public class SpawnPointInfo
     {
         public Vec3 position;
         public int monster_id;
@@ -51,9 +51,9 @@ public class MapJsonUpdater : EditorWindow
     [System.Serializable]
     public class MapSpawnPoints
     {
-        public List<SpawnPoint> player_spawn = new List<SpawnPoint>();
-        public List<SpawnPoint> monster_spawn = new List<SpawnPoint>();
-        public List<SpawnPoint> boss_spawn = new List<SpawnPoint>();
+        public List<SpawnPointInfo> player_spawn = new List<SpawnPointInfo>();
+        public List<SpawnPointInfo> monster_spawn = new List<SpawnPointInfo>();
+        public List<SpawnPointInfo> boss_spawn = new List<SpawnPointInfo>();
     }
 
     [System.Serializable]
@@ -65,7 +65,7 @@ public class MapJsonUpdater : EditorWindow
         public string desc_id;
         public int game_mode_id;
         public MapSize size;
-        public List<Gate> gates = new List<Gate>();
+        public List<GateInfo> gates = new List<GateInfo>();
         public MapSpawnPoints spawn_points = new MapSpawnPoints();
         public MapObjects objects = new MapObjects();
         public string navmesh_path; // NavMesh 파일 경로
@@ -223,7 +223,7 @@ public class MapJsonUpdater : EditorWindow
                 desc_id = $"map_{sceneName.ToLower()}_desc",
                 game_mode_id = 1, // 기본값: Field
                 size = new MapSize { width = 1000, height = 1000 },
-                gates = new List<Gate>(),
+                gates = new List<GateInfo>(),
                 spawn_points = new MapSpawnPoints(),
                 objects = new MapObjects()
             };
@@ -260,16 +260,31 @@ public class MapJsonUpdater : EditorWindow
         for (int i = 0; i < gateObjects.Length; i++)
         {
             var gateObj = gateObjects[i];
-            var gateComponent = gateObj.GetComponent<GateComponent>();
-            
-            Gate gate = new Gate
+            var gateComponent = gateObj.GetComponent<Gate>();
+
+            GateInfo foundGate = null;
+            var foundMap = mapDataList.Find(m => m.name.Equals(gateComponent.destinationMapName, System.StringComparison.OrdinalIgnoreCase));
+            if (foundMap == null)
+            {
+                Debug.LogWarning($"Destination map '{gateComponent.destinationMapName}' not found for gate '{gateObj.name}'. Using default values.");
+            }
+            else
+            {
+                foundGate = foundMap.gates.Find(g => g.name.Equals(gateComponent.destinationGateName, System.StringComparison.OrdinalIgnoreCase));
+                if (foundGate == null)
+                {
+                    Debug.LogWarning($"Destination gate '{gateComponent.destinationGateName}' not found in map '{foundMap.name}' for gate '{gateObj.name}'. Using default values.");
+                }
+            }
+
+            GateInfo gate = new GateInfo
             {
                 id = i + 1,
-                name = gateObj.name,
+                name = gateComponent.gateName,
                 position = new Vec3(gateObj.transform.position),
-                target_map_id = gateComponent != null ? gateComponent.targetMapId : 1,
-                target_gate_id = gateComponent != null ? gateComponent.targetGateId : 1,
-                required_level = gateComponent != null ? gateComponent.requiredLevel : 1
+                target_map_id = foundMap != null ? foundMap.id : 1,
+                target_gate_id = foundGate != null ? foundGate.id : 1,
+                required_level = 1
             };
             
             map.gates.Add(gate);
@@ -285,9 +300,9 @@ public class MapJsonUpdater : EditorWindow
         for (int i = 0; i < spawnObjects.Length; i++)
         {
             var spawnObj = spawnObjects[i];
-            var spawnComponent = spawnObj.GetComponent<SpawnComponent>();
+            var spawnComponent = spawnObj.GetComponent<SpawnPoint>();
             
-            SpawnPoint spawnPoint = new SpawnPoint
+            SpawnPointInfo spawnPoint = new SpawnPointInfo
             {
                 position = new Vec3(spawnObj.transform.position),
                 monster_id = spawnComponent != null ? spawnComponent.monsterId : 0,
@@ -351,57 +366,3 @@ public class MapJsonUpdater : EditorWindow
         }
     }
 }
-
-// Spawn 타입 enum (전역으로 이동)
-public enum SpawnType
-{
-    Player,
-    Monster,
-    Boss
-}
-
-// Gate 컴포넌트 (씬의 Gate 오브젝트에 추가)
-public class GateComponent : MonoBehaviour
-{
-    [Header("Gate Settings")]
-    public int targetMapId = 1;
-    public int targetGateId = 1;
-    public int requiredLevel = 1;
-    
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireCube(transform.position, Vector3.one * 2f);
-        Gizmos.color = Color.white;
-    }
-}
-
-// Spawn 컴포넌트 (씬의 Spawn 오브젝트에 추가)
-public class SpawnComponent : MonoBehaviour
-{
-    [Header("Spawn Settings")]
-    public SpawnType spawnType = SpawnType.Player;
-    public int monsterId = 0;
-    public int spawnInterval = 30;
-    public int bossId = 0;
-    public int spawnDelay = 0;
-    
-    private void OnDrawGizmos()
-    {
-        switch (spawnType)
-        {
-            case SpawnType.Player:
-                Gizmos.color = Color.green;
-                break;
-            case SpawnType.Monster:
-                Gizmos.color = Color.red;
-                break;
-            case SpawnType.Boss:
-                Gizmos.color = Color.yellow;
-                break;
-        }
-        
-        Gizmos.DrawWireSphere(transform.position, 1f);
-        Gizmos.color = Color.white;
-    }
-} 

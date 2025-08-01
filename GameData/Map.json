@@ -685,13 +685,13 @@
     "gates": [
       {
         "id": 1,
-        "name": "Gate",
+        "name": "Gate1",
         "position": {
           "x": 23.71,
           "y": 0.0,
           "z": 0.0
         },
-        "target_map_id": 1,
+        "target_map_id": 14,
         "target_gate_id": 1,
         "required_level": 1
       }
@@ -732,13 +732,13 @@
     "gates": [
       {
         "id": 1,
-        "name": "Gate",
+        "name": "Gate1",
         "position": {
           "x": -23.39,
           "y": 0.0,
           "z": 0.0
         },
-        "target_map_id": 1,
+        "target_map_id": 13,
         "target_gate_id": 1,
         "required_level": 1
       }
