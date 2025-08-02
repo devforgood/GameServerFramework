@@ -36,7 +36,8 @@ namespace CodeAnalyzer
             var classDecl = (ClassDeclarationSyntax)ctx.Node;
             var sym = ctx.SemanticModel.GetDeclaredSymbol(classDecl);
             if (sym == null) return;
-            if (!sym.GetAttributes().Any(a => a.AttributeClass.Name == "ReadOnlyAttribute"))
+            if (!sym.GetAttributes().Any(a => a.AttributeClass?.Name == "ReadOnlyAttribute" || 
+                                               a.AttributeClass?.ToDisplayString().EndsWith("ReadOnlyAttribute") == true))
                 return;
 
             // 클래스 내부에 Save(), Insert(), Update() 정의 검사
@@ -66,7 +67,8 @@ namespace CodeAnalyzer
             var containingClass = inv.FirstAncestorOrSelf<ClassDeclarationSyntax>();
             if (containingClass == null) return;
             var classSym = ctx.SemanticModel.GetDeclaredSymbol(containingClass);
-            if (classSym?.GetAttributes().Any(a => a.AttributeClass.Name == "ReadOnlyAttribute") != true)
+            if (classSym?.GetAttributes().Any(a => a.AttributeClass?.Name == "ReadOnlyAttribute" || 
+                                                    a.AttributeClass?.ToDisplayString().EndsWith("ReadOnlyAttribute") == true) != true)
                 return;
 
             var diag = Diagnostic.Create(Rule, inv.GetLocation(), sym.Name);
