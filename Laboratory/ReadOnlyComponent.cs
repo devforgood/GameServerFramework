@@ -4,7 +4,7 @@ using Common;
 [ReadOnly]
 public class ReadOnlyComponent : BaseComponent
 {
-    public override void Save() { /* 📌 이 라인에 컴파일 에러 */ }
+    //public override void Save() { /* 📌 이 라인에 컴파일 에러 */ }
 
     public void Load() { /* OK */ }
 

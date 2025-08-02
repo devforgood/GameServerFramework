@@ -15,7 +15,7 @@ namespace CodeAnalyzer
         private static readonly DiagnosticDescriptor Rule = new DiagnosticDescriptor(
             DiagnosticId,
             "ReadOnly class should not define or call Write methods",
-            "Class marked [ReadOnly] must not define or call '{0}' method.",
+            "Class marked [ReadOnly] must not define or call '{0}' method",
             "Usage",
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -33,46 +33,87 @@ namespace CodeAnalyzer
 
         private static void AnalyzeClass(SyntaxNodeAnalysisContext ctx)
         {
-            var classDecl = (ClassDeclarationSyntax)ctx.Node;
-            var sym = ctx.SemanticModel.GetDeclaredSymbol(classDecl);
-            if (sym == null) return;
-            if (!sym.GetAttributes().Any(a => a.AttributeClass?.Name == "ReadOnlyAttribute" || 
-                                               a.AttributeClass?.ToDisplayString().EndsWith("ReadOnlyAttribute") == true))
-                return;
-
-            // 클래스 내부에 Save(), Insert(), Update() 정의 검사
-            foreach (var member in classDecl.Members.OfType<MethodDeclarationSyntax>())
+            try
             {
-                var name = member.Identifier.Text;
-                if (name == "Save" || name == "Insert" || name == "Update")
+                var classDecl = (ClassDeclarationSyntax)ctx.Node;
+                var sym = ctx.SemanticModel.GetDeclaredSymbol(classDecl);
+                if (sym == null) return;
+                
+                // Check for ReadOnlyAttribute more safely
+                bool hasReadOnlyAttribute = false;
+                var attributes = sym.GetAttributes();
+                foreach (var attr in attributes)
                 {
-                    var diag = Diagnostic.Create(Rule, member.Identifier.GetLocation(), name);
-                    ctx.ReportDiagnostic(diag);
+                    if (attr.AttributeClass != null && attr.AttributeClass.Name == "ReadOnlyAttribute")
+                    {
+                        hasReadOnlyAttribute = true;
+                        break;
+                    }
                 }
+                
+                if (!hasReadOnlyAttribute) return;
+
+                // Check class members for forbidden methods
+                foreach (var member in classDecl.Members)
+                {
+                    if (member is MethodDeclarationSyntax method)
+                    {
+                        var name = method.Identifier.Text;
+                        if (name == "Save" || name == "Insert" || name == "Update")
+                        {
+                            var diag = Diagnostic.Create(Rule, method.Identifier.GetLocation(), name);
+                            ctx.ReportDiagnostic(diag);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Analyzer should not throw exceptions
             }
         }
 
         private static void AnalyzeInvocation(SyntaxNodeAnalysisContext ctx)
         {
-            var inv = (InvocationExpressionSyntax)ctx.Node;
-            var sym = ctx.SemanticModel.GetSymbolInfo(inv).Symbol as IMethodSymbol;
-            if (sym == null) return;
+            try
+            {
+                var inv = (InvocationExpressionSyntax)ctx.Node;
+                var symbolInfo = ctx.SemanticModel.GetSymbolInfo(inv);
+                var sym = symbolInfo.Symbol as IMethodSymbol;
+                if (sym == null) return;
 
-            var containing = sym.ContainingType;
-            // 호출 대상이 저장 관련 메서드인지 필터링
-            if (sym.Name != "Save" && sym.Name != "Insert" && sym.Name != "Update")
-                return;
+                // Check if this is a forbidden method call
+                if (sym.Name != "Save" && sym.Name != "Insert" && sym.Name != "Update")
+                    return;
 
-            // 현재 호출이 ReadOnly 클래스의 내부에서 발생하는지 검사
-            var containingClass = inv.FirstAncestorOrSelf<ClassDeclarationSyntax>();
-            if (containingClass == null) return;
-            var classSym = ctx.SemanticModel.GetDeclaredSymbol(containingClass);
-            if (classSym?.GetAttributes().Any(a => a.AttributeClass?.Name == "ReadOnlyAttribute" || 
-                                                    a.AttributeClass?.ToDisplayString().EndsWith("ReadOnlyAttribute") == true) != true)
-                return;
+                // Find containing class
+                var containingClass = inv.FirstAncestorOrSelf<ClassDeclarationSyntax>();
+                if (containingClass == null) return;
+                
+                var classSym = ctx.SemanticModel.GetDeclaredSymbol(containingClass);
+                if (classSym == null) return;
 
-            var diag = Diagnostic.Create(Rule, inv.GetLocation(), sym.Name);
-            ctx.ReportDiagnostic(diag);
+                // Check if containing class has ReadOnlyAttribute
+                bool hasReadOnlyAttribute = false;
+                var attributes = classSym.GetAttributes();
+                foreach (var attr in attributes)
+                {
+                    if (attr.AttributeClass != null && attr.AttributeClass.Name == "ReadOnlyAttribute")
+                    {
+                        hasReadOnlyAttribute = true;
+                        break;
+                    }
+                }
+                
+                if (!hasReadOnlyAttribute) return;
+
+                var diag = Diagnostic.Create(Rule, inv.GetLocation(), sym.Name);
+                ctx.ReportDiagnostic(diag);
+            }
+            catch
+            {
+                // Analyzer should not throw exceptions
+            }
         }
     }
 
