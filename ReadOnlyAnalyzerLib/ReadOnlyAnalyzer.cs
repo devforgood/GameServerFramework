@@ -1,9 +1,10 @@
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
+using System.Collections.Immutable;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace CodeAnalyzer
 {
@@ -23,12 +24,34 @@ namespace CodeAnalyzer
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
             => ImmutableArray.Create(Rule);
 
+        public static readonly string[] writableMethodNames = new string[]
+        {
+            "save",
+            "insert",
+            "update"
+        };
+
+
         public override void Initialize(AnalysisContext context)
         {
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
             context.EnableConcurrentExecution();
             context.RegisterSyntaxNodeAction(AnalyzeClass, SyntaxKind.ClassDeclaration);
             context.RegisterSyntaxNodeAction(AnalyzeInvocation, SyntaxKind.InvocationExpression);
+        }
+
+        private static bool IsWritableMethodName(string methodName)
+        {
+            // Normalize method name to lower case for comparison
+            string name = methodName.ToLowerInvariant();
+            for(int i=0;i<writableMethodNames.Length;++i)
+            {
+                if(name.Contains(writableMethodNames[i]))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static void AnalyzeClass(SyntaxNodeAnalysisContext ctx)
@@ -59,7 +82,7 @@ namespace CodeAnalyzer
                     if (member is MethodDeclarationSyntax method)
                     {
                         var name = method.Identifier.Text;
-                        if (name == "Save" || name == "Insert" || name == "Update")
+                        if (IsWritableMethodName(name))
                         {
                             var diag = Diagnostic.Create(Rule, method.Identifier.GetLocation(), name);
                             ctx.ReportDiagnostic(diag);
@@ -83,7 +106,7 @@ namespace CodeAnalyzer
                 if (sym == null) return;
 
                 // Check if this is a forbidden method call
-                if (sym.Name != "Save" && sym.Name != "Insert" && sym.Name != "Update")
+                if (!IsWritableMethodName(sym.Name))
                     return;
 
                 // Find containing class
