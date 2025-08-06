@@ -2,6 +2,7 @@
 #include "syncnet_generated.h"
 
 class World;
+class Map;
 class Vector3;
 
 enum class GameObjectChangeType
@@ -18,14 +19,14 @@ class send_message; // Forward declaration
 
 class GameObject {
 protected:
-	World* world_;
+	Map* map_;
 
 private:
 	syncnet::AIState state_;
 	long change_flag_;
 
 public:
-	GameObject(World* world) : world_(world), change_flag_(0)
+	GameObject(Map* map) : map_(map), change_flag_(0)
 	{
 	}
 	virtual ~GameObject() = default; // 반드시 virtual 소멸자를 추가
@@ -44,7 +45,7 @@ public:
 	virtual int agent_id() { return -1; }
 	virtual bool init(Vector3& pos) { return false; }
 
-	World* world() { return world_; }
+	Map* map() { return map_; }
 	syncnet::AIState state() { return state_; }
 	virtual void SetState(syncnet::AIState state) { 
 		add_changed_flag(static_cast<long>(GameObjectChangeType::State));

@@ -7,8 +7,9 @@
 #include "LogHelper.h"
 #include "Vector3.h"
 #include "Common.h"
+#include "Map.h"
 
-std::shared_ptr<GameObject> GameObjectFactory::CreateGameObject(World* world, std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
+std::shared_ptr<GameObject> GameObjectFactory::CreateGameObject(Map* map, std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
 	Vector3 target_pos(pos);
 	std::shared_ptr<GameObject> game_object;
@@ -23,7 +24,7 @@ std::shared_ptr<GameObject> GameObjectFactory::CreateGameObject(World* world, st
 			return nullptr;
 		}
 
-		std::shared_ptr<Character> character = std::make_shared<Character>(world);
+		std::shared_ptr<Character> character = std::make_shared<Character>(map);
 		game_object = character;
 		if (game_object->init(target_pos) == false)
 		{
@@ -31,17 +32,17 @@ std::shared_ptr<GameObject> GameObjectFactory::CreateGameObject(World* world, st
 			return nullptr;
 		}
 		player->possess(character);
-		world->grid_manager_->add(character.get());
+		map->grid_manager_->add(character.get());
 		break;
 	}
 	case syncnet::GameObjectType::GameObjectType_Monster:
-		game_object = std::make_shared<Monster>(world);
+		game_object = std::make_shared<Monster>(map);
 		if (game_object->init(target_pos) == false)
 		{
 			LOG.error("OnAddAgent error in Monster::init()");
 			return nullptr;
 		}
-		world->grid_manager_->add((Actor*)game_object.get());
+		map->grid_manager_->add((Actor*)game_object.get());
 		break;
 	}
 

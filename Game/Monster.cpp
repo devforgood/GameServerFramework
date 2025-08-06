@@ -10,13 +10,14 @@
 #include "MonsterBT.h"
 #include "MonsterCodeBaseBT.h"
 #include "Common.h"
+#include "Map.h"
 
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
 
 
-Monster::Monster(World* world)
-	: Actor(world), bt_(nullptr), tree_(nullptr)
+Monster::Monster(Map* map)
+	: Actor(map), bt_(nullptr), tree_(nullptr)
 {
 	game_object_type_ = syncnet::GameObjectType::GameObjectType_Monster;
 }
@@ -39,14 +40,14 @@ Monster::~Monster()
 bool Monster::init(Vector3& pos)
 {
 	float speed = 3.5f;
-	int agent_id = world_->map()->addAgent(pos.pos(), speed);
+	int agent_id = map_->GetNavMap()->addAgent(pos.pos(), speed);
 	if (agent_id < 0)
 	{
 		LOG.error("OnAddAgent error in Map.addAgent()");
 		return false;
 	}
 
-	if (world_->game_object_map_.find(agent_id) != world_->game_object_map_.end())
+	if (map_->game_object_map_.find(agent_id) != map_->game_object_map_.end())
 	{
 		LOG.error("OnAddAgent error already exist in monsters_map_");
 		return false;
@@ -55,15 +56,15 @@ bool Monster::init(Vector3& pos)
 	this->set_position(pos.x, pos.y, pos.z);
 	agent_id_ = agent_id;
 	this->speed = speed;
-	auto& entityManager = world_->system_manager_->GetEntityManager();
+	auto& entityManager = map_->system_manager_->GetEntityManager();
 	entityManager.GetComponent<Engine::StateComponent>(entity_id_).agentID = agent_id;
 
 
 	bt_ = MonsterCodeBaseBT::createTree(this);
 
 
-	if (world_ != nullptr) {
-		auto agent = world_->map()->getAgent(agent_id_);
+	if (map_ != nullptr) {
+		auto agent = map_->GetNavMap()->getAgent(agent_id_);
 		if (agent != nullptr)
 		{
 			dtVcopy(spawn_pos_, agent->npos);
@@ -89,14 +90,14 @@ void Monster::update(float dt)
 
 int Monster::AttackRange()
 {
-	const dtCrowdAgent* this_agent = world_->map()->crowd()->getAgent(agent_id());
-	const dtCrowdAgent* agent = world_->map()->crowd()->getAgent(target_agent_id_);
+	const dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getAgent(agent_id());
+	const dtCrowdAgent* agent = map_->GetNavMap()->crowd()->getAgent(target_agent_id_);
 
 	if (ManhattanDistance(this_agent->npos, agent->npos) > 3)
 		return -1;
 
 	float hitPoint[3];
-	if (world_->map()->raycast(agent_id(), agent->npos, hitPoint) == false)
+	if (map_->GetNavMap()->raycast(agent_id(), agent->npos, hitPoint) == false)
 	{
 		return target_agent_id_;
 	}
@@ -105,13 +106,13 @@ int Monster::AttackRange()
 
 int Monster::Attack()
 {
-	dtCrowdAgent* this_agent = world_->map()->crowd()->getEditableAgent(agent_id());
+	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(agent_id());
 	this_agent->desiredSpeed = 0.0f;
 	return 0;
 }
 int Monster::Resume()
 {
-	dtCrowdAgent* this_agent = world_->map()->crowd()->getEditableAgent(agent_id());
+	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(agent_id());
 	this_agent->desiredSpeed = this->speed;
 	return 0;
 }

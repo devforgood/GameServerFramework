@@ -3,7 +3,7 @@
 #include <list>
 #include <unordered_map>
 #include <memory>
-#include "Map.h"
+#include "NavMap.h"
 #include "syncnet_generated.h"
 
 class game_session;
@@ -18,6 +18,7 @@ class TimeStamp;
 class send_message;
 class RandomUtil;
 class IGridActor;
+class Map;
 namespace Engine {
 	class SystemManager;
 }
@@ -26,21 +27,12 @@ class World
 {
 private:
 
-	Map* map_;
-	std::list<std::shared_ptr<GameObject>> game_object_list_;
-	std::unordered_map<int, std::list<std::shared_ptr<GameObject>>::iterator> game_object_map_;
-
-	std::vector<syncnet::Vec3> raycasts_;
-	std::shared_ptr<send_message> builder_ptr_;
-	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agent_info_vector_;
-	std::vector<int> removed_agents_;
+	RandomUtil* random_util_;
+	TimeStamp* time_stamp_;
 
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
+	std::list<std::shared_ptr<Map>> map_list_;
 
-	GridManager* grid_manager_;
-	TimeStamp* time_stamp_;
-	RandomUtil* random_util_;
-	Engine::SystemManager* system_manager_;
 
 public:
 	World();
@@ -49,7 +41,6 @@ public:
 	void Init();
 	void update(float deltaTime);
 
-	Map* map() { return map_; }
 	RandomUtil* random_util() { return random_util_; }
 
 	void SendWorldState();
@@ -60,10 +51,6 @@ public:
 	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
 	void OnSetRaycast(const syncnet::Vec3* pos);
 
-	int DetectEnemy(Actor* actor);
-	void SendBroadcast(std::shared_ptr<send_message> msg);	
-	void SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except);
-	std::vector<IGridActor*> get_actors_in_range(Actor* actor, float range, float dirDeg, float angle);
 
 	void join(std::shared_ptr<Player> player);
 	void leave(std::shared_ptr<Player> player);

@@ -29,7 +29,7 @@ public:
 
 public:
 
-	Monster(World * world);
+	Monster(Map* map);
 	virtual ~Monster();
 	virtual void update(float dt);
 	virtual bool init(Vector3& pos) override;

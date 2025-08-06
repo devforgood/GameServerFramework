@@ -41,16 +41,17 @@
     <Filter Include="System">
       <UniqueIdentifier>{66087256-9230-454e-8ff0-5b187d1e6083}</UniqueIdentifier>
     </Filter>
+    <Filter Include="World">
+      <UniqueIdentifier>{db144afb-d148-45a3-a170-a96fc7c77839}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
       <Filter>Movement</Filter>
     </ClCompile>
     <ClCompile Include="Game.cpp" />
-    <ClCompile Include="Map.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Server.cpp" />
-    <ClCompile Include="World.cpp" />
     <ClCompile Include="GameObject.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
@@ -108,6 +109,15 @@
     <ClCompile Include="SkillManager.cpp">
       <Filter>skill</Filter>
     </ClCompile>
+    <ClCompile Include="NavMap.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="Map.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -129,10 +139,8 @@
     <ClInclude Include="Message.h">
       <Filter>Message</Filter>
     </ClInclude>
-    <ClInclude Include="Map.h" />
     <ClInclude Include="PerfTimer.h" />
     <ClInclude Include="Server.h" />
-    <ClInclude Include="World.h" />
     <ClInclude Include="syncnet_generated.h">
       <Filter>flatbuffers</Filter>
     </ClInclude>
@@ -200,6 +208,15 @@
       <Filter>skill</Filter>
     </ClInclude>
     <ClInclude Include="GameObjectChangeTypeOperators.h" />
+    <ClInclude Include="NavMap.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="Map.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>World</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

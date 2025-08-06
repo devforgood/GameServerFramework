@@ -1,388 +1,322 @@
 #include "Map.h"
-#include <math.h>
-#include <stdio.h>
-#include <cstring>
-#include "Recast.h"
-//#include "RecastDebugDraw.h"
-//#include "RecastDump.h"
-#include "DetourNavMesh.h"
-#include "DetourNavMeshBuilder.h"
-#include "DetourNavMeshQuery.h"
-//#include "DetourDebugDraw.h"
-//#include "NavMeshTesterTool.h"
-//#include "NavMeshPruneTool.h"
-//#include "OffMeshConnectionTool.h"
-//#include "ConvexVolumeTool.h"
-//#include "CrowdTool.h"
+#include "syncnet_generated.h"
 #include "DetourCrowd.h"
-#include "PerfTimer.h"
-#include "DetourCommon.h"
 #include <iostream>
+#include "Server.h"
+#include "Monster.h"
+#include "Character.h"
+#include "Vector3.h"
 #include "LogHelper.h"
+#include "DetourCommon.h"
+#include "MathHelper.h"
+#include "Player.h"
+#include "GameObjectFactory.h"
+#include "Common.h"
+#include "NavMap.h"
 
-static const int NAVMESHSET_MAGIC = 'M' << 24 | 'S' << 16 | 'E' << 8 | 'T'; //'MSET';
-static const int NAVMESHSET_VERSION = 1;
 
-struct NavMeshSetHeader
+//const float g_fDistance = std::powf(10.0f, 2);
+const float g_fDistance = 10.0f;
+
+Map::Map(World* world)
 {
-	int magic;
-	int version;
-	int numTiles;
-	dtNavMeshParams params;
-};
+	world_ = world;
+	map_ = nullptr;
+	grid_manager_ = nullptr;
 
-struct NavMeshTileHeader
-{
-	dtTileRef tileRef;
-	int dataSize;
-};
-
-static float frand()
-{
-	//	return ((float)(rand() & 0xffff)/(float)0xffff);
-	return (float)rand() / (float)RAND_MAX;
+	system_manager_ = nullptr;
 }
 
-dtNavMesh* loadAll(const char* path)
+Map::~Map()
 {
-	FILE* fp;
-	errno_t err = fopen_s(&fp, path, "rb");
-	if (err != 0)
+	if (map_)
 	{
-		return 0;
+		delete map_;
+		map_ = nullptr;
+	}
+	if (grid_manager_)
+	{
+		delete grid_manager_;
+		grid_manager_ = nullptr;
 	}
 
-	// Read header.
-	NavMeshSetHeader header;
-	size_t readLen = fread(&header, sizeof(NavMeshSetHeader), 1, fp);
-	if (readLen != 1)
+	if (system_manager_)
 	{
-		fclose(fp);
-		return 0;
+		delete system_manager_;
+		system_manager_ = nullptr;
 	}
-	if (header.magic != NAVMESHSET_MAGIC)
-	{
-		fclose(fp);
-		return 0;
-	}
-	if (header.version != NAVMESHSET_VERSION)
-	{
-		fclose(fp);
-		return 0;
-	}
-
-	dtNavMesh* mesh = dtAllocNavMesh();
-	if (!mesh)
-	{
-		fclose(fp);
-		return 0;
-	}
-	dtStatus status = mesh->init(&header.params);
-	if (dtStatusFailed(status))
-	{
-		fclose(fp);
-		return 0;
-	}
-
-	// Read tiles.
-	for (int i = 0; i < header.numTiles; ++i)
-	{
-		NavMeshTileHeader tileHeader;
-		readLen = fread(&tileHeader, sizeof(tileHeader), 1, fp);
-		if (readLen != 1)
-		{
-			fclose(fp);
-			return 0;
-		}
-
-		if (!tileHeader.tileRef || !tileHeader.dataSize)
-			break;
-
-		unsigned char* data = (unsigned char*)dtAlloc(tileHeader.dataSize, DT_ALLOC_PERM);
-		if (!data) break;
-		memset(data, 0, tileHeader.dataSize);
-		readLen = fread(data, tileHeader.dataSize, 1, fp);
-		if (readLen != 1)
-		{
-			dtFree(data);
-			fclose(fp);
-			return 0;
-		}
-
-		mesh->addTile(data, tileHeader.dataSize, DT_TILE_FREE_DATA, tileHeader.tileRef, 0);
-	}
-
-	fclose(fp);
-
-	return mesh;
 }
 
 void Map::Init()
 {
-	m_navQuery = dtAllocNavMeshQuery();
-	m_crowd = dtAllocCrowd();
+	map_ = new NavMap();
+	map_->Init();
+	grid_manager_ = new GridManager(100, 100, 2);
 
-	dtFreeNavMesh(m_navMesh);
-	m_navMesh = loadAll("solo_navmesh.bin");
-	m_navQuery->init(m_navMesh, 2048);
+	builder_ptr_ = std::make_shared<send_message>();
 
-	dtNavMesh* nav = m_navMesh;
-	dtCrowd* crowd = m_crowd;
+	system_manager_ = new Engine::SystemManager();
 
-	//if (nav && crowd && (m_navMesh != nav || m_crowd != crowd))
-	{
-		m_navMesh = nav;
-		m_crowd = crowd;
+	auto& entityManager = system_manager_->GetEntityManager();
 
-		crowd->init(MAX_AGENTS, m_agentRadius, nav);
+	// 모든 컴포넌트 타입 등록
+	entityManager.RegisterComponent<Engine::PositionComponent>();
+	entityManager.RegisterComponent<Engine::VelocityComponent>();
+	entityManager.RegisterComponent<Engine::HealthComponent>();
+	entityManager.RegisterComponent<Engine::PhysicsComponent>();
+	entityManager.RegisterComponent<Engine::AIComponent>();
+	entityManager.RegisterComponent<Engine::CollisionComponent>();
+	entityManager.RegisterComponent<Engine::InputComponent>();
+	entityManager.RegisterComponent<Engine::AnimationComponent>();
+	entityManager.RegisterComponent<Engine::TimerComponent>();
+	entityManager.RegisterComponent<Engine::ParticleComponent>();
+	entityManager.RegisterComponent<Engine::NetworkComponent>();
+	entityManager.RegisterComponent<Engine::StateComponent>();
 
-		// Make polygons with 'disabled' flag invalid.
-		crowd->getEditableFilter(0)->setExcludeFlags(SAMPLE_POLYFLAGS_DISABLED);
+	system_manager_->RegisterSystem<Engine::TimerComponent>(
+		[](float deltaTime, Engine::TimerComponent& timer) {
+			Engine::TimerSystem::Update(deltaTime, timer);
+		});
 
-		// Setup local avoidance params to different qualities.
-		dtObstacleAvoidanceParams params;
-		// Use mostly default settings, copy from dtCrowd.
-		memcpy(&params, crowd->getObstacleAvoidanceParams(0), sizeof(dtObstacleAvoidanceParams));
-
-		// Low (11)
-		params.velBias = 0.5f;
-		params.adaptiveDivs = 5;
-		params.adaptiveRings = 2;
-		params.adaptiveDepth = 1;
-		crowd->setObstacleAvoidanceParams(0, &params);
-
-		// Medium (22)
-		params.velBias = 0.5f;
-		params.adaptiveDivs = 5;
-		params.adaptiveRings = 2;
-		params.adaptiveDepth = 2;
-		crowd->setObstacleAvoidanceParams(1, &params);
-
-		// Good (45)
-		params.velBias = 0.5f;
-		params.adaptiveDivs = 7;
-		params.adaptiveRings = 2;
-		params.adaptiveDepth = 3;
-		crowd->setObstacleAvoidanceParams(2, &params);
-
-		// High (66)
-		params.velBias = 0.5f;
-		params.adaptiveDivs = 7;
-		params.adaptiveRings = 3;
-		params.adaptiveDepth = 3;
-
-		crowd->setObstacleAvoidanceParams(3, &params);
-	}
-
-
-	m_filter.setIncludeFlags(SAMPLE_POLYFLAGS_ALL ^ SAMPLE_POLYFLAGS_DISABLED);
-	m_filter.setExcludeFlags(0);
-
-	if (m_navQuery)
-	{
-		// Change costs.
-		m_filter.setAreaCost(SAMPLE_POLYAREA_GROUND, 1.0f);
-		m_filter.setAreaCost(SAMPLE_POLYAREA_WATER, 10.0f);
-		m_filter.setAreaCost(SAMPLE_POLYAREA_ROAD, 1.0f);
-		m_filter.setAreaCost(SAMPLE_POLYAREA_DOOR, 1.0f);
-		m_filter.setAreaCost(SAMPLE_POLYAREA_GRASS, 2.0f);
-		m_filter.setAreaCost(SAMPLE_POLYAREA_JUMP, 1.5f);
-	}
-
-	m_randomRadius = m_agentRadius * 30.0f;
-
-}
-
-void Map::update(float dt)
-{
-	dtNavMesh* nav = m_navMesh;
-	dtCrowd* crowd = m_crowd;
-	if (!nav || !crowd) return;
-
-	//TimeVal startTime = getPerfTime();
-
-	crowd->update(dt, nullptr);
-
-	//TimeVal endTime = getPerfTime();
-}
-
-
-int Map::addAgent(const float* p, float speed = 3.5f)
-{
-	dtCrowd* crowd = m_crowd;
-
-	dtCrowdAgentParams ap;
-	memset(&ap, 0, sizeof(ap));
-	ap.radius = m_agentRadius;
-	ap.height = m_agentHeight;
-	ap.maxAcceleration = 8.0f;
-	ap.maxSpeed = speed;
-	ap.collisionQueryRange = ap.radius * 12.0f;
-	ap.pathOptimizationRange = ap.radius * 30.0f;
-	ap.updateFlags = 0;
-	if (m_toolParams.m_anticipateTurns)
-		ap.updateFlags |= DT_CROWD_ANTICIPATE_TURNS;
-	if (m_toolParams.m_optimizeVis)
-		ap.updateFlags |= DT_CROWD_OPTIMIZE_VIS;
-	if (m_toolParams.m_optimizeTopo)
-		ap.updateFlags |= DT_CROWD_OPTIMIZE_TOPO;
-	if (m_toolParams.m_obstacleAvoidance)
-		ap.updateFlags |= DT_CROWD_OBSTACLE_AVOIDANCE;
-	if (m_toolParams.m_separation)
-		ap.updateFlags |= DT_CROWD_SEPARATION;
-	ap.obstacleAvoidanceType = (unsigned char)m_toolParams.m_obstacleAvoidanceType;
-	ap.separationWeight = m_toolParams.m_separationWeight;
-
-	int idx = crowd->addAgent(p, &ap);
-	if (idx != -1)
-	{
-		if (m_targetRef)
-			crowd->requestMoveTarget(idx, m_targetRef, m_targetPos);
-
-	}
-
-	auto agent = crowd->getAgent(idx);
-	LOG.info("add agent {} pos({}, {}, {})", idx, -1 * agent->npos[0], agent->npos[1], agent->npos[2]);
-	return idx;
-}
-
-void Map::removeAgent(const int idx)
-{
-	m_crowd->removeAgent(idx);
-}
-
-static void calcVel(float* vel, const float* pos, const float* tgt, const float speed)
-{
-	dtVsub(vel, tgt, pos);
-	vel[1] = 0.0;
-	dtVnormalize(vel);
-	dtVscale(vel, vel, speed);
-}
-
-void Map::setMoveTarget(const float* p, bool adjust, const int agent_idx)
-{
-
-	// Find nearest point on navmesh and set move request to that location.
-	dtNavMeshQuery* navquery = m_navQuery;
-	dtCrowd* crowd = m_crowd;
-	const dtQueryFilter* filter = crowd->getFilter(0);
-	const float* halfExtents = crowd->getQueryExtents();
-
-	if (adjust)
-	{
-		float vel[3];
-		// Request velocity
-		if (agent_idx != -1)
-		{
-			const dtCrowdAgent* ag = crowd->getAgent(agent_idx);
-			if (ag && ag->active)
-			{
-				calcVel(vel, ag->npos, p, ag->params.maxSpeed);
-				crowd->requestMoveVelocity(agent_idx, vel);
+	Map* map = this;
+	system_manager_->RegisterSystem<Engine::StateComponent, Engine::PositionComponent>(
+		[map](float deltaTime, Engine::StateComponent& state, Engine::PositionComponent& position) {
+			if (state.stateID == syncnet::AIState::AIState_Destroyed) {
+				map->removed_agents_.push_back(state.agentID);
 			}
-		}
-		else
-		{
-			for (int i = 0; i < crowd->getAgentCount(); ++i)
+
+			const dtCrowdAgent* agent = map->map_->crowd()->getAgent(state.agentID);
+			if (agent->active == false)
+				return;
+
+			bool changed_position = !Vector3::equal(position.x, position.y, position.z, agent->npos[0], agent->npos[1], agent->npos[2]);
+			if (state.changeFlag == 0 && !changed_position)
+				return;
+
+
+			auto itr = map->game_object_map_.find(state.agentID);
+			if (itr == map->game_object_map_.end())
 			{
-				const dtCrowdAgent* ag = crowd->getAgent(i);
-				if (!ag->active) continue;
-				calcVel(vel, ag->npos, p, ag->params.maxSpeed);
-				crowd->requestMoveVelocity(i, vel);
+				LOG.error("SendWorldState error agent not found in game_object_map_");
+				return;
 			}
-		}
-	}
-	else
-	{
-		navquery->findNearestPoly(p, halfExtents, filter, &m_targetRef, m_targetPos);
+			auto actor = (Actor*)itr->second->get();
 
-		if (agent_idx != -1)
-		{
-			const dtCrowdAgent* ag = crowd->getAgent(agent_idx);
-			if (ag && ag->active)
-				crowd->requestMoveTarget(agent_idx, m_targetRef, m_targetPos);
-		}
-		else
-		{
-			for (int i = 0; i < crowd->getAgentCount(); ++i)
+			if (changed_position)
 			{
-				const dtCrowdAgent* ag = crowd->getAgent(i);
-				if (!ag->active) continue;
-				crowd->requestMoveTarget(i, m_targetRef, m_targetPos);
+				actor->set_position(agent->npos[0], agent->npos[1], agent->npos[2]);
+				map->grid_manager_->move(actor, agent->npos[0], agent->npos[2]);
 			}
+
+			map->agent_info_vector_.push_back(actor->get_actor_info(*map->builder_ptr_, actor->get_changed_flag()));
+
+			actor->reset_changed();
+		});
+
+}
+
+void Map::update(float deltaTime)
+{
+
+	//LOG.info("World update begin");
+	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
+		(*itr)->update(deltaTime);
+
+	map_->update(deltaTime);
+
+	system_manager_->Update(deltaTime);
+
+	SendWorldState();
+	//LOG.info("World update end");
+}
+
+void Map::SendWorldState()
+{
+	auto agents = builder_ptr_->CreateVector(agent_info_vector_);
+
+	// ----------------------------
+	flatbuffers::Offset<syncnet::DebugRaycast> debug_raycast;
+	std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> debug_raycast_vector;
+	for (int i = 0; i < this->raycasts_.size(); ++i)
+	{
+		debug_raycast = syncnet::CreateDebugRaycast(*builder_ptr_, 0, &this->raycasts_[i]);
+		debug_raycast_vector.push_back(debug_raycast);
+	}
+	this->raycasts_.clear();
+	auto debug_raycasts = builder_ptr_->CreateVector(debug_raycast_vector);
+	// ----------------------------
+
+	auto updateActorNotify = syncnet::CreateUpdateActorNotify(*builder_ptr_, agents, debug_raycasts);
+
+	auto send_msg = syncnet::CreateGameMessage(*builder_ptr_, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
+	builder_ptr_->Finish(send_msg);
+
+	SendBroadcast(builder_ptr_);
+
+	for (auto& agent_id : removed_agents_)
+	{
+		OnRemoveAgent(agent_id);
+	}
+
+	builder_ptr_ = std::make_shared<send_message>();
+	agent_info_vector_.clear();
+	removed_agents_.clear();
+}
+
+void Map::SendBroadcast(std::shared_ptr<send_message> msg)
+{
+	for (auto itr = players_.begin(); itr != players_.end(); ++itr)
+	{
+		itr->second->send(msg);
+	}
+}
+
+void Map::SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except)
+{
+	for (auto itr = players_.begin(); itr != players_.end(); ++itr)
+	{
+		if (itr->second.get() == except.get())
+			continue;
+
+		itr->second->send(msg);
+	}
+}
+
+void Map::OnRemoveAgent(int agent_id)
+{
+	auto itr = game_object_map_.find(agent_id);
+	if (itr == game_object_map_.end())
+	{
+		LOG.error("OnRemoveAgent error not exist in monsters_map_");
+		return;
+	}
+
+	if (itr->second->get()->type() == syncnet::GameObjectType_Character)
+	{
+		auto character = std::dynamic_pointer_cast<Character>(*itr->second);
+
+		auto itr_player = players_.find(character->player_id());
+		if (itr_player != players_.end())
+		{
+			players_.erase(itr_player);
 		}
 	}
+
+	grid_manager_->remove((Actor*)itr->second->get());
+	game_object_list_.erase(itr->second);
+	game_object_map_.erase(itr);
+
+	map_->removeAgent(agent_id);
+
 }
 
-bool Map::raycast(int agent_idx, const float* endPos, float * hitPoint)
+std::shared_ptr<GameObject> Map::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
-	auto agent = m_crowd->getAgent(agent_idx);
-	auto filter = m_crowd->getFilter(agent->params.queryFilterType);
-
-	const float* startPos = agent->npos;
-	dtPolyRef startRef = agent->corridor.getPath()[0];
-
-	dtRaycastHit rayHit;
-	rayHit.maxPath = 0;
-	auto ret = m_navQuery->raycast(startRef, startPos, endPos, filter, DT_RAYCAST_USE_COSTS, &rayHit);
-
-	if (rayHit.t > 0.0f && rayHit.t < 1.0f)
+	auto game_object = GameObjectFactory::CreateGameObject(this, player, type, pos);
+	if (game_object == nullptr)
 	{
-		// hitPoint = startPos + (endPos - startPos) * t
-		dtVsub(hitPoint, endPos, startPos);
-		dtVscale(hitPoint, hitPoint, rayHit.t);
-		dtVadd(hitPoint, startPos, hitPoint);
-		return true;
+		LOG.error("OnAddAgent error in GameObjectFactory::CreateGameObject()");
+		return nullptr;
 	}
-	/*
-	LOG.info("raycast hit t : {}, ret:{}", rayHit.t, ret);
-	LOG.info("raycast dtStatusSucceed {}", dtStatusSucceed(ret));
-	LOG.info("raycast dtStatusFailed {}", dtStatusFailed(ret));
-	LOG.info("raycast dtStatusInProgress {}", dtStatusInProgress(ret));
 
-	LOG.info("raycast dtStatusDetail DT_WRONG_MAGIC {}", dtStatusDetail(ret, DT_WRONG_MAGIC));
-	LOG.info("raycast dtStatusDetail DT_WRONG_VERSION {}", dtStatusDetail(ret, DT_WRONG_VERSION));
-	LOG.info("raycast dtStatusDetail DT_OUT_OF_MEMORY {}", dtStatusDetail(ret, DT_OUT_OF_MEMORY));
-	LOG.info("raycast dtStatusDetail DT_INVALID_PARAM {}", dtStatusDetail(ret, DT_INVALID_PARAM));
-	LOG.info("raycast dtStatusDetail DT_BUFFER_TOO_SMALL {}", dtStatusDetail(ret, DT_BUFFER_TOO_SMALL));
-	LOG.info("raycast dtStatusDetail DT_OUT_OF_NODES {}", dtStatusDetail(ret, DT_OUT_OF_NODES));
-	LOG.info("raycast dtStatusDetail DT_PARTIAL_RESULT {}", dtStatusDetail(ret, DT_PARTIAL_RESULT));
-	LOG.info("raycast dtStatusDetail DT_ALREADY_OCCUPIED {}", dtStatusDetail(ret, DT_ALREADY_OCCUPIED));
-	*/
-	return false;
+	auto itr = game_object_list_.insert(game_object_list_.end(), game_object);
+	game_object_map_.insert(std::make_pair(game_object->agent_id(), itr));
+	game_object->set_changed(static_cast<long>(GameObjectChangeType::All));
+
+	return game_object;
 }
 
-bool Map::patrol(int agent_idx, const float* startPos, dtPolyRef startRef)
+
+void Map::OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos)
 {
-	float epos[3];
-	dtPolyRef endRef;
-	dtStatus status = m_navQuery->findRandomPointAroundCircle(startRef, startPos, m_randomRadius, &m_filter, frand, &endRef, epos);
-	if (dtStatusSucceed(status))
+	this->GetNavMap()->setMoveTarget(Vector3(pos).pos(), false, agent_id);
+
+}
+
+void Map::OnSetRaycast(const syncnet::Vec3* pos)
+{
+	float hitPoint[3];
+	if (this->GetNavMap()->raycast(0, Vector3(pos).pos(), hitPoint))
 	{
-		setMoveTarget(epos, false, agent_idx);
-		return true;
+		syncnet::Vec3 pos(hitPoint[0] * -1, hitPoint[1], hitPoint[2]);
+		this->raycasts_.push_back(pos);
 	}
-	return false;
-}
-const float* Map::getPos(const int agent_idx)
-{
-	return m_crowd->getAgent(agent_idx)->npos;
 }
 
-const dtCrowdAgent* Map::getAgent(const int agent_idx)
+int Map::DetectEnemy(Actor* actor)
 {
-	return m_crowd->getAgent(agent_idx);
-}
+	const dtCrowdAgent* this_agent = this->GetNavMap()->crowd()->getAgent(actor->agent_id());
+	float hitPoint[3];
 
-// 에이전트를 지정된 위치로 순간이동합니다.
-bool Map::teleportAgent(int agent_idx, const float* pos)
-{
-	dtCrowd* crowd = m_crowd;
-	if (crowd)
+	auto targets = grid_manager_->getEntitiesInViewRange(actor, g_fDistance);
+
+	for (auto itr = targets.begin(); itr != targets.end(); ++itr)
 	{
-		crowd->teleportAgent(agent_idx, pos);
-		return true;
-	}
-	return false;
+		if (!(*itr)->isCharacter())
+			continue;
 
+		const dtCrowdAgent* agent = this->GetNavMap()->crowd()->getAgent((*itr)->getAgentID());
+
+
+		if (this->GetNavMap()->raycast(actor->agent_id(), agent->npos, hitPoint) == false)
+		{
+			return (*itr)->getAgentID();
+		}
+	}
+	return -1;
+}
+
+std::vector<IGridActor*> Map::get_actors_in_range(Actor* actor, float range, float dirDeg, float angle)
+{
+	return grid_manager_->getEntitiesInAoEMask(actor->get_vecter2_x(), actor->get_vecter2_y(), range, dirDeg, angle);
+}
+
+void Map::join(std::shared_ptr<Player> player)
+{
+	if (player == nullptr)
+	{
+		LOG.error("Map::join error player is nullptr");
+		return;
+	}
+	auto itr = players_.find(player->player_id());
+	if (itr != players_.end())
+	{
+		LOG.error("Map::join error player already exists");
+		return;
+	}
+	players_.insert(std::make_pair(player->player_id(), player));
+
+	// 유닛 상태 동기화
+	auto builder_ptr = std::make_shared<send_message>();
+	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agents;
+	GetAgentsInfo(builder_ptr, agents);
+	auto updateActorNotify = syncnet::CreateUpdateActorNotifyDirect(*builder_ptr, &agents, nullptr);
+	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
+	builder_ptr->Finish(send_msg);
+	player->send(builder_ptr);
+}
+
+void Map::leave(std::shared_ptr<Player> player)
+{
+	if (player == nullptr)
+	{
+		LOG.error("Map::leave error player is nullptr");
+		return;
+	}
+	auto itr = players_.find(player->player_id());
+	if (itr == players_.end())
+	{
+		LOG.error("Map::leave error player not found");
+		return;
+	}
+	players_.erase(itr);
+}
+
+void Map::GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector)
+{
+	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
+	{
+		auto game_object = itr->get();
+		agent_info_vector.push_back(game_object->get_actor_info(*msg, static_cast<long>(GameObjectChangeType::All)));
+	}
 }

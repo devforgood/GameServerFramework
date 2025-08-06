@@ -159,6 +159,7 @@
     <ClCompile Include="JumpSkill.cpp" />
     <ClCompile Include="LuaObject.cpp" />
     <ClCompile Include="Map.cpp" />
+    <ClCompile Include="NavMap.cpp" />
     <ClCompile Include="MonsterBT.cpp" />
     <ClCompile Include="MonsterCodeBaseBT.cpp" />
     <ClCompile Include="NormalAttackSkill.cpp" />
@@ -211,6 +212,7 @@
     <ClInclude Include="LogHelper.h" />
     <ClInclude Include="LuaObject.h" />
     <ClInclude Include="Map.h" />
+    <ClInclude Include="NavMap.h" />
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="Message.h" />
     <ClInclude Include="MonsterBT.h" />

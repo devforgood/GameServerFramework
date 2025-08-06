@@ -7,6 +7,7 @@
 #include "Player.h"
 #include "Character.h"
 #include "SendMessage.h"
+#include "Map.h"
 
 void PlayerController::handle(const syncnet::GameMessage* msg)
 {
@@ -152,5 +153,5 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 		).Union()
 	);
 	builder_ptr->Finish(send_msg);
-	world_->SendBroadcast(builder_ptr, player_);
+	character->map()->SendBroadcast(builder_ptr, player_);
 }

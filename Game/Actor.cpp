@@ -3,10 +3,11 @@
 #include "LogHelper.h"
 #include "World.h"
 #include "Common.h"
+#include "Map.h"
 
 void Actor::init()
 {
-	auto& entityManager = world_->system_manager_->GetEntityManager();
+	auto& entityManager = map_->system_manager_->GetEntityManager();
 	entity_id_ = entityManager.CreateEntity();
 
 	entityManager.AddComponent(entity_id_, Engine::TimerComponent());
@@ -16,7 +17,7 @@ void Actor::init()
 
 void Actor::clear()
 {
-	auto& entityManager = world_->system_manager_->GetEntityManager();
+	auto& entityManager = map_->system_manager_->GetEntityManager();
 	entityManager.DestroyEntity(entity_id_);
 }
 
@@ -38,7 +39,7 @@ void Actor::set_position(float x, float y, float z)
 {
 	position_.set(x, y, z);
 	add_changed_flag(static_cast<long>(GameObjectChangeType::Position));
-	auto& entityManager = world_->system_manager_->GetEntityManager();
+	auto& entityManager = map_->system_manager_->GetEntityManager();
 	Engine::PositionComponent& transform = entityManager.GetComponent<Engine::PositionComponent>(entity_id_);
 	transform.x = x;
 	transform.y = y;
@@ -48,14 +49,14 @@ void Actor::set_position(float x, float y, float z)
 
 void Actor::SetState(syncnet::AIState state) {
 	GameObject::SetState(state);
-	auto& entityManager = world_->system_manager_->GetEntityManager();
+	auto& entityManager = map_->system_manager_->GetEntityManager();
 	entityManager.GetComponent<Engine::StateComponent>(entity_id_).stateID = static_cast<int>(state);
 }
 
 void Actor::set_changed(long flag)
 {
 	GameObject::set_changed(flag);
-	auto& entityManager = world_->system_manager_->GetEntityManager();
+	auto& entityManager = map_->system_manager_->GetEntityManager();
 	entityManager.GetComponent<Engine::StateComponent>(entity_id_).changeFlag = get_changed_flag();
 }
 

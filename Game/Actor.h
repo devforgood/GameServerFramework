@@ -17,7 +17,7 @@ protected:
 	int32_t entity_id_ = -1; // 엔티티 ID (필요시 사용)
 
 public:
-	Actor(World* world) : GameObject(world), front_vector_(0, 0, 1)  // 초기 방향은 z축 양의 방향
+	Actor(Map* map) : GameObject(map), front_vector_(0, 0, 1)  // 초기 방향은 z축 양의 방향
 	{
 		init();
 	}

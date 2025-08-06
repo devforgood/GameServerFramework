@@ -4,6 +4,7 @@
 #include "Vector3.h"
 #include "LogHelper.h"
 #include "Common.h"
+#include "Map.h"
 
 #include <cmath>
 
@@ -56,10 +57,10 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	}
 
 	// 데미지 계산
-	double damage = actor->world()->random_util()->GetRandomDouble(gamedata->min_damage(), gamedata->max_damage());
+	double damage = actor->map()->world()->random_util()->GetRandomDouble(gamedata->min_damage(), gamedata->max_damage());
 
 	// AoE 범위 내 대상 검색
-	std::vector<IGridActor*> actors_in_range = actor->world()->get_actors_in_range(actor, gamedata->range(), attack_direction, gamedata->angle());
+	std::vector<IGridActor*> actors_in_range = actor->map()->get_actors_in_range(actor, gamedata->range(), attack_direction, gamedata->angle());
 
 	// 디버깅 로그 (개발 환경에서만)
 #ifdef _DEBUG

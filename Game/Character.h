@@ -11,7 +11,7 @@ private:
 	std::unordered_map<int, Skill*> skills_;
 
 public:
-	Character(World* world);
+	Character(Map* map);
 	virtual ~Character();
 
 

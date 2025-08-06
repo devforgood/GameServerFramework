@@ -5,8 +5,9 @@
 #include "Vector3.h"
 #include "Common.h"
 #include "SkillFactory.h"
+#include "Map.h"
 
-Character::Character(World* world) : Actor(world)
+Character::Character(Map* map) : Actor(map)
 {
 	// todo : load skills from DB table
 	auto skills = ResourceLoader::Instance().GetSkills();
@@ -19,7 +20,7 @@ Character::Character(World* world) : Actor(world)
 	game_object_type_ = syncnet::GameObjectType::GameObjectType_Character;
 
 
-	auto& entityManager = world_->system_manager_->GetEntityManager();
+	auto& entityManager = map_->system_manager_->GetEntityManager();
 	entityManager.AddComponent(entity_id_, Engine::TimerComponent());
 }
 
@@ -35,7 +36,7 @@ Character::~Character()
 
 void Character::use_skill(const syncnet::UseSkill* msg)
 {
-	float serverClientTimeOffset = world_->time_stamp_->getServerClientTimeOffset(msg->timestamp());
+	float serverClientTimeOffset = map_->world_->time_stamp_->getServerClientTimeOffset(msg->timestamp());
 
 	// Implement skill usage logic here
 	LOG.info("Character {} using skill {} at position ({}, {}, {}) serverClientTimeOffset {} timestamp {}"
@@ -80,14 +81,14 @@ bool Character::init(Vector3& pos)
 
 	float speed = 4.5f;
 
-	int agent_id = world_->map()->addAgent(Vector3(pos).pos(), speed);
+	int agent_id = map_->GetNavMap()->addAgent(Vector3(pos).pos(), speed);
 	if (agent_id < 0)
 	{
 		LOG.error("OnAddAgent error in Map.addAgent()");
 		return false;
 	}
 
-	if (world_->game_object_map_.find(agent_id) != world_->game_object_map_.end())
+	if (map_->game_object_map_.find(agent_id) != map_->game_object_map_.end())
 	{
 		LOG.error("OnAddAgent error already exist in monsters_map_");
 		return false;
@@ -96,7 +97,7 @@ bool Character::init(Vector3& pos)
 	this->set_position(pos.x, pos.y, pos.z);
 	this->agent_id_ = agent_id;
 	this->speed = speed;
-	auto& entityManager = world_->system_manager_->GetEntityManager();
+	auto& entityManager = map_->system_manager_->GetEntityManager();
 	entityManager.GetComponent<Engine::StateComponent>(entity_id_).agentID = agent_id;
 
 	return true;

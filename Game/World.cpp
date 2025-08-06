@@ -12,116 +12,42 @@
 #include "Player.h"
 #include "GameObjectFactory.h"
 #include "Common.h"
+#include "Map.h"
 
-//const float g_fDistance = std::powf(10.0f, 2);
-const float g_fDistance = 10.0f;
+
 
 World::World()
 {
-	map_ = nullptr;
-	grid_manager_ = nullptr;
-	time_stamp_ = nullptr;
 	random_util_ = nullptr;
-	system_manager_ = nullptr;
+	time_stamp_ = nullptr;
 }
 
 World::~World()
 {
-	if (map_)
+	if (random_util_)
 	{
-		delete map_;
-		map_ = nullptr;
-	}
-	if (grid_manager_)
-	{
-		delete grid_manager_;
-		grid_manager_ = nullptr;
+		delete random_util_;
+		random_util_ = nullptr;
 	}
 	if (time_stamp_)
 	{
 		delete time_stamp_;
 		time_stamp_ = nullptr;
 	}
-	if (random_util_)
-	{
-		delete random_util_;
-		random_util_ = nullptr;
-	}
-	if(system_manager_)
-	{
-		delete system_manager_;
-		system_manager_ = nullptr;
-	}
 }
 
 void World::Init()
 {
-	map_ = new Map();
-	map_->Init();
 	Monster::Initialize("mob.lua");
 	Monster::registerLuaFunctionAll();
-	grid_manager_ = new GridManager(100, 100, 2);
-	time_stamp_ = new TimeStamp();
+
 	random_util_ = new RandomUtil();
-	builder_ptr_ = std::make_shared<send_message>();
+	time_stamp_ = new TimeStamp();
 
-	system_manager_ = new Engine::SystemManager();
-
-	auto& entityManager = system_manager_->GetEntityManager();
-
-	// 모든 컴포넌트 타입 등록
-	entityManager.RegisterComponent<Engine::PositionComponent>();
-	entityManager.RegisterComponent<Engine::VelocityComponent>();
-	entityManager.RegisterComponent<Engine::HealthComponent>();
-	entityManager.RegisterComponent<Engine::PhysicsComponent>();
-	entityManager.RegisterComponent<Engine::AIComponent>();
-	entityManager.RegisterComponent<Engine::CollisionComponent>();
-	entityManager.RegisterComponent<Engine::InputComponent>();
-	entityManager.RegisterComponent<Engine::AnimationComponent>();
-	entityManager.RegisterComponent<Engine::TimerComponent>();
-	entityManager.RegisterComponent<Engine::ParticleComponent>();
-	entityManager.RegisterComponent<Engine::NetworkComponent>();
-	entityManager.RegisterComponent<Engine::StateComponent>();
-
-	system_manager_->RegisterSystem<Engine::TimerComponent>(
-		[](float deltaTime, Engine::TimerComponent& timer) {
-			Engine::TimerSystem::Update(deltaTime, timer);
-		});
-
-	World* world = this;
-	system_manager_->RegisterSystem<Engine::StateComponent, Engine::PositionComponent>(
-		[world](float deltaTime, Engine::StateComponent& state, Engine::PositionComponent& position) {
-			if (state.stateID == syncnet::AIState::AIState_Destroyed) {
-				world->removed_agents_.push_back(state.agentID);
-			}
-
-			const dtCrowdAgent* agent = world->map()->crowd()->getAgent(state.agentID);
-			if (agent->active == false)
-				return;
-
-			bool changed_position = !Vector3::equal(position.x, position.y, position.z, agent->npos[0], agent->npos[1], agent->npos[2]);
-			if (state.changeFlag == 0 && !changed_position)
-				return;
-
-
-			auto itr = world->game_object_map_.find(state.agentID);
-			if (itr == world->game_object_map_.end())
-			{
-				LOG.error("SendWorldState error agent not found in game_object_map_");
-				return;
-			}
-			auto actor = (Actor*)itr->second->get();
-
-			if (changed_position)
-			{
-				actor->set_position(agent->npos[0], agent->npos[1], agent->npos[2]);
-				world->grid_manager_->move(actor, agent->npos[0], agent->npos[2]);
-			}
-
-			world->agent_info_vector_.push_back(actor->get_actor_info(*world->builder_ptr_, actor->get_changed_flag()));
-
-			actor->reset_changed();
-		});
+	// Initialize maps
+	std::shared_ptr<Map> map = std::make_shared<Map>(this);
+	map->Init();
+	map_list_.push_back(map);
 }
 
 void World::update(float deltaTime)
@@ -129,15 +55,8 @@ void World::update(float deltaTime)
 	time_stamp_->update();
 
 	//LOG.info("World update begin");
-	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin();itr!= game_object_list_.end();++itr)
+	for (std::list<std::shared_ptr<Map>>::iterator itr = map_list_.begin();itr!= map_list_.end();++itr)
 		(*itr)->update(deltaTime);
-
-	map_->update(deltaTime);
-
-	system_manager_->Update(deltaTime);
-
-	SendWorldState();
-	//LOG.info("World update end");
 }
 
 void World::join(std::shared_ptr<Player> player)
@@ -155,14 +74,8 @@ void World::join(std::shared_ptr<Player> player)
 	}
 	players_.insert(std::make_pair(player->player_id(), player));
 
-	// 유닛 상태 동기화
-	auto builder_ptr = std::make_shared<send_message>();
-	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agents;
-	GetAgentsInfo(builder_ptr, agents);
-	auto updateActorNotify = syncnet::CreateUpdateActorNotifyDirect(*builder_ptr, &agents, nullptr);
-	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
-	builder_ptr->Finish(send_msg);
-	player->send(builder_ptr);
+	// todo : map 선택 로직 추가
+	map_list_.begin()->get()->join(player);
 }
 
 void World::leave(std::shared_ptr<Player> player)
@@ -179,155 +92,32 @@ void World::leave(std::shared_ptr<Player> player)
 		return;
 	}
 	players_.erase(itr);
+	// todo : map 선택 로직 추가
+	map_list_.begin()->get()->leave(player);
 }
 
-void World::GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector)
-{
-	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
-	{
-		auto game_object = itr->get();
-		agent_info_vector.push_back(game_object->get_actor_info(*msg, static_cast<long>(GameObjectChangeType::All)));
-	}
-}
 
-void World::SendWorldState()
-{
-	auto agents = builder_ptr_->CreateVector(agent_info_vector_);
-
-	// ----------------------------
-	flatbuffers::Offset<syncnet::DebugRaycast> debug_raycast;
-	std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> debug_raycast_vector;
-	for (int i = 0; i < this->raycasts_.size(); ++i)
-	{
-		debug_raycast = syncnet::CreateDebugRaycast(*builder_ptr_, 0, &this->raycasts_[i]);
-		debug_raycast_vector.push_back(debug_raycast);
-	}
-	this->raycasts_.clear();
-	auto debug_raycasts = builder_ptr_->CreateVector(debug_raycast_vector);
-	// ----------------------------
-
-	auto updateActorNotify = syncnet::CreateUpdateActorNotify(*builder_ptr_, agents, debug_raycasts);
-
-	auto send_msg = syncnet::CreateGameMessage(*builder_ptr_, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
-	builder_ptr_->Finish(send_msg);
-
-	SendBroadcast(builder_ptr_);
-
-	for (auto& agent_id : removed_agents_)
-	{
-		OnRemoveAgent(agent_id);
-	}
-
-	builder_ptr_ = std::make_shared<send_message>();
-	agent_info_vector_.clear();
-	removed_agents_.clear();
-}
-
-void World::SendBroadcast(std::shared_ptr<send_message> msg) 
-{
-	for (auto itr = players_.begin(); itr != players_.end(); ++itr)
-	{
-		itr->second->send(msg);
-	}
-}
-void World::SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except)
-{
-	for (auto itr = players_.begin(); itr != players_.end(); ++itr)
-	{
-		if (itr->second.get() == except.get())
-			continue;
-
-		itr->second->send(msg);
-	}
-}
 
 std::shared_ptr<GameObject> World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
-	auto game_object = GameObjectFactory::CreateGameObject(this, player, type, pos);
-	if (game_object == nullptr)
-	{
-		LOG.error("OnAddAgent error in GameObjectFactory::CreateGameObject()");
-		return nullptr;
-	}
-
-	auto itr = game_object_list_.insert(game_object_list_.end(), game_object);
-	game_object_map_.insert(std::make_pair(game_object->agent_id(), itr));
-	game_object->set_changed(static_cast<long>(GameObjectChangeType::All));
-
-	return game_object;
+	// todo : map 선택 로직 추가
+	return map_list_.begin()->get()->OnAddAgent(player, type, pos);
 }
 
 void World::OnRemoveAgent(int agent_id)
 {
-	auto itr = game_object_map_.find(agent_id);
-	if (itr == game_object_map_.end())
-	{
-		LOG.error("OnRemoveAgent error not exist in monsters_map_");
-		return;
-	}
-
-	if (itr->second->get()->type() == syncnet::GameObjectType_Character)
-	{
-		auto character = std::dynamic_pointer_cast<Character>(*itr->second);
-
-		auto itr_player = players_.find(character->player_id());
-		if (itr_player != players_.end())
-		{
-			players_.erase(itr_player);
-		}
-	}
-
-	grid_manager_->remove((Actor*)itr->second->get());
-	game_object_list_.erase(itr->second);
-	game_object_map_.erase(itr);
-
-	this->map()->removeAgent(agent_id);
-
+	// todo : map 선택 로직 추가
+	map_list_.begin()->get()->OnRemoveAgent(agent_id);
 }
 
 void World::OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos)
 {
-	this->map()->setMoveTarget(Vector3(pos).pos(), false, agent_id);
-
+	// todo : map 선택 로직 추가
+	map_list_.begin()->get()->OnSetMoveTarget(agent_id, pos);
 }
 
 void World::OnSetRaycast(const syncnet::Vec3* pos)
 {
-	float hitPoint[3];
-	if (this->map()->raycast(0, Vector3(pos).pos(), hitPoint))
-	{
-		syncnet::Vec3 pos(hitPoint[0] * -1, hitPoint[1], hitPoint[2]);
-		this->raycasts_.push_back(pos);
-	}
-}
-
-int World::DetectEnemy(Actor * actor)
-{
-	const dtCrowdAgent* this_agent = this->map()->crowd()->getAgent(actor->agent_id());
-	float hitPoint[3];
-
-	auto targets = grid_manager_->getEntitiesInViewRange(actor, g_fDistance);
-
-	for (auto itr = targets.begin(); itr != targets.end(); ++itr)
-	{
-		if (!(*itr)->isCharacter())
-			continue;
-
-		const dtCrowdAgent* agent = this->map()->crowd()->getAgent((*itr)->getAgentID());
-
-
-		if (this->map()->raycast(actor->agent_id(), agent->npos, hitPoint) == false)
-		{
-			return (*itr)->getAgentID();
-		}
-	}
-	return -1;
-}
-
-
-
-
-std::vector<IGridActor*> World::get_actors_in_range(Actor* actor, float range, float dirDeg, float angle) 
-{ 
-	return grid_manager_->getEntitiesInAoEMask(actor->get_vecter2_x(), actor->get_vecter2_y(), range, dirDeg, angle);
+	// todo : map 선택 로직 추가
+	map_list_.begin()->get()->OnSetRaycast(pos);
 }

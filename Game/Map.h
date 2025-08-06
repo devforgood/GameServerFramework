@@ -1,157 +1,78 @@
 #pragma once
+#include <vector>
+#include <list>
+#include <unordered_map>
+#include <memory>
+#include "NavMap.h"
+#include "syncnet_generated.h"
 
-#include "Recast.h"
-#include "DetourCrowd.h"
-#include "DetourNavMesh.h"
-#include "DetourNavMeshQuery.h"
+class game_session;
+class Monster;
+class GameObject;
+class Character;
+class Player;
+class GridManager;
+class Actor;
+class GameObjectFactory;
+class TimeStamp;
+class send_message;
+class RandomUtil;
+class IGridActor;
+namespace Engine {
+	class SystemManager;
+}
+class World;
+class NavMap;
 
-enum SamplePartitionType
-{
-	SAMPLE_PARTITION_WATERSHED,
-	SAMPLE_PARTITION_MONOTONE,
-	SAMPLE_PARTITION_LAYERS,
-};
-
-enum SamplePolyFlags
-{
-	SAMPLE_POLYFLAGS_WALK = 0x01,		// Ability to walk (ground, grass, road)
-	SAMPLE_POLYFLAGS_SWIM = 0x02,		// Ability to swim (water).
-	SAMPLE_POLYFLAGS_DOOR = 0x04,		// Ability to move through doors.
-	SAMPLE_POLYFLAGS_JUMP = 0x08,		// Ability to jump.
-	SAMPLE_POLYFLAGS_DISABLED = 0x10,		// Disabled polygon
-	SAMPLE_POLYFLAGS_ALL = 0xffff	// All abilities.
-};
-
-enum SamplePolyAreas
-{
-	SAMPLE_POLYAREA_GROUND,
-	SAMPLE_POLYAREA_WATER,
-	SAMPLE_POLYAREA_ROAD,
-	SAMPLE_POLYAREA_DOOR,
-	SAMPLE_POLYAREA_GRASS,
-	SAMPLE_POLYAREA_JUMP,
-};
-
-struct CrowdToolParams
-{
-	bool m_expandSelectedDebugDraw;
-	bool m_showCorners;
-	bool m_showCollisionSegments;
-	bool m_showPath;
-	bool m_showVO;
-	bool m_showOpt;
-	bool m_showNeis;
-
-	bool m_expandDebugDraw;
-	bool m_showLabels;
-	bool m_showGrid;
-	bool m_showNodes;
-	bool m_showPerfGraph;
-	bool m_showDetailAll;
-
-	bool m_expandOptions;
-	bool m_anticipateTurns;
-	bool m_optimizeVis;
-	bool m_optimizeTopo;
-	bool m_obstacleAvoidance;
-	float m_obstacleAvoidanceType;
-	bool m_separation;
-	float m_separationWeight;
-};
-
-
-struct dtRaycastHit;
 class Map
 {
-protected:
-	class InputGeom* m_geom;
-	class dtNavMesh* m_navMesh;
-	class dtNavMeshQuery* m_navQuery;
-	class dtCrowd* m_crowd;
+private:
+	World* world_;
+	NavMap* map_;
+	std::list<std::shared_ptr<GameObject>> game_object_list_;
+	std::unordered_map<int, std::list<std::shared_ptr<GameObject>>::iterator> game_object_map_;
 
-	dtQueryFilter m_filter;
-	float m_randomRadius;
+	std::vector<syncnet::Vec3> raycasts_;
+	std::shared_ptr<send_message> builder_ptr_;
+	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agent_info_vector_;
+	std::vector<int> removed_agents_;
 
-	// setting
-	float m_cellSize;
-	float m_cellHeight;
-	float m_agentHeight;
-	float m_agentRadius;
-	float m_agentMaxClimb;
-	float m_agentMaxSlope;
-	float m_regionMinSize;
-	float m_regionMergeSize;
-	float m_edgeMaxLen;
-	float m_edgeMaxError;
-	float m_vertsPerPoly;
-	float m_detailSampleDist;
-	float m_detailSampleMaxError;
-	int m_partitionType;
 
-	static const int MAX_AGENTS = 1024;
+	GridManager* grid_manager_;
 
-	CrowdToolParams m_toolParams;
 
-	float m_targetPos[3];
-	dtPolyRef m_targetRef;
+	Engine::SystemManager* system_manager_;
+
+	std::unordered_map<long, std::shared_ptr<Player>> players_;
+
 
 public:
-	Map()
-	{
-		m_cellSize = 0.3f;
-		m_cellHeight = 0.2f;
-		m_agentHeight = 2.0f;
-		m_agentRadius = 0.6f;
-		m_agentMaxClimb = 0.9f;
-		m_agentMaxSlope = 45.0f;
-		m_regionMinSize = 8;
-		m_regionMergeSize = 20;
-		m_edgeMaxLen = 12.0f;
-		m_edgeMaxError = 1.3f;
-		m_vertsPerPoly = 6.0f;
-		m_detailSampleDist = 6.0f;
-		m_detailSampleMaxError = 1.0f;
-		m_partitionType = SAMPLE_PARTITION_WATERSHED;
-
-
-		m_toolParams.m_expandSelectedDebugDraw = true;
-		m_toolParams.m_showCorners = false;
-		m_toolParams.m_showCollisionSegments = false;
-		m_toolParams.m_showPath = false;
-		m_toolParams.m_showVO = false;
-		m_toolParams.m_showOpt = false;
-		m_toolParams.m_showNeis = false;
-		m_toolParams.m_expandDebugDraw = false;
-		m_toolParams.m_showLabels = false;
-		m_toolParams.m_showGrid = false;
-		m_toolParams.m_showNodes = false;
-		m_toolParams.m_showPerfGraph = false;
-		m_toolParams.m_showDetailAll = false;
-		m_toolParams.m_expandOptions = true;
-		m_toolParams.m_anticipateTurns = true;
-		m_toolParams.m_optimizeVis = true;
-		m_toolParams.m_optimizeTopo = true;
-		m_toolParams.m_obstacleAvoidance = true; // 장애물 회피 활성화
-		m_toolParams.m_obstacleAvoidanceType = 3.0f;
-		m_toolParams.m_separation = false; // 분리 로직 활성화
-		m_toolParams.m_separationWeight = 2.0f;
-
-		m_targetRef = 0;
-	}
+	Map(World* world);
+	virtual ~Map();
 
 	void Init();
-	void update(float dt);
-	int addAgent(const float* p, float speed);
-	void removeAgent(const int idx);
-	void setMoveTarget(const float* p, bool adjust, const int agent_idx);
+	void update(float deltaTime);
 
-	dtCrowd* crowd() { return m_crowd; }
+	World* world() { return world_; }
+	NavMap* GetNavMap() { return map_; }
 
-	bool raycast(int agent_idx, const float* endPos, float* hitPoint);
-	bool patrol(int agent_idx, const float* startPos, dtPolyRef startRef);
+	void SendWorldState();
+	void SendBroadcast(std::shared_ptr<send_message> msg);
+	void SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except);
+	void OnRemoveAgent(int agent_id);
+	std::shared_ptr<GameObject> OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
+	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
+	void OnSetRaycast(const syncnet::Vec3* pos);
+	int DetectEnemy(Actor* actor);
+	std::vector<IGridActor*> get_actors_in_range(Actor* actor, float range, float dirDeg, float angle);
+	void GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector);
 
-	const float* getPos(const int agent_idx);
-	const dtCrowdAgent* getAgent(const int agent_idx);
-	bool teleportAgent(int agent_idx, const float* pos);
+	void join(std::shared_ptr<Player> player);
+	void leave(std::shared_ptr<Player> player);
+
+	friend class Actor;
+	friend class GameObjectFactory;
+	friend class Monster;
+	friend class Character;
 };
 

@@ -7,6 +7,7 @@
 #include <sstream> // std::stringstream
 #include <memory> // std::unique_ptr
 #include <iostream> // std::cerr
+#include "Map.h"
 
 
 class ConditionDetectEnemy : public BT::ConditionNode
@@ -22,7 +23,7 @@ public:
 
 	BT::NodeStatus tick() override
 	{
-		monster_->target_agent_id_ = monster_->world()->DetectEnemy(monster_);
+		monster_->target_agent_id_ = monster_->map()->DetectEnemy(monster_);
 		if (monster_->target_agent_id_ >= 0)
 		{
 			monster_->SetState(syncnet::AIState_Detect);
@@ -51,7 +52,7 @@ public:
 
 	BT::NodeStatus tick() override
 	{
-		monster_->world()->map()->patrol(monster_->agent_id(), monster_->spawn_pos_, monster_->spawn_ref_);
+		monster_->map()->GetNavMap()->patrol(monster_->agent_id(), monster_->spawn_pos_, monster_->spawn_ref_);
 		return BT::NodeStatus::SUCCESS;
 	}
 };
@@ -71,7 +72,7 @@ public:
 	{
 		monster_->SetState(syncnet::AIState_Detect);
 		monster_->Resume();
-		monster_->world()->map()->setMoveTarget(monster_->world()->map()->getPos(monster_->target_agent_id_), false, monster_->agent_id());
+		monster_->map()->GetNavMap()->setMoveTarget(monster_->map()->GetNavMap()->getPos(monster_->target_agent_id_), false, monster_->agent_id());
 		return BT::NodeStatus::SUCCESS;
 	}
 };
