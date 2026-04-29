@@ -184,6 +184,7 @@
     <CopyFileToFolders Include="solo_navmesh.bin">
       <FileType>Document</FileType>
     </CopyFileToFolders>
+    <None Include="Research.md" />
     <None Include="SQL\generated\create_tables.sql" />
     <None Include="Common.h" />
   </ItemGroup>

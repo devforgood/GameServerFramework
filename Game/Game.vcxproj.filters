@@ -131,6 +131,7 @@
       <Filter>SQL</Filter>
     </None>
     <None Include="Common.h" />
+    <None Include="Research.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Walker.h">
