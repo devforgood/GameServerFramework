@@ -131,7 +131,9 @@
       <Filter>SQL</Filter>
     </None>
     <None Include="Common.h" />
-    <None Include="Research.md" />
+    <None Include="Research.md">
+      <Filter>GameObject</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Walker.h">

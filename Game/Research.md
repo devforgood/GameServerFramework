@@ -301,3 +301,481 @@ Unity 클라이언트
 전체 스냅샷보다 상태 변경 이벤트 중심으로 보낸다.
 Unity는 서버의 BT를 실행하지 않고, 시각화만 한다.
 ```
+
+
+기존 패킷 송수신이 이미 있다면, 핵심은 **BT 실행 상태를 외부에서 억지로 읽는 구조가 아니라, BT tick 과정에서 “디버그 동기화용 상태 모델”을 같이 갱신하는 구조**로 만드는 것입니다.
+
+## 추천 디자인
+
+현재 코드처럼 각 노드가 `Monster* monster_`를 들고 있고, `tick()` 안에서 `monster_->SetState()`, `Attack()`, `patrol()`, `setMoveTarget()` 같은 실제 게임 로직을 실행하는 구조입니다. 예를 들어 `ConditionDetectEnemy`는 적 탐지 후 `target_agent_id_`와 AI 상태를 갱신하고, `ActionAttack`은 `AIState_Attack`으로 바꾼 뒤 공격을 실행합니다. 
+
+따라서 디버그 동기화는 다음처럼 분리하는 게 좋습니다.
+
+```text
+Monster BT 실행
+  ├─ 실제 게임 상태 변경
+  │   ├─ SetState()
+  │   ├─ Attack()
+  │   ├─ patrol()
+  │   └─ setMoveTarget()
+  │
+  └─ Debug Mirror 상태 기록
+      ├─ 현재 tick 번호
+      ├─ 실행된 node id
+      ├─ node status
+      ├─ monster ai state
+      ├─ target_agent_id
+      ├─ position / destination
+      └─ 실패 reason
+```
+
+즉, Unity로 보내는 값은 **BT 자체의 원본 상태**가 아니라, 서버가 만든 **BT Debug Mirror**입니다.
+
+---
+
+## 1. Monster 단위로 DebugContext를 둔다
+
+`Monster`마다 디버그용 상태를 하나 붙이는 방식이 가장 단순합니다.
+
+```cpp
+struct BTNodeDebugState
+{
+    uint16_t node_id;
+    std::string node_name;
+    BT::NodeStatus status;
+    uint64_t last_tick;
+    uint32_t enter_count;
+    uint32_t success_count;
+    uint32_t failure_count;
+    uint32_t running_count;
+    std::string reason;
+};
+
+struct MonsterBTDebugContext
+{
+    int64_t monster_id;
+    uint64_t bt_tick = 0;
+
+    syncnet::AIState ai_state;
+    int64_t target_agent_id = -1;
+
+    std::unordered_map<uint16_t, BTNodeDebugState> nodes;
+
+    std::vector<uint16_t> executed_nodes_this_tick;
+    bool dirty = false;
+};
+```
+
+그리고 `Monster`에 붙입니다.
+
+```cpp
+class Monster
+{
+public:
+    MonsterBTDebugContext* bt_debug() { return &bt_debug_; }
+
+private:
+    MonsterBTDebugContext bt_debug_;
+};
+```
+
+---
+
+## 2. 노드 tick 안에서 DebugContext를 갱신한다
+
+현재 노드들은 전부 `Monster* monster_`를 가지고 있으므로, 가장 현실적인 방식은 각 노드의 `tick()`에서 디버그 상태를 기록하는 것입니다.
+
+예를 들어 `ConditionDetectEnemy`는 이렇게 바꿀 수 있습니다.
+
+```cpp
+BT::NodeStatus tick() override
+{
+    auto* debug = monster_->bt_debug();
+
+    debug->executed_nodes_this_tick.push_back(NodeId::ConditionDetectEnemy);
+
+    monster_->target_agent_id_ = monster_->map()->DetectEnemy(monster_);
+
+    BT::NodeStatus result;
+
+    if (monster_->target_agent_id_ >= 0)
+    {
+        monster_->SetState(syncnet::AIState_Detect);
+        result = BT::NodeStatus::SUCCESS;
+
+        debug->nodes[NodeId::ConditionDetectEnemy].reason =
+            "enemy detected";
+    }
+    else
+    {
+        monster_->SetState(syncnet::AIState_Patrol);
+        result = BT::NodeStatus::FAILURE;
+
+        debug->nodes[NodeId::ConditionDetectEnemy].reason =
+            "enemy not found";
+    }
+
+    debug->target_agent_id = monster_->target_agent_id_;
+    debug->ai_state = monster_->state();
+    debug->nodes[NodeId::ConditionDetectEnemy].status = result;
+    debug->nodes[NodeId::ConditionDetectEnemy].last_tick = debug->bt_tick;
+    debug->dirty = true;
+
+    return result;
+}
+```
+
+이 방식의 장점은 **실제 로직 결과와 디버그 상태가 어긋날 가능성이 낮다**는 점입니다.
+
+---
+
+## 3. 반복 코드를 줄이려면 헬퍼를 둔다
+
+각 노드마다 위 코드를 다 쓰면 지저분해지므로, 헬퍼를 두는 게 좋습니다.
+
+```cpp
+class BTDebugRecorder
+{
+public:
+    static void Record(
+        Monster* monster,
+        uint16_t node_id,
+        std::string_view node_name,
+        BT::NodeStatus status,
+        std::string_view reason = "")
+    {
+        auto* debug = monster->bt_debug();
+
+        auto& node = debug->nodes[node_id];
+        node.node_id = node_id;
+        node.node_name = std::string(node_name);
+        node.status = status;
+        node.last_tick = debug->bt_tick;
+        node.reason = std::string(reason);
+
+        switch (status)
+        {
+        case BT::NodeStatus::SUCCESS:
+            node.success_count++;
+            break;
+        case BT::NodeStatus::FAILURE:
+            node.failure_count++;
+            break;
+        case BT::NodeStatus::RUNNING:
+            node.running_count++;
+            break;
+        default:
+            break;
+        }
+
+        debug->executed_nodes_this_tick.push_back(node_id);
+        debug->ai_state = monster->state();
+        debug->target_agent_id = monster->target_agent_id_;
+        debug->dirty = true;
+    }
+};
+```
+
+그러면 노드는 이렇게 단순해집니다.
+
+```cpp
+BT::NodeStatus tick() override
+{
+    monster_->target_agent_id_ = monster_->map()->DetectEnemy(monster_);
+
+    if (monster_->target_agent_id_ >= 0)
+    {
+        monster_->SetState(syncnet::AIState_Detect);
+
+        BTDebugRecorder::Record(
+            monster_,
+            NodeId::ConditionDetectEnemy,
+            "ConditionDetectEnemy",
+            BT::NodeStatus::SUCCESS,
+            "enemy detected");
+
+        return BT::NodeStatus::SUCCESS;
+    }
+
+    monster_->SetState(syncnet::AIState_Patrol);
+
+    BTDebugRecorder::Record(
+        monster_,
+        NodeId::ConditionDetectEnemy,
+        "ConditionDetectEnemy",
+        BT::NodeStatus::FAILURE,
+        "enemy not found");
+
+    return BT::NodeStatus::FAILURE;
+}
+```
+
+---
+
+## 4. 노드 ID는 직접 고정하는 것이 좋다
+
+Unity에서 트리를 시각화하려면 노드 식별자가 안정적이어야 합니다.
+
+현재 XML에서 `ConditionDetectEnemy`, `ActionPatrol`, `ActionChase`, `ConditionAttackRange`, `ActionAttack`, `ConditionCheckHealth`, `ActionDead`, `ActionDestroyed` 같은 노드를 등록하고 있습니다. 
+
+이 노드들에 고정 ID를 부여하는 게 좋습니다.
+
+```cpp
+namespace NodeId
+{
+    constexpr uint16_t ConditionDetectEnemy = 1;
+    constexpr uint16_t ActionPatrol = 2;
+    constexpr uint16_t ActionChase = 3;
+    constexpr uint16_t ConditionAttackRange = 4;
+    constexpr uint16_t ActionAttack = 5;
+    constexpr uint16_t ConditionCheckHealth = 6;
+    constexpr uint16_t ActionDead = 7;
+    constexpr uint16_t ActionDestroyed = 8;
+}
+```
+
+BehaviorTree.CPP 내부 UID에 의존해도 되지만, 개발 중 XML이 바뀌거나 트리 생성 방식이 바뀌면 Unity 쪽 매핑이 흔들릴 수 있습니다.
+디버그 뷰어 목적이면 **서버가 정의한 고정 NodeId**가 더 안전합니다.
+
+---
+
+## 5. Tick 시작/종료 지점을 명확히 잡는다
+
+동기화는 각 노드가 아니라 **BT tick 단위 프레임**으로 묶어야 합니다.
+
+```cpp
+void Monster::TickAI()
+{
+    auto* debug = bt_debug();
+
+    debug->bt_tick++;
+    debug->executed_nodes_this_tick.clear();
+    debug->dirty = false;
+
+    tree_->tickOnce();
+
+    if (debug->dirty)
+    {
+        BuildAndSendBTDebugFrame(*debug);
+    }
+}
+```
+
+Unity에서는 이 단위로 보면 됩니다.
+
+```text
+BT Tick 1001
+  실행된 노드:
+    ConditionCheckHealth: SUCCESS
+    ConditionDetectEnemy: SUCCESS
+    ConditionAttackRange: FAILURE
+    ActionChase: SUCCESS
+
+  Monster 상태:
+    AIState_Detect
+    target_agent_id = 1234
+```
+
+이렇게 해야 Unity에서 “이번 tick에 실제로 어떤 경로를 탔는지”를 정확하게 보여줄 수 있습니다.
+
+---
+
+## 6. 전체 상태가 아니라 변경분 중심으로 보낸다
+
+디버그 동기화는 두 종류로 나누는 게 좋습니다.
+
+```text
+TreeDefinition
+  - 트리 구조
+  - node_id
+  - node_name
+  - parent_id
+  - node_type
+
+TreeRuntimeFrame
+  - monster_id
+  - bt_tick
+  - 이번 tick에 실행된 node list
+  - 변경된 node status
+  - monster ai state
+  - target_agent_id
+  - reason
+```
+
+서버 내부 디자인은 이렇게 잡으면 됩니다.
+
+```cpp
+struct BTDebugRuntimeFrame
+{
+    int64_t monster_id;
+    uint64_t tick;
+
+    syncnet::AIState ai_state;
+    int64_t target_agent_id;
+
+    std::vector<BTNodeDebugState> changed_nodes;
+    std::vector<uint16_t> executed_path;
+};
+```
+
+Unity는 `executed_path`를 받아서 이번 tick 실행 경로를 하이라이트하고, `changed_nodes`로 색상을 갱신하면 됩니다.
+
+---
+
+## 7. Condition 실패 이유를 반드시 넣는 것이 좋다
+
+BT 디버깅에서 제일 중요한 건 “왜 이 경로로 가지 않았는가”입니다.
+
+현재 샘플 기준으로는 이런 reason을 넣으면 유용합니다.
+
+```text
+ConditionCheckHealth
+  SUCCESS: health > 0
+  FAILURE: health <= 0
+
+ConditionDetectEnemy
+  SUCCESS: enemy detected
+  FAILURE: enemy not found
+
+ConditionAttackRange
+  SUCCESS: target in attack range
+  FAILURE: target out of range
+
+ActionPatrol
+  SUCCESS: patrol command issued
+
+ActionChase
+  SUCCESS: chase target position updated
+
+ActionAttack
+  SUCCESS: attack command issued
+```
+
+예를 들어 `ConditionAttackRange`는 현재 `monster_->AttackRange() >= 0`이면 성공하는 구조입니다. 
+이 경우 디버그 reason을 이렇게 넣으면 됩니다.
+
+```cpp
+BT::NodeStatus tick() override
+{
+    int range_result = monster_->AttackRange();
+
+    if (range_result >= 0)
+    {
+        BTDebugRecorder::Record(
+            monster_,
+            NodeId::ConditionAttackRange,
+            "ConditionAttackRange",
+            BT::NodeStatus::SUCCESS,
+            "target in attack range");
+
+        return BT::NodeStatus::SUCCESS;
+    }
+
+    BTDebugRecorder::Record(
+        monster_,
+        NodeId::ConditionAttackRange,
+        "ConditionAttackRange",
+        BT::NodeStatus::FAILURE,
+        "target out of range");
+
+    return BT::NodeStatus::FAILURE;
+}
+```
+
+---
+
+## 8. Monster 상태와 BT 상태를 분리해서 보여줘야 한다
+
+현재 노드에서 `monster_->SetState(syncnet::AIState_Detect)`, `AIState_Attack`, `AIState_Dead`, `AIState_Destroyed` 같은 게임 AI 상태를 직접 변경하고 있습니다.  
+
+이때 Unity에서는 두 상태를 구분해야 합니다.
+
+```text
+BT NodeStatus
+  - SUCCESS
+  - FAILURE
+  - RUNNING
+  - IDLE
+
+Monster AIState
+  - Patrol
+  - Detect
+  - Attack
+  - Dead
+  - Destroyed
+```
+
+즉, 노드 색상은 `NodeStatus`로 표시하고, 몬스터 머리 위나 디테일 패널에는 `AIState`를 표시하는 방식이 좋습니다.
+
+```text
+[ConditionDetectEnemy] SUCCESS
+[ConditionAttackRange] FAILURE
+[ActionChase] SUCCESS
+
+Monster State: Detect
+Target: 1234
+```
+
+---
+
+## 9. 코드 침투를 줄이는 대안: Decorator 방식
+
+노드마다 `BTDebugRecorder::Record()`를 넣기 싫다면, XML에서 디버그 데코레이터를 감싸는 방식도 가능합니다.
+
+개념은 이렇습니다.
+
+```xml
+<Debug node_id="1" name="ConditionDetectEnemy">
+    <ConditionDetectEnemy/>
+</Debug>
+```
+
+`DebugDecorator`가 자식 노드 tick 전후 상태를 기록합니다.
+
+장점:
+
+```text
+노드 코드 수정이 적다
+공통적으로 SUCCESS/FAILURE/RUNNING 기록 가능
+```
+
+단점:
+
+```text
+Condition 실패 reason 같은 도메인 정보는 알기 어렵다
+target_agent_id, attack range 같은 상세 값은 별도 기록 필요
+XML이 지저분해질 수 있다
+```
+
+그래서 추천은 혼합 방식입니다.
+
+```text
+공통 NodeStatus 기록:
+  DebugDecorator 또는 subscribeToStatusChange
+
+도메인 디버그 정보:
+  각 노드 tick 안에서 BTDebugRecorder로 기록
+```
+
+---
+
+## 결론
+
+현재 코드 구조에서는 이 디자인이 가장 적합합니다.
+
+```text
+1. Monster마다 MonsterBTDebugContext를 둔다.
+2. BT tick 시작 시 debug frame을 초기화한다.
+3. 각 노드 tick에서 실제 게임 로직 수행 후 BTDebugRecorder에 결과를 기록한다.
+4. BT tick 종료 시 dirty 상태이면 RuntimeFrame을 만들어 Unity로 보낸다.
+5. Unity는 서버 BT를 재실행하지 않고, RuntimeFrame만 반영한다.
+```
+
+정리하면 핵심은 이것입니다.
+
+```text
+BehaviorTree.CPP의 실행 흐름을 Unity와 직접 동기화하려 하지 말고,
+서버 tick마다 "실행 결과 프레임"을 만들어 Unity가 따라 그리게 한다.
+```
+
+이렇게 하면 서버의 실제 AI 실행과 Unity 디버그 표시가 가장 덜 어긋납니다.
