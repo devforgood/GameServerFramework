@@ -779,3 +779,252 @@ BehaviorTree.CPP의 실행 흐름을 Unity와 직접 동기화하려 하지 말�
 ```
 
 이렇게 하면 서버의 실제 AI 실행과 Unity 디버그 표시가 가장 덜 어긋납니다.
+
+---
+
+아니요. 앞선 설계는 **디버그 기능이 항상 코드에 존재한다는 전제**가 조금 섞여 있었습니다.
+개발 단계 전용이라면 구조를 더 명확히 분리하는 게 맞습니다.
+
+## 권장 설계
+
+```text
+Release Build
+  BehaviorTree.CPP
+  Monster AI Logic
+  Packet Sync
+  Debug 코드 없음
+
+Dev / Debug Build
+  BehaviorTree.CPP
+  Monster AI Logic
+  Packet Sync
+  BT Debug Instrumentation
+  BT Debug Frame Builder
+  Unity BT Viewer
+```
+
+핵심은 **릴리즈 빌드에서 디버그 코드가 컴파일되지 않게 하는 것**입니다.
+
+---
+
+## 1. 컴파일 플래그로 완전 분리
+
+예를 들어:
+
+```cpp
+#if defined(ENABLE_BT_DEBUG)
+    BTDebugRecorder::Record(...);
+#endif
+```
+
+또는 매크로로 감싸는 것이 좋습니다.
+
+```cpp
+#if defined(ENABLE_BT_DEBUG)
+#define BT_DEBUG_RECORD(monster, node_id, node_name, status, reason) \
+    BTDebugRecorder::Record(monster, node_id, node_name, status, reason)
+#else
+#define BT_DEBUG_RECORD(monster, node_id, node_name, status, reason) \
+    do {} while (0)
+#endif
+```
+
+노드에서는 이렇게 씁니다.
+
+```cpp
+BT_DEBUG_RECORD(
+    monster_,
+    NodeId::ConditionDetectEnemy,
+    "ConditionDetectEnemy",
+    BT::NodeStatus::SUCCESS,
+    "enemy detected");
+```
+
+릴리즈 빌드에서는 이 코드가 사실상 사라집니다.
+
+---
+
+## 2. Monster에 DebugContext를 직접 넣지 않는 편이 좋다
+
+릴리즈 빌드 제외가 목적이면 이전처럼 `Monster`에 항상 `MonsterBTDebugContext`를 두는 건 별로입니다.
+
+대신 이렇게 분리합니다.
+
+```cpp
+class Monster
+{
+public:
+    // 실제 게임 상태만 유지
+    int64_t target_agent_id_;
+    syncnet::AIState state_;
+};
+```
+
+디버그 컨텍스트는 별도 매니저가 관리합니다.
+
+```cpp
+#if defined(ENABLE_BT_DEBUG)
+
+class BTDebugManager
+{
+public:
+    MonsterBTDebugContext& GetOrCreate(Monster* monster);
+    void BeginTick(Monster* monster);
+    void Record(...);
+    void EndTick(Monster* monster);
+};
+
+#endif
+```
+
+이렇게 하면 릴리즈 빌드의 `Monster` 메모리 레이아웃과 런타임 비용을 건드리지 않습니다.
+
+---
+
+## 3. 노드 코드는 최소 침투 방식으로 유지
+
+예를 들어 `ConditionDetectEnemy`는 이렇게 됩니다.
+
+```cpp
+BT::NodeStatus tick() override
+{
+    monster_->target_agent_id_ = monster_->map()->DetectEnemy(monster_);
+
+    if (monster_->target_agent_id_ >= 0)
+    {
+        monster_->SetState(syncnet::AIState_Detect);
+
+        BT_DEBUG_RECORD(
+            monster_,
+            NodeId::ConditionDetectEnemy,
+            "ConditionDetectEnemy",
+            BT::NodeStatus::SUCCESS,
+            "enemy detected");
+
+        return BT::NodeStatus::SUCCESS;
+    }
+
+    monster_->SetState(syncnet::AIState_Patrol);
+
+    BT_DEBUG_RECORD(
+        monster_,
+        NodeId::ConditionDetectEnemy,
+        "ConditionDetectEnemy",
+        BT::NodeStatus::FAILURE,
+        "enemy not found");
+
+    return BT::NodeStatus::FAILURE;
+}
+```
+
+릴리즈 빌드에서는 `BT_DEBUG_RECORD(...)`가 빈 코드가 되므로 실제 동작에는 영향이 없습니다.
+
+---
+
+## 4. Tick 시작/종료도 매크로로 감싼다
+
+```cpp
+void Monster::TickAI()
+{
+    BT_DEBUG_BEGIN_TICK(this);
+
+    tree_->tickOnce();
+
+    BT_DEBUG_END_TICK(this);
+}
+```
+
+매크로 정의:
+
+```cpp
+#if defined(ENABLE_BT_DEBUG)
+
+#define BT_DEBUG_BEGIN_TICK(monster) \
+    BTDebugManager::Instance().BeginTick(monster)
+
+#define BT_DEBUG_END_TICK(monster) \
+    BTDebugManager::Instance().EndTick(monster)
+
+#else
+
+#define BT_DEBUG_BEGIN_TICK(monster) \
+    do {} while (0)
+
+#define BT_DEBUG_END_TICK(monster) \
+    do {} while (0)
+
+#endif
+```
+
+---
+
+## 5. 디버그 전용 파일을 분리한다
+
+권장 파일 구조는 이렇습니다.
+
+```text
+AI/
+ ├─ MonsterBT.cpp
+ ├─ MonsterBTNodes.cpp
+ └─ MonsterBTNodes.h
+
+AI/Debug/
+ ├─ BTDebugManager.h
+ ├─ BTDebugManager.cpp
+ ├─ BTDebugRecorder.h
+ ├─ BTDebugFrameBuilder.cpp
+ └─ BTDebugNodeIds.h
+```
+
+빌드 설정에서:
+
+```text
+Release:
+  AI/Debug/* 제외
+  ENABLE_BT_DEBUG 미정의
+
+Dev:
+  AI/Debug/* 포함
+  ENABLE_BT_DEBUG 정의
+```
+
+---
+
+## 6. 권장 최종 구조
+
+```text
+BT 노드 코드
+  - 실제 게임 로직은 항상 존재
+  - 디버그 기록은 BT_DEBUG_RECORD 매크로로만 호출
+
+BTDebugManager
+  - ENABLE_BT_DEBUG일 때만 컴파일
+  - Monster별 디버그 상태 관리
+  - Tick 단위 프레임 생성
+
+BTDebugFrameSender
+  - ENABLE_BT_DEBUG일 때만 컴파일
+  - Unity 디버그 클라이언트로 전송
+
+Release Build
+  - BT_DEBUG_* 매크로가 모두 no-op
+  - DebugManager 없음
+  - DebugFrame 없음
+  - Debug 송신 없음
+```
+
+---
+
+## 결론
+
+개발 단계 전용이라는 조건을 반영하면, 설계 원칙은 이겁니다.
+
+```text
+1. 릴리즈 빌드에는 디버그 상태 객체를 넣지 않는다.
+2. Monster 클래스에 디버그 필드를 상시 추가하지 않는다.
+3. 디버그 기록은 매크로 또는 컴파일 플래그로 제거 가능하게 한다.
+4. BT 실행 로직과 디버그 프레임 생성 로직은 파일/모듈 단위로 분리한다.
+5. Unity 시각화용 동기화는 Dev 빌드에서만 활성화한다.
+```
+
+즉, **BT 실행 결과를 관찰하는 개발 전용 Instrumentation Layer**로 설계하는 것이 맞습니다.
