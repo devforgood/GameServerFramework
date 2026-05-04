@@ -97,6 +97,9 @@
     <ClCompile Include="MonsterCodeBaseBT.cpp">
       <Filter>AI</Filter>
     </ClCompile>
+    <ClCompile Include="BTDebugManager.cpp">
+      <Filter>AI</Filter>
+    </ClCompile>
     <ClCompile Include="JumpSkill.cpp">
       <Filter>skill</Filter>
     </ClCompile>
@@ -196,6 +199,12 @@
       <Filter>AI</Filter>
     </ClInclude>
     <ClInclude Include="MonsterCodeBaseBT.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="BTDebugManager.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="BTDebugNodeIds.h">
       <Filter>AI</Filter>
     </ClInclude>
     <ClInclude Include="JumpSkill.h">

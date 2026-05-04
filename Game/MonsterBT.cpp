@@ -8,6 +8,8 @@
 #include <memory> // std::unique_ptr
 #include <iostream> // std::cerr
 #include "Map.h"
+#include "BTDebugManager.h"
+#include "BTDebugNodeIds.h"
 
 
 class ConditionDetectEnemy : public BT::ConditionNode
@@ -27,11 +29,13 @@ public:
 		if (monster_->target_agent_id_ >= 0)
 		{
 			monster_->SetState(syncnet::AIState_Detect);
+			BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionDetectEnemy, "ConditionDetectEnemy", BT::NodeStatus::SUCCESS, "enemy detected");
 			//std::cout << "See enemy!" << std::endl;
 			return  BT::NodeStatus::SUCCESS;
 		}
 
 		monster_->SetState(syncnet::AIState_Patrol);
+		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionDetectEnemy, "ConditionDetectEnemy", BT::NodeStatus::FAILURE, "enemy not found");
 		//std::cout << "Not see enemy" << std::endl;
 
 		return BT::NodeStatus::FAILURE;
@@ -53,6 +57,7 @@ public:
 	BT::NodeStatus tick() override
 	{
 		monster_->map()->GetNavMap()->patrol(monster_->agent_id(), monster_->spawn_pos_, monster_->spawn_ref_);
+		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionPatrol, "ActionPatrol", BT::NodeStatus::SUCCESS, "patrol command issued");
 		return BT::NodeStatus::SUCCESS;
 	}
 };
@@ -73,6 +78,7 @@ public:
 		monster_->SetState(syncnet::AIState_Detect);
 		monster_->Resume();
 		monster_->map()->GetNavMap()->setMoveTarget(monster_->map()->GetNavMap()->getPos(monster_->target_agent_id_), false, monster_->agent_id());
+		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionChase, "ActionChase", BT::NodeStatus::SUCCESS, "chase target position updated");
 		return BT::NodeStatus::SUCCESS;
 	}
 };
@@ -92,11 +98,13 @@ public:
 	{
 		if (monster_->AttackRange() >= 0)
 		{
+			BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionAttackRange, "ConditionAttackRange", BT::NodeStatus::SUCCESS, "target in attack range");
 			//std::cout << "Attack Range!" << std::endl;
 			return BT::NodeStatus::SUCCESS;
 		}
 
 		//std::cout << "Not Attack Range" << std::endl;
+		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionAttackRange, "ConditionAttackRange", BT::NodeStatus::FAILURE, "target out of range");
 
 		return BT::NodeStatus::FAILURE;
 	}
@@ -117,6 +125,7 @@ public:
 	{
 		monster_->SetState(syncnet::AIState_Attack);
 		monster_->Attack();
+		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionAttack, "ActionAttack", BT::NodeStatus::SUCCESS, "attack command issued");
 		//std::cout << "Attack enemy!" << std::endl;
 		return BT::NodeStatus::SUCCESS;
 	}
@@ -137,7 +146,14 @@ public:
 	{
 
 		// 체력이 0보다 크면 성공, 아니면 실패
-		return monster_->health() > 0 ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
+		if (monster_->health() > 0)
+		{
+			BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionCheckHealth, "ConditionCheckHealth", BT::NodeStatus::SUCCESS, "health > 0");
+			return BT::NodeStatus::SUCCESS;
+		}
+
+		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionCheckHealth, "ConditionCheckHealth", BT::NodeStatus::FAILURE, "health <= 0");
+		return BT::NodeStatus::FAILURE;
 	}
 };
 
@@ -156,6 +172,7 @@ public:
 	{
 		// 사망 상태로 변경
 		monster_->SetState(syncnet::AIState::AIState_Dead);
+		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionDead, "ActionDead", BT::NodeStatus::SUCCESS, "dead state applied");
 		LOG.info("Monster dead");
 		return BT::NodeStatus::SUCCESS;
 	}
@@ -176,6 +193,7 @@ public:
 	{
 		// 파괴 상태로 변경
 		monster_->SetState(syncnet::AIState::AIState_Destroyed);
+		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionDestroyed, "ActionDestroyed", BT::NodeStatus::SUCCESS, "destroyed state applied");
 		LOG.info("Monster destoryed");
 		return BT::NodeStatus::SUCCESS;
 	}

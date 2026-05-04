@@ -11,6 +11,7 @@
 #include "MonsterCodeBaseBT.h"
 #include "Common.h"
 #include "Map.h"
+#include "BTDebugManager.h"
 
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
@@ -20,6 +21,7 @@ Monster::Monster(Map* map)
 	: Actor(map), bt_(nullptr), tree_(nullptr)
 {
 	game_object_type_ = syncnet::GameObjectType::GameObjectType_Monster;
+	target_agent_id_ = -1;
 }
 
 Monster::~Monster()
@@ -85,7 +87,9 @@ void Monster::update(float dt)
 	Actor::update(dt);
 	//bt_->Tick();
 	//runBehaviorTree(this);
+	BT_DEBUG_BEGIN_TICK(this);
 	tree_->tickOnce();
+	BT_DEBUG_END_TICK(this);
 }
 
 int Monster::AttackRange()

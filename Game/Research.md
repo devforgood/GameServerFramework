@@ -1028,3 +1028,125 @@ Release Build
 ```
 
 즉, **BT 실행 결과를 관찰하는 개발 전용 Instrumentation Layer**로 설계하는 것이 맞습니다.
+---
+
+## 2026-05-04 구현 기록: BT Debug 동기화 프레임 시스템
+
+이번 구현은 위 설계 중 "BT tick 결과를 서버에서 Debug Mirror/Frame으로 만든 뒤 별도 전송 루프가 가져간다"는 부분을 코드에 반영했다.
+
+### 추가 파일
+
+```text
+Game/BTDebugNodeIds.h
+  - Monster BT 노드별 고정 debug node id 정의
+
+Game/BTDebugManager.h
+  - ENABLE_BT_DEBUG 게이트
+  - BT_DEBUG_BEGIN_TICK / BT_DEBUG_RECORD / BT_DEBUG_END_TICK 매크로
+  - ConsumeFrames()로 외부 sender가 JSON frame을 가져갈 수 있는 인터페이스
+
+Game/BTDebugManager.cpp
+  - Monster별 tick context 관리
+  - 실행 경로(executedPath), 변경 노드(changes), AIState, targetAgentId를 JSON RuntimeFrame으로 생성
+  - TreeDefinition JSON 생성 함수 제공
+```
+
+### 동작 흐름
+
+```text
+Monster::update()
+  -> BT_DEBUG_BEGIN_TICK(this)
+  -> tree_->tickOnce()
+  -> BT_DEBUG_END_TICK(this)
+
+MonsterBT 노드 tick()
+  -> 실제 게임 로직 실행
+  -> BT_DEBUG_RECORD(monster, node_id, node_name, status, reason)
+
+BTDebugManager
+  -> 상태가 바뀐 노드만 changes에 적재
+  -> 이번 tick에 실행된 노드 id는 executedPath에 적재
+  -> dirty tick만 JSON frame으로 만들어 queue에 push
+
+BTDebug sender thread 또는 WebSocket/TCP layer
+  -> BTDebugManager::Instance().ConsumeFrames()
+  -> Unity BT Debug Viewer로 전송
+```
+
+### RuntimeFrame 예시
+
+```json
+{
+  "type": "TreeRuntimeFrame",
+  "treeId": "monster_ai",
+  "monsterId": 12,
+  "tick": 531,
+  "aiState": "Detect",
+  "targetAgentId": 3,
+  "executedPath": [6, 1, 4, 3],
+  "changes": [
+    {
+      "id": 4,
+      "name": "ConditionAttackRange",
+      "status": "FAILURE",
+      "reason": "target out of range",
+      "successCount": 2,
+      "failureCount": 8,
+      "runningCount": 0
+    }
+  ]
+}
+```
+
+### 현재 기록되는 reason
+
+```text
+ConditionCheckHealth
+  SUCCESS: health > 0
+  FAILURE: health <= 0
+
+ConditionDetectEnemy
+  SUCCESS: enemy detected
+  FAILURE: enemy not found
+
+ConditionAttackRange
+  SUCCESS: target in attack range
+  FAILURE: target out of range
+
+ActionPatrol
+  SUCCESS: patrol command issued
+
+ActionChase
+  SUCCESS: chase target position updated
+
+ActionAttack
+  SUCCESS: attack command issued
+
+ActionDead
+  SUCCESS: dead state applied
+
+ActionDestroyed
+  SUCCESS: destroyed state applied
+```
+
+### 빌드/릴리즈 정책
+
+```text
+Debug build
+  - NDEBUG가 없으면 ENABLE_BT_DEBUG를 자동 활성화
+  - BTDebugManager가 tick frame을 생성
+
+Release build
+  - ENABLE_BT_DEBUG를 별도로 정의하지 않으면 BT_DEBUG_* 매크로는 no-op
+  - Monster 클래스에 debug context 필드를 추가하지 않았으므로 릴리즈 객체 레이아웃 영향 없음
+```
+
+### 다음 연결 지점
+
+```text
+1. WebSocket 또는 TCP debug sender를 만든다.
+2. sender thread는 BT tick thread와 분리한다.
+3. sender는 ConsumeFrames()로 frame을 가져와 Unity에 전송한다.
+4. Unity는 TreeDefinition을 먼저 받고 RuntimeFrame의 executedPath/changes를 적용한다.
+5. flatbuffer 프로토콜에 실을 경우 syncnet.fbs에 BTDebugFrame 계열 table을 추가하고 syncnet_generated.h를 재생성한다.
+```
