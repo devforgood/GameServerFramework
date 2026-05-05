@@ -324,23 +324,7 @@ public class Session : MonoBehaviour
 	private void HandleTreeDebugSync(syncnet.GameMessage recv_msg)
 	{
 		syncnet.TreeDebugSync treeDebugSync = recv_msg.Msg<syncnet.TreeDebugSync>().Value;
-		for (int i = 0; i < treeDebugSync.DefinitionsLength; ++i)
-		{
-			var definition = treeDebugSync.Definitions(i);
-			if (!definition.HasValue)
-				continue;
-
-			Debug.Log($"TreeDebugDefinition: tree={definition.Value.TreeId}, monster={definition.Value.MonsterId}, nodes={definition.Value.NodesLength}");
-		}
-
-		for (int i = 0; i < treeDebugSync.FramesLength; ++i)
-		{
-			var frame = treeDebugSync.Frames(i);
-			if (!frame.HasValue)
-				continue;
-
-			Debug.Log($"TreeDebugFrame: tree={frame.Value.TreeId}, monster={frame.Value.MonsterId}, tick={frame.Value.Tick}, changes={frame.Value.ChangesLength}");
-		}
+		TreeDebugView.Instance.Apply(treeDebugSync);
 	}
 
 	private GameObject CreateGameObject(GameObjectType type, Vector3 pos, int agentId)
