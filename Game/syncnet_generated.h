@@ -47,6 +47,21 @@ struct LoginBuilder;
 struct UseSkill;
 struct UseSkillBuilder;
 
+struct TreeDebugNodeDefinition;
+struct TreeDebugNodeDefinitionBuilder;
+
+struct TreeDebugNodeChange;
+struct TreeDebugNodeChangeBuilder;
+
+struct TreeDebugDefinition;
+struct TreeDebugDefinitionBuilder;
+
+struct TreeDebugRuntimeFrame;
+struct TreeDebugRuntimeFrameBuilder;
+
+struct TreeDebugSync;
+struct TreeDebugSyncBuilder;
+
 enum GameMessages {
   GameMessages_NONE = 0,
   GameMessages_AddAgent = 1,
@@ -58,11 +73,12 @@ enum GameMessages {
   GameMessages_SetRaycast = 7,
   GameMessages_Login = 8,
   GameMessages_UseSkill = 9,
+  GameMessages_TreeDebugSync = 10,
   GameMessages_MIN = GameMessages_NONE,
-  GameMessages_MAX = GameMessages_UseSkill
+  GameMessages_MAX = GameMessages_TreeDebugSync
 };
 
-inline const GameMessages (&EnumValuesGameMessages())[10] {
+inline const GameMessages (&EnumValuesGameMessages())[11] {
   static const GameMessages values[] = {
     GameMessages_NONE,
     GameMessages_AddAgent,
@@ -73,13 +89,14 @@ inline const GameMessages (&EnumValuesGameMessages())[10] {
     GameMessages_Ping,
     GameMessages_SetRaycast,
     GameMessages_Login,
-    GameMessages_UseSkill
+    GameMessages_UseSkill,
+    GameMessages_TreeDebugSync
   };
   return values;
 }
 
 inline const char * const *EnumNamesGameMessages() {
-  static const char * const names[11] = {
+  static const char * const names[12] = {
     "NONE",
     "AddAgent",
     "RemoveAgent",
@@ -90,13 +107,14 @@ inline const char * const *EnumNamesGameMessages() {
     "SetRaycast",
     "Login",
     "UseSkill",
+    "TreeDebugSync",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameGameMessages(GameMessages e) {
-  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_UseSkill)) return "";
+  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_TreeDebugSync)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesGameMessages()[index];
 }
@@ -139,6 +157,10 @@ template<> struct GameMessagesTraits<syncnet::Login> {
 
 template<> struct GameMessagesTraits<syncnet::UseSkill> {
   static const GameMessages enum_value = GameMessages_UseSkill;
+};
+
+template<> struct GameMessagesTraits<syncnet::TreeDebugSync> {
+  static const GameMessages enum_value = GameMessages_TreeDebugSync;
 };
 
 bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type);
@@ -249,6 +271,81 @@ inline const char *EnumNameAIState(AIState e) {
   return EnumNamesAIState()[index];
 }
 
+enum TreeNodeStatus {
+  TreeNodeStatus_Idle = 0,
+  TreeNodeStatus_Running = 1,
+  TreeNodeStatus_Success = 2,
+  TreeNodeStatus_Failure = 3,
+  TreeNodeStatus_Skipped = 4,
+  TreeNodeStatus_Unknown = 5,
+  TreeNodeStatus_MIN = TreeNodeStatus_Idle,
+  TreeNodeStatus_MAX = TreeNodeStatus_Unknown
+};
+
+inline const TreeNodeStatus (&EnumValuesTreeNodeStatus())[6] {
+  static const TreeNodeStatus values[] = {
+    TreeNodeStatus_Idle,
+    TreeNodeStatus_Running,
+    TreeNodeStatus_Success,
+    TreeNodeStatus_Failure,
+    TreeNodeStatus_Skipped,
+    TreeNodeStatus_Unknown
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesTreeNodeStatus() {
+  static const char * const names[7] = {
+    "Idle",
+    "Running",
+    "Success",
+    "Failure",
+    "Skipped",
+    "Unknown",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameTreeNodeStatus(TreeNodeStatus e) {
+  if (flatbuffers::IsOutRange(e, TreeNodeStatus_Idle, TreeNodeStatus_Unknown)) return "";
+  const size_t index = static_cast<size_t>(e);
+  return EnumNamesTreeNodeStatus()[index];
+}
+
+enum TreeNodeType {
+  TreeNodeType_Control = 0,
+  TreeNodeType_Condition = 1,
+  TreeNodeType_Action = 2,
+  TreeNodeType_MIN = TreeNodeType_Control,
+  TreeNodeType_MAX = TreeNodeType_Action
+};
+
+inline const TreeNodeType (&EnumValuesTreeNodeType())[3] {
+  static const TreeNodeType values[] = {
+    TreeNodeType_Control,
+    TreeNodeType_Condition,
+    TreeNodeType_Action
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesTreeNodeType() {
+  static const char * const names[4] = {
+    "Control",
+    "Condition",
+    "Action",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameTreeNodeType(TreeNodeType e) {
+  if (flatbuffers::IsOutRange(e, TreeNodeType_Control, TreeNodeType_Action)) return "";
+  const size_t index = static_cast<size_t>(e);
+  return EnumNamesTreeNodeType()[index];
+}
+
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Vec3 FLATBUFFERS_FINAL_CLASS {
  private:
   float x_;
@@ -352,6 +449,9 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::UseSkill *msg_as_UseSkill() const {
     return msg_type() == syncnet::GameMessages_UseSkill ? static_cast<const syncnet::UseSkill *>(msg()) : nullptr;
   }
+  const syncnet::TreeDebugSync *msg_as_TreeDebugSync() const {
+    return msg_type() == syncnet::GameMessages_TreeDebugSync ? static_cast<const syncnet::TreeDebugSync *>(msg()) : nullptr;
+  }
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
@@ -403,6 +503,10 @@ template<> inline const syncnet::Login *GameMessage::msg_as<syncnet::Login>() co
 
 template<> inline const syncnet::UseSkill *GameMessage::msg_as<syncnet::UseSkill>() const {
   return msg_as_UseSkill();
+}
+
+template<> inline const syncnet::TreeDebugSync *GameMessage::msg_as<syncnet::TreeDebugSync>() const {
+  return msg_as_TreeDebugSync();
 }
 
 struct GameMessageBuilder {
@@ -1077,6 +1181,496 @@ inline flatbuffers::Offset<UseSkill> CreateUseSkill(
   return builder_.Finish();
 }
 
+struct TreeDebugNodeDefinition FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef TreeDebugNodeDefinitionBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_NODEID = 4,
+    VT_PARENTNODEID = 6,
+    VT_NAME = 8,
+    VT_NODETYPE = 10
+  };
+  uint16_t nodeId() const {
+    return GetField<uint16_t>(VT_NODEID, 0);
+  }
+  int32_t parentNodeId() const {
+    return GetField<int32_t>(VT_PARENTNODEID, -1);
+  }
+  const flatbuffers::String *name() const {
+    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  syncnet::TreeNodeType nodeType() const {
+    return static_cast<syncnet::TreeNodeType>(GetField<int8_t>(VT_NODETYPE, 2));
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint16_t>(verifier, VT_NODEID) &&
+           VerifyField<int32_t>(verifier, VT_PARENTNODEID) &&
+           VerifyOffset(verifier, VT_NAME) &&
+           verifier.VerifyString(name()) &&
+           VerifyField<int8_t>(verifier, VT_NODETYPE) &&
+           verifier.EndTable();
+  }
+};
+
+struct TreeDebugNodeDefinitionBuilder {
+  typedef TreeDebugNodeDefinition Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_nodeId(uint16_t nodeId) {
+    fbb_.AddElement<uint16_t>(TreeDebugNodeDefinition::VT_NODEID, nodeId, 0);
+  }
+  void add_parentNodeId(int32_t parentNodeId) {
+    fbb_.AddElement<int32_t>(TreeDebugNodeDefinition::VT_PARENTNODEID, parentNodeId, -1);
+  }
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+    fbb_.AddOffset(TreeDebugNodeDefinition::VT_NAME, name);
+  }
+  void add_nodeType(syncnet::TreeNodeType nodeType) {
+    fbb_.AddElement<int8_t>(TreeDebugNodeDefinition::VT_NODETYPE, static_cast<int8_t>(nodeType), 2);
+  }
+  explicit TreeDebugNodeDefinitionBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  TreeDebugNodeDefinitionBuilder &operator=(const TreeDebugNodeDefinitionBuilder &);
+  flatbuffers::Offset<TreeDebugNodeDefinition> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<TreeDebugNodeDefinition>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<TreeDebugNodeDefinition> CreateTreeDebugNodeDefinition(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint16_t nodeId = 0,
+    int32_t parentNodeId = -1,
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    syncnet::TreeNodeType nodeType = syncnet::TreeNodeType_Action) {
+  TreeDebugNodeDefinitionBuilder builder_(_fbb);
+  builder_.add_name(name);
+  builder_.add_parentNodeId(parentNodeId);
+  builder_.add_nodeId(nodeId);
+  builder_.add_nodeType(nodeType);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<TreeDebugNodeDefinition> CreateTreeDebugNodeDefinitionDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint16_t nodeId = 0,
+    int32_t parentNodeId = -1,
+    const char *name = nullptr,
+    syncnet::TreeNodeType nodeType = syncnet::TreeNodeType_Action) {
+  auto name__ = name ? _fbb.CreateString(name) : 0;
+  return syncnet::CreateTreeDebugNodeDefinition(
+      _fbb,
+      nodeId,
+      parentNodeId,
+      name__,
+      nodeType);
+}
+
+struct TreeDebugNodeChange FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef TreeDebugNodeChangeBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_NODEID = 4,
+    VT_NAME = 6,
+    VT_STATUS = 8,
+    VT_REASON = 10,
+    VT_SUCCESSCOUNT = 12,
+    VT_FAILURECOUNT = 14,
+    VT_RUNNINGCOUNT = 16
+  };
+  uint16_t nodeId() const {
+    return GetField<uint16_t>(VT_NODEID, 0);
+  }
+  const flatbuffers::String *name() const {
+    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  syncnet::TreeNodeStatus status() const {
+    return static_cast<syncnet::TreeNodeStatus>(GetField<int8_t>(VT_STATUS, 0));
+  }
+  const flatbuffers::String *reason() const {
+    return GetPointer<const flatbuffers::String *>(VT_REASON);
+  }
+  uint32_t successCount() const {
+    return GetField<uint32_t>(VT_SUCCESSCOUNT, 0);
+  }
+  uint32_t failureCount() const {
+    return GetField<uint32_t>(VT_FAILURECOUNT, 0);
+  }
+  uint32_t runningCount() const {
+    return GetField<uint32_t>(VT_RUNNINGCOUNT, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint16_t>(verifier, VT_NODEID) &&
+           VerifyOffset(verifier, VT_NAME) &&
+           verifier.VerifyString(name()) &&
+           VerifyField<int8_t>(verifier, VT_STATUS) &&
+           VerifyOffset(verifier, VT_REASON) &&
+           verifier.VerifyString(reason()) &&
+           VerifyField<uint32_t>(verifier, VT_SUCCESSCOUNT) &&
+           VerifyField<uint32_t>(verifier, VT_FAILURECOUNT) &&
+           VerifyField<uint32_t>(verifier, VT_RUNNINGCOUNT) &&
+           verifier.EndTable();
+  }
+};
+
+struct TreeDebugNodeChangeBuilder {
+  typedef TreeDebugNodeChange Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_nodeId(uint16_t nodeId) {
+    fbb_.AddElement<uint16_t>(TreeDebugNodeChange::VT_NODEID, nodeId, 0);
+  }
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+    fbb_.AddOffset(TreeDebugNodeChange::VT_NAME, name);
+  }
+  void add_status(syncnet::TreeNodeStatus status) {
+    fbb_.AddElement<int8_t>(TreeDebugNodeChange::VT_STATUS, static_cast<int8_t>(status), 0);
+  }
+  void add_reason(flatbuffers::Offset<flatbuffers::String> reason) {
+    fbb_.AddOffset(TreeDebugNodeChange::VT_REASON, reason);
+  }
+  void add_successCount(uint32_t successCount) {
+    fbb_.AddElement<uint32_t>(TreeDebugNodeChange::VT_SUCCESSCOUNT, successCount, 0);
+  }
+  void add_failureCount(uint32_t failureCount) {
+    fbb_.AddElement<uint32_t>(TreeDebugNodeChange::VT_FAILURECOUNT, failureCount, 0);
+  }
+  void add_runningCount(uint32_t runningCount) {
+    fbb_.AddElement<uint32_t>(TreeDebugNodeChange::VT_RUNNINGCOUNT, runningCount, 0);
+  }
+  explicit TreeDebugNodeChangeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  TreeDebugNodeChangeBuilder &operator=(const TreeDebugNodeChangeBuilder &);
+  flatbuffers::Offset<TreeDebugNodeChange> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<TreeDebugNodeChange>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<TreeDebugNodeChange> CreateTreeDebugNodeChange(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint16_t nodeId = 0,
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    syncnet::TreeNodeStatus status = syncnet::TreeNodeStatus_Idle,
+    flatbuffers::Offset<flatbuffers::String> reason = 0,
+    uint32_t successCount = 0,
+    uint32_t failureCount = 0,
+    uint32_t runningCount = 0) {
+  TreeDebugNodeChangeBuilder builder_(_fbb);
+  builder_.add_runningCount(runningCount);
+  builder_.add_failureCount(failureCount);
+  builder_.add_successCount(successCount);
+  builder_.add_reason(reason);
+  builder_.add_name(name);
+  builder_.add_nodeId(nodeId);
+  builder_.add_status(status);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<TreeDebugNodeChange> CreateTreeDebugNodeChangeDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    uint16_t nodeId = 0,
+    const char *name = nullptr,
+    syncnet::TreeNodeStatus status = syncnet::TreeNodeStatus_Idle,
+    const char *reason = nullptr,
+    uint32_t successCount = 0,
+    uint32_t failureCount = 0,
+    uint32_t runningCount = 0) {
+  auto name__ = name ? _fbb.CreateString(name) : 0;
+  auto reason__ = reason ? _fbb.CreateString(reason) : 0;
+  return syncnet::CreateTreeDebugNodeChange(
+      _fbb,
+      nodeId,
+      name__,
+      status,
+      reason__,
+      successCount,
+      failureCount,
+      runningCount);
+}
+
+struct TreeDebugDefinition FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef TreeDebugDefinitionBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_TREEID = 4,
+    VT_MONSTERID = 6,
+    VT_NODES = 8
+  };
+  const flatbuffers::String *treeId() const {
+    return GetPointer<const flatbuffers::String *>(VT_TREEID);
+  }
+  int64_t monsterId() const {
+    return GetField<int64_t>(VT_MONSTERID, 0);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugNodeDefinition>> *nodes() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugNodeDefinition>> *>(VT_NODES);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_TREEID) &&
+           verifier.VerifyString(treeId()) &&
+           VerifyField<int64_t>(verifier, VT_MONSTERID) &&
+           VerifyOffset(verifier, VT_NODES) &&
+           verifier.VerifyVector(nodes()) &&
+           verifier.VerifyVectorOfTables(nodes()) &&
+           verifier.EndTable();
+  }
+};
+
+struct TreeDebugDefinitionBuilder {
+  typedef TreeDebugDefinition Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_treeId(flatbuffers::Offset<flatbuffers::String> treeId) {
+    fbb_.AddOffset(TreeDebugDefinition::VT_TREEID, treeId);
+  }
+  void add_monsterId(int64_t monsterId) {
+    fbb_.AddElement<int64_t>(TreeDebugDefinition::VT_MONSTERID, monsterId, 0);
+  }
+  void add_nodes(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugNodeDefinition>>> nodes) {
+    fbb_.AddOffset(TreeDebugDefinition::VT_NODES, nodes);
+  }
+  explicit TreeDebugDefinitionBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  TreeDebugDefinitionBuilder &operator=(const TreeDebugDefinitionBuilder &);
+  flatbuffers::Offset<TreeDebugDefinition> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<TreeDebugDefinition>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<TreeDebugDefinition> CreateTreeDebugDefinition(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> treeId = 0,
+    int64_t monsterId = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugNodeDefinition>>> nodes = 0) {
+  TreeDebugDefinitionBuilder builder_(_fbb);
+  builder_.add_monsterId(monsterId);
+  builder_.add_nodes(nodes);
+  builder_.add_treeId(treeId);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<TreeDebugDefinition> CreateTreeDebugDefinitionDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *treeId = nullptr,
+    int64_t monsterId = 0,
+    const std::vector<flatbuffers::Offset<syncnet::TreeDebugNodeDefinition>> *nodes = nullptr) {
+  auto treeId__ = treeId ? _fbb.CreateString(treeId) : 0;
+  auto nodes__ = nodes ? _fbb.CreateVector<flatbuffers::Offset<syncnet::TreeDebugNodeDefinition>>(*nodes) : 0;
+  return syncnet::CreateTreeDebugDefinition(
+      _fbb,
+      treeId__,
+      monsterId,
+      nodes__);
+}
+
+struct TreeDebugRuntimeFrame FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef TreeDebugRuntimeFrameBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_TREEID = 4,
+    VT_MONSTERID = 6,
+    VT_TICK = 8,
+    VT_AISTATE = 10,
+    VT_TARGETAGENTID = 12,
+    VT_EXECUTEDPATH = 14,
+    VT_CHANGES = 16
+  };
+  const flatbuffers::String *treeId() const {
+    return GetPointer<const flatbuffers::String *>(VT_TREEID);
+  }
+  int64_t monsterId() const {
+    return GetField<int64_t>(VT_MONSTERID, 0);
+  }
+  uint64_t tick() const {
+    return GetField<uint64_t>(VT_TICK, 0);
+  }
+  syncnet::AIState aiState() const {
+    return static_cast<syncnet::AIState>(GetField<int8_t>(VT_AISTATE, 0));
+  }
+  int64_t targetAgentId() const {
+    return GetField<int64_t>(VT_TARGETAGENTID, -1LL);
+  }
+  const flatbuffers::Vector<uint16_t> *executedPath() const {
+    return GetPointer<const flatbuffers::Vector<uint16_t> *>(VT_EXECUTEDPATH);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugNodeChange>> *changes() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugNodeChange>> *>(VT_CHANGES);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_TREEID) &&
+           verifier.VerifyString(treeId()) &&
+           VerifyField<int64_t>(verifier, VT_MONSTERID) &&
+           VerifyField<uint64_t>(verifier, VT_TICK) &&
+           VerifyField<int8_t>(verifier, VT_AISTATE) &&
+           VerifyField<int64_t>(verifier, VT_TARGETAGENTID) &&
+           VerifyOffset(verifier, VT_EXECUTEDPATH) &&
+           verifier.VerifyVector(executedPath()) &&
+           VerifyOffset(verifier, VT_CHANGES) &&
+           verifier.VerifyVector(changes()) &&
+           verifier.VerifyVectorOfTables(changes()) &&
+           verifier.EndTable();
+  }
+};
+
+struct TreeDebugRuntimeFrameBuilder {
+  typedef TreeDebugRuntimeFrame Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_treeId(flatbuffers::Offset<flatbuffers::String> treeId) {
+    fbb_.AddOffset(TreeDebugRuntimeFrame::VT_TREEID, treeId);
+  }
+  void add_monsterId(int64_t monsterId) {
+    fbb_.AddElement<int64_t>(TreeDebugRuntimeFrame::VT_MONSTERID, monsterId, 0);
+  }
+  void add_tick(uint64_t tick) {
+    fbb_.AddElement<uint64_t>(TreeDebugRuntimeFrame::VT_TICK, tick, 0);
+  }
+  void add_aiState(syncnet::AIState aiState) {
+    fbb_.AddElement<int8_t>(TreeDebugRuntimeFrame::VT_AISTATE, static_cast<int8_t>(aiState), 0);
+  }
+  void add_targetAgentId(int64_t targetAgentId) {
+    fbb_.AddElement<int64_t>(TreeDebugRuntimeFrame::VT_TARGETAGENTID, targetAgentId, -1LL);
+  }
+  void add_executedPath(flatbuffers::Offset<flatbuffers::Vector<uint16_t>> executedPath) {
+    fbb_.AddOffset(TreeDebugRuntimeFrame::VT_EXECUTEDPATH, executedPath);
+  }
+  void add_changes(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugNodeChange>>> changes) {
+    fbb_.AddOffset(TreeDebugRuntimeFrame::VT_CHANGES, changes);
+  }
+  explicit TreeDebugRuntimeFrameBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  TreeDebugRuntimeFrameBuilder &operator=(const TreeDebugRuntimeFrameBuilder &);
+  flatbuffers::Offset<TreeDebugRuntimeFrame> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<TreeDebugRuntimeFrame>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<TreeDebugRuntimeFrame> CreateTreeDebugRuntimeFrame(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> treeId = 0,
+    int64_t monsterId = 0,
+    uint64_t tick = 0,
+    syncnet::AIState aiState = syncnet::AIState_Patrol,
+    int64_t targetAgentId = -1LL,
+    flatbuffers::Offset<flatbuffers::Vector<uint16_t>> executedPath = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugNodeChange>>> changes = 0) {
+  TreeDebugRuntimeFrameBuilder builder_(_fbb);
+  builder_.add_targetAgentId(targetAgentId);
+  builder_.add_tick(tick);
+  builder_.add_monsterId(monsterId);
+  builder_.add_changes(changes);
+  builder_.add_executedPath(executedPath);
+  builder_.add_treeId(treeId);
+  builder_.add_aiState(aiState);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<TreeDebugRuntimeFrame> CreateTreeDebugRuntimeFrameDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *treeId = nullptr,
+    int64_t monsterId = 0,
+    uint64_t tick = 0,
+    syncnet::AIState aiState = syncnet::AIState_Patrol,
+    int64_t targetAgentId = -1LL,
+    const std::vector<uint16_t> *executedPath = nullptr,
+    const std::vector<flatbuffers::Offset<syncnet::TreeDebugNodeChange>> *changes = nullptr) {
+  auto treeId__ = treeId ? _fbb.CreateString(treeId) : 0;
+  auto executedPath__ = executedPath ? _fbb.CreateVector<uint16_t>(*executedPath) : 0;
+  auto changes__ = changes ? _fbb.CreateVector<flatbuffers::Offset<syncnet::TreeDebugNodeChange>>(*changes) : 0;
+  return syncnet::CreateTreeDebugRuntimeFrame(
+      _fbb,
+      treeId__,
+      monsterId,
+      tick,
+      aiState,
+      targetAgentId,
+      executedPath__,
+      changes__);
+}
+
+struct TreeDebugSync FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef TreeDebugSyncBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_DEFINITIONS = 4,
+    VT_FRAMES = 6
+  };
+  const flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugDefinition>> *definitions() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugDefinition>> *>(VT_DEFINITIONS);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugRuntimeFrame>> *frames() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugRuntimeFrame>> *>(VT_FRAMES);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_DEFINITIONS) &&
+           verifier.VerifyVector(definitions()) &&
+           verifier.VerifyVectorOfTables(definitions()) &&
+           VerifyOffset(verifier, VT_FRAMES) &&
+           verifier.VerifyVector(frames()) &&
+           verifier.VerifyVectorOfTables(frames()) &&
+           verifier.EndTable();
+  }
+};
+
+struct TreeDebugSyncBuilder {
+  typedef TreeDebugSync Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_definitions(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugDefinition>>> definitions) {
+    fbb_.AddOffset(TreeDebugSync::VT_DEFINITIONS, definitions);
+  }
+  void add_frames(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugRuntimeFrame>>> frames) {
+    fbb_.AddOffset(TreeDebugSync::VT_FRAMES, frames);
+  }
+  explicit TreeDebugSyncBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  TreeDebugSyncBuilder &operator=(const TreeDebugSyncBuilder &);
+  flatbuffers::Offset<TreeDebugSync> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<TreeDebugSync>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<TreeDebugSync> CreateTreeDebugSync(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugDefinition>>> definitions = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugRuntimeFrame>>> frames = 0) {
+  TreeDebugSyncBuilder builder_(_fbb);
+  builder_.add_frames(frames);
+  builder_.add_definitions(definitions);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<TreeDebugSync> CreateTreeDebugSyncDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<flatbuffers::Offset<syncnet::TreeDebugDefinition>> *definitions = nullptr,
+    const std::vector<flatbuffers::Offset<syncnet::TreeDebugRuntimeFrame>> *frames = nullptr) {
+  auto definitions__ = definitions ? _fbb.CreateVector<flatbuffers::Offset<syncnet::TreeDebugDefinition>>(*definitions) : 0;
+  auto frames__ = frames ? _fbb.CreateVector<flatbuffers::Offset<syncnet::TreeDebugRuntimeFrame>>(*frames) : 0;
+  return syncnet::CreateTreeDebugSync(
+      _fbb,
+      definitions__,
+      frames__);
+}
+
 inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type) {
   switch (type) {
     case GameMessages_NONE: {
@@ -1116,6 +1710,10 @@ inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj,
     }
     case GameMessages_UseSkill: {
       auto ptr = reinterpret_cast<const syncnet::UseSkill *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_TreeDebugSync: {
+      auto ptr = reinterpret_cast<const syncnet::TreeDebugSync *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;

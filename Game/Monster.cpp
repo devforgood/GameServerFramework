@@ -79,6 +79,9 @@ bool Monster::init(Vector3& pos)
 
 
 	tree_ = MonsterBT::createTree(this);
+#if defined(ENABLE_BT_DEBUG)
+	BTDebugManager::Instance().PublishTreeDefinition(this);
+#endif
 	return true;
 }
 

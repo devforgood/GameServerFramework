@@ -12,6 +12,7 @@ union GameMessages
   SetRaycast,
   Login,
   UseSkill,
+  TreeDebugSync,
 } // Optionally add more tables.
 
 enum StatusCode:short
@@ -113,6 +114,61 @@ table UseSkill {
   dir:Vec3;
   timestamp:long;
   duration:long;
+}
+
+enum TreeNodeStatus:byte
+{
+  Idle = 0,
+  Running,
+  Success,
+  Failure,
+  Skipped,
+  Unknown,
+}
+
+enum TreeNodeType:byte
+{
+  Control = 0,
+  Condition,
+  Action,
+}
+
+table TreeDebugNodeDefinition {
+  nodeId:ushort;
+  parentNodeId:int = -1;
+  name:string;
+  nodeType:TreeNodeType = Action;
+}
+
+table TreeDebugNodeChange {
+  nodeId:ushort;
+  name:string;
+  status:TreeNodeStatus = Idle;
+  reason:string;
+  successCount:uint;
+  failureCount:uint;
+  runningCount:uint;
+}
+
+table TreeDebugDefinition {
+  treeId:string;
+  monsterId:long;
+  nodes:[TreeDebugNodeDefinition];
+}
+
+table TreeDebugRuntimeFrame {
+  treeId:string;
+  monsterId:long;
+  tick:ulong;
+  aiState:AIState = Patrol;
+  targetAgentId:long = -1;
+  executedPath:[ushort];
+  changes:[TreeDebugNodeChange];
+}
+
+table TreeDebugSync {
+  definitions:[TreeDebugDefinition];
+  frames:[TreeDebugRuntimeFrame];
 }
 
 root_type GameMessage;

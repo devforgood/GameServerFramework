@@ -6,7 +6,6 @@
 #include "Monster.h"
 
 #include <mutex>
-#include <sstream>
 #include <unordered_map>
 
 namespace
@@ -37,77 +36,20 @@ namespace
 
 	std::mutex g_mutex;
 	std::unordered_map<int64_t, MonsterBTDebugContext> g_contexts;
-	std::vector<std::string> g_frames;
+	std::vector<BTDebugDefinition> g_definitions;
+	std::vector<BTDebugRuntimeFrame> g_frames;
 
-	const char* ToString(BT::NodeStatus status)
+	BTDebugNodeChange ToNodeChange(const BTNodeDebugState& node)
 	{
-		switch (status)
-		{
-		case BT::NodeStatus::IDLE:
-			return "IDLE";
-		case BT::NodeStatus::RUNNING:
-			return "RUNNING";
-		case BT::NodeStatus::SUCCESS:
-			return "SUCCESS";
-		case BT::NodeStatus::FAILURE:
-			return "FAILURE";
-		case BT::NodeStatus::SKIPPED:
-			return "SKIPPED";
-		default:
-			return "UNKNOWN";
-		}
-	}
-
-	const char* ToString(syncnet::AIState state)
-	{
-		switch (state)
-		{
-		case syncnet::AIState_Patrol:
-			return "Patrol";
-		case syncnet::AIState_Detect:
-			return "Detect";
-		case syncnet::AIState_Attack:
-			return "Attack";
-		case syncnet::AIState_Dead:
-			return "Dead";
-		case syncnet::AIState_Destroyed:
-			return "Destroyed";
-		default:
-			return "Unknown";
-		}
-	}
-
-	std::string EscapeJson(std::string_view value)
-	{
-		std::string escaped;
-		escaped.reserve(value.size());
-
-		for (char ch : value)
-		{
-			switch (ch)
-			{
-			case '\\':
-				escaped += "\\\\";
-				break;
-			case '"':
-				escaped += "\\\"";
-				break;
-			case '\n':
-				escaped += "\\n";
-				break;
-			case '\r':
-				escaped += "\\r";
-				break;
-			case '\t':
-				escaped += "\\t";
-				break;
-			default:
-				escaped += ch;
-				break;
-			}
-		}
-
-		return escaped;
+		BTDebugNodeChange change;
+		change.node_id = node.node_id;
+		change.node_name = node.node_name;
+		change.status = node.status;
+		change.success_count = node.success_count;
+		change.failure_count = node.failure_count;
+		change.running_count = node.running_count;
+		change.reason = node.reason;
+		return change;
 	}
 
 	MonsterBTDebugContext& GetOrCreateContext(Monster* monster)
@@ -118,46 +60,23 @@ namespace
 		return context;
 	}
 
-	std::string BuildRuntimeFrameJson(const MonsterBTDebugContext& context)
+	BTDebugRuntimeFrame BuildRuntimeFrame(const MonsterBTDebugContext& context)
 	{
-		std::ostringstream json;
-		json << "{";
-		json << "\"type\":\"TreeRuntimeFrame\",";
-		json << "\"treeId\":\"monster_ai\",";
-		json << "\"monsterId\":" << context.monster_id << ",";
-		json << "\"tick\":" << context.bt_tick << ",";
-		json << "\"aiState\":\"" << ToString(context.ai_state) << "\",";
-		json << "\"targetAgentId\":" << context.target_agent_id << ",";
+		BTDebugRuntimeFrame frame;
+		frame.tree_id = "monster_ai";
+		frame.monster_id = context.monster_id;
+		frame.tick = context.bt_tick;
+		frame.ai_state = context.ai_state;
+		frame.target_agent_id = context.target_agent_id;
+		frame.executed_path = context.executed_nodes_this_tick;
+		frame.changes.reserve(context.changed_nodes.size());
 
-		json << "\"executedPath\":[";
-		for (size_t i = 0; i < context.executed_nodes_this_tick.size(); ++i)
+		for (const auto& node : context.changed_nodes)
 		{
-			if (i > 0)
-				json << ",";
-			json << context.executed_nodes_this_tick[i];
+			frame.changes.push_back(ToNodeChange(node));
 		}
-		json << "],";
 
-		json << "\"changes\":[";
-		for (size_t i = 0; i < context.changed_nodes.size(); ++i)
-		{
-			const auto& node = context.changed_nodes[i];
-			if (i > 0)
-				json << ",";
-			json << "{";
-			json << "\"id\":" << node.node_id << ",";
-			json << "\"name\":\"" << EscapeJson(node.node_name) << "\",";
-			json << "\"status\":\"" << ToString(node.status) << "\",";
-			json << "\"reason\":\"" << EscapeJson(node.reason) << "\",";
-			json << "\"successCount\":" << node.success_count << ",";
-			json << "\"failureCount\":" << node.failure_count << ",";
-			json << "\"runningCount\":" << node.running_count;
-			json << "}";
-		}
-		json << "]";
-		json << "}";
-
-		return json.str();
+		return frame;
 	}
 }
 
@@ -241,36 +160,45 @@ void BTDebugManager::EndTick(Monster* monster)
 	if (!context.dirty)
 		return;
 
-	g_frames.push_back(BuildRuntimeFrameJson(context));
+	g_frames.push_back(BuildRuntimeFrame(context));
 }
 
-std::vector<std::string> BTDebugManager::ConsumeFrames()
+void BTDebugManager::PublishTreeDefinition(Monster* monster)
+{
+	if (monster == nullptr)
+		return;
+
+	std::lock_guard<std::mutex> lock(g_mutex);
+	g_definitions.push_back(BuildMonsterTreeDefinition(monster->agent_id()));
+}
+
+BTDebugSyncSnapshot BTDebugManager::ConsumeSnapshot()
 {
 	std::lock_guard<std::mutex> lock(g_mutex);
-	auto frames = std::move(g_frames);
+	BTDebugSyncSnapshot snapshot;
+	snapshot.definitions = std::move(g_definitions);
+	snapshot.frames = std::move(g_frames);
+	g_definitions.clear();
 	g_frames.clear();
-	return frames;
+	return snapshot;
 }
 
-std::string BTDebugManager::BuildMonsterTreeDefinitionJson(int64_t monster_id) const
+BTDebugDefinition BTDebugManager::BuildMonsterTreeDefinition(int64_t monster_id) const
 {
-	std::ostringstream json;
-	json << "{";
-	json << "\"type\":\"TreeDefinition\",";
-	json << "\"treeId\":\"monster_ai\",";
-	json << "\"monsterId\":" << monster_id << ",";
-	json << "\"nodes\":[";
-	json << "{\"id\":" << BTDebugNodeId::ConditionCheckHealth << ",\"parentId\":null,\"name\":\"ConditionCheckHealth\",\"type\":\"Condition\"},";
-	json << "{\"id\":" << BTDebugNodeId::ConditionDetectEnemy << ",\"parentId\":" << BTDebugNodeId::ConditionCheckHealth << ",\"name\":\"ConditionDetectEnemy\",\"type\":\"Condition\"},";
-	json << "{\"id\":" << BTDebugNodeId::ConditionAttackRange << ",\"parentId\":" << BTDebugNodeId::ConditionDetectEnemy << ",\"name\":\"ConditionAttackRange\",\"type\":\"Condition\"},";
-	json << "{\"id\":" << BTDebugNodeId::ActionAttack << ",\"parentId\":" << BTDebugNodeId::ConditionAttackRange << ",\"name\":\"ActionAttack\",\"type\":\"Action\"},";
-	json << "{\"id\":" << BTDebugNodeId::ActionChase << ",\"parentId\":" << BTDebugNodeId::ConditionDetectEnemy << ",\"name\":\"ActionChase\",\"type\":\"Action\"},";
-	json << "{\"id\":" << BTDebugNodeId::ActionPatrol << ",\"parentId\":" << BTDebugNodeId::ConditionDetectEnemy << ",\"name\":\"ActionPatrol\",\"type\":\"Action\"},";
-	json << "{\"id\":" << BTDebugNodeId::ActionDead << ",\"parentId\":null,\"name\":\"ActionDead\",\"type\":\"Action\"},";
-	json << "{\"id\":" << BTDebugNodeId::ActionDestroyed << ",\"parentId\":" << BTDebugNodeId::ActionDead << ",\"name\":\"ActionDestroyed\",\"type\":\"Action\"}";
-	json << "]";
-	json << "}";
-	return json.str();
+	BTDebugDefinition definition;
+	definition.tree_id = "monster_ai";
+	definition.monster_id = monster_id;
+	definition.nodes = {
+		{ BTDebugNodeId::ConditionCheckHealth, -1, "ConditionCheckHealth", BTDebugNodeType::Condition },
+		{ BTDebugNodeId::ConditionDetectEnemy, BTDebugNodeId::ConditionCheckHealth, "ConditionDetectEnemy", BTDebugNodeType::Condition },
+		{ BTDebugNodeId::ConditionAttackRange, BTDebugNodeId::ConditionDetectEnemy, "ConditionAttackRange", BTDebugNodeType::Condition },
+		{ BTDebugNodeId::ActionAttack, BTDebugNodeId::ConditionAttackRange, "ActionAttack", BTDebugNodeType::Action },
+		{ BTDebugNodeId::ActionChase, BTDebugNodeId::ConditionDetectEnemy, "ActionChase", BTDebugNodeType::Action },
+		{ BTDebugNodeId::ActionPatrol, BTDebugNodeId::ConditionDetectEnemy, "ActionPatrol", BTDebugNodeType::Action },
+		{ BTDebugNodeId::ActionDead, -1, "ActionDead", BTDebugNodeType::Action },
+		{ BTDebugNodeId::ActionDestroyed, BTDebugNodeId::ActionDead, "ActionDestroyed", BTDebugNodeType::Action },
+	};
+	return definition;
 }
 
 #endif

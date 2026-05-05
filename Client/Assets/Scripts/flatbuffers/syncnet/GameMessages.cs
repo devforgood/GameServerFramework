@@ -17,6 +17,7 @@ public enum GameMessages : byte
   SetRaycast = 7,
   Login = 8,
   UseSkill = 9,
+  TreeDebugSync = 10,
 };
 
 

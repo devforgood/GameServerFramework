@@ -57,6 +57,7 @@ public:
 	NavMap* GetNavMap() { return map_; }
 
 	void SendWorldState();
+	void SendTreeDebugSync();
 	void SendBroadcast(std::shared_ptr<send_message> msg);
 	void SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except);
 	void OnRemoveAgent(int agent_id);

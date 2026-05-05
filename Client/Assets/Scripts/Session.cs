@@ -232,6 +232,9 @@ public class Session : MonoBehaviour
 				// Ping 응답 처리
 				HandlePong();
 				break;
+			case syncnet.GameMessages.TreeDebugSync:
+				HandleTreeDebugSync(recv_msg);
+				break;
 		}
 
 		if(recv_msg.Id > 0 && responses.ContainsKey(recv_msg.Id))
@@ -315,6 +318,28 @@ public class Session : MonoBehaviour
 			pos.y = debugInfo.EndPos.Value.Y;
 			pos.z = debugInfo.EndPos.Value.Z;
 			var obj = (GameObject)Instantiate(Resources.Load("DebugTarget"), pos, Quaternion.identity);
+		}
+	}
+
+	private void HandleTreeDebugSync(syncnet.GameMessage recv_msg)
+	{
+		syncnet.TreeDebugSync treeDebugSync = recv_msg.Msg<syncnet.TreeDebugSync>().Value;
+		for (int i = 0; i < treeDebugSync.DefinitionsLength; ++i)
+		{
+			var definition = treeDebugSync.Definitions(i);
+			if (!definition.HasValue)
+				continue;
+
+			Debug.Log($"TreeDebugDefinition: tree={definition.Value.TreeId}, monster={definition.Value.MonsterId}, nodes={definition.Value.NodesLength}");
+		}
+
+		for (int i = 0; i < treeDebugSync.FramesLength; ++i)
+		{
+			var frame = treeDebugSync.Frames(i);
+			if (!frame.HasValue)
+				continue;
+
+			Debug.Log($"TreeDebugFrame: tree={frame.Value.TreeId}, monster={frame.Value.MonsterId}, tick={frame.Value.Tick}, changes={frame.Value.ChangesLength}");
 		}
 	}
 
