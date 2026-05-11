@@ -1,131 +1,159 @@
 # Game Server Framework
 
-A game server framework built with open-source technologies to accelerate game server development. Supports MMORPG, MORPG, PVP, Action, and other genres. Primary languages: C# and C++.
+[한국어](README.ko.md) | English
 
-## 🌍 Language Selection
+A sample framework for building and experimenting with game server architecture. This repository combines C# service servers, native C++ game logic and engine libraries, Python data-generation tools, a Unity client, and FlatBuffers/Protobuf protocol definitions in one Visual Studio solution.
 
-- [English](README.md) (Default)
-- [한국어](README.ko.md)
+The current codebase is organized around Windows and Visual Studio 2022. Most production-style services target .NET Core 3.1, while the native game stack uses MSBuild C++ projects with the v143 toolset.
 
-## 🏗️ Project Structure
+## At a Glance
 
-### 📁 Server Projects
-- **[Battle/](Battle/README.md)** - Battle Server (In-game character movement and skill synchronization)
-- **[Lobby/](Lobby/README.md)** - Lobby Server (User authentication, matching, etc.)
-- **[Login/](Login/README.md)** - Login Server
-- **[Chat/](Chat/README.md)** - Chat Server
-- **[Cache/](Cache/README.md)** - Cache Server
-- **[IAP/](IAP/README.md)** - In-App Purchase Server
-- **[GmTool/](GmTool/README.md)** - GM Tools
+| Area | Projects |
+| --- | --- |
+| Service servers | `Battle`, `Lobby`, `Login`, `Chat`, `Cache`, `IAP`, `RESTful` |
+| Operations tools | `GmTool`, `Laboratory`, `ReadOnlyAnalyzerLib` |
+| Native game stack | `Game`, `Engine`, `BehaviorTree`, `FiniteStateMachine`, `GameDataProtobuf`, `recastnavigation` |
+| Data tooling | `GameData`, `GameDataFlow`, `SqlCodeGenerator`, `Models`, `Schemas` |
+| Protocols | `flatbuffer`, `protos` |
+| Client | `Client` Unity project |
 
-### 📁 Core Libraries
-- **[Engine/](Engine/README.md)** - Game Engine (GridManager, spatial partitioning system)
-- **[BehaviorTree/](BehaviorTree/README.md)** - AI Behavior Tree
-- **[FiniteStateMachine/](FiniteStateMachine/README.md)** - Finite State Machine
-- **[Game/](Game/README.md)** - Game Logic (Actor, Item, Skill System)
-- **[recastnavigation/](recastnavigation/README.md)** - Pathfinding System
+## Repository Layout
 
-### 📁 Data & Tools
-- **[GameData/](GameData/README.md)** - Game Data (JSON-based)
-- **[GameDataFlow/](GameDataFlow/README.md)** - Data Pipeline (JSON → Protobuf)
-- **[GameDataProtobuf/](GameDataProtobuf/README.md)** - Protobuf Definitions
-- **[SqlCodeGenerator/](SqlCodeGenerator/README.md)** - SQL Code Generator
-- **[Models/](Models/README.md)** - Data Models
+### C# Services
 
-### 📁 Client
-- **[Client/](Client/README.md)** - Unity Client (includes pathfinding test tools)
+| Path | Purpose | Runtime |
+| --- | --- | --- |
+| [Battle/](Battle/README.md) | In-game movement, skill, and state synchronization server | .NET Core 3.1 |
+| [Lobby/](Lobby/README.md) | Lobby, matching, sessions, OAuth, and game result handling | .NET Core 3.1 |
+| [Login/](Login/README.md) | ASP.NET Core login web/API server | .NET Core 3.1 |
+| [Chat/](Chat/README.md) | Chat service server | .NET 5 |
+| [Cache/](Cache/README.md) | Redis-backed cache and subscription modules | .NET Core 3.1 |
+| [IAP/](IAP/README.md) | Google Play and App Store receipt validation modules | .NET Core 3.1 |
+| [GmTool/](GmTool/README.ko.md) | GM and operations tool | .NET Core 3.1 |
+| [RESTful/](RESTful/) | External REST API client/integration code | .NET Core 3.1 |
 
-### 📁 External Libraries
-- **[flatbuffer/](flatbuffer/README.md)** - FlatBuffers Serialization
-- **[protos/](protos/README.md)** - gRPC Protocol Definitions
+### Native Libraries
 
-## 🚀 Quick Start
+| Path | Purpose | Type |
+| --- | --- | --- |
+| [Game/](Game/README.md) | Actor, player, monster, skill, map, world, DB, Lua, and behavior-tree integration | C++ Application |
+| [Engine/](Engine/README.md) | ECS, GridManager, RingBuffer, timestamp, and random utilities | C++ Static Library |
+| [BehaviorTree/](BehaviorTree/README.md) | Custom behavior tree implementation and optimized/event variants | C++ Static Library |
+| [FiniteStateMachine/](FiniteStateMachine/README.md) | Finite state machine examples and base structure | C++ Static Library |
+| [GameDataProtobuf/](GameDataProtobuf/README.md) | Generated game-data Protobuf loader and native bindings | C++ Static Library |
+| [recastnavigation/](recastnavigation/README.md) | Recast/Detour navigation mesh and pathfinding code | C++ Static Library |
+| [UnitTest/](UnitTest/) | Native tests for engine/data-structure code | C++ Application |
 
-### Requirements
-```bash
-# Install dependencies via vcpkg
-./vcpkg install behaviortree-cpp
-./vcpkg install protobuf:x64-windows
+### Data, Protocols, and Client
+
+| Path | Purpose |
+| --- | --- |
+| [GameData/](GameData/README.md) | Source game data such as `item.json`, `skill.json`, `quest.json`, `Map.json`, and `GameMode.json` |
+| [GameDataFlow/](GameDataFlow/README.md) | Python pipeline that generates Protobuf data and C++/C# factory code |
+| [SqlCodeGenerator/](SqlCodeGenerator/README.md) | XML-schema-based DAO and SQL generator |
+| [Models/](Models/README.md) | Shared database models and extension models |
+| [flatbuffer/](flatbuffer/README.md) | `syncnet.fbs`, bundled `flatc.exe`, and FlatBuffers 1.12 libraries |
+| [protos/](protos/README.md) | gRPC/Protobuf definitions including `chat.proto`, `lobby.proto`, and `dummycontrol.proto` |
+| [Client/](Client/README.md) | Unity client project using Unity `2020.3.32f1` |
+
+## Development Environment
+
+- Windows
+- Visual Studio 2022 Community
+- MSBuild v143 C++ toolset
+- C++20 for the main native projects
+- .NET Core 3.1, .NET 5, and a small .NET 9 laboratory project
+- Unity 2020.3.32f1
+- Python 3.x
+- Redis and MySQL/MariaDB for server-side runtime configuration
+
+Additional build notes are in [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md).
+
+## Build
+
+Use the Visual Studio MSBuild executable instead of `dotnet msbuild`, because the solution contains C++ projects.
+
+```powershell
+& "C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\amd64\MSBuild.exe" GameServerFramework.sln /t:Game /p:Configuration=Debug /p:Platform=x64 /v:minimal
 ```
 
-### Key Dependencies
-- [gRPC](https://github.com/grpc/grpc) - Communication Protocol
-- [flatbuffers](https://github.com/google/flatbuffers) - Serialization
-- [recastnavigation](https://github.com/recastnavigation/recastnavigation) - Pathfinding
-- [lidgren](https://github.com/lidgren/lidgren-network-gen3) - Networking
-- [Hazel-Networking](https://github.com/DarkRiftNetworking/Hazel-Networking) - Networking
-- [BEPUPhysics](https://github.com/bepu/bepuphysics1) - Physics Engine
-- [BehaviorTree.CPP](https://github.com/BehaviorTree/BehaviorTree.CPP) - AI Behavior Tree
+Expected output:
 
-## 🏛️ Server Architecture
+```text
+x64\Debug\Game.exe
+```
 
-![Server Architecture](https://user-images.githubusercontent.com/17477292/115057890-8e971280-9f1f-11eb-8043-6dbc64521900.png)
+Run C# services with `dotnet run` from the repository root:
 
-### Server Composition
-1. **Lobby Server** - User authentication, matching, and all features except in-game
-2. **Battle Server** - In-game character movement and skill synchronization
-3. **AI Server** - AI state management, pathfinding
+```powershell
+dotnet run --project Battle\Battle.csproj
+dotnet run --project Lobby\Lobby.csproj
+dotnet run --project Login\Login.csproj
+dotnet run --project Chat\Chat.csproj
+```
 
-### In-Game Synchronization
-1. **Character Movement Sync** - Client key input → Server simulation → Client correction
-2. **State Synchronization** - Periodic sync of only changed objects (replication)
-3. **Skill Synchronization** - Skill information sync via RPC calls
+Service configuration lives in files such as `appsettings.json`, `appsettings.Release.json`, `*.service`, and `Credentials/`.
 
-### Protocols
-- **gRPC** - Stateless protocol suitable for mobile environments
-- **RUDP** - Secures latency without unnecessary TCP processing
+## Core Flows
 
-## 📊 Sequence Diagrams
+### Login, Lobby, and Matching
 
-### Login Sequence
-![Login Sequence](https://user-images.githubusercontent.com/17477292/115049395-a4073f00-9f15-11eb-9a40-04d1922dec97.png)
+`Login` provides the web/API entry point for authentication. `Lobby` handles sessions, OAuth providers, matching, and game result processing. It references `core`, `GameData`, `GameService`, and `Models`, and uses Redis and database-backed models for state.
 
-### Game Result Sequence
-![Game Result Sequence](https://user-images.githubusercontent.com/17477292/115050008-4a534480-9f16-11eb-9a40-04d1922dec97.png)
+### Battle and Runtime Game Logic
 
-### Matching Sequence
-![Match Sequence](https://user-images.githubusercontent.com/17477292/115050031-50492580-9f16-11eb-80f7-c55eae32d863.png)
+`Battle` links shared network code from the Unity client and focuses on in-game input, movement, skill, and state synchronization.
 
-### Matching v2 Sequence
-![Match v2 Sequence](https://user-images.githubusercontent.com/17477292/115050025-4e7f6200-9f16-11eb-80f7-c55eae32d863.png)
+The native runtime logic is in `Game`: `Actor`, `Player`, `Monster`, `Skill`, `World`, `Map`, `NavMap`, `SqlClient`, and `BTDebugManager`. It references `Engine`, `BehaviorTree`, `GameDataProtobuf`, and `recastnavigation`.
 
-## 🛠️ Development Tools
+### Data Generation
 
-### Unity Client Tools
-- **Sample Terrain Generator** - Terrain generation for pathfinding tests
-- **Advanced Terrain Generator** - Advanced terrain generation (various test scenarios)
-- **Pathfinding Test Manager** - Pathfinding agent management
+Source data is stored as JSON under [GameData/](GameData/). [GameDataFlow/](GameDataFlow/) generates Python, C++, and C# Protobuf outputs from `gamedata.proto`.
 
-### Data Pipeline
-- **JSON → Protobuf Conversion** - Fast loading and automatic code generation
-- **Factory Pattern Auto-Generation** - ID-based object creation code automation
-- **Reusable Property Structure** - Component-based design
+```powershell
+cd GameDataFlow
+.\build.bat
+```
 
-## 📈 Performance Optimization
+Generated outputs include:
 
-### GridManager
-- **SIMD Vectorization** - Simultaneous calculation of 8 distances using AVX2 instructions
-- **Trigonometric Look-up Tables** - Fast angle calculation using pre-computed values
-- **Adaptive Grid Structure** - Automatic Vector/HashMap selection based on data density
+- `GameDataFlow/gamedata_pb2.py`
+- `GameDataProtobuf/`
+- `Client/Assets/Scripts/GameData/`
 
-### Processing Performance
-- **10,000 entities**: AoE queries < 1ms
-- **100,000 entities**: Line of sight range search < 5ms
-- **SIMD optimization**: 3-8x performance improvement over conventional methods
+### FlatBuffers Sync Schema
 
-## 🤝 Contributing
+Runtime sync messages are defined in [flatbuffer/syncnet.fbs](flatbuffer/syncnet.fbs).
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+```powershell
+cd flatbuffer
+.\flatc.bat
+```
 
-## 📄 License
+If direct generation into target folders fails, generate inside `flatbuffer` first and then copy the generated files as described in [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md).
 
-This project is distributed under the MIT License. See the `LICENSE` file for details.
+## Key Dependencies
 
-## 📞 Contact
+- gRPC / Protocol Buffers
+- FlatBuffers 1.12
+- Recast/Detour
+- Redis / StackExchange.Redis
+- Entity Framework Core
+- MySQL/MariaDB Connector
+- Boost 1.87
+- LuaJIT
+- nlohmann.json
+- spdlog
+- Unity Ads, Analytics, Purchasing
 
-Project Link: [https://github.com/yourusername/GameServerFramework](https://github.com/yourusername/GameServerFramework)
+## Notes
 
+- The root solution is [GameServerFramework.sln](GameServerFramework.sln).
+- Native projects primarily use `Debug|x64` and `Release|x64`.
+- When adding generated C# files to Unity, add matching `.meta` files with unique GUIDs.
+- Database schema and initialization SQL live under [Schemas/](Schemas/).
+- If Git reports dubious ownership in a sandboxed shell, use:
+
+```powershell
+git -c safe.directory=D:/projects/GameServerFramework status --short
+```
