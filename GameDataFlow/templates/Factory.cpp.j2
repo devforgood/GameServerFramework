@@ -16,7 +16,7 @@
         default: return nullptr;
     }
 
-    obj->gamedata = ResourceLoader::Instance().GetSkills(id);
+    obj->gamedata = ResourceLoader::Instance().Get{{table_name}}s(id);
 
     return obj;
 } 

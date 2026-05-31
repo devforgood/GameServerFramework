@@ -12,7 +12,7 @@ GameMode* GameModeFactory::Create(int32_t id) {
         default: return nullptr;
     }
 
-    obj->gamedata = ResourceLoader::Instance().GetSkills(id);
+    obj->gamedata = ResourceLoader::Instance().GetGameModes(id);
 
     return obj;
 } 
