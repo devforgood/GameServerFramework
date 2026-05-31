@@ -176,6 +176,7 @@ message Map {
   repeated Gate gates = 7;
   MapSpawnPoints spawn_points = 8;
   MapObjects objects = 9;
+  string navmesh_path = 10;
 }
 
 message MapList {

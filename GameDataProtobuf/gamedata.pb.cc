@@ -671,6 +671,9 @@ inline constexpr Map::Impl_::Impl_(
         desc_id_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
+        navmesh_path_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
         size_{nullptr},
         spawn_points_{nullptr},
         objects_{nullptr},
@@ -1044,6 +1047,7 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::gamedata::Map, _impl_.gates_),
         PROTOBUF_FIELD_OFFSET(::gamedata::Map, _impl_.spawn_points_),
         PROTOBUF_FIELD_OFFSET(::gamedata::Map, _impl_.objects_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Map, _impl_.navmesh_path_),
         ~0u,
         ~0u,
         ~0u,
@@ -1053,6 +1057,7 @@ const ::uint32_t
         ~0u,
         1,
         2,
+        ~0u,
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::gamedata::MapList, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -1086,8 +1091,8 @@ static const ::_pbi::MigrationSchema
         {242, 258, -1, sizeof(::gamedata::StaticObject)},
         {266, 281, -1, sizeof(::gamedata::MovableObject)},
         {288, -1, -1, sizeof(::gamedata::MapObjects)},
-        {298, 315, -1, sizeof(::gamedata::Map)},
-        {324, -1, -1, sizeof(::gamedata::MapList)},
+        {298, 316, -1, sizeof(::gamedata::Map)},
+        {326, -1, -1, sizeof(::gamedata::MapList)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::gamedata::_Skill_default_instance_._instance,
@@ -1178,20 +1183,21 @@ const char descriptor_table_protodef_gamedata_2eproto[] ABSL_ATTRIBUTE_SECTION_V
     "\003(\0132\016.gamedata.Vec3\"n\n\nMapObjects\022.\n\016sta"
     "tic_objects\030\001 \003(\0132\026.gamedata.StaticObjec"
     "t\0220\n\017movable_objects\030\002 \003(\0132\027.gamedata.Mo"
-    "vableObject\"\356\001\n\003Map\022\n\n\002id\030\001 \001(\005\022\014\n\004name\030"
+    "vableObject\"\204\002\n\003Map\022\n\n\002id\030\001 \001(\005\022\014\n\004name\030"
     "\002 \001(\t\022\017\n\007name_id\030\003 \001(\t\022\017\n\007desc_id\030\004 \001(\t\022"
     "\024\n\014game_mode_id\030\005 \001(\005\022\037\n\004size\030\006 \001(\0132\021.ga"
     "medata.MapSize\022\035\n\005gates\030\007 \003(\0132\016.gamedata"
     ".Gate\022.\n\014spawn_points\030\010 \001(\0132\030.gamedata.M"
     "apSpawnPoints\022%\n\007objects\030\t \001(\0132\024.gamedat"
-    "a.MapObjects\"&\n\007MapList\022\033\n\004maps\030\001 \003(\0132\r."
-    "gamedata.Mapb\006proto3"
+    "a.MapObjects\022\024\n\014navmesh_path\030\n \001(\t\"&\n\007Ma"
+    "pList\022\033\n\004maps\030\001 \003(\0132\r.gamedata.Mapb\006prot"
+    "o3"
 };
 static ::absl::once_flag descriptor_table_gamedata_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_gamedata_2eproto = {
     false,
     false,
-    2820,
+    2842,
     descriptor_table_protodef_gamedata_2eproto,
     "gamedata.proto",
     &descriptor_table_gamedata_2eproto_once,
@@ -8257,7 +8263,8 @@ inline PROTOBUF_NDEBUG_INLINE Map::Impl_::Impl_(
         gates_{visibility, arena, from.gates_},
         name_(arena, from.name_),
         name_id_(arena, from.name_id_),
-        desc_id_(arena, from.desc_id_) {}
+        desc_id_(arena, from.desc_id_),
+        navmesh_path_(arena, from.navmesh_path_) {}
 
 Map::Map(
     ::google::protobuf::Arena* arena,
@@ -8299,7 +8306,8 @@ inline PROTOBUF_NDEBUG_INLINE Map::Impl_::Impl_(
         gates_{visibility, arena},
         name_(arena),
         name_id_(arena),
-        desc_id_(arena) {}
+        desc_id_(arena),
+        navmesh_path_(arena) {}
 
 inline void Map::SharedCtor(::_pb::Arena* arena) {
   new (&_impl_) Impl_(internal_visibility(), arena);
@@ -8321,6 +8329,7 @@ inline void Map::SharedDtor(MessageLite& self) {
   this_._impl_.name_.Destroy();
   this_._impl_.name_id_.Destroy();
   this_._impl_.desc_id_.Destroy();
+  this_._impl_.navmesh_path_.Destroy();
   delete this_._impl_.size_;
   delete this_._impl_.spawn_points_;
   delete this_._impl_.objects_;
@@ -8375,15 +8384,15 @@ const ::google::protobuf::internal::ClassData* Map::GetClassData() const {
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<4, 9, 4, 47, 2> Map::_table_ = {
+const ::_pbi::TcParseTable<4, 10, 4, 59, 2> Map::_table_ = {
   {
     PROTOBUF_FIELD_OFFSET(Map, _impl_._has_bits_),
     0, // no _extensions_
-    9, 120,  // max_field_number, fast_idx_mask
+    10, 120,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294966784,  // skipmap
+    4294966272,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    9,  // num_field_entries
+    10,  // num_field_entries
     4,  // num_aux_entries
     offsetof(decltype(_table_), aux_entries),
     _class_data_.base(),
@@ -8421,7 +8430,9 @@ const ::_pbi::TcParseTable<4, 9, 4, 47, 2> Map::_table_ = {
     // .gamedata.MapObjects objects = 9;
     {::_pbi::TcParser::FastMtS1,
      {74, 2, 3, PROTOBUF_FIELD_OFFSET(Map, _impl_.objects_)}},
-    {::_pbi::TcParser::MiniParse, {}},
+    // string navmesh_path = 10;
+    {::_pbi::TcParser::FastUS1,
+     {82, 63, 0, PROTOBUF_FIELD_OFFSET(Map, _impl_.navmesh_path_)}},
     {::_pbi::TcParser::MiniParse, {}},
     {::_pbi::TcParser::MiniParse, {}},
     {::_pbi::TcParser::MiniParse, {}},
@@ -8457,17 +8468,21 @@ const ::_pbi::TcParseTable<4, 9, 4, 47, 2> Map::_table_ = {
     // .gamedata.MapObjects objects = 9;
     {PROTOBUF_FIELD_OFFSET(Map, _impl_.objects_), _Internal::kHasBitsOffset + 2, 3,
     (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // string navmesh_path = 10;
+    {PROTOBUF_FIELD_OFFSET(Map, _impl_.navmesh_path_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
   }}, {{
     {::_pbi::TcParser::GetTable<::gamedata::MapSize>()},
     {::_pbi::TcParser::GetTable<::gamedata::Gate>()},
     {::_pbi::TcParser::GetTable<::gamedata::MapSpawnPoints>()},
     {::_pbi::TcParser::GetTable<::gamedata::MapObjects>()},
   }}, {{
-    "\14\0\4\7\7\0\0\0\0\0\0\0\0\0\0\0"
+    "\14\0\4\7\7\0\0\0\0\0\14\0\0\0\0\0"
     "gamedata.Map"
     "name"
     "name_id"
     "desc_id"
+    "navmesh_path"
   }},
 };
 
@@ -8482,6 +8497,7 @@ PROTOBUF_NOINLINE void Map::Clear() {
   _impl_.name_.ClearToEmpty();
   _impl_.name_id_.ClearToEmpty();
   _impl_.desc_id_.ClearToEmpty();
+  _impl_.navmesh_path_.ClearToEmpty();
   cached_has_bits = _impl_._has_bits_[0];
   if (cached_has_bits & 0x00000007u) {
     if (cached_has_bits & 0x00000001u) {
@@ -8590,6 +8606,14 @@ PROTOBUF_NOINLINE void Map::Clear() {
                 stream);
           }
 
+          // string navmesh_path = 10;
+          if (!this_._internal_navmesh_path().empty()) {
+            const std::string& _s = this_._internal_navmesh_path();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "gamedata.Map.navmesh_path");
+            target = stream->WriteStringMaybeAliased(10, _s, target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -8638,6 +8662,11 @@ PROTOBUF_NOINLINE void Map::Clear() {
             if (!this_._internal_desc_id().empty()) {
               total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
                                               this_._internal_desc_id());
+            }
+            // string navmesh_path = 10;
+            if (!this_._internal_navmesh_path().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_navmesh_path());
             }
           }
           cached_has_bits = this_._impl_._has_bits_[0];
@@ -8693,6 +8722,9 @@ void Map::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::pro
   }
   if (!from._internal_desc_id().empty()) {
     _this->_internal_set_desc_id(from._internal_desc_id());
+  }
+  if (!from._internal_navmesh_path().empty()) {
+    _this->_internal_set_navmesh_path(from._internal_navmesh_path());
   }
   cached_has_bits = from._impl_._has_bits_[0];
   if (cached_has_bits & 0x00000007u) {
@@ -8752,6 +8784,7 @@ void Map::InternalSwap(Map* PROTOBUF_RESTRICT other) {
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.name_, &other->_impl_.name_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.name_id_, &other->_impl_.name_id_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.desc_id_, &other->_impl_.desc_id_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.navmesh_path_, &other->_impl_.navmesh_path_, arena);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(Map, _impl_.game_mode_id_)
       + sizeof(Map::_impl_.game_mode_id_)

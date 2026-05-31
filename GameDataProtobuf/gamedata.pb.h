@@ -5349,6 +5349,7 @@ class Map final : public ::google::protobuf::Message
     kNameFieldNumber = 2,
     kNameIdFieldNumber = 3,
     kDescIdFieldNumber = 4,
+    kNavmeshPathFieldNumber = 10,
     kSizeFieldNumber = 6,
     kSpawnPointsFieldNumber = 8,
     kObjectsFieldNumber = 9,
@@ -5418,6 +5419,22 @@ class Map final : public ::google::protobuf::Message
   inline PROTOBUF_ALWAYS_INLINE void _internal_set_desc_id(
       const std::string& value);
   std::string* _internal_mutable_desc_id();
+
+  public:
+  // string navmesh_path = 10;
+  void clear_navmesh_path() ;
+  const std::string& navmesh_path() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_navmesh_path(Arg_&& arg, Args_... args);
+  std::string* mutable_navmesh_path();
+  PROTOBUF_NODISCARD std::string* release_navmesh_path();
+  void set_allocated_navmesh_path(std::string* value);
+
+  private:
+  const std::string& _internal_navmesh_path() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_navmesh_path(
+      const std::string& value);
+  std::string* _internal_mutable_navmesh_path();
 
   public:
   // .gamedata.MapSize size = 6;
@@ -5490,8 +5507,8 @@ class Map final : public ::google::protobuf::Message
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      4, 9, 4,
-      47, 2>
+      4, 10, 4,
+      59, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -5514,6 +5531,7 @@ class Map final : public ::google::protobuf::Message
     ::google::protobuf::internal::ArenaStringPtr name_;
     ::google::protobuf::internal::ArenaStringPtr name_id_;
     ::google::protobuf::internal::ArenaStringPtr desc_id_;
+    ::google::protobuf::internal::ArenaStringPtr navmesh_path_;
     ::gamedata::MapSize* size_;
     ::gamedata::MapSpawnPoints* spawn_points_;
     ::gamedata::MapObjects* objects_;
@@ -10144,6 +10162,54 @@ inline void Map::set_allocated_objects(::gamedata::MapObjects* value) {
 
   _impl_.objects_ = reinterpret_cast<::gamedata::MapObjects*>(value);
   // @@protoc_insertion_point(field_set_allocated:gamedata.Map.objects)
+}
+
+// string navmesh_path = 10;
+inline void Map::clear_navmesh_path() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.navmesh_path_.ClearToEmpty();
+}
+inline const std::string& Map::navmesh_path() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:gamedata.Map.navmesh_path)
+  return _internal_navmesh_path();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void Map::set_navmesh_path(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.navmesh_path_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:gamedata.Map.navmesh_path)
+}
+inline std::string* Map::mutable_navmesh_path() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_navmesh_path();
+  // @@protoc_insertion_point(field_mutable:gamedata.Map.navmesh_path)
+  return _s;
+}
+inline const std::string& Map::_internal_navmesh_path() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.navmesh_path_.Get();
+}
+inline void Map::_internal_set_navmesh_path(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.navmesh_path_.Set(value, GetArena());
+}
+inline std::string* Map::_internal_mutable_navmesh_path() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.navmesh_path_.Mutable( GetArena());
+}
+inline std::string* Map::release_navmesh_path() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:gamedata.Map.navmesh_path)
+  return _impl_.navmesh_path_.Release();
+}
+inline void Map::set_allocated_navmesh_path(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.navmesh_path_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.navmesh_path_.IsDefault()) {
+    _impl_.navmesh_path_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:gamedata.Map.navmesh_path)
 }
 
 // -------------------------------------------------------------------

@@ -80,13 +80,14 @@ namespace Gamedata {
             "C3BhdHJvbF9wYXRoGAcgAygLMg4uZ2FtZWRhdGEuVmVjMyJuCgpNYXBPYmpl",
             "Y3RzEi4KDnN0YXRpY19vYmplY3RzGAEgAygLMhYuZ2FtZWRhdGEuU3RhdGlj",
             "T2JqZWN0EjAKD21vdmFibGVfb2JqZWN0cxgCIAMoCzIXLmdhbWVkYXRhLk1v",
-            "dmFibGVPYmplY3Qi7gEKA01hcBIKCgJpZBgBIAEoBRIMCgRuYW1lGAIgASgJ",
+            "dmFibGVPYmplY3QihAIKA01hcBIKCgJpZBgBIAEoBRIMCgRuYW1lGAIgASgJ",
             "Eg8KB25hbWVfaWQYAyABKAkSDwoHZGVzY19pZBgEIAEoCRIUCgxnYW1lX21v",
             "ZGVfaWQYBSABKAUSHwoEc2l6ZRgGIAEoCzIRLmdhbWVkYXRhLk1hcFNpemUS",
             "HQoFZ2F0ZXMYByADKAsyDi5nYW1lZGF0YS5HYXRlEi4KDHNwYXduX3BvaW50",
             "cxgIIAEoCzIYLmdhbWVkYXRhLk1hcFNwYXduUG9pbnRzEiUKB29iamVjdHMY",
-            "CSABKAsyFC5nYW1lZGF0YS5NYXBPYmplY3RzIiYKB01hcExpc3QSGwoEbWFw",
-            "cxgBIAMoCzINLmdhbWVkYXRhLk1hcGIGcHJvdG8z"));
+            "CSABKAsyFC5nYW1lZGF0YS5NYXBPYmplY3RzEhQKDG5hdm1lc2hfcGF0aBgK",
+            "IAEoCSImCgdNYXBMaXN0EhsKBG1hcHMYASADKAsyDS5nYW1lZGF0YS5NYXBi",
+            "BnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -110,7 +111,7 @@ namespace Gamedata {
             new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.StaticObject), global::Gamedata.StaticObject.Parser, new[]{ "Id", "Type", "Name", "Position", "Size", "Collision", "Damage", "LootTableId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.MovableObject), global::Gamedata.MovableObject.Parser, new[]{ "Id", "Type", "Name", "Position", "MovementRange", "MovementSpeed", "PatrolPath" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.MapObjects), global::Gamedata.MapObjects.Parser, new[]{ "StaticObjects", "MovableObjects" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.Map), global::Gamedata.Map.Parser, new[]{ "Id", "Name", "NameId", "DescId", "GameModeId", "Size", "Gates", "SpawnPoints", "Objects" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.Map), global::Gamedata.Map.Parser, new[]{ "Id", "Name", "NameId", "DescId", "GameModeId", "Size", "Gates", "SpawnPoints", "Objects", "NavmeshPath" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::Gamedata.MapList), global::Gamedata.MapList.Parser, new[]{ "Maps" }, null, null, null, null)
           }));
     }
@@ -7095,6 +7096,7 @@ namespace Gamedata {
       gates_ = other.gates_.Clone();
       spawnPoints_ = other.spawnPoints_ != null ? other.spawnPoints_.Clone() : null;
       objects_ = other.objects_ != null ? other.objects_.Clone() : null;
+      navmeshPath_ = other.navmeshPath_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -7211,6 +7213,18 @@ namespace Gamedata {
       }
     }
 
+    /// <summary>Field number for the "navmesh_path" field.</summary>
+    public const int NavmeshPathFieldNumber = 10;
+    private string navmeshPath_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string NavmeshPath {
+      get { return navmeshPath_; }
+      set {
+        navmeshPath_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -7235,6 +7249,7 @@ namespace Gamedata {
       if(!gates_.Equals(other.gates_)) return false;
       if (!object.Equals(SpawnPoints, other.SpawnPoints)) return false;
       if (!object.Equals(Objects, other.Objects)) return false;
+      if (NavmeshPath != other.NavmeshPath) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -7251,6 +7266,7 @@ namespace Gamedata {
       hash ^= gates_.GetHashCode();
       if (spawnPoints_ != null) hash ^= SpawnPoints.GetHashCode();
       if (objects_ != null) hash ^= Objects.GetHashCode();
+      if (NavmeshPath.Length != 0) hash ^= NavmeshPath.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -7302,6 +7318,10 @@ namespace Gamedata {
         output.WriteRawTag(74);
         output.WriteMessage(Objects);
       }
+      if (NavmeshPath.Length != 0) {
+        output.WriteRawTag(82);
+        output.WriteString(NavmeshPath);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -7345,6 +7365,10 @@ namespace Gamedata {
         output.WriteRawTag(74);
         output.WriteMessage(Objects);
       }
+      if (NavmeshPath.Length != 0) {
+        output.WriteRawTag(82);
+        output.WriteString(NavmeshPath);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -7379,6 +7403,9 @@ namespace Gamedata {
       }
       if (objects_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(Objects);
+      }
+      if (NavmeshPath.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(NavmeshPath);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -7425,6 +7452,9 @@ namespace Gamedata {
           Objects = new global::Gamedata.MapObjects();
         }
         Objects.MergeFrom(other.Objects);
+      }
+      if (other.NavmeshPath.Length != 0) {
+        NavmeshPath = other.NavmeshPath;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -7490,6 +7520,10 @@ namespace Gamedata {
             input.ReadMessage(Objects);
             break;
           }
+          case 82: {
+            NavmeshPath = input.ReadString();
+            break;
+          }
         }
       }
     #endif
@@ -7552,6 +7586,10 @@ namespace Gamedata {
               Objects = new global::Gamedata.MapObjects();
             }
             input.ReadMessage(Objects);
+            break;
+          }
+          case 82: {
+            NavmeshPath = input.ReadString();
             break;
           }
         }
