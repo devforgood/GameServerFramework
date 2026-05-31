@@ -35,7 +35,7 @@ Character::~Character()
 	LOG.info("Character {} destroyed", player_id_);
 }
 
-bool Character::before_create(std::shared_ptr<Player> player)
+bool Character::pre_create(std::shared_ptr<Player> player)
 {
 	if (player == nullptr)
 	{
@@ -52,7 +52,7 @@ bool Character::before_create(std::shared_ptr<Player> player)
 	return true;
 }
 
-bool Character::after_create(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object)
+bool Character::post_create(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object)
 {
 	auto character = std::dynamic_pointer_cast<Character>(game_object);
 	if (player == nullptr || character == nullptr)
