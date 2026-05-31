@@ -1,4 +1,5 @@
 #include "Character.h"
+#include "Player.h"
 #include "World.h"
 #include "LogHelper.h"
 #include "Skill.h"
@@ -32,6 +33,36 @@ Character::~Character()
 	}
 	skills_.clear();
 	LOG.info("Character {} destroyed", player_id_);
+}
+
+bool Character::before_create(std::shared_ptr<Player> player)
+{
+	if (player == nullptr)
+	{
+		LOG.error("OnAddAgent error: player is nullptr");
+		return false;
+	}
+
+	if (player->character() != nullptr)
+	{
+		LOG.error("OnAddAgent error: player already has a character");
+		return false;
+	}
+
+	return true;
+}
+
+bool Character::after_create(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object)
+{
+	auto character = std::dynamic_pointer_cast<Character>(game_object);
+	if (player == nullptr || character == nullptr)
+	{
+		LOG.error("OnAddAgent error in Character::after_create()");
+		return false;
+	}
+
+	player->possess(character);
+	return true;
 }
 
 void Character::use_skill(const syncnet::UseSkill* msg)

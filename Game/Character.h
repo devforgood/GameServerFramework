@@ -23,6 +23,8 @@ public:
 	long player_id() { return player_id_; }
 	void use_skill(const syncnet::UseSkill* msg);
 	virtual void update(float deltaTime) override;
+	virtual bool before_create(std::shared_ptr<Player> player) override;
 	virtual bool init(Vector3& pos) override;
+	virtual bool after_create(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object) override;
 };
 

@@ -2,10 +2,10 @@
 #include <memory>
 #include "syncnet_generated.h"
 
-class Player;
 class GameObject;
 class World;
 class Map;
+class Player;
 
 class GameObjectFactory
 {

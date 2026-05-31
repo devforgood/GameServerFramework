@@ -1,5 +1,6 @@
 #include "GameObjectFactory.h"
 #include "GameObject.h"
+#include "Actor.h"
 #include "Player.h"
 #include "Character.h"
 #include "Monster.h"
@@ -8,44 +9,45 @@
 #include "Vector3.h"
 #include "Common.h"
 #include "Map.h"
+#include "../Engine/GridManager.h"
 
 std::shared_ptr<GameObject> GameObjectFactory::CreateGameObject(Map* map, std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
 	Vector3 target_pos(pos);
-	std::shared_ptr<GameObject> game_object;
+	std::shared_ptr<Actor> actor;
+
 	switch (type)
 	{
 	case syncnet::GameObjectType::GameObjectType_Character:
-	{
-		// 이미 생성된 캐릭터가 있는지 확인하고, 있다면 해당 캐릭터를 반환하도록 수정 필요
-		if (player->character() != nullptr)
-		{
-			LOG.error("OnAddAgent error: player already has a character");
-			return nullptr;
-		}
-
-		std::shared_ptr<Character> character = std::make_shared<Character>(map);
-		game_object = character;
-		if (game_object->init(target_pos) == false)
-		{
-			LOG.error("OnAddAgent error in Character::init()");
-			return nullptr;
-		}
-		player->possess(character);
-		map->grid_manager_->add(character.get());
+		actor = std::make_shared<Character>(map);
 		break;
-	}
 	case syncnet::GameObjectType::GameObjectType_Monster:
-		game_object = std::make_shared<Monster>(map);
-		if (game_object->init(target_pos) == false)
-		{
-			LOG.error("OnAddAgent error in Monster::init()");
-			return nullptr;
-		}
-		map->grid_manager_->add((Actor*)game_object.get());
+		actor = std::make_shared<Monster>(map);
 		break;
+	default:
+		LOG.error("OnAddAgent error unsupported GameObjectType {}", static_cast<int>(type));
+		return nullptr;
 	}
 
+	if (actor->pre_create(player) == false)
+	{
+		LOG.error("OnAddAgent error in Actor::before_create()");
+		return nullptr;
+	}
 
-	return game_object;
+	if (actor->init(target_pos) == false)
+	{
+		LOG.error("OnAddAgent error in Actor::init()");
+		return nullptr;
+	}
+
+	if (actor->post_create(player, actor) == false)
+	{
+		LOG.error("OnAddAgent error in Actor::after_create()");
+		return nullptr;
+	}
+
+	map->grid_manager_->add(actor.get());
+
+	return actor;
 }

@@ -1,9 +1,11 @@
 #pragma once
+#include <memory>
 #include "syncnet_generated.h"
 
 class World;
 class Map;
 class Vector3;
+class Player;
 
 enum class GameObjectChangeType
 {
@@ -43,7 +45,9 @@ public:
 
 	virtual syncnet::GameObjectType type() { return syncnet::GameObjectType::GameObjectType_Monster; }
 	virtual int agent_id() { return -1; }
+	virtual bool pre_create(std::shared_ptr<Player> player) { return true; }
 	virtual bool init(Vector3& pos) { return false; }
+	virtual bool post_create(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object) { return true; }
 
 	Map* map() { return map_; }
 	syncnet::AIState state() { return state_; }
@@ -56,4 +60,3 @@ public:
 	// CreateActorInfo 호출시 필요한 정보 생성
 	virtual flatbuffers::Offset<syncnet::ActorInfo> get_actor_info(flatbuffers::FlatBufferBuilder& _fbb, long flag) {return 0;}
 };
-

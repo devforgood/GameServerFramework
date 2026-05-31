@@ -29,6 +29,7 @@ public:
 
 	void init();
 	void clear();
+	virtual bool init(Vector3& pos) override = 0;
 
 
 	virtual void update(float dt) override;
