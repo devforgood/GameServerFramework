@@ -155,6 +155,8 @@
     <ClCompile Include="BehaviorTreeCPP.cpp" />
     <ClCompile Include="Character.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="GameMode.cpp" />
+    <ClCompile Include="GameModeFactory.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GameObjectFactory.cpp" />
     <ClCompile Include="JumpSkill.cpp" />
@@ -211,6 +213,8 @@
     <ClInclude Include="BTDebugNodeIds.h" />
     <ClInclude Include="BehaviorTreeCPP.h" />
     <ClInclude Include="Character.h" />
+    <ClInclude Include="GameMode.h" />
+    <ClInclude Include="GameModeFactory.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameObjectChangeTypeOperators.h" />
     <ClInclude Include="GameObjectFactory.h" />

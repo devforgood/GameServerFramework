@@ -47,6 +47,9 @@
     <Filter Include="Quest">
       <UniqueIdentifier>{523c06b1-c4fa-4fba-8a53-d671dae0bc79}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameMode">
+      <UniqueIdentifier>{0876397d-aa79-4bd0-a7f8-255dabcffed1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -129,6 +132,12 @@
     </ClCompile>
     <ClCompile Include="Quest.cpp">
       <Filter>Quest</Filter>
+    </ClCompile>
+    <ClCompile Include="GameModeFactory.cpp">
+      <Filter>GameMode</Filter>
+    </ClCompile>
+    <ClCompile Include="GameMode.cpp">
+      <Filter>GameMode</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -243,6 +252,12 @@
     </ClInclude>
     <ClInclude Include="Quest.h">
       <Filter>Quest</Filter>
+    </ClInclude>
+    <ClInclude Include="GameModeFactory.h">
+      <Filter>GameMode</Filter>
+    </ClInclude>
+    <ClInclude Include="GameMode.h">
+      <Filter>GameMode</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
