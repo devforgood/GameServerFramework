@@ -168,6 +168,8 @@
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Quest.cpp" />
+    <ClCompile Include="QuestFactory.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="Skill.cpp" />
     <ClCompile Include="SkillFactory.cpp" />
@@ -226,6 +228,8 @@
     <ClInclude Include="Monster.h" />
     <ClInclude Include="PerfTimer.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="Quest.h" />
+    <ClInclude Include="QuestFactory.h" />
     <ClInclude Include="SendMessage.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="Skill.h" />

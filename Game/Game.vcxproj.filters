@@ -44,6 +44,9 @@
     <Filter Include="World">
       <UniqueIdentifier>{db144afb-d148-45a3-a170-a96fc7c77839}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Quest">
+      <UniqueIdentifier>{523c06b1-c4fa-4fba-8a53-d671dae0bc79}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -120,6 +123,12 @@
     </ClCompile>
     <ClCompile Include="World.cpp">
       <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="QuestFactory.cpp">
+      <Filter>Quest</Filter>
+    </ClCompile>
+    <ClCompile Include="Quest.cpp">
+      <Filter>Quest</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -228,6 +237,12 @@
     </ClInclude>
     <ClInclude Include="World.h">
       <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="QuestFactory.h">
+      <Filter>Quest</Filter>
+    </ClInclude>
+    <ClInclude Include="Quest.h">
+      <Filter>Quest</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
