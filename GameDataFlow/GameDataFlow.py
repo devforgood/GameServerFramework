@@ -1,6 +1,7 @@
 import json
 from google.protobuf import json_format
 from generate_factory import generate_factory
+from generate_resource_loader import generate_resource_loader
 import gamedata_pb2
 import shutil
 import os
@@ -68,6 +69,7 @@ CLIENT_DIR = "../Client/Assets/Resources/GameData/"
 SERVER_DIR = "../Game/GameData/"
 SERVER_SRC_DIR = "../Game/"
 CLIENT_SRC_DIR = "../Client/Assets/Scripts/"
+PROTOBUF_SRC_DIR = "../GameDataProtobuf/"
 
 class GameDataProcessor:
 
@@ -117,6 +119,14 @@ def main():
             out_path=info["out_path"],
             table_name=info["table_name"]
         )
+
+    meta_data = load_table_meta()
+    if meta_data:
+        try:
+            generate_resource_loader(PROTOBUF_SRC_DIR, meta_data.get("tables", []))
+            print(f"{GREEN}[OK] Generated ResourceLoader{RESET}")
+        except Exception as e:
+            print(f"{RED}[ERROR] Failed to generate ResourceLoader: {e}{RESET}")
 
 if __name__ == "__main__":
     main()

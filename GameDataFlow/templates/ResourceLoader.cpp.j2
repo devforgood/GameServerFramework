@@ -54,58 +54,22 @@ ResourceLoader::~ResourceLoader()
 
 void ResourceLoader::ClearResources()
 {
-
-    ClearMap(skills);
-
-    ClearMap(items);
-
-    ClearMap(quests);
-
-    ClearMap(game_modes);
-
-    ClearMap(maps);
-
+{% for table in tables %}
+    ClearMap({{ table.map_name }});
+{% endfor %}
 }
 
 bool ResourceLoader::LoadResources()
 {
     ClearResources();
 
-
-    if (!LoadProtobufFile<gamedata::SkillList>(
-        "GameData/skill.bytes",
-        skills,
-        [](const gamedata::SkillList& list) -> const ::google::protobuf::RepeatedPtrField<gamedata::Skill>& { return list.skills(); }))
+{% for table in tables %}
+    if (!LoadProtobufFile<gamedata::{{ table.list_type }}>(
+        "GameData/{{ table.output_file }}",
+        {{ table.map_name }},
+        [](const gamedata::{{ table.list_type }}& list) -> const ::google::protobuf::RepeatedPtrField<gamedata::{{ table.name }}>& { return list.{{ table.repeated_field }}(); }))
         return false;
 
-
-    if (!LoadProtobufFile<gamedata::ItemList>(
-        "GameData/item.bytes",
-        items,
-        [](const gamedata::ItemList& list) -> const ::google::protobuf::RepeatedPtrField<gamedata::Item>& { return list.items(); }))
-        return false;
-
-
-    if (!LoadProtobufFile<gamedata::QuestList>(
-        "GameData/quest.bytes",
-        quests,
-        [](const gamedata::QuestList& list) -> const ::google::protobuf::RepeatedPtrField<gamedata::Quest>& { return list.quests(); }))
-        return false;
-
-
-    if (!LoadProtobufFile<gamedata::GameModeList>(
-        "GameData/gamemode.bytes",
-        game_modes,
-        [](const gamedata::GameModeList& list) -> const ::google::protobuf::RepeatedPtrField<gamedata::GameMode>& { return list.game_modes(); }))
-        return false;
-
-
-    if (!LoadProtobufFile<gamedata::MapList>(
-        "GameData/map.bytes",
-        maps,
-        [](const gamedata::MapList& list) -> const ::google::protobuf::RepeatedPtrField<gamedata::Map>& { return list.maps(); }))
-        return false;
-
-
+{% endfor %}
     return true;
 }

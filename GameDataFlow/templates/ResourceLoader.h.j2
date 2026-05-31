@@ -1,0 +1,34 @@
+// This file is auto-generated. Do not modify directly.
+
+#pragma once
+
+#include <boost/noncopyable.hpp>
+#include <unordered_map>
+#include "gamedata.pb.h"
+
+class ResourceLoader : private boost::noncopyable
+{
+private:
+{% for table in tables %}
+    std::unordered_map<long, gamedata::{{ table.name }}*> {{ table.map_name }};
+{% endfor %}
+
+public:
+    static ResourceLoader& Instance() {
+        static ResourceLoader instance;
+        return instance;
+    }
+
+    bool LoadResources();
+
+{% for table in tables %}
+    const std::unordered_map<long, gamedata::{{ table.name }}*>& Get{{ table.name }}s() const { return {{ table.map_name }}; }
+    const gamedata::{{ table.name }}* Get{{ table.name }}s(long id) const { auto itr = {{ table.map_name }}.find(id); return itr != {{ table.map_name }}.end() ? itr->second : nullptr; }
+{% endfor %}
+
+private:
+    ResourceLoader() = default;
+    ~ResourceLoader();
+
+    void ClearResources();
+};
