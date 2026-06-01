@@ -7,12 +7,15 @@
 
 GameMode* GameModeFactory::Create(int32_t id) {
     GameMode* obj = nullptr;
-    switch (id) {
-        
-        default: return nullptr;
+    const gamedata::GameMode* res = ResourceLoader::Instance().GetGameModes(id);
+    if (res == nullptr) {
+        return nullptr;
     }
 
-    obj->gamedata = ResourceLoader::Instance().GetGameModes(id);
 
+    obj = new GameMode();
+
+
+    obj->gamedata = res;
     return obj;
 } 

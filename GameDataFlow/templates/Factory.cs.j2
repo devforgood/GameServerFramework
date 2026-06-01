@@ -8,20 +8,31 @@ public static class {{table_name}}Factory
     public static {{table_name}} Create(int id)
     {
         {{table_name}} obj = null;
-        switch (id)
-        {
-            {% for item_info in item_infos %}
-            case {{item_info[1]}}: obj = new {{item_info[0]}}(); break;
-            {% endfor %}
-            default: return null;
-        }
-
         Gamedata.{{table_name}} res = null;
 		if(!GameManager.Instance.resource.{{table_name}}s.TryGetValue(id, out res))
 		{
 			Debug.LogError($"{{table_name}} with ID {id} not found in resource {{table_name}}s.");
 			return null;
         }
+
+        {% if has_code_name_items %}
+        switch (res.CodeName)
+        {
+            {% for code_name in code_names %}
+            case "{{code_name}}": obj = new {{code_name}}(); break;
+            {% endfor %}
+            default:
+                {% if has_default_items %}
+                obj = new {{table_name}}();
+                break;
+                {% else %}
+                return null;
+                {% endif %}
+        }
+        {% else %}
+        obj = new {{table_name}}();
+        {% endif %}
+
         obj.gamedata = res;
 
         return obj;

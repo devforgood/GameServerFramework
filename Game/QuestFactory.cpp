@@ -7,12 +7,15 @@
 
 Quest* QuestFactory::Create(int32_t id) {
     Quest* obj = nullptr;
-    switch (id) {
-        
-        default: return nullptr;
+    const gamedata::Quest* res = ResourceLoader::Instance().GetQuests(id);
+    if (res == nullptr) {
+        return nullptr;
     }
 
-    obj->gamedata = ResourceLoader::Instance().GetQuests(id);
 
+    obj = new Quest();
+
+
+    obj->gamedata = res;
     return obj;
 } 

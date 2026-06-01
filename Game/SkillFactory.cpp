@@ -11,16 +11,29 @@
 
 Skill* SkillFactory::Create(int32_t id) {
     Skill* obj = nullptr;
-    switch (id) {
-        
-        case 2: obj = new JumpSkill(); break;
-        
-        case 1: obj = new NormalAttackSkill(); break;
-        
-        default: return nullptr;
+    const gamedata::Skill* res = ResourceLoader::Instance().GetSkills(id);
+    if (res == nullptr) {
+        return nullptr;
     }
 
-    obj->gamedata = ResourceLoader::Instance().GetSkills(id);
 
+    const std::string& codeName = res->code_name();
+
+    if (codeName == "JumpSkill") {
+        obj = new JumpSkill();
+    }
+
+    else if (codeName == "NormalAttackSkill") {
+        obj = new NormalAttackSkill();
+    }
+
+    else {
+
+        return nullptr;
+
+    }
+
+
+    obj->gamedata = res;
     return obj;
 } 

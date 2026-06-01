@@ -7,12 +7,15 @@
 
 Map* MapFactory::Create(int32_t id) {
     Map* obj = nullptr;
-    switch (id) {
-        
-        default: return nullptr;
+    const gamedata::Map* res = ResourceLoader::Instance().GetMaps(id);
+    if (res == nullptr) {
+        return nullptr;
     }
 
-    obj->gamedata = ResourceLoader::Instance().GetMaps(id);
 
+    obj = new Map();
+
+
+    obj->gamedata = res;
     return obj;
 } 

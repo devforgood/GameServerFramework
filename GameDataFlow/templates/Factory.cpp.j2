@@ -2,21 +2,36 @@
 
 #include "Common.h"
 #include "{{table_name}}Factory.h"
-{% for item_info in item_infos %}
-#include "{{item_info[0]}}.h"
+{% for code_name in code_names %}
+#include "{{code_name}}.h"
 {% endfor %}
 
 
 {{table_name}}* {{table_name}}Factory::Create(int32_t id) {
     {{table_name}}* obj = nullptr;
-    switch (id) {
-        {% for item_info in item_infos %}
-        case {{item_info[1]}}: obj = new {{item_info[0]}}(); break;
-        {% endfor %}
-        default: return nullptr;
+    const gamedata::{{table_name}}* res = ResourceLoader::Instance().Get{{table_name}}s(id);
+    if (res == nullptr) {
+        return nullptr;
     }
 
-    obj->gamedata = ResourceLoader::Instance().Get{{table_name}}s(id);
+{% if has_code_name_items %}
+    const std::string& codeName = res->code_name();
+{% for code_name in code_names %}
+    {% if loop.first %}if{% else %}else if{% endif %} (codeName == "{{code_name}}") {
+        obj = new {{code_name}}();
+    }
+{% endfor %}
+    else {
+{% if has_default_items %}
+        obj = new {{table_name}}();
+{% else %}
+        return nullptr;
+{% endif %}
+    }
+{% else %}
+    obj = new {{table_name}}();
+{% endif %}
 
+    obj->gamedata = res;
     return obj;
 } 
