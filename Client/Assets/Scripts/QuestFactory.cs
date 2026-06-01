@@ -16,7 +16,20 @@ public static class QuestFactory
         }
 
         
-        obj = new Quest();
+        switch (res.CodeName)
+        {
+            
+            case "LimitedTimeQuest": obj = new LimitedTimeQuest(); break;
+            
+            case "MainQuest": obj = new MainQuest(); break;
+            
+            case "RepeatedQuest": obj = new RepeatedQuest(); break;
+            
+            default:
+                
+                return null;
+                
+        }
         
 
         obj.gamedata = res;

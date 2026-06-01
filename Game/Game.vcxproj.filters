@@ -139,6 +139,15 @@
     <ClCompile Include="GameMode.cpp">
       <Filter>GameMode</Filter>
     </ClCompile>
+    <ClCompile Include="LimitedTimeQuest.cpp">
+      <Filter>Quest</Filter>
+    </ClCompile>
+    <ClCompile Include="MainQuest.cpp">
+      <Filter>Quest</Filter>
+    </ClCompile>
+    <ClCompile Include="RepeatedQuest.cpp">
+      <Filter>Quest</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -258,6 +267,15 @@
     </ClInclude>
     <ClInclude Include="GameMode.h">
       <Filter>GameMode</Filter>
+    </ClInclude>
+    <ClInclude Include="LimitedTimeQuest.h">
+      <Filter>Quest</Filter>
+    </ClInclude>
+    <ClInclude Include="MainQuest.h">
+      <Filter>Quest</Filter>
+    </ClInclude>
+    <ClInclude Include="RepeatedQuest.h">
+      <Filter>Quest</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

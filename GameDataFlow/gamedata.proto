@@ -56,6 +56,7 @@ message Quest {
   string objective_type = 10;
   int32 objective_count = 11;
   int32 objective_target_id = 12;
+  string code_name = 13;
 }
 
 message QuestList {

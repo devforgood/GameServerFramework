@@ -119,6 +119,9 @@ inline constexpr Quest::Impl_::Impl_(
         objective_type_(
             &::google::protobuf::internal::fixed_address_empty_string,
             ::_pbi::ConstantInitialized()),
+        code_name_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
         id_{0},
         level_requirement_{0},
         reward_exp_{0},
@@ -818,6 +821,7 @@ const ::uint32_t
         PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.objective_type_),
         PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.objective_count_),
         PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.objective_target_id_),
+        PROTOBUF_FIELD_OFFSET(::gamedata::Quest, _impl_.code_name_),
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::gamedata::QuestList, _internal_metadata_),
         ~0u,  // no _extensions_
@@ -1077,22 +1081,22 @@ static const ::_pbi::MigrationSchema
         {43, -1, -1, sizeof(::gamedata::Item)},
         {57, -1, -1, sizeof(::gamedata::ItemList)},
         {66, -1, -1, sizeof(::gamedata::Quest)},
-        {86, -1, -1, sizeof(::gamedata::QuestList)},
-        {95, -1, -1, sizeof(::gamedata::GameModeRules)},
-        {112, -1, -1, sizeof(::gamedata::GameModeRewards)},
-        {123, -1, -1, sizeof(::gamedata::BossInfo)},
-        {135, 153, -1, sizeof(::gamedata::GameMode)},
-        {163, -1, -1, sizeof(::gamedata::GameModeList)},
-        {172, -1, -1, sizeof(::gamedata::Vec3)},
-        {183, -1, -1, sizeof(::gamedata::MapSize)},
-        {193, 207, -1, sizeof(::gamedata::Gate)},
-        {213, 226, -1, sizeof(::gamedata::SpawnPoint)},
-        {231, -1, -1, sizeof(::gamedata::MapSpawnPoints)},
-        {242, 258, -1, sizeof(::gamedata::StaticObject)},
-        {266, 281, -1, sizeof(::gamedata::MovableObject)},
-        {288, -1, -1, sizeof(::gamedata::MapObjects)},
-        {298, 316, -1, sizeof(::gamedata::Map)},
-        {326, -1, -1, sizeof(::gamedata::MapList)},
+        {87, -1, -1, sizeof(::gamedata::QuestList)},
+        {96, -1, -1, sizeof(::gamedata::GameModeRules)},
+        {113, -1, -1, sizeof(::gamedata::GameModeRewards)},
+        {124, -1, -1, sizeof(::gamedata::BossInfo)},
+        {136, 154, -1, sizeof(::gamedata::GameMode)},
+        {164, -1, -1, sizeof(::gamedata::GameModeList)},
+        {173, -1, -1, sizeof(::gamedata::Vec3)},
+        {184, -1, -1, sizeof(::gamedata::MapSize)},
+        {194, 208, -1, sizeof(::gamedata::Gate)},
+        {214, 227, -1, sizeof(::gamedata::SpawnPoint)},
+        {232, -1, -1, sizeof(::gamedata::MapSpawnPoints)},
+        {243, 259, -1, sizeof(::gamedata::StaticObject)},
+        {267, 282, -1, sizeof(::gamedata::MovableObject)},
+        {289, -1, -1, sizeof(::gamedata::MapObjects)},
+        {299, 317, -1, sizeof(::gamedata::Map)},
+        {327, -1, -1, sizeof(::gamedata::MapList)},
 };
 static const ::_pb::Message* const file_default_instances[] = {
     &::gamedata::_Skill_default_instance_._instance,
@@ -1133,71 +1137,71 @@ const char descriptor_table_protodef_gamedata_2eproto[] ABSL_ATTRIBUTE_SECTION_V
     "\030\001 \001(\005\022\014\n\004type\030\002 \001(\t\022\014\n\004heal\030\003 \001(\005\022\017\n\007na"
     "me_id\030\004 \001(\t\022\017\n\007desc_id\030\005 \001(\t\022&\n\014item_opt"
     "ions\030\006 \003(\0132\020.gamedata.Option\")\n\010ItemList"
-    "\022\035\n\005items\030\001 \003(\0132\016.gamedata.Item\"\205\002\n\005Ques"
+    "\022\035\n\005items\030\001 \003(\0132\016.gamedata.Item\"\230\002\n\005Ques"
     "t\022\n\n\002id\030\001 \001(\005\022\014\n\004type\030\002 \001(\t\022\017\n\007name_id\030\003"
     " \001(\t\022\017\n\007desc_id\030\004 \001(\t\022\031\n\021level_requireme"
     "nt\030\005 \001(\005\022\027\n\017reward_item_ids\030\006 \003(\005\022\022\n\nrew"
     "ard_exp\030\007 \001(\005\022\023\n\013reward_gold\030\010 \001(\005\022\025\n\ris"
     "_repeatable\030\t \001(\010\022\026\n\016objective_type\030\n \001("
     "\t\022\027\n\017objective_count\030\013 \001(\005\022\033\n\023objective_"
-    "target_id\030\014 \001(\005\",\n\tQuestList\022\037\n\006quests\030\001"
-    " \003(\0132\017.gamedata.Quest\"\323\001\n\rGameModeRules\022"
-    "\022\n\ntime_limit\030\001 \001(\005\022\026\n\016has_time_limit\030\002 "
-    "\001(\010\022\025\n\rend_condition\030\003 \001(\t\022\023\n\013max_player"
-    "s\030\004 \001(\005\022\021\n\tmin_level\030\005 \001(\005\022\021\n\tallow_pvp\030"
-    "\006 \001(\010\022\025\n\rallow_trading\030\007 \001(\010\022\027\n\017respawn_"
-    "enabled\030\010 \001(\010\022\024\n\014respawn_time\030\t \001(\005\"`\n\017G"
-    "ameModeRewards\022\026\n\016exp_multiplier\030\001 \001(\001\022\027"
-    "\n\017gold_multiplier\030\002 \001(\001\022\034\n\024drop_rate_mul"
-    "tiplier\030\003 \001(\001\"V\n\010BossInfo\022\017\n\007boss_id\030\001 \001"
-    "(\005\022\024\n\014boss_name_id\030\002 \001(\t\022\022\n\nboss_level\030\003"
-    " \001(\005\022\017\n\007boss_hp\030\004 \001(\005\"\357\001\n\010GameMode\022\n\n\002id"
-    "\030\001 \001(\005\022\014\n\004name\030\002 \001(\t\022\017\n\007name_id\030\003 \001(\t\022\017\n"
-    "\007desc_id\030\004 \001(\t\022\020\n\010category\030\005 \001(\t\022\014\n\004type"
-    "\030\006 \001(\t\022&\n\005rules\030\007 \001(\0132\027.gamedata.GameMod"
-    "eRules\022\014\n\004maps\030\010 \003(\005\022*\n\007rewards\030\t \001(\0132\031."
-    "gamedata.GameModeRewards\022%\n\tboss_info\030\n "
-    "\001(\0132\022.gamedata.BossInfo\"6\n\014GameModeList\022"
-    "&\n\ngame_modes\030\001 \003(\0132\022.gamedata.GameMode\""
-    "\'\n\004Vec3\022\t\n\001x\030\001 \001(\001\022\t\n\001y\030\002 \001(\001\022\t\n\001z\030\003 \001(\001"
-    "\"(\n\007MapSize\022\r\n\005width\030\001 \001(\001\022\016\n\006height\030\002 \001"
-    "(\001\"\211\001\n\004Gate\022\n\n\002id\030\001 \001(\005\022\014\n\004name\030\002 \001(\t\022 \n"
-    "\010position\030\003 \001(\0132\016.gamedata.Vec3\022\025\n\rtarge"
-    "t_map_id\030\004 \001(\005\022\026\n\016target_gate_id\030\005 \001(\005\022\026"
-    "\n\016required_level\030\006 \001(\005\"\200\001\n\nSpawnPoint\022 \n"
-    "\010position\030\001 \001(\0132\016.gamedata.Vec3\022\022\n\nmonst"
-    "er_id\030\002 \001(\005\022\026\n\016spawn_interval\030\003 \001(\005\022\017\n\007b"
-    "oss_id\030\004 \001(\005\022\023\n\013spawn_delay\030\005 \001(\005\"\223\001\n\016Ma"
-    "pSpawnPoints\022*\n\014player_spawn\030\001 \003(\0132\024.gam"
-    "edata.SpawnPoint\022+\n\rmonster_spawn\030\002 \003(\0132"
-    "\024.gamedata.SpawnPoint\022(\n\nboss_spawn\030\003 \003("
-    "\0132\024.gamedata.SpawnPoint\"\260\001\n\014StaticObject"
-    "\022\n\n\002id\030\001 \001(\005\022\014\n\004type\030\002 \001(\t\022\014\n\004name\030\003 \001(\t"
-    "\022 \n\010position\030\004 \001(\0132\016.gamedata.Vec3\022\034\n\004si"
-    "ze\030\005 \001(\0132\016.gamedata.Vec3\022\021\n\tcollision\030\006 "
-    "\001(\010\022\016\n\006damage\030\007 \001(\005\022\025\n\rloot_table_id\030\010 \001"
-    "(\005\"\256\001\n\rMovableObject\022\n\n\002id\030\001 \001(\005\022\014\n\004type"
-    "\030\002 \001(\t\022\014\n\004name\030\003 \001(\t\022 \n\010position\030\004 \001(\0132\016"
-    ".gamedata.Vec3\022\026\n\016movement_range\030\005 \001(\001\022\026"
-    "\n\016movement_speed\030\006 \001(\001\022#\n\013patrol_path\030\007 "
-    "\003(\0132\016.gamedata.Vec3\"n\n\nMapObjects\022.\n\016sta"
-    "tic_objects\030\001 \003(\0132\026.gamedata.StaticObjec"
-    "t\0220\n\017movable_objects\030\002 \003(\0132\027.gamedata.Mo"
-    "vableObject\"\204\002\n\003Map\022\n\n\002id\030\001 \001(\005\022\014\n\004name\030"
-    "\002 \001(\t\022\017\n\007name_id\030\003 \001(\t\022\017\n\007desc_id\030\004 \001(\t\022"
-    "\024\n\014game_mode_id\030\005 \001(\005\022\037\n\004size\030\006 \001(\0132\021.ga"
-    "medata.MapSize\022\035\n\005gates\030\007 \003(\0132\016.gamedata"
-    ".Gate\022.\n\014spawn_points\030\010 \001(\0132\030.gamedata.M"
-    "apSpawnPoints\022%\n\007objects\030\t \001(\0132\024.gamedat"
-    "a.MapObjects\022\024\n\014navmesh_path\030\n \001(\t\"&\n\007Ma"
-    "pList\022\033\n\004maps\030\001 \003(\0132\r.gamedata.Mapb\006prot"
-    "o3"
+    "target_id\030\014 \001(\005\022\021\n\tcode_name\030\r \001(\t\",\n\tQu"
+    "estList\022\037\n\006quests\030\001 \003(\0132\017.gamedata.Quest"
+    "\"\323\001\n\rGameModeRules\022\022\n\ntime_limit\030\001 \001(\005\022\026"
+    "\n\016has_time_limit\030\002 \001(\010\022\025\n\rend_condition\030"
+    "\003 \001(\t\022\023\n\013max_players\030\004 \001(\005\022\021\n\tmin_level\030"
+    "\005 \001(\005\022\021\n\tallow_pvp\030\006 \001(\010\022\025\n\rallow_tradin"
+    "g\030\007 \001(\010\022\027\n\017respawn_enabled\030\010 \001(\010\022\024\n\014resp"
+    "awn_time\030\t \001(\005\"`\n\017GameModeRewards\022\026\n\016exp"
+    "_multiplier\030\001 \001(\001\022\027\n\017gold_multiplier\030\002 \001"
+    "(\001\022\034\n\024drop_rate_multiplier\030\003 \001(\001\"V\n\010Boss"
+    "Info\022\017\n\007boss_id\030\001 \001(\005\022\024\n\014boss_name_id\030\002 "
+    "\001(\t\022\022\n\nboss_level\030\003 \001(\005\022\017\n\007boss_hp\030\004 \001(\005"
+    "\"\357\001\n\010GameMode\022\n\n\002id\030\001 \001(\005\022\014\n\004name\030\002 \001(\t\022"
+    "\017\n\007name_id\030\003 \001(\t\022\017\n\007desc_id\030\004 \001(\t\022\020\n\010cat"
+    "egory\030\005 \001(\t\022\014\n\004type\030\006 \001(\t\022&\n\005rules\030\007 \001(\013"
+    "2\027.gamedata.GameModeRules\022\014\n\004maps\030\010 \003(\005\022"
+    "*\n\007rewards\030\t \001(\0132\031.gamedata.GameModeRewa"
+    "rds\022%\n\tboss_info\030\n \001(\0132\022.gamedata.BossIn"
+    "fo\"6\n\014GameModeList\022&\n\ngame_modes\030\001 \003(\0132\022"
+    ".gamedata.GameMode\"\'\n\004Vec3\022\t\n\001x\030\001 \001(\001\022\t\n"
+    "\001y\030\002 \001(\001\022\t\n\001z\030\003 \001(\001\"(\n\007MapSize\022\r\n\005width\030"
+    "\001 \001(\001\022\016\n\006height\030\002 \001(\001\"\211\001\n\004Gate\022\n\n\002id\030\001 \001"
+    "(\005\022\014\n\004name\030\002 \001(\t\022 \n\010position\030\003 \001(\0132\016.gam"
+    "edata.Vec3\022\025\n\rtarget_map_id\030\004 \001(\005\022\026\n\016tar"
+    "get_gate_id\030\005 \001(\005\022\026\n\016required_level\030\006 \001("
+    "\005\"\200\001\n\nSpawnPoint\022 \n\010position\030\001 \001(\0132\016.gam"
+    "edata.Vec3\022\022\n\nmonster_id\030\002 \001(\005\022\026\n\016spawn_"
+    "interval\030\003 \001(\005\022\017\n\007boss_id\030\004 \001(\005\022\023\n\013spawn"
+    "_delay\030\005 \001(\005\"\223\001\n\016MapSpawnPoints\022*\n\014playe"
+    "r_spawn\030\001 \003(\0132\024.gamedata.SpawnPoint\022+\n\rm"
+    "onster_spawn\030\002 \003(\0132\024.gamedata.SpawnPoint"
+    "\022(\n\nboss_spawn\030\003 \003(\0132\024.gamedata.SpawnPoi"
+    "nt\"\260\001\n\014StaticObject\022\n\n\002id\030\001 \001(\005\022\014\n\004type\030"
+    "\002 \001(\t\022\014\n\004name\030\003 \001(\t\022 \n\010position\030\004 \001(\0132\016."
+    "gamedata.Vec3\022\034\n\004size\030\005 \001(\0132\016.gamedata.V"
+    "ec3\022\021\n\tcollision\030\006 \001(\010\022\016\n\006damage\030\007 \001(\005\022\025"
+    "\n\rloot_table_id\030\010 \001(\005\"\256\001\n\rMovableObject\022"
+    "\n\n\002id\030\001 \001(\005\022\014\n\004type\030\002 \001(\t\022\014\n\004name\030\003 \001(\t\022"
+    " \n\010position\030\004 \001(\0132\016.gamedata.Vec3\022\026\n\016mov"
+    "ement_range\030\005 \001(\001\022\026\n\016movement_speed\030\006 \001("
+    "\001\022#\n\013patrol_path\030\007 \003(\0132\016.gamedata.Vec3\"n"
+    "\n\nMapObjects\022.\n\016static_objects\030\001 \003(\0132\026.g"
+    "amedata.StaticObject\0220\n\017movable_objects\030"
+    "\002 \003(\0132\027.gamedata.MovableObject\"\204\002\n\003Map\022\n"
+    "\n\002id\030\001 \001(\005\022\014\n\004name\030\002 \001(\t\022\017\n\007name_id\030\003 \001("
+    "\t\022\017\n\007desc_id\030\004 \001(\t\022\024\n\014game_mode_id\030\005 \001(\005"
+    "\022\037\n\004size\030\006 \001(\0132\021.gamedata.MapSize\022\035\n\005gat"
+    "es\030\007 \003(\0132\016.gamedata.Gate\022.\n\014spawn_points"
+    "\030\010 \001(\0132\030.gamedata.MapSpawnPoints\022%\n\007obje"
+    "cts\030\t \001(\0132\024.gamedata.MapObjects\022\024\n\014navme"
+    "sh_path\030\n \001(\t\"&\n\007MapList\022\033\n\004maps\030\001 \003(\0132\r"
+    ".gamedata.Mapb\006proto3"
 };
 static ::absl::once_flag descriptor_table_gamedata_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_gamedata_2eproto = {
     false,
     false,
-    2842,
+    2861,
     descriptor_table_protodef_gamedata_2eproto,
     "gamedata.proto",
     &descriptor_table_gamedata_2eproto_once,
@@ -2944,6 +2948,7 @@ inline PROTOBUF_NDEBUG_INLINE Quest::Impl_::Impl_(
         name_id_(arena, from.name_id_),
         desc_id_(arena, from.desc_id_),
         objective_type_(arena, from.objective_type_),
+        code_name_(arena, from.code_name_),
         _cached_size_{0} {}
 
 Quest::Quest(
@@ -2978,6 +2983,7 @@ inline PROTOBUF_NDEBUG_INLINE Quest::Impl_::Impl_(
         name_id_(arena),
         desc_id_(arena),
         objective_type_(arena),
+        code_name_(arena),
         _cached_size_{0} {}
 
 inline void Quest::SharedCtor(::_pb::Arena* arena) {
@@ -3001,6 +3007,7 @@ inline void Quest::SharedDtor(MessageLite& self) {
   this_._impl_.name_id_.Destroy();
   this_._impl_.desc_id_.Destroy();
   this_._impl_.objective_type_.Destroy();
+  this_._impl_.code_name_.Destroy();
   this_._impl_.~Impl_();
 }
 
@@ -3052,15 +3059,15 @@ const ::google::protobuf::internal::ClassData* Quest::GetClassData() const {
   return _class_data_.base();
 }
 PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
-const ::_pbi::TcParseTable<4, 12, 0, 63, 2> Quest::_table_ = {
+const ::_pbi::TcParseTable<4, 13, 0, 72, 2> Quest::_table_ = {
   {
     0,  // no _has_bits_
     0, // no _extensions_
-    12, 120,  // max_field_number, fast_idx_mask
+    13, 120,  // max_field_number, fast_idx_mask
     offsetof(decltype(_table_), field_lookup_table),
-    4294963200,  // skipmap
+    4294959104,  // skipmap
     offsetof(decltype(_table_), field_entries),
-    12,  // num_field_entries
+    13,  // num_field_entries
     0,  // num_aux_entries
     offsetof(decltype(_table_), field_names),  // no aux_entries
     _class_data_.base(),
@@ -3107,7 +3114,9 @@ const ::_pbi::TcParseTable<4, 12, 0, 63, 2> Quest::_table_ = {
     // int32 objective_target_id = 12;
     {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(Quest, _impl_.objective_target_id_), 63>(),
      {96, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.objective_target_id_)}},
-    {::_pbi::TcParser::MiniParse, {}},
+    // string code_name = 13;
+    {::_pbi::TcParser::FastUS1,
+     {106, 63, 0, PROTOBUF_FIELD_OFFSET(Quest, _impl_.code_name_)}},
     {::_pbi::TcParser::MiniParse, {}},
     {::_pbi::TcParser::MiniParse, {}},
   }}, {{
@@ -3149,15 +3158,19 @@ const ::_pbi::TcParseTable<4, 12, 0, 63, 2> Quest::_table_ = {
     // int32 objective_target_id = 12;
     {PROTOBUF_FIELD_OFFSET(Quest, _impl_.objective_target_id_), 0, 0,
     (0 | ::_fl::kFcSingular | ::_fl::kInt32)},
+    // string code_name = 13;
+    {PROTOBUF_FIELD_OFFSET(Quest, _impl_.code_name_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
   }},
   // no aux_entries
   {{
-    "\16\0\4\7\7\0\0\0\0\0\16\0\0\0\0\0"
+    "\16\0\4\7\7\0\0\0\0\0\16\0\0\11\0\0"
     "gamedata.Quest"
     "type"
     "name_id"
     "desc_id"
     "objective_type"
+    "code_name"
   }},
 };
 
@@ -3173,6 +3186,7 @@ PROTOBUF_NOINLINE void Quest::Clear() {
   _impl_.name_id_.ClearToEmpty();
   _impl_.desc_id_.ClearToEmpty();
   _impl_.objective_type_.ClearToEmpty();
+  _impl_.code_name_.ClearToEmpty();
   ::memset(&_impl_.id_, 0, static_cast<::size_t>(
       reinterpret_cast<char*>(&_impl_.objective_target_id_) -
       reinterpret_cast<char*>(&_impl_.id_)) + sizeof(_impl_.objective_target_id_));
@@ -3284,6 +3298,14 @@ PROTOBUF_NOINLINE void Quest::Clear() {
                     stream, this_._internal_objective_target_id(), target);
           }
 
+          // string code_name = 13;
+          if (!this_._internal_code_name().empty()) {
+            const std::string& _s = this_._internal_code_name();
+            ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+                _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "gamedata.Quest.code_name");
+            target = stream->WriteStringMaybeAliased(13, _s, target);
+          }
+
           if (PROTOBUF_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
             target =
                 ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
@@ -3337,6 +3359,11 @@ PROTOBUF_NOINLINE void Quest::Clear() {
             if (!this_._internal_objective_type().empty()) {
               total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
                                               this_._internal_objective_type());
+            }
+            // string code_name = 13;
+            if (!this_._internal_code_name().empty()) {
+              total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                              this_._internal_code_name());
             }
             // int32 id = 1;
             if (this_._internal_id() != 0) {
@@ -3398,6 +3425,9 @@ void Quest::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::p
   if (!from._internal_objective_type().empty()) {
     _this->_internal_set_objective_type(from._internal_objective_type());
   }
+  if (!from._internal_code_name().empty()) {
+    _this->_internal_set_code_name(from._internal_code_name());
+  }
   if (from._internal_id() != 0) {
     _this->_impl_.id_ = from._impl_.id_;
   }
@@ -3440,6 +3470,7 @@ void Quest::InternalSwap(Quest* PROTOBUF_RESTRICT other) {
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.name_id_, &other->_impl_.name_id_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.desc_id_, &other->_impl_.desc_id_, arena);
   ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.objective_type_, &other->_impl_.objective_type_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.code_name_, &other->_impl_.code_name_, arena);
   ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(Quest, _impl_.objective_target_id_)
       + sizeof(Quest::_impl_.objective_target_id_)

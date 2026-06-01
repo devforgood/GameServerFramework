@@ -1,6 +1,7 @@
 [
   {
     "id": 1,
+    "code_name": "MainQuest",
     "type": "main",
     "name_id": "quest_tutorial_name",
     "desc_id": "quest_tutorial_desc",
@@ -15,7 +16,8 @@
   },
   {
     "id": 2,
-    "type": "daily",
+    "code_name": "RepeatedQuest",
+    "type": "repeated",
     "name_id": "quest_daily_kills_name",
     "desc_id": "quest_daily_kills_desc",
     "level_requirement": 5,
@@ -29,9 +31,10 @@
   },
   {
     "id": 3,
-    "type": "side",
-    "name_id": "quest_collect_items_name",
-    "desc_id": "quest_collect_items_desc",
+    "code_name": "LimitedTimeQuest",
+    "type": "LimitedTime",
+    "name_id": "quest_limited_time_name",
+    "desc_id": "quest_limited_time_desc",
     "level_requirement": 3,
     "reward_item_ids": [4],
     "reward_exp": 150,

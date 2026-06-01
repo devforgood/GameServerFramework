@@ -30,6 +30,25 @@ def _ensure_default_class(server_src_dir, table_name):
         with open(cpp_path, 'w', encoding='utf-8') as f:
             f.write(f'#include "{table_name}.h"\n')
 
+def _ensure_default_derived_class(server_src_dir, table_name, class_name):
+    h_path = os.path.join(server_src_dir, f'{class_name}.h')
+    cpp_path = os.path.join(server_src_dir, f'{class_name}.cpp')
+
+    if not os.path.exists(h_path):
+        with open(h_path, 'w', encoding='utf-8') as f:
+            f.write(
+                '#pragma once\n'
+                f'#include "{table_name}.h"\n'
+                '\n'
+                f'class {class_name} : public {table_name}\n'
+                '{\n'
+                '};\n'
+            )
+
+    if not os.path.exists(cpp_path):
+        with open(cpp_path, 'w', encoding='utf-8') as f:
+            f.write(f'#include "{class_name}.h"\n')
+
 def _has_client_class(client_cs_dir, table_name):
     target_file = f'{table_name}.cs'
     for root, _, files in os.walk(client_cs_dir):
@@ -53,6 +72,21 @@ def _ensure_default_client_class(client_cs_dir, table_name):
             '}\n'
         )
 
+def _ensure_default_derived_client_class(client_cs_dir, table_name, class_name):
+    if _has_client_class(client_cs_dir, class_name):
+        return
+
+    class_dir = os.path.join(client_cs_dir, table_name)
+    os.makedirs(class_dir, exist_ok=True)
+
+    cs_path = os.path.join(class_dir, f'{class_name}.cs')
+    with open(cs_path, 'w', encoding='utf-8') as f:
+        f.write(
+            f'public class {class_name} : {table_name}\n'
+            '{\n'
+            '}\n'
+        )
+
 def generate_factory(server_src_dir, client_cs_dir, table_name, items):
     # code_name 추출
     code_names = sorted(set(item['code_name'] for item in items if 'code_name' in item))
@@ -70,6 +104,11 @@ def generate_factory(server_src_dir, client_cs_dir, table_name, items):
         _ensure_default_client_class(client_cs_dir, table_name)
 
     # Jinja2 환경 설정
+    for code_name in code_names:
+        _ensure_default_derived_class(server_src_dir, table_name, code_name)
+        if table_name not in ['GameMode', 'Map']:
+            _ensure_default_derived_client_class(client_cs_dir, table_name, code_name)
+
     env = Environment(loader=FileSystemLoader('templates'))
 
     # Factory.h 생성

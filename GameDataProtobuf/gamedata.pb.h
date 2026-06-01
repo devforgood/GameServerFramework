@@ -896,6 +896,7 @@ class Quest final : public ::google::protobuf::Message
     kNameIdFieldNumber = 3,
     kDescIdFieldNumber = 4,
     kObjectiveTypeFieldNumber = 10,
+    kCodeNameFieldNumber = 13,
     kIdFieldNumber = 1,
     kLevelRequirementFieldNumber = 5,
     kRewardExpFieldNumber = 7,
@@ -986,6 +987,22 @@ class Quest final : public ::google::protobuf::Message
   std::string* _internal_mutable_objective_type();
 
   public:
+  // string code_name = 13;
+  void clear_code_name() ;
+  const std::string& code_name() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_code_name(Arg_&& arg, Args_... args);
+  std::string* mutable_code_name();
+  PROTOBUF_NODISCARD std::string* release_code_name();
+  void set_allocated_code_name(std::string* value);
+
+  private:
+  const std::string& _internal_code_name() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_code_name(
+      const std::string& value);
+  std::string* _internal_mutable_code_name();
+
+  public:
   // int32 id = 1;
   void clear_id() ;
   ::int32_t id() const;
@@ -1061,8 +1078,8 @@ class Quest final : public ::google::protobuf::Message
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      4, 12, 0,
-      63, 2>
+      4, 13, 0,
+      72, 2>
       _table_;
 
   friend class ::google::protobuf::MessageLite;
@@ -1085,6 +1102,7 @@ class Quest final : public ::google::protobuf::Message
     ::google::protobuf::internal::ArenaStringPtr name_id_;
     ::google::protobuf::internal::ArenaStringPtr desc_id_;
     ::google::protobuf::internal::ArenaStringPtr objective_type_;
+    ::google::protobuf::internal::ArenaStringPtr code_name_;
     ::int32_t id_;
     ::int32_t level_requirement_;
     ::int32_t reward_exp_;
@@ -7026,6 +7044,54 @@ inline ::int32_t Quest::_internal_objective_target_id() const {
 inline void Quest::_internal_set_objective_target_id(::int32_t value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.objective_target_id_ = value;
+}
+
+// string code_name = 13;
+inline void Quest::clear_code_name() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.code_name_.ClearToEmpty();
+}
+inline const std::string& Quest::code_name() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:gamedata.Quest.code_name)
+  return _internal_code_name();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void Quest::set_code_name(Arg_&& arg,
+                                                     Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.code_name_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:gamedata.Quest.code_name)
+}
+inline std::string* Quest::mutable_code_name() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_code_name();
+  // @@protoc_insertion_point(field_mutable:gamedata.Quest.code_name)
+  return _s;
+}
+inline const std::string& Quest::_internal_code_name() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.code_name_.Get();
+}
+inline void Quest::_internal_set_code_name(const std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.code_name_.Set(value, GetArena());
+}
+inline std::string* Quest::_internal_mutable_code_name() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  return _impl_.code_name_.Mutable( GetArena());
+}
+inline std::string* Quest::release_code_name() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:gamedata.Quest.code_name)
+  return _impl_.code_name_.Release();
+}
+inline void Quest::set_allocated_code_name(std::string* value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.code_name_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.code_name_.IsDefault()) {
+    _impl_.code_name_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:gamedata.Quest.code_name)
 }
 
 // -------------------------------------------------------------------
