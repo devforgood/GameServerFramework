@@ -25,6 +25,7 @@
     <Compile Include="generate.py" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="build.bat" />
     <Content Include="schema.xml" />
     <Content Include="templates\create_table.sql.j2" />
     <Content Include="templates\dao.cpp.j2" />

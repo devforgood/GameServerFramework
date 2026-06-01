@@ -1,3 +1,4 @@
+# -*- coding: cp949 -*-
 import os
 import shutil  # shutil 모듈 import 추가
 import xml.etree.ElementTree as ET

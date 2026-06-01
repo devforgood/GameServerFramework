@@ -321,3 +321,127 @@ std::vector<SkillDAO> SkillDAO::SelectByIndex(int player_id) {
     }
     return std::vector<SkillDAO>();
 }
+
+
+// ----------------------------------------
+
+QuestDAO::QuestDAO(sql::Connection* conn)
+    : conn_(conn) {}
+
+void QuestDAO::Insert() {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("INSERT INTO quest (player_id, quest_id, state, objective_count) VALUES (?, ?, ?, ?)")
+        );
+
+        stmt->setInt(1, player_id);
+        stmt->setInt(2, quest_id);
+        stmt->setInt(3, state);
+        stmt->setInt(4, objective_count);
+
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+void QuestDAO::Update() {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("UPDATE quest SET player_id = ?, quest_id = ?, state = ?, objective_count = ? WHERE id = ?")
+        );
+
+        stmt->setInt(1, player_id);
+        stmt->setInt(2, quest_id);
+        stmt->setInt(3, state);
+        stmt->setInt(4, objective_count);
+        stmt->setInt(5, id);
+
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+void QuestDAO::Delete() {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("DELETE FROM quest WHERE id = ?")
+        );
+
+        stmt->setInt(1, id);
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+bool QuestDAO::Select(int id) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("SELECT id, player_id, quest_id, state, objective_count FROM quest WHERE id = ?")
+        );
+
+        stmt->setInt(1, id);
+
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        if (res->next()) {
+            this->id = res->getInt("id");
+            this->player_id = res->getInt("player_id");
+            this->quest_id = res->getInt("quest_id");
+            this->state = res->getInt("state");
+            this->objective_count = res->getInt("objective_count");
+        } else {
+            return false;
+        }
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+    return true;
+}
+
+std::vector<QuestDAO> QuestDAO::SelectByIndex(int player_id) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("SELECT id, player_id, quest_id, state, objective_count FROM quest WHERE player_id = ?")
+        );
+
+        stmt->setInt(1, player_id);
+
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        std::vector<QuestDAO> results;
+        while (res->next()) {
+            QuestDAO obj(conn_);
+            obj.id = res->getInt("id");
+            obj.player_id = res->getInt("player_id");
+            obj.quest_id = res->getInt("quest_id");
+            obj.state = res->getInt("state");
+            obj.objective_count = res->getInt("objective_count");
+            results.push_back(obj);
+        }
+        return results;
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+    return std::vector<QuestDAO>();
+}

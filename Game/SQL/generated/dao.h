@@ -79,3 +79,32 @@ public:
     int skill_id;
     int level;
 };
+
+
+
+// ----------------------------------------
+
+class QuestDAO {
+public:
+    QuestDAO(sql::Connection* conn);
+
+    void Insert();
+    void Update();
+    void Delete();
+
+    // Select by primary key
+    bool Select(int id);
+
+    // Select by index columns (if any)
+    std::vector<QuestDAO> SelectByIndex(int player_id);
+
+private:
+    sql::Connection* conn_;
+
+public:
+    int id;
+    int player_id;
+    int quest_id;
+    int state;
+    int objective_count;
+};
