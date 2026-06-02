@@ -29,7 +29,7 @@ void {{ class_name }}::Insert() {
     }
 }
 
-void {{ table.class_name }}::Update() {
+void {{ class_name }}::Update() {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement(
@@ -41,11 +41,11 @@ void {{ table.class_name }}::Update() {
 
         int param_idx = 1;
         {% for col in table.columns if not col.is_pk %}
-        stmt->set{{ col.setter_type }}(param_idx++, {{ col.name }});
+        stmt->set{{ col.cpp_set_func }}(param_idx++, {{ col.name }});
         {% endfor %}
         
         {% for col in table.columns if col.is_pk %}
-        stmt->set{{ col.setter_type }}(param_idx++, {{ col.name }});
+        stmt->set{{ col.cpp_set_func }}(param_idx++, {{ col.name }});
         {% endfor %}
 
         stmt->execute();
@@ -61,10 +61,12 @@ void {{ table.class_name }}::Update() {
 void {{ class_name }}::Delete() {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("DELETE FROM {{ table.name }} WHERE {{ table.primary_key.name }} = ?")
+            conn_->prepareStatement("DELETE FROM {{ table.name }} WHERE {% for col in table.primary_key %}{{ col.name }} = ?{% if not loop.last %} AND {% endif %}{% endfor %}")
         );
 
-        stmt->set{{ table.primary_key.cpp_set_func }}(1, {{ table.primary_key.name }});
+        {% for col in table.primary_key %}
+        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, {{ col.name }});
+        {% endfor %}
         stmt->execute();
     }
     catch (const sql::SQLException& e) {
@@ -75,13 +77,15 @@ void {{ class_name }}::Delete() {
     }
 }
 
-bool {{ class_name }}::Select({{ table.primary_key.cpp_type }} {{ table.primary_key.name }}) {
+bool {{ class_name }}::Select({% for col in table.primary_key %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %}) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("SELECT {% for col in table.columns %}{{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %} FROM {{ table.name }} WHERE {{ table.primary_key.name }} = ?")
+            conn_->prepareStatement("SELECT {% for col in table.columns %}{{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %} FROM {{ table.name }} WHERE {% for col in table.primary_key %}{{ col.name }} = ?{% if not loop.last %} AND {% endif %}{% endfor %}")
         );
 
-        stmt->set{{ table.primary_key.cpp_set_func }}(1, {{ table.primary_key.name }});
+        {% for col in table.primary_key %}
+        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, {{ col.name }});
+        {% endfor %}
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
         if (res->next()) {

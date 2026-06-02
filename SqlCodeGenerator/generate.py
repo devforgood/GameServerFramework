@@ -1,6 +1,6 @@
-# -*- coding: cp949 -*-
+# -*- coding: utf-8 -*-
 import os
-import shutil  # shutil ¸ðµâ import Ãß°¡
+import shutil  # shutil ï¿½ï¿½ï¿½ import ï¿½ß°ï¿½
 import xml.etree.ElementTree as ET
 from jinja2 import Environment, FileSystemLoader
 
@@ -42,8 +42,8 @@ def parse_schema(xml_file):
             "file_name": table_node.get("file_name") or table_node.get("name").lower() + "_dao",
             "columns": [],
             "primary_key": None,
-            "unique_keys": [],  # À¯´ÏÅ© Å°¸¦ ÀúÀåÇÒ ¸®½ºÆ® Ãß°¡
-            "indexes": []  # ÀÎµ¦½º¸¦ ÀúÀåÇÒ ¸®½ºÆ® Ãß°¡
+            "unique_keys": [],  # ï¿½ï¿½ï¿½ï¿½Å© Å°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ß°ï¿½
+            "indexes": []  # ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ß°ï¿½
         }
         for col_node in table_node.findall('column'):
             col = {
@@ -57,19 +57,27 @@ def parse_schema(xml_file):
             col["cpp_set_func"] = map_cpp_set_func(col["cpp_type"])
             table["columns"].append(col)
         
-        # Primary key Ã³¸®
-        pk_name = table_node.find('primary_key').text
-        table["primary_key"] = next((c for c in table["columns"] if c["name"] == pk_name), None)
+        # Primary key Ã³
+        pk_node = table_node.find('primary_key')
+        if pk_node is not None:
+            pk_names = [name.strip() for name in pk_node.text.split(",")]
+            table["primary_key"] = [c for c in table["columns"] if c["name"] in pk_names]
+            for col in table["columns"]:
+                col["is_pk"] = col["name"] in pk_names
+        else:
+            table["primary_key"] = []
+            for col in table["columns"]:
+                col["is_pk"] = False
 
-        # Unique key Ã³¸®
+        # Unique key Ã³
         for unique_key_node in table_node.findall('unique_key'):
-            unique_key_columns = unique_key_node.text.split(",")  # À¯´ÏÅ© Å° ÄÃ·³Àº ½°Ç¥·Î ±¸ºÐµÈ´Ù°í °¡Á¤
-            table["unique_keys"].append([col.strip() for col in unique_key_columns])  # °ø¹é Á¦°Å ÈÄ Ãß°¡
+            unique_key_columns = unique_key_node.text.split(",")  # ï¿½ï¿½ï¿½ï¿½Å© Å° ï¿½Ã·ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½ÐµÈ´Ù°ï¿½ ï¿½ï¿½ï¿½ï¿½
+            table["unique_keys"].append([col.strip() for col in unique_key_columns])  # ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ß°ï¿½
 
-        # Index Ã³¸®
+        # Index Ã³ï¿½ï¿½
         for index_node in table_node.findall('index'):
-            index_columns = index_node.text.split(",")  # ÀÎµ¦½º ÄÃ·³Àº ½°Ç¥·Î ±¸ºÐµÈ´Ù°í °¡Á¤
-            table["indexes"].append([col.strip() for col in index_columns])  # °ø¹é Á¦°Å ÈÄ Ãß°¡
+            index_columns = index_node.text.split(",")  # ï¿½Îµï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½ï¿½ ï¿½ï¿½Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½ÐµÈ´Ù°ï¿½ ï¿½ï¿½ï¿½ï¿½
+            table["indexes"].append([col.strip() for col in index_columns])  # ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ß°ï¿½
 
 
         tables.append(table)
@@ -80,7 +88,7 @@ def render_templates(tables):
 
     pathname = "../Game/SQL/generated"
 
-    # ÆÄÀÏÀ» »ý¼ºÇÏ±âÀü¿¡ »èÁ¦ÇÑ´Ù.
+    # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
     if os.path.exists(pathname):
         shutil.rmtree(pathname)
 
@@ -89,7 +97,7 @@ def render_templates(tables):
 
     create_sqls = []
 
-    # Ã¹ ¹øÂ° ÆÄÀÏÀÎÁö È®ÀÎÇÏ±â À§ÇÑ ÇÃ·¡±×
+    # Ã¹ ï¿½ï¿½Â° ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½ï¿½
     is_first_file = True
 
     for table in tables:
@@ -105,7 +113,7 @@ def render_templates(tables):
         # CREATE TABLE SQL
         create_sqls.append(env.get_template("create_table.sql.j2").render(table=table))
 
-        is_first_file = False  # Ã¹ ¹øÂ° ÆÄÀÏ »ý¼º ÈÄ ÇÃ·¡±× º¯°æ
+        is_first_file = False  # Ã¹ ï¿½ï¿½Â° ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 
     with open(f"{pathname}/create_tables.sql", "w") as f:

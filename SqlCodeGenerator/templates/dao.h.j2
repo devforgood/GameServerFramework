@@ -20,7 +20,7 @@ public:
     void Delete();
 
     // Select by primary key
-    bool Select({{ table.primary_key.cpp_type }} {{ table.primary_key.name }});
+    bool Select({% for col in table.primary_key %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %});
 
     // Select by index columns (if any)
     {% if table.indexes %}

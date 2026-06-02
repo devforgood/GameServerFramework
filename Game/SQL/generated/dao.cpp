@@ -35,8 +35,8 @@ void PlayerDAO::Update() {
         int param_idx = 1;
         stmt->setString(param_idx++, name);
         stmt->setInt(param_idx++, level);
-        stmt->setInt(param_idx++, id);
         
+        stmt->setInt(param_idx++, id);
 
         stmt->execute();
     }
@@ -130,8 +130,8 @@ void ItemDAO::Update() {
         int param_idx = 1;
         stmt->setInt(param_idx++, player_id);
         stmt->setInt(param_idx++, level);
-        stmt->setInt(param_idx++, id);
         
+        stmt->setInt(param_idx++, id);
 
         stmt->execute();
     }
@@ -254,8 +254,8 @@ void SkillDAO::Update() {
         stmt->setInt(param_idx++, player_id);
         stmt->setInt(param_idx++, skill_id);
         stmt->setInt(param_idx++, level);
-        stmt->setInt(param_idx++, id);
         
+        stmt->setInt(param_idx++, id);
 
         stmt->execute();
     }
@@ -386,9 +386,9 @@ void QuestActiveDAO::Update() {
         stmt->setInt(param_idx++, progress2);
         stmt->setInt(param_idx++, progress3);
         stmt->setString(param_idx++, accept_time);
+        
         stmt->setInt(param_idx++, character_id);
         stmt->setInt(param_idx++, quest_id);
-        
 
         stmt->execute();
     }
@@ -518,8 +518,8 @@ void QuestStateDAO::Update() {
 
         int param_idx = 1;
         stmt->setString(param_idx++, flags);
-        stmt->setInt(param_idx++, character_id);
         
+        stmt->setInt(param_idx++, character_id);
 
         stmt->execute();
     }
@@ -572,3 +572,4 @@ bool QuestStateDAO::Select(int character_id) {
     }
     return true;
 }
+

@@ -93,7 +93,7 @@ public:
     void Delete();
 
     // Select by primary key
-    bool Select( );
+    bool Select(int character_id, int quest_id);
 
     // Select by index columns (if any)
     std::vector<QuestActiveDAO> SelectByIndex(int character_id);

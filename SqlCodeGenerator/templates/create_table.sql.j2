@@ -1,21 +1,19 @@
-{% for table in tables %}
-CREATE TABLE {{ table.name }}
+CREATE TABLE `{{ table.name }}`
 (
 {% for col in table.columns %}
-    {{ "%-20s" | format(col.name) }} {{ "%-15s" | format(col.type) }}{% if not col.nullable %} NOT NULL{% endif %}{% if col.default is not none %} DEFAULT {{ col.default }}{% endif %}{% if col.auto_increment %} AUTO_INCREMENT{% endif %},
-{% endfor %}
+    {{ "%-20s" | format("`" ~ col.name ~ "`") }} {{ "%-15s" | format(col.type) }}{% if not col.nullable %} NOT NULL{% endif %}{% if col.default is not none %} DEFAULT {{ col.default }}{% endif %}{% if col.auto_increment %} AUTO_INCREMENT{% endif %}{% if not loop.last or table.primary_key or table.unique_keys or table.indexes %},{% endif %}
 
-{% if table.primary_key %}
-    PRIMARY KEY ({{ table.primary_key }}){% if table.unique_keys or table.indices %},{% endif %}
+{% endfor %}
+{% if table.primary_key|length > 0 %}
+    PRIMARY KEY (`{{ table.primary_key | map(attribute='name') | join('`, `') }}`){% if table.unique_keys or table.indexes %},{% endif %}
+
 {% endif %}
-
 {% for uk in table.unique_keys %}
-    UNIQUE KEY ({{ uk }}){% if not loop.last or table.indices %},{% endif %}
-{% endfor %}
+    UNIQUE KEY (`{{ uk | join('`, `') }}`){% if not loop.last or table.indexes %},{% endif %}
 
-{% for idx in table.indices %}
-    INDEX ({{ idx }}){% if not loop.last %},{% endif %}
+{% endfor %}
+{% for idx in table.indexes %}
+    INDEX (`{{ idx | join('`, `') }}`){% if not loop.last %},{% endif %}
+
 {% endfor %}
 );
-
-{% endfor %}
