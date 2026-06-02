@@ -25,12 +25,18 @@ void PlayerDAO::Insert() {
 void PlayerDAO::Update() {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("UPDATE player SET name = ?, level = ? WHERE id = ?")
+            conn_->prepareStatement(
+                "UPDATE player "
+                "SET name = ?, level = ? "
+                "WHERE id = ?"
+            )
         );
 
-        stmt->setString(1, name);
-        stmt->setInt(2, level);
-        stmt->setInt(3, id);
+        int param_idx = 1;
+        stmt->setString(param_idx++, name);
+        stmt->setInt(param_idx++, level);
+        stmt->setInt(param_idx++, id);
+        
 
         stmt->execute();
     }
@@ -114,12 +120,18 @@ void ItemDAO::Insert() {
 void ItemDAO::Update() {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("UPDATE item SET player_id = ?, level = ? WHERE id = ?")
+            conn_->prepareStatement(
+                "UPDATE item "
+                "SET player_id = ?, level = ? "
+                "WHERE id = ?"
+            )
         );
 
-        stmt->setInt(1, player_id);
-        stmt->setInt(2, level);
-        stmt->setInt(3, id);
+        int param_idx = 1;
+        stmt->setInt(param_idx++, player_id);
+        stmt->setInt(param_idx++, level);
+        stmt->setInt(param_idx++, id);
+        
 
         stmt->execute();
     }
@@ -231,13 +243,19 @@ void SkillDAO::Insert() {
 void SkillDAO::Update() {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("UPDATE skill SET player_id = ?, skill_id = ?, level = ? WHERE id = ?")
+            conn_->prepareStatement(
+                "UPDATE skill "
+                "SET player_id = ?, skill_id = ?, level = ? "
+                "WHERE id = ?"
+            )
         );
 
-        stmt->setInt(1, player_id);
-        stmt->setInt(2, skill_id);
-        stmt->setInt(3, level);
-        stmt->setInt(4, id);
+        int param_idx = 1;
+        stmt->setInt(param_idx++, player_id);
+        stmt->setInt(param_idx++, skill_id);
+        stmt->setInt(param_idx++, level);
+        stmt->setInt(param_idx++, id);
+        
 
         stmt->execute();
     }
@@ -355,17 +373,22 @@ void QuestActiveDAO::Insert() {
 void QuestActiveDAO::Update() {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("UPDATE quest_active SET character_id = ?, quest_id = ?, state = ?, progress1 = ?, progress2 = ?, progress3 = ?, accept_time = ? WHERE  = ?")
+            conn_->prepareStatement(
+                "UPDATE quest_active "
+                "SET state = ?, progress1 = ?, progress2 = ?, progress3 = ?, accept_time = ? "
+                "WHERE character_id = ? AND quest_id = ?"
+            )
         );
 
-        stmt->setInt(1, character_id);
-        stmt->setInt(2, quest_id);
-        stmt->setInt(3, state);
-        stmt->setInt(4, progress1);
-        stmt->setInt(5, progress2);
-        stmt->setInt(6, progress3);
-        stmt->setString(7, accept_time);
-        stmt->set(7, );
+        int param_idx = 1;
+        stmt->setInt(param_idx++, state);
+        stmt->setInt(param_idx++, progress1);
+        stmt->setInt(param_idx++, progress2);
+        stmt->setInt(param_idx++, progress3);
+        stmt->setString(param_idx++, accept_time);
+        stmt->setInt(param_idx++, character_id);
+        stmt->setInt(param_idx++, quest_id);
+        
 
         stmt->execute();
     }
@@ -380,10 +403,11 @@ void QuestActiveDAO::Update() {
 void QuestActiveDAO::Delete() {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("DELETE FROM quest_active WHERE  = ?")
+            conn_->prepareStatement("DELETE FROM quest_active WHERE character_id = ? AND quest_id = ?")
         );
 
-        stmt->set(1, );
+        stmt->setInt(1, character_id);
+        stmt->setInt(2, quest_id);
         stmt->execute();
     }
     catch (const sql::SQLException& e) {
@@ -394,13 +418,14 @@ void QuestActiveDAO::Delete() {
     }
 }
 
-bool QuestActiveDAO::Select( ) {
+bool QuestActiveDAO::Select(int character_id, int quest_id) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("SELECT character_id, quest_id, state, progress1, progress2, progress3, accept_time FROM quest_active WHERE  = ?")
+            conn_->prepareStatement("SELECT character_id, quest_id, state, progress1, progress2, progress3, accept_time FROM quest_active WHERE character_id = ? AND quest_id = ?")
         );
 
-        stmt->set(1, );
+        stmt->setInt(1, character_id);
+        stmt->setInt(2, quest_id);
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
         if (res->next()) {
@@ -484,11 +509,17 @@ void QuestStateDAO::Insert() {
 void QuestStateDAO::Update() {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("UPDATE quest_state SET flags = ? WHERE character_id = ?")
+            conn_->prepareStatement(
+                "UPDATE quest_state "
+                "SET flags = ? "
+                "WHERE character_id = ?"
+            )
         );
 
-        stmt->setString(1, flags);
-        stmt->setInt(2, character_id);
+        int param_idx = 1;
+        stmt->setString(param_idx++, flags);
+        stmt->setInt(param_idx++, character_id);
+        
 
         stmt->execute();
     }
@@ -541,4 +572,3 @@ bool QuestStateDAO::Select(int character_id) {
     }
     return true;
 }
-

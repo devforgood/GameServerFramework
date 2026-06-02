@@ -29,16 +29,24 @@ void {{ class_name }}::Insert() {
     }
 }
 
-void {{ class_name }}::Update() {
+void {{ table.class_name }}::Update() {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("UPDATE {{ table.name }} SET {% for col in table.columns if col.name != table.primary_key.name and not col.auto_increment %}{{ col.name }} = ?{% if not loop.last %}, {% endif %}{% endfor %} WHERE {{ table.primary_key.name }} = ?")
+            conn_->prepareStatement(
+                "UPDATE {{ table.name }} "
+                "SET {% for col in table.columns if not col.is_pk %}{{ col.name }} = ?{% if not loop.last %}, {% endif %}{% endfor %} "
+                "WHERE {% for col in table.columns if col.is_pk %}{{ col.name }} = ?{% if not loop.last %} AND {% endif %}{% endfor %}"
+            )
         );
 
-        {% for col in table.columns if col.name != table.primary_key.name and not col.auto_increment %}
-        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, {{ col.name }});
+        int param_idx = 1;
+        {% for col in table.columns if not col.is_pk %}
+        stmt->set{{ col.setter_type }}(param_idx++, {{ col.name }});
         {% endfor %}
-        stmt->set{{ table.primary_key.cpp_set_func }}({{ table.columns | length }}, {{ table.primary_key.name }});
+        
+        {% for col in table.columns if col.is_pk %}
+        stmt->set{{ col.setter_type }}(param_idx++, {{ col.name }});
+        {% endfor %}
 
         stmt->execute();
     }
