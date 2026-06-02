@@ -84,27 +84,54 @@ public:
 
 // ----------------------------------------
 
-class QuestDAO {
+class QuestActiveDAO {
 public:
-    QuestDAO(sql::Connection* conn);
+    QuestActiveDAO(sql::Connection* conn);
 
     void Insert();
     void Update();
     void Delete();
 
     // Select by primary key
-    bool Select(int id);
+    bool Select( );
 
     // Select by index columns (if any)
-    std::vector<QuestDAO> SelectByIndex(int player_id);
+    std::vector<QuestActiveDAO> SelectByIndex(int character_id);
 
 private:
     sql::Connection* conn_;
 
 public:
-    int id;
-    int player_id;
+    int character_id;
     int quest_id;
     int state;
-    int objective_count;
+    int progress1;
+    int progress2;
+    int progress3;
+    std::string accept_time;
+};
+
+
+
+// ----------------------------------------
+
+class QuestStateDAO {
+public:
+    QuestStateDAO(sql::Connection* conn);
+
+    void Insert();
+    void Update();
+    void Delete();
+
+    // Select by primary key
+    bool Select(int character_id);
+
+    // Select by index columns (if any)
+
+private:
+    sql::Connection* conn_;
+
+public:
+    int character_id;
+    std::string flags;
 };

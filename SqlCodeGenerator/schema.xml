@@ -22,14 +22,20 @@
     <unique_key>player_id, skill_id</unique_key>
     <index>player_id</index>
   </table>
-  <table name="quest" class_name="QuestDAO" file_name="dao">
-    <column name="id" type="BIGINT" auto_increment="true" nullable="false"/>
-    <column name="player_id" type="BIGINT" nullable="false" />
-    <column name="quest_id" type="BIGINT" nullable="false" />
-    <column name="state" type="INT" default="0"/>
-    <column name="objective_count" type="INT" default="0"/>
-    <primary_key>id</primary_key>
-    <unique_key>player_id, quest_id</unique_key>
-    <index>player_id</index>
+  <table name="quest_active" class_name="QuestActiveDAO" file_name="dao">
+    <column name="character_id" type="BIGINT" nullable="false"/>
+    <column name="quest_id" type="INT" nullable="false"/>
+    <column name="state" type="TINYINT" nullable="false"/>
+    <column name="progress1" type="INT" default="0" nullable="false"/>
+    <column name="progress2" type="INT" default="0" nullable="false"/>
+    <column name="progress3" type="INT" default="0" nullable="false"/>
+    <column name="accept_time" type="DATETIME" nullable="false"/>
+    <primary_key>character_id, quest_id</primary_key>
+    <index>character_id</index>
+  </table>
+  <table name="quest_state" class_name="QuestStateDAO" file_name="dao">
+    <column name="character_id" type="BIGINT" nullable="false"/>
+    <column name="flags" type="BLOB" nullable="false"/>
+    <primary_key>character_id</primary_key>
   </table>
 </database>

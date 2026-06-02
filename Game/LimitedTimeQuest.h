@@ -1,3 +1,4 @@
+#include "Common.h"
 #pragma once
 #include "Quest.h"
 
