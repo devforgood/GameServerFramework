@@ -20,6 +20,9 @@
     <Filter Include="Time">
       <UniqueIdentifier>{ec8e8a14-f774-4018-9a03-b9a06ed87a90}</UniqueIdentifier>
     </Filter>
+    <Filter Include="EventBroker">
+      <UniqueIdentifier>{79dc5367-e19e-45a0-8e2d-c8d49b84aa6b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GridManager.cpp">
@@ -65,6 +68,30 @@
     </ClInclude>
     <ClInclude Include="CacheOptimizedSystem.h">
       <Filter>ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="EventBroker.h">
+      <Filter>EventBroker</Filter>
+    </ClInclude>
+    <ClInclude Include="EventBus.h">
+      <Filter>EventBroker</Filter>
+    </ClInclude>
+    <ClInclude Include="EventPolicy.h">
+      <Filter>EventBroker</Filter>
+    </ClInclude>
+    <ClInclude Include="EventQueue.h">
+      <Filter>EventBroker</Filter>
+    </ClInclude>
+    <ClInclude Include="NonThreadSafeQueue.h">
+      <Filter>EventBroker</Filter>
+    </ClInclude>
+    <ClInclude Include="ConcurrentQueue.h">
+      <Filter>EventBroker</Filter>
+    </ClInclude>
+    <ClInclude Include="NonThreadSafe.h">
+      <Filter>EventBroker</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadSafe.h">
+      <Filter>EventBroker</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

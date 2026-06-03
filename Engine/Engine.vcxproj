@@ -26,9 +26,17 @@
     <ClCompile Include="TimeStamp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ConcurrentQueue.h" />
+    <ClInclude Include="EventBroker.h" />
+    <ClInclude Include="EventBus.h" />
+    <ClInclude Include="EventPolicy.h" />
+    <ClInclude Include="EventQueue.h" />
     <ClInclude Include="GridManager.h" />
+    <ClInclude Include="NonThreadSafe.h" />
+    <ClInclude Include="NonThreadSafeQueue.h" />
     <ClInclude Include="RandomUtil.h" />
     <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="ThreadSafe.h" />
     <ClInclude Include="TimeStamp.h" />
     <ClInclude Include="ECS.h" />
     <ClInclude Include="SystemManager.h" />
