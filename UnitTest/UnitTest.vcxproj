@@ -103,6 +103,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ECSTest.cpp" />
+    <ClCompile Include="EventBrokerTest.cpp" />
     <ClCompile Include="GridManagerTest.cpp" />
     <ClCompile Include="RingBufferTest.cpp" />
     <ClCompile Include="pch.cpp">
