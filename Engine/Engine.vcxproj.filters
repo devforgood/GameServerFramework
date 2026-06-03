@@ -84,13 +84,16 @@
     <ClInclude Include="NonThreadSafeQueue.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
-    <ClInclude Include="ConcurrentQueue.h">
+    <ClInclude Include="BoostConcurrentQueue.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
     <ClInclude Include="NonThreadSafe.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
     <ClInclude Include="ThreadSafe.h">
+      <Filter>EventBroker</Filter>
+    </ClInclude>
+    <ClInclude Include="MoodycamelConcurrentQueue.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
   </ItemGroup>

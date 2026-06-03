@@ -26,12 +26,13 @@
     <ClCompile Include="TimeStamp.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ConcurrentQueue.h" />
+    <ClInclude Include="BoostConcurrentQueue.h" />
     <ClInclude Include="EventBroker.h" />
     <ClInclude Include="EventBus.h" />
     <ClInclude Include="EventPolicy.h" />
     <ClInclude Include="EventQueue.h" />
     <ClInclude Include="GridManager.h" />
+    <ClInclude Include="MoodycamelConcurrentQueue.h" />
     <ClInclude Include="NonThreadSafe.h" />
     <ClInclude Include="NonThreadSafeQueue.h" />
     <ClInclude Include="RandomUtil.h" />

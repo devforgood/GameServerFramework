@@ -1,14 +1,14 @@
 #pragma once
 
 #include <utility>
-#include "ConcurrentQueue.h"
+#include "BoostConcurrentQueue.h"
 #include "NonThreadSafeQueue.h"
 
 namespace Engine {
 namespace EventBroker {
 
 // EventQueue 껍데기 (인터페이스 래퍼)
-template <typename MessageType, template<typename> class QueuePolicy = ConcurrentQueue>
+template <typename MessageType, template<typename> class QueuePolicy = BoostConcurrentQueue>
 class EventQueue {
 public:
     void push(const MessageType& message) { queue_.push(message); }

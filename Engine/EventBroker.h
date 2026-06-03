@@ -8,7 +8,7 @@ namespace EventBroker {
 
 template <
     typename MessageType, 
-    template<typename> class QueuePolicy = ConcurrentQueue,
+    template<typename> class QueuePolicy = BoostConcurrentQueue,
     typename BusLockPolicy = ThreadSafe
 >
 class EventBroker {
