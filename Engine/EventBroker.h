@@ -2,19 +2,20 @@
 
 #include "EventQueue.h"
 #include "EventBus.h"
+#include "NonThreadSafeBus.h"
 
 namespace Engine {
 namespace EventBroker {
 
 template <
     typename MessageType, 
-    template<typename> class QueuePolicy = BoostConcurrentQueue,
-    typename BusLockPolicy = ThreadSafe
+    template<typename> class QueuePolicy = NonThreadSafeQueue,
+    template<typename> class BusPolicy = NonThreadSafeBus
 >
 class EventBroker {
 public:
-    using Callback = typename EventBus<MessageType, BusLockPolicy>::Callback;
-    using Token = typename EventBus<MessageType, BusLockPolicy>::Token;
+    using Callback = typename BusPolicy<MessageType>::Callback;
+    using Token = typename BusPolicy<MessageType>::Token;
 
     Token subscribe(Callback callback) {
         return bus_.subscribe(std::move(callback));
@@ -49,8 +50,8 @@ public:
     }
 
 private:
-    EventQueue<MessageType, QueuePolicy> queue_;
-    EventBus<MessageType, BusLockPolicy> bus_;
+    QueuePolicy<MessageType> queue_;
+    BusPolicy<MessageType> bus_;
 };
 
 } // namespace EventBroker

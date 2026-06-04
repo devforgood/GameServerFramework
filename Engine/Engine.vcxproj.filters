@@ -40,6 +40,9 @@
     <ClCompile Include="TimeStamp.cpp">
       <Filter>Time</Filter>
     </ClCompile>
+    <ClCompile Include="NonThreadSafeBus.h">
+      <Filter>EventBroker</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Components.h">
@@ -73,12 +76,6 @@
       <Filter>EventBroker</Filter>
     </ClInclude>
     <ClInclude Include="EventBus.h">
-      <Filter>EventBroker</Filter>
-    </ClInclude>
-    <ClInclude Include="EventPolicy.h">
-      <Filter>EventBroker</Filter>
-    </ClInclude>
-    <ClInclude Include="EventQueue.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
     <ClInclude Include="NonThreadSafeQueue.h">

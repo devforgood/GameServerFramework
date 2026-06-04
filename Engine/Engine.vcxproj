@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="IGridActor.h" />
     <ClCompile Include="GridManager.cpp" />
+    <ClCompile Include="NonThreadSafeBus.h" />
     <ClCompile Include="RandomUtil.cpp" />
     <ClCompile Include="RingBuffer.cpp" />
     <ClCompile Include="TimeStamp.cpp" />
@@ -29,8 +30,6 @@
     <ClInclude Include="BoostConcurrentQueue.h" />
     <ClInclude Include="EventBroker.h" />
     <ClInclude Include="EventBus.h" />
-    <ClInclude Include="EventPolicy.h" />
-    <ClInclude Include="EventQueue.h" />
     <ClInclude Include="GridManager.h" />
     <ClInclude Include="MoodycamelConcurrentQueue.h" />
     <ClInclude Include="NonThreadSafe.h" />

@@ -13,7 +13,7 @@
 namespace Engine {
 namespace EventBroker {
 
-template <typename MessageType, typename LockPolicy = ThreadSafe>
+template <typename MessageType>
 class EventBus {
 public:
     using Callback = std::function<void(const MessageType&)>;
@@ -29,7 +29,7 @@ public:
         Token token = nextToken_.fetch_add(1, std::memory_order_relaxed);
         
         // Write 작업 직렬화 (구독/해제는 빈도가 낮으므로 SpinLock 사용)
-        std::lock_guard<LockPolicy> lock(lockPolicy_);
+        std::lock_guard<ThreadSafe> lock(lockPolicy_);
         
         // [Read] 현재 상태 로드
         auto current_list = subscribers_.load(std::memory_order_acquire);
@@ -47,7 +47,7 @@ public:
     }
 
     void unsubscribe(Token token) {
-        std::lock_guard<LockPolicy> lock(lockPolicy_);
+        std::lock_guard<ThreadSafe> lock(lockPolicy_);
         
         auto current_list = subscribers_.load(std::memory_order_acquire);
         auto new_list = std::make_shared<std::vector<Subscriber>>(*current_list);
@@ -75,7 +75,7 @@ public:
     }
 
     void clear() {
-        std::lock_guard<LockPolicy> lock(lockPolicy_);
+        std::lock_guard<ThreadSafe> lock(lockPolicy_);
         auto empty_list = std::make_shared<std::vector<Subscriber>>();
         subscribers_.store(empty_list, std::memory_order_release);
     }
@@ -87,7 +87,7 @@ private:
     };
     
     std::atomic<std::shared_ptr<std::vector<Subscriber>>> subscribers_;
-    LockPolicy lockPolicy_;
+    ThreadSafe lockPolicy_;
     std::atomic<Token> nextToken_{1};
 };
 
