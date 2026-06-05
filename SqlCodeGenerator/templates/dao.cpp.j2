@@ -9,14 +9,14 @@
 {{ class_name }}::{{ class_name }}(sql::Connection* conn)
     : conn_(conn) {}
 
-void {{ class_name }}::Insert() {
+void {{ class_name }}::Insert(const {{ table.vo_class_name }}& vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement("INSERT INTO {{ table.name }} ({% for col in table.columns if not col.auto_increment %}{{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %}) VALUES ({% for col in table.columns if not col.auto_increment %}?{% if not loop.last %}, {% endif %}{% endfor %})")
         );
 
         {% for col in table.columns if not col.auto_increment %}
-        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, {{ col.name }});
+        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, vo.{{ col.name }});
         {% endfor %}
 
         stmt->execute();
@@ -29,7 +29,7 @@ void {{ class_name }}::Insert() {
     }
 }
 
-void {{ class_name }}::Update() {
+void {{ class_name }}::Update(const {{ table.vo_class_name }}& vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement(
@@ -41,11 +41,11 @@ void {{ class_name }}::Update() {
 
         int param_idx = 1;
         {% for col in table.columns if not col.is_pk %}
-        stmt->set{{ col.cpp_set_func }}(param_idx++, {{ col.name }});
+        stmt->set{{ col.cpp_set_func }}(param_idx++, vo.{{ col.name }});
         {% endfor %}
         
         {% for col in table.columns if col.is_pk %}
-        stmt->set{{ col.cpp_set_func }}(param_idx++, {{ col.name }});
+        stmt->set{{ col.cpp_set_func }}(param_idx++, vo.{{ col.name }});
         {% endfor %}
 
         stmt->execute();
@@ -58,14 +58,14 @@ void {{ class_name }}::Update() {
     }
 }
 
-void {{ class_name }}::Delete() {
+void {{ class_name }}::Delete(const {{ table.vo_class_name }}& vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement("DELETE FROM {{ table.name }} WHERE {% for col in table.primary_key %}{{ col.name }} = ?{% if not loop.last %} AND {% endif %}{% endfor %}")
         );
 
         {% for col in table.primary_key %}
-        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, {{ col.name }});
+        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, vo.{{ col.name }});
         {% endfor %}
         stmt->execute();
     }
@@ -77,7 +77,7 @@ void {{ class_name }}::Delete() {
     }
 }
 
-bool {{ class_name }}::Select({% for col in table.primary_key %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %}) {
+bool {{ class_name }}::Select({% for col in table.primary_key %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %}, {{ table.vo_class_name }}& out_vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement("SELECT {% for col in table.columns %}{{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %} FROM {{ table.name }} WHERE {% for col in table.primary_key %}{{ col.name }} = ?{% if not loop.last %} AND {% endif %}{% endfor %}")
@@ -90,7 +90,7 @@ bool {{ class_name }}::Select({% for col in table.primary_key %}{{ col.cpp_type 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
         if (res->next()) {
             {% for col in table.columns %}
-            this->{{ col.name }} = res->get{{ col.cpp_set_func }}("{{ col.name }}");
+            out_vo.{{ col.name }} = res->get{{ col.cpp_set_func }}("{{ col.name }}");
             {% endfor %}
         } else {
             return false;
@@ -106,7 +106,7 @@ bool {{ class_name }}::Select({% for col in table.primary_key %}{{ col.cpp_type 
 }
 
 {% if table.indexes %}
-std::vector<{{ class_name }}> {{ class_name }}::SelectByIndex({% for index in table.indexes[0] %}{{ table.columns | selectattr("name", "equalto", index) | map(attribute="cpp_type") | first }} {{ index }}{% if not loop.last %}, {% endif %}{% endfor %}) {
+std::vector<{{ table.vo_class_name }}> {{ class_name }}::SelectByIndex({% for index in table.indexes[0] %}{{ table.columns | selectattr("name", "equalto", index) | map(attribute="cpp_type") | first }} {{ index }}{% if not loop.last %}, {% endif %}{% endfor %}) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement("SELECT {% for col in table.columns %}{{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %} FROM {{ table.name }} WHERE {% for index in table.indexes[0] %}{{ index }} = ?{% if not loop.last %} AND {% endif %}{% endfor %}")
@@ -117,9 +117,9 @@ std::vector<{{ class_name }}> {{ class_name }}::SelectByIndex({% for index in ta
         {% endfor %}
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
-        std::vector<{{ class_name }}> results;
+        std::vector<{{ table.vo_class_name }}> results;
         while (res->next()) {
-            {{ class_name }} obj(conn_);
+            {{ table.vo_class_name }} obj;
             {% for col in table.columns %}
             obj.{{ col.name }} = res->get{{ col.cpp_set_func }}("{{ col.name }}");
             {% endfor %}
@@ -133,6 +133,6 @@ std::vector<{{ class_name }}> {{ class_name }}::SelectByIndex({% for index in ta
     catch (const std::exception& e) {
         throw std::runtime_error(std::string("error: ") + e.what());
     }
-    return std::vector<{{ class_name }}>();
+    return std::vector<{{ table.vo_class_name }}>();
 }
 {% endif %}

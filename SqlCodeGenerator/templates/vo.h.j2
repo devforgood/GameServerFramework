@@ -1,0 +1,14 @@
+{% if include_header %}
+#pragma once
+#include <string>
+
+{% else %}
+
+// ----------------------------------------
+{% endif %}
+
+struct {{ table.vo_class_name }} {
+{% for col in table.columns %}
+    {{ col.cpp_type }} {{ col.name }};
+{% endfor %}
+};

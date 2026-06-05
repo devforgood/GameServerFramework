@@ -248,6 +248,7 @@
     <ClInclude Include="SqlClient.h" />
     <ClInclude Include="SqlClientManager.h" />
     <ClInclude Include="SQL\generated\dao.h" />
+    <ClInclude Include="SQL\generated\vo.h" />
     <ClInclude Include="syncnet_generated.h" />
     <ClInclude Include="Vector3.h" />
     <ClInclude Include="Walker.h" />

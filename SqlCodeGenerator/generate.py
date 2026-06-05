@@ -36,9 +36,12 @@ def parse_schema(xml_file):
     root = tree.getroot()
     tables = []
     for table_node in root.findall('table'):
+        class_name = table_node.get("class_name") or table_node.get("name").capitalize() + "DAO"
+        vo_class_name = class_name.replace("DAO", "VO") if class_name.endswith("DAO") else table_node.get("name").capitalize() + "VO"
         table = {
             "name": table_node.get("name"),
-            "class_name": table_node.get("class_name") or table_node.get("name").capitalize() + "DAO",
+            "class_name": class_name,
+            "vo_class_name": vo_class_name,
             "file_name": table_node.get("file_name") or table_node.get("name").lower() + "_dao",
             "columns": [],
             "primary_key": None,
@@ -101,6 +104,10 @@ def render_templates(tables):
     is_first_file = True
 
     for table in tables:
+
+        # VO Header
+        with open(f"{pathname}/vo.h", "a") as f:
+            f.write(env.get_template("vo.h.j2").render(table=table, include_header=is_first_file))
 
         # Header
         with open(f"{pathname}/{table['file_name']}.h", "a") as f:

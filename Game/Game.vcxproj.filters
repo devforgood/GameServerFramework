@@ -277,6 +277,9 @@
     <ClInclude Include="RepeatedQuest.h">
       <Filter>Quest</Filter>
     </ClInclude>
+    <ClInclude Include="SQL\generated\vo.h">
+      <Filter>SQL</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

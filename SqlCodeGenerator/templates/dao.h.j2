@@ -3,6 +3,7 @@
 #include <mariadb/conncpp.hpp>
 #include <string>
 #include <vector>
+#include "vo.h"
 {% else %}
 
 
@@ -15,23 +16,18 @@ class {{ class_name }} {
 public:
     {{ class_name }}(sql::Connection* conn);
 
-    void Insert();
-    void Update();
-    void Delete();
+    void Insert(const {{ table.vo_class_name }}& vo);
+    void Update(const {{ table.vo_class_name }}& vo);
+    void Delete(const {{ table.vo_class_name }}& vo);
 
     // Select by primary key
-    bool Select({% for col in table.primary_key %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %});
+    bool Select({% for col in table.primary_key %}{{ col.cpp_type }} {{ col.name }}{% if not loop.last %}, {% endif %}{% endfor %}, {{ table.vo_class_name }}& out_vo);
 
     // Select by index columns (if any)
     {% if table.indexes %}
-    std::vector<{{ class_name }}> SelectByIndex({% for index in table.indexes[0] %}{{ table.columns | selectattr("name", "equalto", index) | map(attribute="cpp_type") | first }} {{ index }}{% if not loop.last %}, {% endif %}{% endfor %});
+    std::vector<{{ table.vo_class_name }}> SelectByIndex({% for index in table.indexes[0] %}{{ table.columns | selectattr("name", "equalto", index) | map(attribute="cpp_type") | first }} {{ index }}{% if not loop.last %}, {% endif %}{% endfor %});
     {% endif %}
 
 private:
     sql::Connection* conn_;
-
-public:
-    {% for col in table.columns %}
-    {{ col.cpp_type }} {{ col.name }};
-    {% endfor %}
 };
