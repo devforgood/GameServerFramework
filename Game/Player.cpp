@@ -9,23 +9,7 @@
 #include "LogHelper.h"
 
 
-
-class DMUser : public IResultParser {
-public:
-	long user_id;
-	std::string user_name;
-
-	void parse(sql::ResultSet* resultSet) override {
-		// °á°ú¸¦ ÆÄ½ÌÇÏ´Â ·ÎÁ÷À» ±¸ÇöÇÕ´Ï´Ù.
-		while (resultSet->next()) {
-			user_id = resultSet->getInt("id");
-			user_name = resultSet->getString("name");
-		}
-	}
-};
-
-
-// todo :  Player ID µğºñ¿¡¼­ °ü¸® °³¼± ÇÊ¿ä
+// todo :  Player ID ë””ë¹„ì—ì„œ ê´€ë¦¬ ê°œì„  í•„ìš”
 static long next_player_id = 1;
 
 Player::Player()
@@ -56,9 +40,9 @@ void Player::possess(std::shared_ptr<Character> character)
 }
 
 void Player::async_db_query() {
-    int user_id = 1;
+    int player_id = 1;
     int query_id = 2;
-    std::cout << "[User " << user_id << "] Handling DB Query #" << query_id
+    std::cout << "[Player " << player_id << "] Handling DB Query #" << query_id
         << " on post " << std::this_thread::get_id() << std::endl;
 
 	auto session = session_.lock();
@@ -67,37 +51,31 @@ void Player::async_db_query() {
 		return;
 	}
 	auto io_context = server_->get_io_context();
-	auto player = shared_from_this();
+	std::weak_ptr<Player> weak_player = shared_from_this();
 
-    boost::asio::post(session->strand_, [player, user_id, query_id, io_context]() {
-        std::cout << "[User " << user_id << "] Handling DB Query #" << query_id
+    boost::asio::post(session->strand_, [weak_player, player_id, query_id, io_context]() {
+        std::cout << "[Player " << player_id << "] Handling DB Query #" << query_id
             << " on Thread " << std::this_thread::get_id() << std::endl;
 
-		std::vector<std::string> params = { "1" };
-		std::shared_ptr<DMUser> user = std::make_shared<DMUser>();
-
-		SqlClientManager::getInstance().sqlClientPtr->select("SELECT * FROM users WHERE id = ?", params, *user);
-
-		std::cout << "[User " << user_id << "] User ID: " << user->user_id
-			<< ", User Name: " << user->user_name << std::endl;
 
 		PlayerDAO player_dao(SqlClientManager::getInstance().sqlClientPtr->getConnection());
-		player_dao.Select(user->user_id);
-		std::cout << "[User " << user_id << "] Player ID: " << player_dao.id
-			<< ", Player Name: " << player_dao.name
-			<< ", Player Level: " << player_dao.level << std::endl;
+		PlayerVO player_vo;
+		player_dao.Select(player_id, player_vo);
+		std::cout << "[Player " << player_id << "] Player ID: " << player_vo.id
+			<< ", Player Name: " << player_vo.name
+			<< ", Player Level: " << player_vo.level << std::endl;
+
+        std::cout << "[Player " << player_id << "] Finished DB Query #" << query_id << std::endl;
 
 
-        std::cout << "[User " << user_id << "] Finished DB Query #" << query_id << std::endl;
-
-
-		boost::asio::post(*io_context, [player, user]() {
-			std::cout << "[User " << user->user_id << "] User Name: " << user->user_name
-				<< " on Thread " << std::this_thread::get_id() << std::endl;
-			player->name_ = user->user_name;
-
-			});
-        });
+		boost::asio::post(*io_context, [player_vo, weak_player]() {
+			if (auto player = weak_player.lock()) {
+				std::cout << "[Player " << player_vo.id << "] Player Name: " << player_vo.name
+					<< " on Thread " << std::this_thread::get_id() << std::endl;
+				player->name_ = player_vo.name;
+			}
+		});
+    });
 }
 
 void Player::send(std::shared_ptr<send_message>& msg)
@@ -134,7 +112,7 @@ bool Player::switch_session(std::shared_ptr<Player> player)
 		return false;
 	}
 
-	// ±âÁ¸ ¼¼¼Ç Á¤¸®
+	// ê¸°ì¡´ ì„¸ì…˜ ì •ë¦¬
 	close();
 
 	auto session = player->session_.lock();
