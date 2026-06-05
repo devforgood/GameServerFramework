@@ -172,6 +172,7 @@
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="PlayerDataLoader.cpp" />
     <ClCompile Include="Quest.cpp" />
     <ClCompile Include="QuestFactory.cpp" />
     <ClCompile Include="RepeatedQuest.cpp" />
@@ -237,6 +238,7 @@
     <ClInclude Include="Monster.h" />
     <ClInclude Include="PerfTimer.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="PlayerDataLoader.h" />
     <ClInclude Include="Quest.h" />
     <ClInclude Include="QuestFactory.h" />
     <ClInclude Include="RepeatedQuest.h" />

@@ -148,6 +148,9 @@
     <ClCompile Include="RepeatedQuest.cpp">
       <Filter>Quest</Filter>
     </ClCompile>
+    <ClCompile Include="PlayerDataLoader.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -279,6 +282,9 @@
     </ClInclude>
     <ClInclude Include="SQL\generated\vo.h">
       <Filter>SQL</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerDataLoader.h">
+      <Filter>Player</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

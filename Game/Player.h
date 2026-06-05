@@ -9,6 +9,7 @@
 class game_session;
 class game_server;
 class Character;
+struct PlayerLoadData;
 class Player : public std::enable_shared_from_this<Player>
 {
 private:
@@ -38,12 +39,14 @@ public:
 	void set_session(std::shared_ptr<game_session> session);
 	void set_server(game_server* server);
 
+	std::shared_ptr<game_session> get_session() { return session_.lock(); }
+	game_server* get_server() { return server_; }
+
 	long player_id() { return player_id_; }
 	std::string name() { return name_; }
 
 	void possess(std::shared_ptr<Character> character);
 
-	void async_db_query();
 	void send(std::shared_ptr<send_message>& msg);
 	void close();
 
@@ -60,9 +63,7 @@ public:
 		Args&&... args)
 	{
 		auto builder_ptr = std::make_shared<send_message>();
-		// 메시지 생성 (예: syncnet::CreateLogin, syncnet::CreateAddAgent 등)
 		auto msgOffset = createFunc(*builder_ptr, std::forward<Args>(args)...);
-		// GameMessage 생성
 		auto send_msg = syncnet::CreateGameMessage(
 			*builder_ptr,
 			msgType,
@@ -74,5 +75,8 @@ public:
 		this->send(builder_ptr);
 	}
 	
+	void on_loaded_data(PlayerLoadData data);
+
+	std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> get_strand();
 };
 

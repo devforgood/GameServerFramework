@@ -7,7 +7,7 @@
 #include <mariadb/conncpp.hpp>
 #include "./SQL/generated/dao.h"
 #include "LogHelper.h"
-
+#include "PlayerDataLoader.h"
 
 // todo :  Player ID 디비에서 관리 개선 필요
 static long next_player_id = 1;
@@ -37,45 +37,6 @@ void Player::possess(std::shared_ptr<Character> character)
 {
 	character_ = character;
 	character_->set_player_id(player_id_);
-}
-
-void Player::async_db_query() {
-    int player_id = 1;
-    int query_id = 2;
-    std::cout << "[Player " << player_id << "] Handling DB Query #" << query_id
-        << " on post " << std::this_thread::get_id() << std::endl;
-
-	auto session = session_.lock();
-	if (!session) {
-		std::cerr << "Session expired!" << std::endl;
-		return;
-	}
-	auto io_context = server_->get_io_context();
-	std::weak_ptr<Player> weak_player = shared_from_this();
-
-    boost::asio::post(session->strand_, [weak_player, player_id, query_id, io_context]() {
-        std::cout << "[Player " << player_id << "] Handling DB Query #" << query_id
-            << " on Thread " << std::this_thread::get_id() << std::endl;
-
-
-		PlayerDAO player_dao(SqlClientManager::getInstance().sqlClientPtr->getConnection());
-		PlayerVO player_vo;
-		player_dao.Select(player_id, player_vo);
-		std::cout << "[Player " << player_id << "] Player ID: " << player_vo.id
-			<< ", Player Name: " << player_vo.name
-			<< ", Player Level: " << player_vo.level << std::endl;
-
-        std::cout << "[Player " << player_id << "] Finished DB Query #" << query_id << std::endl;
-
-
-		boost::asio::post(*io_context, [player_vo, weak_player]() {
-			if (auto player = weak_player.lock()) {
-				std::cout << "[Player " << player_vo.id << "] Player Name: " << player_vo.name
-					<< " on Thread " << std::this_thread::get_id() << std::endl;
-				player->name_ = player_vo.name;
-			}
-		});
-    });
 }
 
 void Player::send(std::shared_ptr<send_message>& msg)
@@ -125,4 +86,21 @@ bool Player::switch_session(std::shared_ptr<Player> player)
 	session->set_player(shared_from_this());
 	LOG.info("Switching session for player {} to new session", player_id_);
 	return true;
+}
+
+void Player::on_loaded_data(PlayerLoadData data)
+{
+	LOG.info("Player {} loaded data: name={}, items={}, skills={}", player_id_, data.player.name, data.items.size(), data.skills.size());
+	set_name(data.player.name);
+	set_level(data.player.level);
+}
+
+std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Player::get_strand()
+{
+	if (auto session = session_.lock())
+	{
+		return session->strand_;
+	}
+
+	return std::nullopt;
 }

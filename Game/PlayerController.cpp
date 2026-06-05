@@ -8,6 +8,7 @@
 #include "Character.h"
 #include "SendMessage.h"
 #include "Map.h"
+#include "PlayerDataLoader.h"
 
 void PlayerController::handle(const syncnet::GameMessage* msg)
 {
@@ -106,7 +107,7 @@ void PlayerController::handle(const syncnet::Login* msg)
 {
 	LOG.info("Login id :{}, lastMessageId:{}", msg->userId()->c_str(), last_message_id_);
 
-	player_->async_db_query();
+	PlayerDataLoader::AsyncLoad(player_);
 
 	player_->send(
 		syncnet::CreateLoginDirect
