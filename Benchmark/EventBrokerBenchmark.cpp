@@ -15,6 +15,12 @@ struct DummyMessage {
     float value;
 };
 
+// 벤치마크용 더미 핸들러 (fast delegate에 사용)
+struct DummyHandler {
+    void OnMessage(const DummyMessage& msg) {
+        benchmark::DoNotOptimize(msg.id);
+    }
+};
 
 // 2. 다중 스레드 환경에서 Enqueue 성능 벤치마크 (Shared 상태 유지)
 template <template<typename> class QueuePolicy>
@@ -52,10 +58,9 @@ void BM_SharedEnqueue(benchmark::State& state) {
 template <template<typename> class QueuePolicy>
 void BM_EnqueueAndProcess(benchmark::State& state) {
     EventBroker<DummyMessage, QueuePolicy> broker;
+    DummyHandler handler;
     
-    broker.subscribe([](const DummyMessage& msg) {
-        benchmark::DoNotOptimize(msg.id);
-    });
+    broker.template subscribe<DummyHandler, &DummyHandler::OnMessage>(&handler);
 
     // range에 지정된 개수만큼 큐에 Push 한 뒤 한 번에 Process (Pop)
     for (auto _ : state) {
@@ -71,12 +76,11 @@ template <template<typename> class QueuePolicy>
 void BM_MPSC(benchmark::State& state) {
     static std::atomic<EventBroker<DummyMessage, QueuePolicy>*> broker_ptr{nullptr};
     static std::atomic<int> active_threads{0};
+    static DummyHandler mpsc_handler;
 
     if (state.thread_index == 0) {
         auto* broker = new EventBroker<DummyMessage, QueuePolicy>();
-        broker->subscribe([](const DummyMessage& msg) {
-            benchmark::DoNotOptimize(msg.id);
-        });
+        broker->template subscribe<DummyHandler, &DummyHandler::OnMessage>(&mpsc_handler);
         broker_ptr.store(broker, std::memory_order_release);
     }
     

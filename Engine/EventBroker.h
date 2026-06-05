@@ -14,15 +14,9 @@ template <
 >
 class EventBroker {
 public:
-    using Callback = typename BusPolicy<MessageType>::Callback;
-    using Token = typename BusPolicy<MessageType>::Token;
-
-    Token subscribe(Callback callback) {
-        return bus_.subscribe(std::move(callback));
-    }
-
-    void unsubscribe(Token token) {
-        bus_.unsubscribe(token);
+    template<typename TObject, auto Method>
+    void subscribe(TObject* object) {
+        bus_.template subscribe<TObject, Method>(object);
     }
 
     void publishImmediate(const MessageType& message) {

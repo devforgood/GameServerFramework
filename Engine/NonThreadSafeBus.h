@@ -12,37 +12,35 @@
 
 namespace Engine {
     namespace EventBroker {
-
         template <typename MessageType>
         class NonThreadSafeBus {
         public:
-            using Callback = std::function<void(const MessageType&)>;
-            using Token = uint64_t;
+            using Stub = void(*)(void*, const MessageType&);
+
+            struct Subscriber {
+                void* object;
+                Stub stub;
+            };
 
             NonThreadSafeBus() {
+                subscribers_.reserve(8);
             }
 
-            Token subscribe(Callback callback) {
-                Token token = nextToken_ ++;
-
-                subscribers_.push_back({ token, std::move(callback) });
-
-                return token;
+            template<typename TObject, auto Method>
+            static void stub_helper(void* object, const MessageType& message) {
+                (static_cast<TObject*>(object)->*Method)(message);
             }
 
-            void unsubscribe(Token token) {
-                auto it = std::remove_if(subscribers_.begin(), subscribers_.end(),
-                    [token](const Subscriber& sub) { return sub.token == token; });
-
-                if (it != subscribers_.end()) {
-                    subscribers_.erase(it, subscribers_.end());
-                }
+            template<typename TObject, auto Method>
+            void subscribe(TObject* object) {
+                subscribers_.push_back({object, &stub_helper<TObject, Method>});
             }
 
             void publish(const MessageType& message) {
-
-                for (const auto& sub : subscribers_) {
-                    sub.callback(message);
+                const Subscriber* const data = subscribers_.data();
+                const size_t size = subscribers_.size();
+                for (size_t i = 0; i < size; ++i) {
+                    data[i].stub(data[i].object, message);
                 }
             }
 
@@ -51,14 +49,8 @@ namespace Engine {
             }
 
         private:
-            struct Subscriber {
-                Token token;
-                Callback callback;
-            };
-
             std::vector<Subscriber> subscribers_;
-            Token nextToken_ = 1;
         };
 
-    } // namespace EventBroker
-} // namespace Engine
+    }
+} 

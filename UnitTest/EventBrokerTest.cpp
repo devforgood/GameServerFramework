@@ -23,62 +23,52 @@ protected:
     std::unique_ptr<TestEventBroker> broker;
 };
 
-TEST_F(EventBrokerTest, SubscribeAndPublishImmediate) {
+class Listener {
+public:
     int receivedId = 0;
     std::string receivedData;
+    int receivedCount = 0;
 
-    auto token = broker->subscribe([&](const TestMessage& msg) {
+    void OnMessage(const TestMessage& msg) {
         receivedId = msg.id;
         receivedData = msg.data;
-    });
+        receivedCount++;
+    }
+};
+
+TEST_F(EventBrokerTest, SubscribeAndPublishImmediate) {
+    Listener listener;
+
+    broker->subscribe<Listener, &Listener::OnMessage>(&listener);
 
     broker->publishImmediate({ 42, "Hello" });
 
-    EXPECT_EQ(receivedId, 42);
-    EXPECT_EQ(receivedData, "Hello");
+    EXPECT_EQ(listener.receivedId, 42);
+    EXPECT_EQ(listener.receivedData, "Hello");
 }
 
 TEST_F(EventBrokerTest, SubscribeAndEnqueue) {
-    int receivedCount = 0;
+    Listener listener;
 
-    auto token = broker->subscribe([&](const TestMessage& msg) {
-        receivedCount++;
-        EXPECT_EQ(msg.id, 100);
-    });
+    broker->subscribe<Listener, &Listener::OnMessage>(&listener);
 
     broker->enqueue({ 100, "Queued" });
 
     // Should not be processed yet
-    EXPECT_EQ(receivedCount, 0);
+    EXPECT_EQ(listener.receivedCount, 0);
 
     broker->processEvents();
 
     // Now it should be processed
-    EXPECT_EQ(receivedCount, 1);
-}
-
-TEST_F(EventBrokerTest, Unsubscribe) {
-    int receivedCount = 0;
-
-    auto token = broker->subscribe([&](const TestMessage& msg) {
-        receivedCount++;
-    });
-
-    broker->publishImmediate({ 1, "Msg1" });
-    EXPECT_EQ(receivedCount, 1);
-
-    broker->unsubscribe(token);
-
-    broker->publishImmediate({ 2, "Msg2" });
-    EXPECT_EQ(receivedCount, 1); // Should not increase
+    EXPECT_EQ(listener.receivedCount, 1);
+    EXPECT_EQ(listener.receivedId, 100);
+    EXPECT_EQ(listener.receivedData, "Queued");
 }
 
 TEST_F(EventBrokerTest, Clear) {
-    int receivedCount = 0;
+    Listener listener;
 
-    auto token = broker->subscribe([&](const TestMessage& msg) {
-        receivedCount++;
-    });
+    broker->subscribe<Listener, &Listener::OnMessage>(&listener);
 
     broker->enqueue({ 1, "Msg1" });
     broker->enqueue({ 2, "Msg2" });
@@ -89,22 +79,22 @@ TEST_F(EventBrokerTest, Clear) {
     broker->processEvents();
     
     // No events should be processed because queue was cleared
-    EXPECT_EQ(receivedCount, 0);
+    EXPECT_EQ(listener.receivedCount, 0);
 
     // Also the bus was cleared, so publishImmediate shouldn't work for the previous subscriber
     broker->publishImmediate({ 3, "Msg3" });
-    EXPECT_EQ(receivedCount, 0);
+    EXPECT_EQ(listener.receivedCount, 0);
 }
 
 TEST_F(EventBrokerTest, MultipleSubscribers) {
-    int count1 = 0;
-    int count2 = 0;
+    Listener listener1;
+    Listener listener2;
 
-    broker->subscribe([&](const TestMessage& msg) { count1++; });
-    broker->subscribe([&](const TestMessage& msg) { count2++; });
+    broker->subscribe<Listener, &Listener::OnMessage>(&listener1);
+    broker->subscribe<Listener, &Listener::OnMessage>(&listener2);
 
     broker->publishImmediate({ 1, "Broadcast" });
 
-    EXPECT_EQ(count1, 1);
-    EXPECT_EQ(count2, 1);
+    EXPECT_EQ(listener1.receivedCount, 1);
+    EXPECT_EQ(listener2.receivedCount, 1);
 }

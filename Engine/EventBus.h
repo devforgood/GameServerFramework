@@ -16,8 +16,12 @@ namespace EventBroker {
 template <typename MessageType>
 class EventBus {
 public:
-    using Callback = std::function<void(const MessageType&)>;
-    using Token = uint64_t;
+    using Stub = void(*)(void*, const MessageType&);
+
+    struct Subscriber {
+        void* object;
+        Stub stub;
+    };
 
     EventBus() {
         // 초기 빈 구독자 리스트 생성
@@ -25,9 +29,13 @@ public:
         subscribers_.store(empty_list, std::memory_order_relaxed);
     }
 
-    Token subscribe(Callback callback) {
-        Token token = nextToken_.fetch_add(1, std::memory_order_relaxed);
-        
+    template<typename TObject, auto Method>
+    static void stub_helper(void* object, const MessageType& message) {
+        (static_cast<TObject*>(object)->*Method)(message);
+    }
+
+    template<typename TObject, auto Method>
+    void subscribe(TObject* object) {
         // Write 작업 직렬화 (구독/해제는 빈도가 낮으므로 SpinLock 사용)
         std::lock_guard<ThreadSafe> lock(lockPolicy_);
         
@@ -38,27 +46,10 @@ public:
         auto new_list = std::make_shared<std::vector<Subscriber>>(*current_list);
         
         // [Update] 복사본에 새로운 구독자 추가
-        new_list->push_back({token, std::move(callback)});
+        new_list->push_back({object, &stub_helper<TObject, Method>});
         
         // 원자적 포인터 교체
         subscribers_.store(new_list, std::memory_order_release);
-        
-        return token;
-    }
-
-    void unsubscribe(Token token) {
-        std::lock_guard<ThreadSafe> lock(lockPolicy_);
-        
-        auto current_list = subscribers_.load(std::memory_order_acquire);
-        auto new_list = std::make_shared<std::vector<Subscriber>>(*current_list);
-        
-        auto it = std::remove_if(new_list->begin(), new_list->end(),
-                                 [token](const Subscriber& sub) { return sub.token == token; });
-                                 
-        if (it != new_list->end()) {
-            new_list->erase(it, new_list->end());
-            subscribers_.store(new_list, std::memory_order_release);
-        }
     }
 
     // RCU Read 영역: 락 없이 안전하게 동작 (Wait-Free)
@@ -69,7 +60,7 @@ public:
         auto current_list = subscribers_.load(std::memory_order_acquire);
         
         for (const auto& sub : *current_list) {
-            sub.callback(message);
+            sub.stub(sub.object, message);
         }
         // current_list의 스코프가 종료되면 자동으로 참조 카운트가 감소하며, 필요시 메모리가 해제됩니다.
     }
@@ -81,14 +72,8 @@ public:
     }
 
 private:
-    struct Subscriber {
-        Token token;
-        Callback callback;
-    };
-    
     std::atomic<std::shared_ptr<std::vector<Subscriber>>> subscribers_;
     ThreadSafe lockPolicy_;
-    std::atomic<Token> nextToken_{1};
 };
 
 } // namespace EventBroker
