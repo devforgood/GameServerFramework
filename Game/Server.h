@@ -50,7 +50,7 @@ typedef std::shared_ptr<game_participant> game_participant_ptr;
 //----------------------------------------------------------------------
 
 class World;
-class game_room
+class game_channel
 {
 public:
 	void join(game_participant_ptr participant);
@@ -58,7 +58,7 @@ public:
 	void leave(game_participant_ptr participant);
 
 
-	game_room();
+	game_channel();
 
 	World* world() { return world_; }
 private:
@@ -73,7 +73,7 @@ class game_session
 	public std::enable_shared_from_this<game_session>
 {
 public:
-	game_session(tcp::socket socket, game_room& room, boost::asio::thread_pool & db_thread_pool, game_server * server);
+	game_session(tcp::socket socket, game_channel& room, boost::asio::thread_pool & db_thread_pool, game_server * server);
 	~game_session();
 
 	void start();
@@ -99,7 +99,7 @@ private:
 
 
 	tcp::socket socket_;
-	game_room& room_;
+	game_channel& room_;
 	RingBuffer* ring_buf_;
 	game_message read_msg_;
 	game_message_queue write_msgs_;
@@ -133,7 +133,7 @@ private:
 	void tick(const boost::system::error_code& e);
 
 	tcp::acceptor acceptor_;
-	game_room room_;
+	game_channel channel_;
 	boost::asio::deadline_timer timer_;
 	TimeVal lastTime_;
 	float timeAcc;

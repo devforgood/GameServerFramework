@@ -9,7 +9,7 @@
 class game_session;
 class game_server;
 class Character;
-struct PlayerLoadData;
+struct PlayerData;
 class Player : public std::enable_shared_from_this<Player>
 {
 private:
@@ -75,7 +75,7 @@ public:
 		this->send(builder_ptr);
 	}
 	
-	void on_loaded_data(PlayerLoadData data);
+	void on_loaded_data(PlayerData data);
 
 	std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> get_strand();
 };

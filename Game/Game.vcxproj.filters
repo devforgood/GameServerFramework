@@ -151,6 +151,21 @@
     <ClCompile Include="PlayerDataLoader.cpp">
       <Filter>Player</Filter>
     </ClCompile>
+    <ClCompile Include="PlayerSkill.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerItem.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerQuest.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerData.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerDataSaver.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -284,6 +299,21 @@
       <Filter>SQL</Filter>
     </ClInclude>
     <ClInclude Include="PlayerDataLoader.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerSkill.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerItem.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerQuest.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerData.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerDataSaver.h">
       <Filter>Player</Filter>
     </ClInclude>
   </ItemGroup>

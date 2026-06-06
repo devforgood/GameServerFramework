@@ -6,24 +6,24 @@
 #include <iostream>
 
 static const std::vector<DataLoaderFunc> player_data_loaders = {
-    [](sql::Connection* conn, long id, PlayerLoadData& data) {
+    [](sql::Connection* conn, long id, PlayerData& data) {
         PlayerDAO(conn).Select(id, data.player);
     },
-    [](sql::Connection* conn, long id, PlayerLoadData& data) {
+    [](sql::Connection* conn, long id, PlayerData& data) {
         data.items = ItemDAO(conn).SelectByIndex(id);
     },
-    [](sql::Connection* conn, long id, PlayerLoadData& data) {
+    [](sql::Connection* conn, long id, PlayerData& data) {
         data.skills = SkillDAO(conn).SelectByIndex(id);
     },
-    [](sql::Connection* conn, long id, PlayerLoadData& data) {
+    [](sql::Connection* conn, long id, PlayerData& data) {
         data.quest_actives = QuestActiveDAO(conn).SelectByIndex(id);
     },
-    [](sql::Connection* conn, long id, PlayerLoadData& data) {
+    [](sql::Connection* conn, long id, PlayerData& data) {
         data.quest_state_found = QuestStateDAO(conn).Select(id, data.quest_state);
     }
 };
 
-void PlayerDataLoader::LoadAll(sql::Connection* conn, long player_id, PlayerLoadData& out_data) {
+void PlayerDataLoader::LoadAll(sql::Connection* conn, long player_id, PlayerData& out_data) {
     for (const auto& loader : player_data_loaders) {
         loader(conn, player_id, out_data);
     }
@@ -48,7 +48,7 @@ void PlayerDataLoader::AsyncLoad(std::shared_ptr<Player> player) {
             << " on Thread " << std::this_thread::get_id() << std::endl;
 
         // Populate PlayerLoadData using the registered loaders
-        auto loaded_data = std::make_shared<PlayerLoadData>();
+        auto loaded_data = std::make_shared<PlayerData>();
         sql::Connection* conn = SqlClientManager::getInstance().sqlClientPtr->getConnection();
         
         PlayerDataLoader::LoadAll(conn, player_id, *loaded_data);

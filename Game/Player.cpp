@@ -88,7 +88,7 @@ bool Player::switch_session(std::shared_ptr<Player> player)
 	return true;
 }
 
-void Player::on_loaded_data(PlayerLoadData data)
+void Player::on_loaded_data(PlayerData data)
 {
 	LOG.info("Player {} loaded data: name={}, items={}, skills={}", player_id_, data.player.name, data.items.size(), data.skills.size());
 	set_name(data.player.name);

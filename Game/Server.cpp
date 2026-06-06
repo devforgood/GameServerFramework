@@ -10,19 +10,19 @@
 #include "PlayerController.h"
 #include "Common.h"
 
-game_room::game_room()
+game_channel::game_channel()
 {
 	world_ = new World();
 	world_->Init();
 }
 
-void game_room::join(game_participant_ptr participant)
+void game_channel::join(game_participant_ptr participant)
 {
 	participants_.insert(participant);
 	world_->join(participant->get_player());
 }
 
-void game_room::leave(game_participant_ptr participant)
+void game_channel::leave(game_participant_ptr participant)
 {
 	world_->leave(participant->get_player());
 	participants_.erase(participant);
@@ -31,7 +31,7 @@ void game_room::leave(game_participant_ptr participant)
 
 //----------------------------------------------------------------------
 
-game_session::game_session(tcp::socket socket, game_room& room, boost::asio::thread_pool& db_thread_pool, game_server * server)
+game_session::game_session(tcp::socket socket, game_channel& room, boost::asio::thread_pool& db_thread_pool, game_server * server)
 	: socket_(std::move(socket)),
 	room_(room),
 	strand_(db_thread_pool.get_executor()),
@@ -274,7 +274,7 @@ void game_server::do_accept()
 			{
 				std::cout << "connected" << std::endl;
 
-				std::make_shared<game_session>(std::move(socket), room_, db_thread_pool_, this)->start();
+				std::make_shared<game_session>(std::move(socket), channel_, db_thread_pool_, this)->start();
 			}
 
 			do_accept();
@@ -298,7 +298,7 @@ void game_server::tick(const boost::system::error_code& e)
 		timeAcc -= DELTA_TIME;
 		if (simIter < 5)
 		{
-			room_.world()->update(DELTA_TIME);
+			channel_.world()->update(DELTA_TIME);
 		}
 		simIter++;
 	}
