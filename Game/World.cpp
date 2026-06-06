@@ -10,7 +10,7 @@
 #include "DetourCommon.h"
 #include "MathHelper.h"
 #include "Player.h"
-#include "GameObjectFactory.h"
+#include "ActorFactory.h"
 #include "Common.h"
 #include "Map.h"
 
@@ -98,7 +98,7 @@ void World::leave(std::shared_ptr<Player> player)
 
 
 
-std::shared_ptr<GameObject> World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
+std::shared_ptr<Actor> World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
 	// todo : map 선택 로직 추가
 	return map_list_.begin()->get()->OnAddAgent(player, type, pos);

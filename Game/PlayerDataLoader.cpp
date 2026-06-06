@@ -3,7 +3,10 @@
 #include "Server.h"
 #include "SqlClient.h"
 #include "SqlClientManager.h"
+#include "PlayerData.h"
 #include <iostream>
+
+using DataLoaderFunc = std::function<void(sql::Connection*, long, PlayerData&)>;
 
 static const std::vector<DataLoaderFunc> player_data_loaders = {
     [](sql::Connection* conn, long id, PlayerData& data) {
@@ -51,7 +54,7 @@ void PlayerDataLoader::AsyncLoad(std::shared_ptr<Player> player) {
         auto loaded_data = std::make_shared<PlayerData>();
         sql::Connection* conn = SqlClientManager::getInstance().sqlClientPtr->getConnection();
         
-        PlayerDataLoader::LoadAll(conn, player_id, *loaded_data);
+        LoadAll(conn, player_id, *loaded_data);
 
         std::cout << "[Player " << player_id << "] Finished DB Query #" << query_id 
             << ", Loaded " << loaded_data->items.size() << " items, "

@@ -8,6 +8,7 @@
 #include "./SQL/generated/dao.h"
 #include "LogHelper.h"
 #include "PlayerDataLoader.h"
+#include "PlayerData.h"
 
 // todo :  Player ID 디비에서 관리 개선 필요
 static long next_player_id = 1;
@@ -93,6 +94,11 @@ void Player::on_loaded_data(PlayerData data)
 	LOG.info("Player {} loaded data: name={}, items={}, skills={}", player_id_, data.player.name, data.items.size(), data.skills.size());
 	set_name(data.player.name);
 	set_level(data.player.level);
+}
+
+void Player::update()
+{
+	// player update logic here
 }
 
 std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Player::get_strand()

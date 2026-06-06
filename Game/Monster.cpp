@@ -49,9 +49,9 @@ bool Monster::init(Vector3& pos)
 		return false;
 	}
 
-	if (map_->game_object_map_.find(agent_id) != map_->game_object_map_.end())
+	if (map_->actor_map_.find(agent_id) != map_->actor_map_.end())
 	{
-		LOG.error("OnAddAgent error already exist in monsters_map_");
+		LOG.error("OnAddAgent error already exist in actor_map_");
 		return false;
 	}
 

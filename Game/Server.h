@@ -57,6 +57,7 @@ public:
 
 	void leave(game_participant_ptr participant);
 
+	void update_players();
 
 	game_channel();
 
@@ -131,10 +132,12 @@ public:
 private:
 	void do_accept();
 	void tick(const boost::system::error_code& e);
+	void update_players(const boost::system::error_code& e);
 
 	tcp::acceptor acceptor_;
 	game_channel channel_;
 	boost::asio::deadline_timer timer_;
+	boost::asio::deadline_timer player_update_timer_;
 	TimeVal lastTime_;
 	float timeAcc;
 	std::shared_ptr<boost::asio::io_context> io_context_;

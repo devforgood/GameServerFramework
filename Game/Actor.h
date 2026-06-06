@@ -4,6 +4,23 @@
 #include "Vector3.h"
 #include "..\Engine\IGridActor.h"
 
+class World;
+class Map;
+class Vector3;
+class Player;
+
+enum class GameObjectChangeType
+{
+	None = 0,
+	Position = 1 << 0,
+	State = 1 << 1,
+	Health = 1 << 2,
+	InputLocked = 1 << 3, // 입력 잠금 상태
+	All = Position | State | Health | InputLocked
+};
+
+class send_message; // Forward declaration
+
 class Actor : public GameObject, public IGridActor
 {
 protected:
@@ -16,8 +33,12 @@ protected:
 	syncnet::GameObjectType game_object_type_;
 	int32_t entity_id_ = -1; // 엔티티 ID (필요시 사용)
 
+	Map* map_;
+	syncnet::AIState state_;
+	long change_flag_;
+
 public:
-	Actor(Map* map) : GameObject(map), front_vector_(0, 0, 1)  // 초기 방향은 z축 양의 방향
+	Actor(Map* map) : map_(map), front_vector_(0, 0, 1)  // 초기 방향은 z축 양의 방향
 	{
 		init();
 	}
@@ -27,14 +48,25 @@ public:
 		clear();
 	}
 
-	void init();
-	void clear();
-	virtual bool init(Vector3& pos) override = 0;
+	bool changed_flag(long flag) { return (get_changed_flag() & flag) != 0; }
+	bool changed_flag(long myself_flag, long flag) { return  (myself_flag & flag) != 0; }
+	virtual void reset_changed() { set_changed(static_cast<long>(GameObjectChangeType::None)); }
+	long get_changed_flag() { return change_flag_; }
+	void add_changed_flag(long flag) { set_changed(get_changed_flag() | flag); }
 
+	virtual bool pre_create(std::shared_ptr<Player> player) { return true; }
+	virtual bool post_create(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object) { return true; }
+
+	Map* map() { return map_; }
+	syncnet::AIState state() { return state_; }
+
+	void init();
+	virtual bool init(Vector3& pos) { return false; }
+	void clear();
 
 	virtual void update(float dt) override;
 
-	virtual int agent_id() override { return agent_id_; }
+	int agent_id() { return agent_id_; }
 
 	virtual void set_position(float x, float y, float z);
 

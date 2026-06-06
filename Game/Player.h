@@ -77,6 +77,8 @@ public:
 	
 	void on_loaded_data(PlayerData data);
 
+	void update();
+
 	std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> get_strand();
 };
 

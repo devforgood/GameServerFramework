@@ -29,8 +29,8 @@ class Map
 private:
 	World* world_;
 	NavMap* map_;
-	std::list<std::shared_ptr<GameObject>> game_object_list_;
-	std::unordered_map<int, std::list<std::shared_ptr<GameObject>>::iterator> game_object_map_;
+	std::list<std::shared_ptr<Actor>> actor_list_;
+	std::unordered_map<int, std::list<std::shared_ptr<Actor>>::iterator> actor_map_;
 
 	std::vector<syncnet::Vec3> raycasts_;
 	std::shared_ptr<send_message> builder_ptr_;
@@ -61,7 +61,7 @@ public:
 	void SendBroadcast(std::shared_ptr<send_message> msg);
 	void SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except);
 	void OnRemoveAgent(int agent_id);
-	std::shared_ptr<GameObject> OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
+	std::shared_ptr<Actor> OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
 	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
 	void OnSetRaycast(const syncnet::Vec3* pos);
 	int DetectEnemy(Actor* actor);
@@ -72,7 +72,7 @@ public:
 	void leave(std::shared_ptr<Player> player);
 
 	friend class Actor;
-	friend class GameObjectFactory;
+	friend class ActorFactory;
 	friend class Monster;
 	friend class Character;
 };

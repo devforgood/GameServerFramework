@@ -10,7 +10,7 @@
 #include "DetourCommon.h"
 #include "MathHelper.h"
 #include "Player.h"
-#include "GameObjectFactory.h"
+#include "ActorFactory.h"
 #include "Common.h"
 #include "NavMap.h"
 #include "BTDebugManager.h"
@@ -131,10 +131,10 @@ void Map::Init()
 				return;
 
 
-			auto itr = map->game_object_map_.find(state.agentID);
-			if (itr == map->game_object_map_.end())
+			auto itr = map->actor_map_.find(state.agentID);
+			if (itr == map->actor_map_.end())
 			{
-				LOG.error("SendWorldState error agent not found in game_object_map_");
+				LOG.error("SendWorldState error agent not found in actor_map_");
 				return;
 			}
 			auto actor = (Actor*)itr->second->get();
@@ -156,7 +156,7 @@ void Map::update(float deltaTime)
 {
 
 	//LOG.info("World update begin");
-	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
+	for (std::list<std::shared_ptr<Actor>>::iterator itr = actor_list_.begin(); itr != actor_list_.end(); ++itr)
 		(*itr)->update(deltaTime);
 
 	map_->update(deltaTime);
@@ -305,8 +305,8 @@ void Map::SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Playe
 
 void Map::OnRemoveAgent(int agent_id)
 {
-	auto itr = game_object_map_.find(agent_id);
-	if (itr == game_object_map_.end())
+	auto itr = actor_map_.find(agent_id);
+	if (itr == actor_map_.end())
 	{
 		LOG.error("OnRemoveAgent error not exist in monsters_map_");
 		return;
@@ -324,27 +324,27 @@ void Map::OnRemoveAgent(int agent_id)
 	}
 
 	grid_manager_->remove((Actor*)itr->second->get());
-	game_object_list_.erase(itr->second);
-	game_object_map_.erase(itr);
+	actor_list_.erase(itr->second);
+	actor_map_.erase(itr);
 
 	map_->removeAgent(agent_id);
 
 }
 
-std::shared_ptr<GameObject> Map::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
+std::shared_ptr<Actor> Map::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
-	auto game_object = GameObjectFactory::CreateGameObject(this, player, type, pos);
-	if (game_object == nullptr)
+	auto actor = ActorFactory::CreateActor(this, player, type, pos);
+	if (actor == nullptr)
 	{
-		LOG.error("OnAddAgent error in GameObjectFactory::CreateGameObject()");
+		LOG.error("OnAddAgent error in ActorFactory::CreateActor()");
 		return nullptr;
 	}
 
-	auto itr = game_object_list_.insert(game_object_list_.end(), game_object);
-	game_object_map_.insert(std::make_pair(game_object->agent_id(), itr));
-	game_object->set_changed(static_cast<long>(GameObjectChangeType::All));
+	auto itr = actor_list_.insert(actor_list_.end(), actor);
+	actor_map_.insert(std::make_pair(actor->agent_id(), itr));
+	actor->set_changed(static_cast<long>(GameObjectChangeType::All));
 
-	return game_object;
+	return actor;
 }
 
 
@@ -435,9 +435,9 @@ void Map::leave(std::shared_ptr<Player> player)
 
 void Map::GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector)
 {
-	for (std::list<std::shared_ptr<GameObject>>::iterator itr = game_object_list_.begin(); itr != game_object_list_.end(); ++itr)
+	for (std::list<std::shared_ptr<Actor>>::iterator itr = actor_list_.begin(); itr != actor_list_.end(); ++itr)
 	{
-		auto game_object = itr->get();
-		agent_info_vector.push_back(game_object->get_actor_info(*msg, static_cast<long>(GameObjectChangeType::All)));
+		auto actor = itr->get();
+		agent_info_vector.push_back(actor->get_actor_info(*msg, static_cast<long>(GameObjectChangeType::All)));
 	}
 }

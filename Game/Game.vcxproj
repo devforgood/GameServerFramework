@@ -158,7 +158,7 @@
     <ClCompile Include="GameMode.cpp" />
     <ClCompile Include="GameModeFactory.cpp" />
     <ClCompile Include="GameObject.cpp" />
-    <ClCompile Include="GameObjectFactory.cpp" />
+    <ClCompile Include="ActorFactory.cpp" />
     <ClCompile Include="JumpSkill.cpp" />
     <ClCompile Include="LimitedTimeQuest.cpp" />
     <ClCompile Include="LuaObject.cpp" />
@@ -226,7 +226,7 @@
     <ClInclude Include="GameModeFactory.h" />
     <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameObjectChangeTypeOperators.h" />
-    <ClInclude Include="GameObjectFactory.h" />
+    <ClInclude Include="ActorFactory.h" />
     <ClInclude Include="JumpSkill.h" />
     <ClInclude Include="LimitedTimeQuest.h" />
     <ClInclude Include="LogHelper.h" />

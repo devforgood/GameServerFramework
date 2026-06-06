@@ -28,6 +28,18 @@ void game_channel::leave(game_participant_ptr participant)
 	participants_.erase(participant);
 }
 
+void game_channel::update_players()
+{
+	for (auto& participant : participants_)
+	{
+		auto player = participant->get_player();
+		if (player)
+		{
+			player->update();
+		}
+	}
+}
+
 
 //----------------------------------------------------------------------
 
@@ -219,6 +231,7 @@ void game_session::do_write()
 game_server::game_server(std::shared_ptr<boost::asio::io_context> io_context, const tcp::endpoint& endpoint)
 	: acceptor_(*io_context, endpoint)
 	, timer_(*io_context, boost::posix_time::milliseconds(100)) // 10 프레임
+	, player_update_timer_(*io_context, boost::posix_time::milliseconds(1000)) // 1초
 	, io_context_(io_context)
 	, db_thread_pool_(DB_THREAD_POOL_SIZE)
 {
@@ -228,6 +241,7 @@ game_server::game_server(std::shared_ptr<boost::asio::io_context> io_context, co
 	timeAcc = 0.0f;
 	lastTime_ = getPerfTime();
 	timer_.async_wait(boost::bind(&game_server::tick, this, boost::asio::placeholders::error));
+	player_update_timer_.async_wait(boost::bind(&game_server::update_players, this, boost::asio::placeholders::error));
 }
 
 
@@ -311,4 +325,12 @@ void game_server::tick(const boost::system::error_code& e)
 	// Posts the timer event
 	timer_.async_wait(boost::bind(&game_server::tick, this, boost::asio::placeholders::error));
 }
+
+void game_server::update_players(const boost::system::error_code& e)
+{
+	channel_.update_players();
+
+	player_update_timer_.async_wait(boost::bind(&game_server::update_players, this, boost::asio::placeholders::error));
+}
+
 

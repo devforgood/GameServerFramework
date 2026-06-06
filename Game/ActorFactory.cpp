@@ -1,4 +1,4 @@
-#include "GameObjectFactory.h"
+#include "ActorFactory.h"
 #include "GameObject.h"
 #include "Actor.h"
 #include "Player.h"
@@ -11,7 +11,7 @@
 #include "Map.h"
 #include "../Engine/GridManager.h"
 
-std::shared_ptr<GameObject> GameObjectFactory::CreateGameObject(Map* map, std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
+std::shared_ptr<Actor> ActorFactory::CreateActor(Map* map, std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
 	Vector3 target_pos(pos);
 	std::shared_ptr<Actor> actor;

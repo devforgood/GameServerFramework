@@ -50,6 +50,9 @@
     <Filter Include="GameMode">
       <UniqueIdentifier>{0876397d-aa79-4bd0-a7f8-255dabcffed1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Actor">
+      <UniqueIdentifier>{e1771e22-b5fd-4215-8661-f99412a06b4a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="WalkerTest.cpp">
@@ -59,12 +62,6 @@
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="GameObject.cpp">
-      <Filter>GameObject</Filter>
-    </ClCompile>
-    <ClCompile Include="Character.cpp">
-      <Filter>GameObject</Filter>
-    </ClCompile>
-    <ClCompile Include="Monster.cpp">
       <Filter>GameObject</Filter>
     </ClCompile>
     <ClCompile Include="LuaObject.cpp">
@@ -85,17 +82,11 @@
     <ClCompile Include="SQL\generated\dao.cpp">
       <Filter>SQL</Filter>
     </ClCompile>
-    <ClCompile Include="Actor.cpp">
-      <Filter>GameObject</Filter>
-    </ClCompile>
     <ClCompile Include="PlayerController.cpp">
       <Filter>Controller</Filter>
     </ClCompile>
     <ClCompile Include="Skill.cpp">
       <Filter>skill</Filter>
-    </ClCompile>
-    <ClCompile Include="GameObjectFactory.cpp">
-      <Filter>GameObject</Filter>
     </ClCompile>
     <ClCompile Include="MonsterBT.cpp">
       <Filter>AI</Filter>
@@ -166,6 +157,18 @@
     <ClCompile Include="PlayerDataSaver.cpp">
       <Filter>Player</Filter>
     </ClCompile>
+    <ClCompile Include="Actor.cpp">
+      <Filter>Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="Character.cpp">
+      <Filter>Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="Monster.cpp">
+      <Filter>Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="ActorFactory.cpp">
+      <Filter>Actor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -180,7 +183,7 @@
     </None>
     <None Include="Common.h" />
     <None Include="Research.md">
-      <Filter>GameObject</Filter>
+      <Filter>Actor</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -203,12 +206,6 @@
     <ClInclude Include="GameObject.h">
       <Filter>GameObject</Filter>
     </ClInclude>
-    <ClInclude Include="Character.h">
-      <Filter>GameObject</Filter>
-    </ClInclude>
-    <ClInclude Include="Monster.h">
-      <Filter>GameObject</Filter>
-    </ClInclude>
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="LuaObject.h">
       <Filter>AI</Filter>
@@ -228,17 +225,11 @@
     <ClInclude Include="SQL\generated\dao.h">
       <Filter>SQL</Filter>
     </ClInclude>
-    <ClInclude Include="Actor.h">
-      <Filter>GameObject</Filter>
-    </ClInclude>
     <ClInclude Include="PlayerController.h">
       <Filter>Controller</Filter>
     </ClInclude>
     <ClInclude Include="Skill.h">
       <Filter>skill</Filter>
-    </ClInclude>
-    <ClInclude Include="GameObjectFactory.h">
-      <Filter>GameObject</Filter>
     </ClInclude>
     <ClInclude Include="MonsterBT.h">
       <Filter>AI</Filter>
@@ -315,6 +306,18 @@
     </ClInclude>
     <ClInclude Include="PlayerDataSaver.h">
       <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor.h">
+      <Filter>Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Character.h">
+      <Filter>Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Monster.h">
+      <Filter>Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="ActorFactory.h">
+      <Filter>Actor</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

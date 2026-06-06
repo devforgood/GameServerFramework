@@ -8,9 +8,9 @@
 
 
 
-using DataLoaderFunc = std::function<void(sql::Connection*, long, PlayerData&)>;
 
 class Player;
+struct PlayerData;
 
 class PlayerDataLoader {
 public:

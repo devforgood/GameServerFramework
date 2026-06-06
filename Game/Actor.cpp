@@ -48,14 +48,15 @@ void Actor::set_position(float x, float y, float z)
 
 
 void Actor::SetState(syncnet::AIState state) {
-	GameObject::SetState(state);
+	add_changed_flag(static_cast<long>(GameObjectChangeType::State));
+	state_ = state;
 	auto& entityManager = map_->system_manager_->GetEntityManager();
 	entityManager.GetComponent<Engine::StateComponent>(entity_id_).stateID = static_cast<int>(state);
 }
 
 void Actor::set_changed(long flag)
 {
-	GameObject::set_changed(flag);
+	change_flag_ = flag;
 	auto& entityManager = map_->system_manager_->GetEntityManager();
 	entityManager.GetComponent<Engine::StateComponent>(entity_id_).changeFlag = get_changed_flag();
 }

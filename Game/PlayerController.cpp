@@ -30,16 +30,16 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 {
 	LOG.info("add agent pos:({},{},{})", msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 
-	auto game_object = world_->OnAddAgent(player_, msg->gameObjectType(), msg->pos());
+	auto actor = world_->OnAddAgent(player_, msg->gameObjectType(), msg->pos());
 	auto status = syncnet::StatusCode::StatusCode_Success;
 	int agent_id = 0;
-	if (!game_object) {
-		LOG.error("OnAddAgent 실패: GameObject 생성에 실패했습니다.");
+	if (!actor) {
+		LOG.error("OnAddAgent 실패: Actor 생성에 실패했습니다.");
 		status = syncnet::StatusCode::StatusCode_Failed;
 	}
 	else
 	{ 
-		agent_id = game_object->agent_id();
+		agent_id = actor->agent_id();
 	}
 
 	player_->send(

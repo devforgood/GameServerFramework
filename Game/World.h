@@ -46,7 +46,7 @@ public:
 	void SendWorldState();
 	void GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector);
 
-	std::shared_ptr<GameObject> OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
+	std::shared_ptr<Actor> OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
 	void OnRemoveAgent(int agent_id);
 	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
 	void OnSetRaycast(const syncnet::Vec3* pos);
@@ -56,7 +56,7 @@ public:
 	void leave(std::shared_ptr<Player> player);
 
 	friend class Actor;
-	friend class GameObjectFactory;
+	friend class ActorFactory;
 	friend class Monster;
 	friend class Character;
 
