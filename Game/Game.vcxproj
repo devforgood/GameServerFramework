@@ -154,6 +154,7 @@
     <ClCompile Include="BTDebugManager.cpp" />
     <ClCompile Include="BehaviorTreeCPP.cpp" />
     <ClCompile Include="Character.cpp" />
+    <ClCompile Include="Component.h" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameMode.cpp" />
     <ClCompile Include="GameModeFactory.cpp" />

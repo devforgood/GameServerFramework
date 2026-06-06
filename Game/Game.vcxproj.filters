@@ -169,6 +169,9 @@
     <ClCompile Include="ActorFactory.cpp">
       <Filter>Actor</Filter>
     </ClCompile>
+    <ClCompile Include="Component.h">
+      <Filter>GameObject</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

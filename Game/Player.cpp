@@ -96,9 +96,9 @@ void Player::on_loaded_data(PlayerData data)
 	set_level(data.player.level);
 }
 
-void Player::update()
+void Player::update(float dt)
 {
-	// player update logic here
+	GameObject::update(dt);
 }
 
 std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Player::get_strand()

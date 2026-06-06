@@ -35,7 +35,7 @@ void game_channel::update_players()
 		auto player = participant->get_player();
 		if (player)
 		{
-			player->update();
+			player->update(1.0f);
 		}
 	}
 }

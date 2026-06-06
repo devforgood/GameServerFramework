@@ -5,12 +5,13 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include "syncnet_generated.h"
 #include "SendMessage.h"
+#include "GameObject.h"
 
 class game_session;
 class game_server;
 class Character;
 struct PlayerData;
-class Player : public std::enable_shared_from_this<Player>
+class Player : public GameObject, public std::enable_shared_from_this<Player>
 {
 private:
 	long player_id_;
@@ -77,7 +78,7 @@ public:
 	
 	void on_loaded_data(PlayerData data);
 
-	void update();
+	virtual void update(float dt) override;
 
 	std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> get_strand();
 };
