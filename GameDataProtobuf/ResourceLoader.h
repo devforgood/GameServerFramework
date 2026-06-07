@@ -3,25 +3,21 @@
 #include <boost/noncopyable.hpp>
 #include <memory>
 #include <unordered_map>
-#include <vector>
 #include "gamedata.pb.h"
+#include <google/protobuf/arena.h>
 class ResourceLoader : private boost::noncopyable
 {
 private:
+    std::unique_ptr<google::protobuf::Arena> arena_;
 
-    std::unique_ptr<gamedata::SkillList> skills_storage;
     std::unordered_map<long, const gamedata::Skill*> skills;
 
-    std::unique_ptr<gamedata::ItemList> items_storage;
     std::unordered_map<long, const gamedata::Item*> items;
 
-    std::unique_ptr<gamedata::QuestList> quests_storage;
     std::unordered_map<long, const gamedata::Quest*> quests;
 
-    std::unique_ptr<gamedata::GameModeList> game_modes_storage;
     std::unordered_map<long, const gamedata::GameMode*> game_modes;
 
-    std::unique_ptr<gamedata::MapList> maps_storage;
     std::unordered_map<long, const gamedata::Map*> maps;
 
 public:

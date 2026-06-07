@@ -3,13 +3,13 @@
 #include <boost/noncopyable.hpp>
 #include <memory>
 #include <unordered_map>
-#include <vector>
 #include "gamedata.pb.h"
+#include <google/protobuf/arena.h>
 class ResourceLoader : private boost::noncopyable
 {
 private:
+    std::unique_ptr<google::protobuf::Arena> arena_;
 {% for table in tables %}
-    std::unique_ptr<gamedata::{{ table.list_type }}> {{ table.map_name }}_storage;
     std::unordered_map<long, const gamedata::{{ table.name }}*> {{ table.map_name }};
 {% endfor %}
 public:
