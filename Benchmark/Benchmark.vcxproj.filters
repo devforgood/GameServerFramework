@@ -18,6 +18,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ECSBenchmark.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="EventBrokerBenchmark.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
