@@ -61,9 +61,6 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="PerfTimer.cpp" />
     <ClCompile Include="Server.cpp" />
-    <ClCompile Include="GameObject.cpp">
-      <Filter>GameObject</Filter>
-    </ClCompile>
     <ClCompile Include="LuaObject.cpp">
       <Filter>AI</Filter>
     </ClCompile>
@@ -321,6 +318,9 @@
     </ClInclude>
     <ClInclude Include="ActorFactory.h">
       <Filter>Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="ComponentTypeId.h">
+      <Filter>GameObject</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

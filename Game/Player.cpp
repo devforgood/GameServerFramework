@@ -9,7 +9,9 @@
 #include "LogHelper.h"
 #include "PlayerDataLoader.h"
 #include "PlayerData.h"
-
+#include "PlayerQuest.h"
+#include "PlayerItem.h"
+#include "PlayerSkill.h"
 // todo :  Player ID 디비에서 관리 개선 필요
 static long next_player_id = 1;
 
@@ -17,9 +19,14 @@ Player::Player()
 {
 	uuid_ = boost::uuids::random_generator()();
 	player_id_ = next_player_id++;
+
+	this->AddComponent<PlayerQuest>();
+	this->AddComponent<PlayerItem>();
+	this->AddComponent<PlayerSkill>();
 }
 
-Player::~Player() {
+Player::~Player() 
+{
 }
 
 

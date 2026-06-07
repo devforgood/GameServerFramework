@@ -158,7 +158,6 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameMode.cpp" />
     <ClCompile Include="GameModeFactory.cpp" />
-    <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="ActorFactory.cpp" />
     <ClCompile Include="JumpSkill.cpp" />
     <ClCompile Include="LimitedTimeQuest.cpp" />
@@ -263,6 +262,7 @@
     <ClInclude Include="SQL\generated\dao.h" />
     <ClInclude Include="SQL\generated\vo.h" />
     <ClInclude Include="syncnet_generated.h" />
+    <ClInclude Include="ComponentTypeId.h" />
     <ClInclude Include="Vector3.h" />
     <ClInclude Include="Walker.h" />
     <ClInclude Include="World.h" />

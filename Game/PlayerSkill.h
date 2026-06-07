@@ -1,7 +1,7 @@
 #pragma once
-#include "GameObject.h"
+#include "Component.h"
 
-class PlayerSkill : public GameObject
+class PlayerSkill : public ComponentBase<PlayerSkill>
 {
 };
 

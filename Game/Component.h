@@ -1,14 +1,39 @@
 #pragma once
 
+#include <cstdint>
+#include "ComponentTypeId.h"
 
 class GameObject;
 
-// 1. 모든 컴포넌트의 최상위 추상 클래스
-class Component {
+class Component
+{
 public:
-    GameObject* gameObject = nullptr; // 자신이 속한 오브젝트 역참조
+    GameObject* game_object = nullptr;
 
     virtual ~Component() = default;
-    virtual void Start() {}
-    virtual void Update() {}
+
+    virtual void Start()
+    {
+    }
+
+    virtual void Update()
+    {
+    }
+
+    virtual uint32_t GetTypeId() const = 0;
+};
+
+template<typename T>
+class ComponentBase : public Component
+{
+public:
+    static uint32_t StaticTypeId()
+    {
+        return ComponentTypeId<T>::Get();
+    }
+
+    uint32_t GetTypeId() const override
+    {
+        return StaticTypeId();
+    }
 };

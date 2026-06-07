@@ -1,71 +1,143 @@
 #pragma once
-#include <iostream>
-#include <vector>
-#include <unordered_map>
-#include <memory>
-#include <typeinfo>  
-#include <typeindex>
+
 #include <string>
-#include "syncnet_generated.h"
+#include <vector>
+#include <memory>
+#include <algorithm>
+
 #include "Component.h"
 
-
-class GameObject {
+class GameObject
+{
+public:
+    static constexpr size_t MaxComponents = 16;
 
 private:
-	std::string name;
-	// 고유한 타입을 키값으로 사용하기 위해 std::type_index 사용
-	// 메모리 자동 관리를 위해 std::unique_ptr로 컴포넌트 소유
-	std::unordered_map<std::type_index, std::unique_ptr<Component>> components;
+    std::string name_;
+
+    std::vector<std::unique_ptr<Component>> components_;
 
 public:
-	GameObject() 
-	{
-	}
-	virtual ~GameObject() = default; // 반드시 virtual 소멸자를 추가
-
-	virtual void update(float dt) 
+    GameObject()
     {
-        for (auto& const pair : components) {
-            pair.second->Update();
-        }
-    };
-
-
-    GameObject(std::string objName) : name(objName) {}
-
-    std::string GetName() const { return name; }
-
-    // 유니티의 AddComponent<T>() 모방
-    template <typename T, typename... Args>
-    T* AddComponent(Args&&... args) {
-        std::type_index typeIdx = typeid(T);
-
-        if (components.find(typeIdx) != components.end()) {
-            std::cout << "[경고] " << name << "에 이미 해당 컴포넌트가 존재합니다.\n";
-            return static_cast<T*>(components[typeIdx].get());
-        }
-
-        // 컴포넌트 생성 및 소유권 이전
-        auto component = std::make_unique<T>(std::forward<Args>(args)...);
-        component->gameObject = this;
-
-        T* rawPtr = component.get();
-        components[typeIdx] = std::move(component);
-
-        rawPtr->Start(); // 생성 후 초기화 호출
-        return rawPtr;
+        components_.reserve(MaxComponents);
     }
 
-    // 유니티의 GetComponent<T>() 모방
-    template <typename T>
-    T* GetComponent() {
-        std::type_index typeIdx = typeid(T);
-        auto it = components.find(typeIdx);
+    explicit GameObject(std::string name)
+        : name_(std::move(name))
+    {
+        components_.reserve(MaxComponents);
+    }
 
-        if (it != components.end()) {
-            return static_cast<T*>(it->second.get());
+    virtual ~GameObject() = default;
+
+public:
+    const std::string& GetName() const
+    {
+        return name_;
+    }
+
+public:
+    virtual void update(float dt)
+    {
+        (void)dt;
+
+        for (auto& component : components_)
+        {
+            component->Update();
         }
+    }
+
+public:
+    template<typename T>
+    T* GetComponent() const
+    {
+        const uint32_t target_id = T::StaticTypeId();
+
+        for (const auto& component : components_)
+        {
+            if (component->GetTypeId() == target_id)
+            {
+                return static_cast<T*>(component.get());
+            }
+        }
+
         return nullptr;
+    }
+
+    template<typename T>
+    bool HasComponent() const
+    {
+        return GetComponent<T>() != nullptr;
+    }
+
+    template<typename T, typename... Args>
+    T* AddComponent(Args&&... args)
+    {
+        if (auto* existing = GetComponent<T>())
+        {
+            return existing;
+        }
+
+        auto component =
+            std::make_unique<T>(std::forward<Args>(args)...);
+
+        component->game_object = this;
+
+        T* ptr = component.get();
+
+        components_.push_back(std::move(component));
+
+        ptr->Start();
+
+        return ptr;
+    }
+
+    template<typename T>
+    bool RemoveComponent()
+    {
+        const uint32_t target_id = T::StaticTypeId();
+
+        auto it = std::find_if(
+            components_.begin(),
+            components_.end(),
+            [&](const auto& component)
+            {
+                return component->GetTypeId() == target_id;
+            });
+
+        if (it == components_.end())
+        {
+            return false;
+        }
+
+        components_.erase(it);
+
+        return true;
+    }
+
+public:
+    template<typename Func>
+    void ForEachComponent(Func&& func)
+    {
+        for (auto& component : components_)
+        {
+            func(*component);
+        }
+    }
+
+    template<typename Func>
+    void ForEachComponent(Func&& func) const
+    {
+        for (const auto& component : components_)
+        {
+            func(*component);
+        }
+    }
+
+public:
+    size_t ComponentCount() const
+    {
+        return components_.size();
     }
 };
