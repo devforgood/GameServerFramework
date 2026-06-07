@@ -12,6 +12,7 @@
 #include "PlayerQuest.h"
 #include "PlayerItem.h"
 #include "PlayerSkill.h"
+#include "PlayerDataSaver.h"
 // todo :  Player ID 디비에서 관리 개선 필요
 static long next_player_id = 1;
 
@@ -19,6 +20,8 @@ Player::Player()
 {
 	uuid_ = boost::uuids::random_generator()();
 	player_id_ = next_player_id++;
+
+	playerLazySaveAcc_ = 0.0f;
 
 	this->AddComponent<PlayerQuest>();
 	this->AddComponent<PlayerItem>();
@@ -106,6 +109,15 @@ void Player::on_loaded_data(PlayerData data)
 void Player::update(float dt)
 {
 	GameObject::update(dt);
+
+
+	// 1분마다 플레이어 데이터를 디비에 저장하는 로직
+	playerLazySaveAcc_ += dt;
+	if (playerLazySaveAcc_ >= 60.0f)
+	{
+		save_player_data();
+		playerLazySaveAcc_ -= 60.0f;
+	}
 }
 
 std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Player::get_strand()
@@ -116,4 +128,22 @@ std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Play
 	}
 
 	return std::nullopt;
+}
+
+void Player::save_player_data()
+{
+	// 각 컴포넌트에서 플레이어 데이터를 수집
+	auto save_data = std::make_shared<PlayerData>();
+
+	ForEachComponent([&save_data](Component& component)
+	{
+		if (component.isDirty())
+		{
+			component.save(save_data.get());
+			component.clearDirty();
+		}
+	});
+
+	// 변경된 데이터만 비동기로 전달
+	PlayerDataSaver::AsyncSave(shared_from_this(), save_data);
 }

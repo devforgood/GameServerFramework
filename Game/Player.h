@@ -24,6 +24,8 @@ private:
 	std::weak_ptr<game_session> session_;
 	game_server* server_;
 
+	float playerLazySaveAcc_;
+
 public:
 	Player();
 	~Player();
@@ -81,5 +83,7 @@ public:
 	virtual void update(float dt) override;
 
 	std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> get_strand();
+
+	void save_player_data();
 };
 
