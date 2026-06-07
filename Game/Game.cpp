@@ -1,4 +1,4 @@
-﻿// TestServer.cpp : 이 파일에는 'main' 함수가 포함됩니다. 거기서 프로그램 실행이 시작되고 종료됩니다.
+// TestServer.cpp : 이 파일에는 'main' 함수가 포함됩니다. 거기서 프로그램 실행이 시작되고 종료됩니다.
 //
 
 
@@ -9,21 +9,11 @@
 #include "SqlClient.h"
 #include "Common.h"
 
-void test()
-{
-	//BehaviorTreeCPP::test();
-	//SqlClient::test();
+#include <thread>
+#include <chrono>
+#include <boost/array.hpp>
 
-	auto itr = ResourceLoader::Instance().GetItems().find(1);
-	if (itr != ResourceLoader::Instance().GetItems().end())
-	{
-		LOG.info("Item ID: {}, Name: {}", itr->first, itr->second->name_id().c_str());
-	}
-	else
-	{
-		LOG.error("Item not found");
-	}
-}
+using namespace std::chrono_literals;
 
 //----------------------------------------------------------------------
 int main(int argc, char* argv[])
@@ -39,20 +29,17 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
-		auto io_context = std::make_shared<boost::asio::io_context>();
-
-		std::list<game_server> servers;
+		std::list<tcp::endpoint> endpoints;
 		for (int i = 1; i < argc; ++i)
 		{
 			tcp::endpoint endpoint(tcp::v4(), std::atoi(argv[i]));
-			servers.emplace_back(io_context, endpoint);
+			endpoints.push_back(endpoint);
 		}
 
-		ResourceLoader::Instance().LoadResources();
-		test();
+		ServerManager serverManager;
+		serverManager.Initialize(endpoints);
 
-
-		io_context->run();
+		serverManager.Run();
 	}
 	catch (std::exception& e)
 	{

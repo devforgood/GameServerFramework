@@ -106,6 +106,7 @@
     <ClCompile Include="EventBrokerTest.cpp" />
     <ClCompile Include="GridManagerTest.cpp" />
     <ClCompile Include="RingBufferTest.cpp" />
+    <ClCompile Include="ResourceTest.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -116,6 +117,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Engine\Engine.vcxproj">
       <Project>{9359d49d-1f4d-4140-a684-6a1fc6bc9c8d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\GameDataProtobuf\GameDataProtobuf.vcxproj">
+      <Project>{e4b71ef2-efbd-456c-b30d-22d40f00c989}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

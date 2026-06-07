@@ -230,8 +230,6 @@ void game_session::do_write()
 
 game_server::game_server(std::shared_ptr<boost::asio::io_context> io_context, const tcp::endpoint& endpoint)
 	: acceptor_(*io_context, endpoint)
-	, timer_(*io_context, boost::posix_time::milliseconds(100)) // 10 프레임
-	, player_update_timer_(*io_context, boost::posix_time::milliseconds(1000)) // 1초
 	, io_context_(io_context)
 	, db_thread_pool_(DB_THREAD_POOL_SIZE)
 {
@@ -239,9 +237,7 @@ game_server::game_server(std::shared_ptr<boost::asio::io_context> io_context, co
 	do_accept();
 
 	timeAcc = 0.0f;
-	lastTime_ = getPerfTime();
-	timer_.async_wait(boost::bind(&game_server::tick, this, boost::asio::placeholders::error));
-	player_update_timer_.async_wait(boost::bind(&game_server::update_players, this, boost::asio::placeholders::error));
+	playerUpdateAcc_ = 0.0f;
 }
 
 
@@ -295,17 +291,14 @@ void game_server::do_accept()
 		});
 }
 
-void game_server::tick(const boost::system::error_code& e) 
+void game_server::UpdateGameLogic(float delta)
 {
-	TimeVal curTime = getPerfTime();
-	float dt = getPerfTimeUsec(curTime - lastTime_) / 1000000.0f;
-
-	//std::cout << "tick " << dt << std::endl;
+	//std::cout << "tick " << delta << std::endl;
 
 	// Update sample simulation.
 	const float SIM_RATE = 10;
 	const float DELTA_TIME = 1.0f / SIM_RATE;
-	timeAcc = rcClamp(timeAcc + dt, -1.0f, 1.0f);
+	timeAcc = rcClamp(timeAcc + delta, -1.0f, 1.0f);
 	int simIter = 0;
 	while (timeAcc > DELTA_TIME)
 	{
@@ -317,20 +310,72 @@ void game_server::tick(const boost::system::error_code& e)
 		simIter++;
 	}
 
-	lastTime_ = curTime;
-	int elapsed_time = getPerfTimeUsec(getPerfTime() - curTime) / 1000;
-
-	// Reschedule the timer for 1 second in the future:
-	timer_.expires_at(timer_.expires_at() + boost::posix_time::milliseconds(TICK_RATES - elapsed_time));
-	// Posts the timer event
-	timer_.async_wait(boost::bind(&game_server::tick, this, boost::asio::placeholders::error));
+	// player update (every 1 second)
+	playerUpdateAcc_ += delta;
+	if (playerUpdateAcc_ >= 1.0f)
+	{
+		channel_.update_players();
+		playerUpdateAcc_ -= 1.0f;
+	}
 }
 
-void game_server::update_players(const boost::system::error_code& e)
+bool ServerManager::Initialize(std::list<tcp::endpoint>& endpoints)
 {
-	channel_.update_players();
+	try
+	{
+		io_context_ = std::make_shared<boost::asio::io_context>();
 
-	player_update_timer_.async_wait(boost::bind(&game_server::update_players, this, boost::asio::placeholders::error));
+		for (std::list<tcp::endpoint>::iterator it = endpoints.begin();
+			it != endpoints.end(); ++it)
+		{
+			auto server = std::make_shared<game_server>(io_context_, *it);
+			servers_.push_back(server);
+		}
+
+		ResourceLoader::Instance().LoadResources();
+		return true;
+	}
+	catch (std::exception& e)
+	{
+		std::cerr << "Failed to initialize server: " << e.what() << std::endl;
+		return false;
+	}
+}
+
+void ServerManager::Tick(float delta)
+{
+	for (auto& server : servers_)
+	{
+		server->UpdateGameLogic(delta);
+	}
+}
+
+void ServerManager::Run()
+{
+	bool running = true;
+	const std::chrono::milliseconds targetInterval(16);
+	TimeVal lastTime = getPerfTime();
+
+	while (running)
+	{
+		auto frameStart = std::chrono::steady_clock::now();
+
+		io_context_->poll();
+
+		TimeVal curTime = getPerfTime();
+		float delta = getPerfTimeUsec(curTime - lastTime) / 1000000.0f;
+		lastTime = curTime;
+		Tick(delta);
+
+		auto frameEnd = std::chrono::steady_clock::now();
+		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(frameEnd - frameStart);
+		auto sleepTime = targetInterval - elapsed;
+
+		if (sleepTime > std::chrono::milliseconds(0))
+		{
+			std::this_thread::sleep_for(sleepTime);
+		}
+	}
 }
 
 

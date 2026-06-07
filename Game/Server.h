@@ -129,21 +129,32 @@ public:
 		return io_context_;
 	}
 
+	void UpdateGameLogic(float delta);
+
 private:
 	void do_accept();
-	void tick(const boost::system::error_code& e);
-	void update_players(const boost::system::error_code& e);
 
 	tcp::acceptor acceptor_;
 	game_channel channel_;
-	boost::asio::deadline_timer timer_;
-	boost::asio::deadline_timer player_update_timer_;
-	TimeVal lastTime_;
 	float timeAcc;
+	float playerUpdateAcc_;
 	std::shared_ptr<boost::asio::io_context> io_context_;
 	boost::asio::thread_pool db_thread_pool_;
 
 
 private:
 	void initialize_db_thread_pool();
+};
+
+class ServerManager
+{
+public:
+
+	bool Initialize(std::list<tcp::endpoint>& endpoints);
+	void Tick(float delta);
+	void Run();
+
+private:
+	std::list<std::shared_ptr<game_server>> servers_;
+	std::shared_ptr<boost::asio::io_context> io_context_;
 };
