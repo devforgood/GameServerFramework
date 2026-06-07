@@ -11,7 +11,7 @@
 
 Skill* SkillFactory::Create(int32_t id) {
     Skill* obj = nullptr;
-    const gamedata::Skill* res = ResourceLoader::Instance().GetSkills(id);
+    const gamedata::Skill* res = ResourceLoader::Instance().GetSkill(id);
     if (res == nullptr) {
         return nullptr;
     }

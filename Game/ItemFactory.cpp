@@ -7,7 +7,7 @@
 
 Item* ItemFactory::Create(int32_t id) {
     Item* obj = nullptr;
-    const gamedata::Item* res = ResourceLoader::Instance().GetItems(id);
+    const gamedata::Item* res = ResourceLoader::Instance().GetItem(id);
     if (res == nullptr) {
         return nullptr;
     }

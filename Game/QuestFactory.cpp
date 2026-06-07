@@ -13,7 +13,7 @@
 
 Quest* QuestFactory::Create(int32_t id) {
     Quest* obj = nullptr;
-    const gamedata::Quest* res = ResourceLoader::Instance().GetQuests(id);
+    const gamedata::Quest* res = ResourceLoader::Instance().GetQuest(id);
     if (res == nullptr) {
         return nullptr;
     }

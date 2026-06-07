@@ -9,7 +9,7 @@
 
 {{table_name}}* {{table_name}}Factory::Create(int32_t id) {
     {{table_name}}* obj = nullptr;
-    const gamedata::{{table_name}}* res = ResourceLoader::Instance().Get{{table_name}}s(id);
+    const gamedata::{{table_name}}* res = ResourceLoader::Instance().Get{{table_name}}(id);
     if (res == nullptr) {
         return nullptr;
     }

@@ -11,7 +11,7 @@ public static class ItemFactory
         Gamedata.Item res = null;
 		if(!GameManager.Instance.resource.Items.TryGetValue(id, out res))
 		{
-			Debug.LogError($"Item with ID {id} not found in resource Items.");
+			Debug.LogError($"Item with ID {id} not found in resource Item.");
 			return null;
         }
 

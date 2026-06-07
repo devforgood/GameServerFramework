@@ -11,7 +11,7 @@ public static class QuestFactory
         Gamedata.Quest res = null;
 		if(!GameManager.Instance.resource.Quests.TryGetValue(id, out res))
 		{
-			Debug.LogError($"Quest with ID {id} not found in resource Quests.");
+			Debug.LogError($"Quest with ID {id} not found in resource Quest.");
 			return null;
         }
 

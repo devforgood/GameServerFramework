@@ -28,9 +28,13 @@
   <ItemGroup>
     <Content Include="build.bat" />
     <Content Include="gamedata.proto" />
+    <Content Include="templates\Base.h.j2" />
+    <Content Include="templates\DataManager.cs.j2" />
     <Content Include="templates\Factory.cpp.j2" />
     <Content Include="templates\Factory.cs.j2" />
     <Content Include="templates\Factory.h.j2" />
+    <Content Include="templates\ResourceLoader.cpp.j2" />
+    <Content Include="templates\ResourceLoader.h.j2" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="templates\" />

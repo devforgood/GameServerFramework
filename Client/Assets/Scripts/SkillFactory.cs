@@ -11,7 +11,7 @@ public static class SkillFactory
         Gamedata.Skill res = null;
 		if(!GameManager.Instance.resource.Skills.TryGetValue(id, out res))
 		{
-			Debug.LogError($"Skill with ID {id} not found in resource Skills.");
+			Debug.LogError($"Skill with ID {id} not found in resource Skill.");
 			return null;
         }
 
