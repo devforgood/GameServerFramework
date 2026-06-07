@@ -1,5 +1,7 @@
 #pragma once
-class PlayerQuest
+#include "GameObject.h"
+
+class PlayerQuest : public GameObject
 {
 };
 

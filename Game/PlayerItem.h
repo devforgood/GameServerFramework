@@ -1,5 +1,7 @@
 #pragma once
-class PlayerItem
+#include "GameObject.h"
+
+class PlayerItem : public GameObject
 {
 };
 
