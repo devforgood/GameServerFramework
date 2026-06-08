@@ -1,5 +1,20 @@
 #pragma once
 #include <string>
+#include <chrono>
+#include <sstream>
+#include <format>
+#include <mariadb/conncpp.hpp>
+
+inline std::chrono::system_clock::time_point fromMySQLDateTime(const sql::SQLString& dt) {
+    std::chrono::system_clock::time_point tp;
+    std::istringstream ss(dt.c_str());
+    std::chrono::from_stream(ss, "%Y-%m-%d %H:%M:%S", tp);
+    return tp;
+}
+
+inline std::string toMySQLDateTime(const std::chrono::system_clock::time_point& tp) {
+    return std::format("{:%Y-%m-%d %H:%M:%S}", tp);
+}
 
 
 struct PlayerVO {
@@ -31,7 +46,7 @@ struct QuestActiveVO {
     int progress1;
     int progress2;
     int progress3;
-    std::string accept_time;
+    std::chrono::system_clock::time_point accept_time;
 };
 // ----------------------------------------
 

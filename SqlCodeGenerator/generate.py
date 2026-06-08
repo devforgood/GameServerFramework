@@ -11,7 +11,7 @@ MYSQL_TO_CPP = {
     "TEXT": "std::string",
     "FLOAT": "float",
     "DOUBLE": "double",
-    "DATETIME": "std::string",
+    "DATETIME": "std::chrono::system_clock::time_point",
 }
 
 CPP_SET_FUNC = {
@@ -19,7 +19,8 @@ CPP_SET_FUNC = {
     "long long": "Int64",
     "float": "Double",
     "double": "Double",
-    "std::string": "String"
+    "std::string": "String",
+    "std::chrono::system_clock::time_point": "String"
 }
 
 def map_cpp_type(mysql_type):
@@ -58,6 +59,7 @@ def parse_schema(xml_file):
             }
             col["cpp_type"] = map_cpp_type(col["type"])
             col["cpp_set_func"] = map_cpp_set_func(col["cpp_type"])
+            col["is_datetime"] = col["cpp_type"] == "std::chrono::system_clock::time_point"
             table["columns"].append(col)
         
         # Primary key ó

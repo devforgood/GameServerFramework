@@ -16,7 +16,11 @@ void {{ class_name }}::Insert(const {{ table.vo_class_name }}& vo) {
         );
 
         {% for col in table.columns if not col.auto_increment %}
+        {% if col.is_datetime %}
+        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, toMySQLDateTime(vo.{{ col.name }}));
+        {% else %}
         stmt->set{{ col.cpp_set_func }}({{ loop.index }}, vo.{{ col.name }});
+        {% endif %}
         {% endfor %}
 
         stmt->execute();
@@ -41,11 +45,19 @@ void {{ class_name }}::Update(const {{ table.vo_class_name }}& vo) {
 
         int param_idx = 1;
         {% for col in table.columns if not col.is_pk %}
+        {% if col.is_datetime %}
+        stmt->set{{ col.cpp_set_func }}(param_idx++, toMySQLDateTime(vo.{{ col.name }}));
+        {% else %}
         stmt->set{{ col.cpp_set_func }}(param_idx++, vo.{{ col.name }});
+        {% endif %}
         {% endfor %}
         
         {% for col in table.columns if col.is_pk %}
+        {% if col.is_datetime %}
+        stmt->set{{ col.cpp_set_func }}(param_idx++, toMySQLDateTime(vo.{{ col.name }}));
+        {% else %}
         stmt->set{{ col.cpp_set_func }}(param_idx++, vo.{{ col.name }});
+        {% endif %}
         {% endfor %}
 
         stmt->execute();
@@ -65,7 +77,11 @@ void {{ class_name }}::Delete(const {{ table.vo_class_name }}& vo) {
         );
 
         {% for col in table.primary_key %}
+        {% if col.is_datetime %}
+        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, toMySQLDateTime(vo.{{ col.name }}));
+        {% else %}
         stmt->set{{ col.cpp_set_func }}({{ loop.index }}, vo.{{ col.name }});
+        {% endif %}
         {% endfor %}
         stmt->execute();
     }
@@ -84,13 +100,21 @@ bool {{ class_name }}::Select({% for col in table.primary_key %}{{ col.cpp_type 
         );
 
         {% for col in table.primary_key %}
+        {% if col.is_datetime %}
+        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, toMySQLDateTime({{ col.name }}));
+        {% else %}
         stmt->set{{ col.cpp_set_func }}({{ loop.index }}, {{ col.name }});
+        {% endif %}
         {% endfor %}
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
         if (res->next()) {
             {% for col in table.columns %}
+            {% if col.is_datetime %}
+            out_vo.{{ col.name }} = fromMySQLDateTime(res->getString("{{ col.name }}"));
+            {% else %}
             out_vo.{{ col.name }} = res->get{{ col.cpp_set_func }}("{{ col.name }}");
+            {% endif %}
             {% endfor %}
         } else {
             return false;
@@ -113,7 +137,12 @@ std::vector<{{ table.vo_class_name }}> {{ class_name }}::SelectByIndex({% for in
         );
 
         {% for index in table.indexes[0] %}
-        stmt->set{{ table.columns | selectattr("name", "equalto", index) | map(attribute="cpp_set_func") | first }}({{ loop.index }}, {{ index }});
+        {% set col = table.columns | selectattr("name", "equalto", index) | first %}
+        {% if col.is_datetime %}
+        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, toMySQLDateTime({{ index }}));
+        {% else %}
+        stmt->set{{ col.cpp_set_func }}({{ loop.index }}, {{ index }});
+        {% endif %}
         {% endfor %}
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
@@ -121,7 +150,11 @@ std::vector<{{ table.vo_class_name }}> {{ class_name }}::SelectByIndex({% for in
         while (res->next()) {
             {{ table.vo_class_name }} obj;
             {% for col in table.columns %}
+            {% if col.is_datetime %}
+            obj.{{ col.name }} = fromMySQLDateTime(res->getString("{{ col.name }}"));
+            {% else %}
             obj.{{ col.name }} = res->get{{ col.cpp_set_func }}("{{ col.name }}");
+            {% endif %}
             {% endfor %}
             results.push_back(obj);
         }

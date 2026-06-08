@@ -30,6 +30,7 @@
     <Content Include="templates\create_table.sql.j2" />
     <Content Include="templates\dao.cpp.j2" />
     <Content Include="templates\dao.h.j2" />
+    <Content Include="templates\vo.h.j2" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="templates\" />
