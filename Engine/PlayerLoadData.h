@@ -1,10 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <functional>
-#include <memory>
-#include <mariadb/conncpp.hpp>
-#include "./SQL/generated/dao.h"
+#include "./SQL/generated/vo.h"
 
 struct PlayerLoadData {
     PlayerVO player;

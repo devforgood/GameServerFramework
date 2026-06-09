@@ -4,7 +4,8 @@
 enum class DbAction : uint8_t
 {
     Insert,
-    Update
+    Update,
+    Remove
 };
 
 template<typename TVO>

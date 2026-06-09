@@ -40,6 +40,7 @@ namespace
 		}
 	}
 
+#if defined(ENABLE_BT_DEBUG)
 	syncnet::TreeNodeType ToTreeNodeType(BTDebugNodeType node_type)
 	{
 		switch (node_type)
@@ -53,6 +54,7 @@ namespace
 			return syncnet::TreeNodeType_Action;
 		}
 	}
+#endif
 }
 
 Map::Map(World* world)

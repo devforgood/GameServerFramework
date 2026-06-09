@@ -5,6 +5,7 @@
 #include "SqlClientManager.h"
 #include "PlayerSaveData.h"
 #include <iostream>
+#include "SQL/generated/dao.h"
 
 
 void PlayerDataSaver::AsyncSave(std::shared_ptr<Player> player, std::shared_ptr<PlayerSaveData> data)
@@ -39,8 +40,10 @@ void PlayerDataSaver::AsyncSave(std::shared_ptr<Player> player, std::shared_ptr<
             {
                 if (record.action == DbAction::Insert)
                     quest_dao.Insert(record.vo);
-                else
+                else if (record.action == DbAction::Update)
                     quest_dao.Update(record.vo);
+                else if (record.action == DbAction::Remove)
+                    quest_dao.Delete(record.vo);
             }
         }
 
