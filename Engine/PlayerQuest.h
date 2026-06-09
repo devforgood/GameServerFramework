@@ -1,8 +1,7 @@
 #pragma once
 #include "Component.h"
+#include "DbChangeTracker.h"
 #include "./SQL/generated/vo.h"
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 #include <cstdint>
 
@@ -28,21 +27,16 @@ public:
 
 private:
     void setCompleted(int quest_id);
+    QuestStateVO buildStateVO() const;
 
-    // In-progress quests, keyed by quest_id
-    std::unordered_map<int, QuestActiveVO> active_quests_;
+    // 진행 중 퀘스트의 DB 변경 추적 (quest_id 기준)
+    DbCollectionTracker<int, QuestActiveVO> active_quests_;
 
-    // quest_id set for quests not yet persisted to DB (need INSERT)
-    std::unordered_set<int> new_active_quest_ids_;
+    // quest_state 행(완료 플래그)의 DB 변경 추적
+    DbRowTracker<QuestStateVO> quest_state_;
 
-    // Quests completed this session that need DELETE from quest_active table
-    std::vector<QuestActiveVO> quests_to_delete_;
-
-    // Completed quest flags: 1 bit per quest_id, packed into bytes
+    // 완료 퀘스트 플래그: quest_id 당 1비트, 바이트 단위로 패킹
     std::vector<uint8_t> completed_bits_;
-
-    // true = quest_state row not yet in DB (needs INSERT), false = needs UPDATE
-    bool quest_state_is_new_ = true;
 
     int character_id_ = 0;
 };

@@ -154,6 +154,8 @@ TEST(PlayerQuestSave, QuestState_UpdateForExistingPlayer)
 {
     PlayerQuest quest;
     quest.Load(MakeExistingPlayerData(1001));
+    quest.AcceptQuest(100);
+    quest.CompleteQuest(100);  // 완료 플래그 변경 -> quest_state 변경
 
     PlayerSaveData saved = DoSave(quest);
 
@@ -162,13 +164,27 @@ TEST(PlayerQuestSave, QuestState_UpdateForExistingPlayer)
     EXPECT_EQ(saved.quest_state->action, DbAction::Update);
 }
 
+TEST(PlayerQuestSave, QuestState_ExistingUnchanged_NoRecord)
+{
+    PlayerQuest quest;
+    quest.Load(MakeExistingPlayerData(1001));
+
+    PlayerSaveData saved = DoSave(quest);
+
+    // 완료 플래그 변경 없음 -> quest_state 기록 없음
+    EXPECT_FALSE(saved.quest_state.has_value());
+}
+
 TEST(PlayerQuestSave, QuestState_InsertBecomesUpdateAfterFirstSave)
 {
     PlayerQuest quest;
     quest.Load(MakeNewPlayerData(1001));
 
-    DoSave(quest);                        // 1st save -> Insert
-    PlayerSaveData saved = DoSave(quest); // 2nd save -> Update
+    DoSave(quest);  // 1st save -> Insert
+
+    quest.AcceptQuest(7);
+    quest.CompleteQuest(7);                // 완료 플래그 변경
+    PlayerSaveData saved = DoSave(quest);  // 2nd save -> Update
 
     EXPECT_TRUE(saved.quest_state.has_value());
     if (!saved.quest_state.has_value()) return;
@@ -209,13 +225,14 @@ TEST(PlayerQuestSave, AcceptedQuest_GetsInsertAction)
     EXPECT_EQ((*saved.quest_actives)[0].vo.character_id, 1001);
 }
 
-TEST(PlayerQuestSave, LoadedQuest_GetsUpdateAction)
+TEST(PlayerQuestSave, ModifiedLoadedQuest_GetsUpdateAction)
 {
     std::vector<QuestActiveVO> actives;
     actives.push_back(MakeQuestVO(1001, 100));
 
     PlayerQuest quest;
     quest.Load(MakeExistingPlayerData(1001, actives, std::string{}));
+    quest.UpdateProgress(100, 5, 0, 0);  // 수정 -> UPDATE
 
     PlayerSaveData saved = DoSave(quest);
 
@@ -228,14 +245,31 @@ TEST(PlayerQuestSave, LoadedQuest_GetsUpdateAction)
     EXPECT_EQ((*saved.quest_actives)[0].vo.quest_id, 100);
 }
 
+TEST(PlayerQuestSave, UnmodifiedLoadedQuest_NoRecord)
+{
+    std::vector<QuestActiveVO> actives;
+    actives.push_back(MakeQuestVO(1001, 100));
+
+    PlayerQuest quest;
+    quest.Load(MakeExistingPlayerData(1001, actives, std::string{}));
+
+    PlayerSaveData saved = DoSave(quest);
+
+    // 변경 없음 -> quest_actives 기록 없음 (변경분만 기록)
+    if (saved.quest_actives.has_value())
+        EXPECT_TRUE(saved.quest_actives->empty());
+}
+
 TEST(PlayerQuestSave, AcceptedQuestBecomesUpdateAfterFirstSave)
 {
     PlayerQuest quest;
     quest.Load(MakeNewPlayerData(1001));
     quest.AcceptQuest(100);
 
-    DoSave(quest);                        // 1st save -> Insert
-    PlayerSaveData saved = DoSave(quest); // 2nd save -> Update
+    DoSave(quest);  // 1st save -> Insert
+
+    quest.UpdateProgress(100, 9, 0, 0);    // 수정
+    PlayerSaveData saved = DoSave(quest);  // 2nd save -> Update
 
     EXPECT_TRUE(saved.quest_actives.has_value());
     if (!saved.quest_actives.has_value()) return;

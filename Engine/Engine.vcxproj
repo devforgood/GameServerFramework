@@ -227,6 +227,7 @@
     <ClInclude Include="Character.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="ComponentTypeId.h" />
+    <ClInclude Include="DbChangeTracker.h" />
     <ClInclude Include="DbRecord.h" />
     <ClInclude Include="GameMode.h" />
     <ClInclude Include="GameModeFactory.h" />
