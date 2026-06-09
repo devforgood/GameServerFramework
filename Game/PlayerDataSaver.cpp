@@ -9,15 +9,48 @@
 
 void PlayerDataSaver::AsyncSave(std::shared_ptr<Player> player, std::shared_ptr<PlayerSaveData> data)
 {
-
     boost::asio::post(player->GetStrand().value(), [data]() {
 
-        // TODO
-		// DB에 저장하는 로직
-        // 저장 방식 (insert, update, delete) 타입에 따라 쿼리 선택
-		// 대상 디비 테이블과 매핑되는 PlayerData의 필드에 따라 쿼리 작성
+        sql::Connection* conn = SqlClientManager::getInstance().sqlClientPtr->getConnection();
 
+        if (data->player)
+        {
+            PlayerDAO(conn).Update(*data->player);
+        }
 
-        
-        });
+        if (data->items)
+        {
+            ItemDAO item_dao(conn);
+            for (const auto& vo : *data->items)
+                item_dao.Update(vo);
+        }
+
+        if (data->skills)
+        {
+            SkillDAO skill_dao(conn);
+            for (const auto& vo : *data->skills)
+                skill_dao.Update(vo);
+        }
+
+        if (data->quest_actives)
+        {
+            QuestActiveDAO quest_dao(conn);
+            for (const auto& record : *data->quest_actives)
+            {
+                if (record.action == DbAction::Insert)
+                    quest_dao.Insert(record.vo);
+                else
+                    quest_dao.Update(record.vo);
+            }
+        }
+
+        if (data->quest_state)
+        {
+            QuestStateDAO state_dao(conn);
+            if (data->quest_state->action == DbAction::Insert)
+                state_dao.Insert(data->quest_state->vo);
+            else
+                state_dao.Update(data->quest_state->vo);
+        }
+    });
 }

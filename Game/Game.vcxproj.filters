@@ -322,6 +322,9 @@
     <ClInclude Include="ComponentTypeId.h">
       <Filter>GameObject</Filter>
     </ClInclude>
+    <ClInclude Include="DbRecord.h">
+      <Filter>SQL</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="solo_navmesh.bin">

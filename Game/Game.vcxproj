@@ -222,6 +222,7 @@
     <ClInclude Include="BTDebugNodeIds.h" />
     <ClInclude Include="BehaviorTreeCPP.h" />
     <ClInclude Include="Character.h" />
+    <ClInclude Include="DbRecord.h" />
     <ClInclude Include="GameMode.h" />
     <ClInclude Include="GameModeFactory.h" />
     <ClInclude Include="GameObject.h" />
