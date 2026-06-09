@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-import shutil  # shutil ��� import �߰�
+import shutil  
 import xml.etree.ElementTree as ET
 from jinja2 import Environment, FileSystemLoader
 
@@ -46,8 +46,8 @@ def parse_schema(xml_file):
             "file_name": table_node.get("file_name") or table_node.get("name").lower() + "_dao",
             "columns": [],
             "primary_key": None,
-            "unique_keys": [],  # ����ũ Ű�� ������ ����Ʈ �߰�
-            "indexes": []  # �ε����� ������ ����Ʈ �߰�
+            "unique_keys": [],  
+            "indexes": []  
         }
         for col_node in table_node.findall('column'):
             col = {
@@ -62,7 +62,6 @@ def parse_schema(xml_file):
             col["is_datetime"] = col["cpp_type"] == "std::chrono::system_clock::time_point"
             table["columns"].append(col)
         
-        # Primary key ó
         pk_node = table_node.find('primary_key')
         if pk_node is not None:
             pk_names = [name.strip() for name in pk_node.text.split(",")]
@@ -74,15 +73,13 @@ def parse_schema(xml_file):
             for col in table["columns"]:
                 col["is_pk"] = False
 
-        # Unique key ó
         for unique_key_node in table_node.findall('unique_key'):
-            unique_key_columns = unique_key_node.text.split(",")  # ����ũ Ű �÷��� ��ǥ�� ���еȴٰ� ����
-            table["unique_keys"].append([col.strip() for col in unique_key_columns])  # ���� ���� �� �߰�
+            unique_key_columns = unique_key_node.text.split(",") 
+            table["unique_keys"].append([col.strip() for col in unique_key_columns]) 
 
-        # Index ó��
         for index_node in table_node.findall('index'):
-            index_columns = index_node.text.split(",")  # �ε��� �÷��� ��ǥ�� ���еȴٰ� ����
-            table["indexes"].append([col.strip() for col in index_columns])  # ���� ���� �� �߰�
+            index_columns = index_node.text.split(",") 
+            table["indexes"].append([col.strip() for col in index_columns])  
 
 
         tables.append(table)
@@ -93,7 +90,6 @@ def render_templates(tables):
 
     pathname = "../Game/SQL/generated"
 
-    # ������ �����ϱ����� �����Ѵ�.
     if os.path.exists(pathname):
         shutil.rmtree(pathname)
 
@@ -102,27 +98,22 @@ def render_templates(tables):
 
     create_sqls = []
 
-    # ù ��° �������� Ȯ���ϱ� ���� �÷���
     is_first_file = True
 
     for table in tables:
 
-        # VO Header
         with open(f"{pathname}/vo.h", "a") as f:
             f.write(env.get_template("vo.h.j2").render(table=table, include_header=is_first_file))
 
-        # Header
         with open(f"{pathname}/{table['file_name']}.h", "a") as f:
             f.write(env.get_template("dao.h.j2").render(class_name=table["class_name"], table=table, include_header=is_first_file))
 
-        # CPP
         with open(f"{pathname}/{table['file_name']}.cpp", "a") as f:
             f.write(env.get_template("dao.cpp.j2").render(class_name=table["class_name"], table=table, include_header=is_first_file))
 
-        # CREATE TABLE SQL
         create_sqls.append(env.get_template("create_table.sql.j2").render(table=table))
 
-        is_first_file = False  # ù ��° ���� ���� �� �÷��� ����
+        is_first_file = False 
 
 
     with open(f"{pathname}/create_tables.sql", "w") as f:
