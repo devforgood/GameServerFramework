@@ -84,6 +84,8 @@ public:
 		return &x;
 	}
 
+	static std::shared_ptr<syncnet::Vec3> of(const float* pos);
+
 	float convert_x() const { return convert_x(x); }
 	float convert_y() const { return convert_y(y); }
 	float convert_z() const { return convert_z(z); }

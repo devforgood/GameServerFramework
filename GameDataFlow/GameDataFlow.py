@@ -67,9 +67,17 @@ JSON_PROTO_MAP = initialize_json_proto_map()
 # 복사 대상 폴더
 CLIENT_DIR = "../Client/Assets/Resources/GameData/"
 SERVER_DIR = "../Game/GameData/"
-SERVER_SRC_DIR = "../Game/"
+UNITTEST_DIR = "../UnitTest/GameData/"
+SERVER_SRC_DIR = "../Engine/"
 CLIENT_SRC_DIR = "../Client/Assets/Scripts/"
 PROTOBUF_SRC_DIR = "../GameDataProtobuf/"
+
+# GameData에서 관리되는 lua 스크립트
+LUA_SCRIPTS = [
+    "../GameData/behavior_tree.lua",
+    "../GameData/mob.lua",
+]
+LUA_COPY_DIRS = [SERVER_DIR, UNITTEST_DIR]
 
 class GameDataProcessor:
 
@@ -101,7 +109,7 @@ class GameDataProcessor:
             return
 
         # 바이너리 파일 복사
-        for target_dir in [CLIENT_DIR, SERVER_DIR]:
+        for target_dir in [CLIENT_DIR, SERVER_DIR, UNITTEST_DIR]:
             try:
                 os.makedirs(target_dir, exist_ok=True)
                 shutil.copy2(out_path, os.path.join(target_dir, out_path))
@@ -127,6 +135,15 @@ def main():
             print(f"{GREEN}[OK] Generated ResourceLoader{RESET}")
         except Exception as e:
             print(f"{RED}[ERROR] Failed to generate ResourceLoader: {e}{RESET}")
+
+    for target_dir in LUA_COPY_DIRS:
+        os.makedirs(target_dir, exist_ok=True)
+        for lua_path in LUA_SCRIPTS:
+            try:
+                shutil.copy2(lua_path, os.path.join(target_dir, os.path.basename(lua_path)))
+                print(f"{GREEN}[OK] {os.path.basename(lua_path)} copied to {target_dir}{RESET}")
+            except Exception as e:
+                print(f"{RED}[ERROR] {lua_path} copy to {target_dir} failed: {e}{RESET}")
 
 if __name__ == "__main__":
     main()

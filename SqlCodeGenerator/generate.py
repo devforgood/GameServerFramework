@@ -88,7 +88,7 @@ def parse_schema(xml_file):
 def render_templates(tables):
     env = Environment(loader=FileSystemLoader("templates"), trim_blocks=True, lstrip_blocks=True)
 
-    pathname = "../Game/SQL/generated"
+    pathname = "../Engine/SQL/generated"
 
     if os.path.exists(pathname):
         shutil.rmtree(pathname)

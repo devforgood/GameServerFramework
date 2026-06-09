@@ -18,32 +18,6 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="IGridActor.h" />
-    <ClCompile Include="GridManager.cpp" />
-    <ClCompile Include="NonThreadSafeBus.h" />
-    <ClCompile Include="RandomUtil.cpp" />
-    <ClCompile Include="RingBuffer.cpp" />
-    <ClCompile Include="TimeStamp.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="BoostConcurrentQueue.h" />
-    <ClInclude Include="EventBroker.h" />
-    <ClInclude Include="EventBus.h" />
-    <ClInclude Include="GridManager.h" />
-    <ClInclude Include="MoodycamelConcurrentQueue.h" />
-    <ClInclude Include="NonThreadSafe.h" />
-    <ClInclude Include="NonThreadSafeQueue.h" />
-    <ClInclude Include="RandomUtil.h" />
-    <ClInclude Include="RingBuffer.h" />
-    <ClInclude Include="ThreadSafe.h" />
-    <ClInclude Include="TimeStamp.h" />
-    <ClInclude Include="ECS.h" />
-    <ClInclude Include="SystemManager.h" />
-    <ClInclude Include="Components.h" />
-    <ClInclude Include="Systems.h" />
-    <ClInclude Include="CacheOptimizedSystem.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -102,8 +76,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -119,8 +94,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -132,11 +108,13 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;BOOST_BIND_GLOBAL_PLACEHOLDERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <DisableSpecificWarnings>4251;4267;4819</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -150,11 +128,13 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_BIND_GLOBAL_PLACEHOLDERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <DisableSpecificWarnings>4251;4267;4819</DisableSpecificWarnings>
+      <AdditionalIncludeDirectories>..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -162,7 +142,167 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
+  <!-- Engine core sources -->
+  <ItemGroup>
+    <ClCompile Include="GridManager.cpp" />
+    <ClCompile Include="NonThreadSafeBus.h" />
+    <ClCompile Include="RandomUtil.cpp" />
+    <ClCompile Include="RingBuffer.cpp" />
+    <ClCompile Include="TimeStamp.cpp" />
+  </ItemGroup>
+  <!-- Game sources (moved from Game project) -->
+  <ItemGroup>
+    <ClCompile Include="Actor.cpp" />
+    <ClCompile Include="ActorFactory.cpp" />
+    <ClCompile Include="BTDebugManager.cpp" />
+    <ClCompile Include="BehaviorTreeCPP.cpp" />
+    <ClCompile Include="Character.cpp" />
+    <ClCompile Include="Component.h" />
+    <ClCompile Include="GameMode.cpp" />
+    <ClCompile Include="GameModeFactory.cpp" />
+    <ClCompile Include="JumpSkill.cpp" />
+    <ClCompile Include="LimitedTimeQuest.cpp" />
+    <ClCompile Include="LuaObject.cpp" />
+    <ClCompile Include="MainQuest.cpp" />
+    <ClCompile Include="Map.cpp" />
+    <ClCompile Include="Monster.cpp" />
+    <ClCompile Include="MonsterBT.cpp" />
+    <ClCompile Include="MonsterCodeBaseBT.cpp" />
+    <ClCompile Include="NavMap.cpp" />
+    <ClCompile Include="NormalAttackSkill.cpp" />
+    <ClCompile Include="PerfTimer.cpp" />
+    <ClCompile Include="Player.cpp" />
+    <ClCompile Include="PlayerController.cpp" />
+    <ClCompile Include="PlayerDataLoader.cpp" />
+    <ClCompile Include="PlayerDataSaver.cpp" />
+    <ClCompile Include="PlayerItem.cpp" />
+    <ClCompile Include="PlayerQuest.cpp" />
+    <ClCompile Include="PlayerSaveData.h" />
+    <ClCompile Include="PlayerSkill.cpp" />
+    <ClCompile Include="Quest.cpp" />
+    <ClCompile Include="QuestFactory.cpp" />
+    <ClCompile Include="RepeatedQuest.cpp" />
+    <ClCompile Include="Server.cpp" />
+    <ClCompile Include="Skill.cpp" />
+    <ClCompile Include="SkillFactory.cpp" />
+    <ClCompile Include="SkillManager.cpp" />
+    <ClCompile Include="SqlClient.cpp" />
+    <ClCompile Include="SqlClientManager.cpp" />
+    <ClCompile Include="SQL\generated\dao.cpp" />
+    <ClCompile Include="Vector3.cpp" />
+    <ClCompile Include="WalkerTest.cpp" />
+    <ClCompile Include="World.cpp" />
+  </ItemGroup>
+  <!-- Engine core headers -->
+  <ItemGroup>
+    <ClInclude Include="BoostConcurrentQueue.h" />
+    <ClInclude Include="CacheOptimizedSystem.h" />
+    <ClInclude Include="Components.h" />
+    <ClInclude Include="ECS.h" />
+    <ClInclude Include="EventBroker.h" />
+    <ClInclude Include="EventBus.h" />
+    <ClInclude Include="EventPolicy.h" />
+    <ClInclude Include="EventQueue.h" />
+    <ClInclude Include="GridManager.h" />
+    <ClInclude Include="IGridActor.h" />
+    <ClInclude Include="MoodycamelConcurrentQueue.h" />
+    <ClInclude Include="NonThreadSafe.h" />
+    <ClInclude Include="NonThreadSafeQueue.h" />
+    <ClInclude Include="RandomUtil.h" />
+    <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="SystemManager.h" />
+    <ClInclude Include="Systems.h" />
+    <ClInclude Include="ThreadSafe.h" />
+    <ClInclude Include="TimeStamp.h" />
+  </ItemGroup>
+  <!-- Game headers (moved from Game project) -->
+  <ItemGroup>
+    <ClInclude Include="Actor.h" />
+    <ClInclude Include="ActorFactory.h" />
+    <ClInclude Include="BaseItem.h" />
+    <ClInclude Include="BaseSkill.h" />
+    <ClInclude Include="BTDebugManager.h" />
+    <ClInclude Include="BTDebugNodeIds.h" />
+    <ClInclude Include="BehaviorTreeCPP.h" />
+    <ClInclude Include="Character.h" />
+    <ClInclude Include="Common.h" />
+    <ClInclude Include="ComponentTypeId.h" />
+    <ClInclude Include="DbRecord.h" />
+    <ClInclude Include="GameMode.h" />
+    <ClInclude Include="GameModeFactory.h" />
+    <ClInclude Include="GameObject.h" />
+    <ClInclude Include="GameObjectChangeTypeOperators.h" />
+    <ClInclude Include="Item.h" />
+    <ClInclude Include="ItemFactory.h" />
+    <ClInclude Include="JumpSkill.h" />
+    <ClInclude Include="LimitedTimeQuest.h" />
+    <ClInclude Include="LogHelper.h" />
+    <ClInclude Include="LuaObject.h" />
+    <ClInclude Include="MainQuest.h" />
+    <ClInclude Include="Map.h" />
+    <ClInclude Include="MapFactory.h" />
+    <ClInclude Include="MathHelper.h" />
+    <ClInclude Include="Message.h" />
+    <ClInclude Include="Monster.h" />
+    <ClInclude Include="MonsterBT.h" />
+    <ClInclude Include="MonsterCodeBaseBT.h" />
+    <ClInclude Include="NavMap.h" />
+    <ClInclude Include="NormalAttackSkill.h" />
+    <ClInclude Include="PerfTimer.h" />
+    <ClInclude Include="Player.h" />
+    <ClInclude Include="PlayerController.h" />
+    <ClInclude Include="PlayerDataLoader.h" />
+    <ClInclude Include="PlayerDataSaver.h" />
+    <ClInclude Include="PlayerItem.h" />
+    <ClInclude Include="PlayerLoadData.h" />
+    <ClInclude Include="PlayerQuest.h" />
+    <ClInclude Include="PlayerSkill.h" />
+    <ClInclude Include="Quest.h" />
+    <ClInclude Include="QuestFactory.h" />
+    <ClInclude Include="RepeatedQuest.h" />
+    <ClInclude Include="SendMessage.h" />
+    <ClInclude Include="Server.h" />
+    <ClInclude Include="Skill.h" />
+    <ClInclude Include="SkillFactory.h" />
+    <ClInclude Include="SkillManager.h" />
+    <ClInclude Include="SqlClient.h" />
+    <ClInclude Include="SqlClientManager.h" />
+    <ClInclude Include="SQL\generated\dao.h" />
+    <ClInclude Include="SQL\generated\vo.h" />
+    <ClInclude Include="syncnet_generated.h" />
+    <ClInclude Include="Vector3.h" />
+    <ClInclude Include="Walker.h" />
+    <ClInclude Include="World.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BehaviorTree\BehaviorTree.vcxproj">
+      <Project>{f441c4b3-58a8-4627-b07c-264c21891861}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\GameDataProtobuf\GameDataProtobuf.vcxproj">
+      <Project>{e4b71ef2-efbd-456c-b30d-22d40f00c989}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\recastnavigation\recastnavigation.vcxproj">
+      <Project>{8e24c208-4d79-43be-941d-dbd48e5a4264}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\luajit.native.2.1.1739213504\build\native\luajit.native.targets" Condition="Exists('..\packages\luajit.native.2.1.1739213504\build\native\luajit.native.targets')" />
+    <Import Project="..\packages\boost.1.87.0\build\boost.targets" Condition="Exists('..\packages\boost.1.87.0\build\boost.targets')" />
+    <Import Project="..\packages\spdlog_native.2021.07.30\build\native\spdlog_native.targets" Condition="Exists('..\packages\spdlog_native.2021.07.30\build\native\spdlog_native.targets')" />
+    <Import Project="..\packages\boost_filesystem-vc143.1.87.0\build\boost_filesystem-vc143.targets" Condition="Exists('..\packages\boost_filesystem-vc143.1.87.0\build\boost_filesystem-vc143.targets')" />
+    <Import Project="..\packages\boost_thread-vc143.1.87.0\build\boost_thread-vc143.targets" Condition="Exists('..\packages\boost_thread-vc143.1.87.0\build\boost_thread-vc143.targets')" />
+    <Import Project="..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets" Condition="Exists('..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>이 프로젝트는 이 컴퓨터에 없는 NuGet 패키지를 참조합니다. 해당 패키지를 다운로드하려면 NuGet 패키지 복원을 사용하십시오. 자세한 내용은 http://go.microsoft.com/fwlink/?LinkID=322105를 참조하십시오. 누락된 파일은 {0}입니다.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\luajit.native.2.1.1739213504\build\native\luajit.native.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\luajit.native.2.1.1739213504\build\native\luajit.native.targets'))" />
+    <Error Condition="!Exists('..\packages\boost.1.87.0\build\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost.1.87.0\build\boost.targets'))" />
+    <Error Condition="!Exists('..\packages\spdlog_native.2021.07.30\build\native\spdlog_native.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\spdlog_native.2021.07.30\build\native\spdlog_native.targets'))" />
+    <Error Condition="!Exists('..\packages\boost_filesystem-vc143.1.87.0\build\boost_filesystem-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost_filesystem-vc143.1.87.0\build\boost_filesystem-vc143.targets'))" />
+    <Error Condition="!Exists('..\packages\boost_thread-vc143.1.87.0\build\boost_thread-vc143.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost_thread-vc143.1.87.0\build\boost_thread-vc143.targets'))" />
+    <Error Condition="!Exists('..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets'))" />
+  </Target>
 </Project>
