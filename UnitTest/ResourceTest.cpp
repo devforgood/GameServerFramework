@@ -8,9 +8,8 @@ TEST(ResourceTest, LoadItems)
     // Try multiple possible paths depending on where the test is executed from
     std::vector<std::string> possiblePaths = {
         "GameData/",
-        "../Game/GameData/",
-        "../../Game/GameData/",
-        "../../../Game/GameData/"
+        "../UnitTest/GameData/",
+        "../../UnitTest/GameData/",
     };
 
     bool loaded = false;
