@@ -3,14 +3,14 @@
 #include "Server.h"
 #include "SqlClient.h"
 #include "SqlClientManager.h"
-#include "PlayerData.h"
+#include "PlayerSaveData.h"
 #include <iostream>
 
 
-void PlayerDataSaver::AsyncSave(std::shared_ptr<Player> player, std::shared_ptr<PlayerData> data)
+void PlayerDataSaver::AsyncSave(std::shared_ptr<Player> player, std::shared_ptr<PlayerSaveData> data)
 {
 
-    boost::asio::post(player->get_strand().value(), [data]() {
+    boost::asio::post(player->GetStrand().value(), [data]() {
 
         // TODO
 		// DB에 저장하는 로직

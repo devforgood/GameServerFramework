@@ -3,6 +3,6 @@
 
 class PlayerQuest : public ComponentBase<PlayerQuest>
 {
-	virtual void save(std::any data) override;
+	virtual void Save(std::any data) override;
 };
 

@@ -66,13 +66,13 @@ void World::join(std::shared_ptr<Player> player)
 		LOG.error("World::join error player is nullptr");
 		return;
 	}
-	auto itr = players_.find(player->player_id());
+	auto itr = players_.find(player->GetPlayerId());
 	if (itr != players_.end())
 	{
 		LOG.error("World::join error player already exists");
 		return;
 	}
-	players_.insert(std::make_pair(player->player_id(), player));
+	players_.insert(std::make_pair(player->GetPlayerId(), player));
 
 	// todo : map 선택 로직 추가
 	map_list_.begin()->get()->join(player);
@@ -85,7 +85,7 @@ void World::leave(std::shared_ptr<Player> player)
 		LOG.error("World::leave error player is nullptr");
 		return;
 	}
-	auto itr = players_.find(player->player_id());
+	auto itr = players_.find(player->GetPlayerId());
 	if (itr == players_.end())
 	{
 		LOG.error("World::leave error player not found");

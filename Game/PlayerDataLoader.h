@@ -9,11 +9,11 @@
 
 
 class Player;
-struct PlayerData;
+struct PlayerLoadData;
 
 class PlayerDataLoader
 {
 public:
-    static void LoadAll(sql::Connection* conn, long player_id, PlayerData& out_data);
+    static void LoadAll(sql::Connection* conn, long player_id, PlayerLoadData& out_data);
     static void AsyncLoad(std::shared_ptr<Player> player);
 };

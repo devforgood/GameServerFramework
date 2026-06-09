@@ -8,11 +8,13 @@
 #include "./SQL/generated/dao.h"
 #include "LogHelper.h"
 #include "PlayerDataLoader.h"
-#include "PlayerData.h"
+#include "PlayerLoadData.h"
 #include "PlayerQuest.h"
 #include "PlayerItem.h"
 #include "PlayerSkill.h"
 #include "PlayerDataSaver.h"
+#include "PlayerSaveData.h"
+
 // todo :  Player ID 디비에서 관리 개선 필요
 static long next_player_id = 1;
 
@@ -33,24 +35,24 @@ Player::~Player()
 }
 
 
-void Player::set_session(std::shared_ptr<game_session> session)
+void Player::SetSession(std::shared_ptr<game_session> session)
 {
 	session_ = session;
 }
 
-void Player::set_server(game_server* server)
+void Player::SetServer(game_server* server)
 {
 	server_ = server;
 }
 
 
-void Player::possess(std::shared_ptr<Character> character)
+void Player::Possess(std::shared_ptr<Character> character)
 {
 	character_ = character;
 	character_->set_player_id(player_id_);
 }
 
-void Player::send(std::shared_ptr<send_message>& msg)
+void Player::Send(std::shared_ptr<send_message>& msg)
 {
 	auto session = session_.lock();
 	if (session)
@@ -63,7 +65,7 @@ void Player::send(std::shared_ptr<send_message>& msg)
 	}
 }
 
-void Player::close()
+void Player::Close()
 {
 	auto session = session_.lock();
 	if (session)
@@ -76,7 +78,7 @@ void Player::close()
 	}
 }
 
-bool Player::switch_session(std::shared_ptr<Player> player)
+bool Player::SwitchSession(std::shared_ptr<Player> player)
 {
 	if (this == player.get())
 	{
@@ -85,7 +87,7 @@ bool Player::switch_session(std::shared_ptr<Player> player)
 	}
 
 	// 기존 세션 정리
-	close();
+	Close();
 
 	auto session = player->session_.lock();
 	if (!session)
@@ -99,11 +101,16 @@ bool Player::switch_session(std::shared_ptr<Player> player)
 	return true;
 }
 
-void Player::on_loaded_data(PlayerData data)
+void Player::OnLoadedData(const PlayerLoadData & data)
 {
 	LOG.info("Player {} loaded data: name={}, items={}, skills={}", player_id_, data.player.name, data.items.size(), data.skills.size());
-	set_name(data.player.name);
-	set_level(data.player.level);
+	SetName(data.player.name);
+	SetLevel(data.player.level);
+
+	ForEachComponent([&data](Component& component)
+	{
+		component.Load(data);
+	});
 }
 
 void Player::update(float dt)
@@ -115,12 +122,12 @@ void Player::update(float dt)
 	playerLazySaveAcc_ += dt;
 	if (playerLazySaveAcc_ >= 60.0f)
 	{
-		save_player_data();
+		SavePlayerData();
 		playerLazySaveAcc_ -= 60.0f;
 	}
 }
 
-std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Player::get_strand()
+std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Player::GetStrand()
 {
 	if (auto session = session_.lock())
 	{
@@ -130,17 +137,17 @@ std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Play
 	return std::nullopt;
 }
 
-void Player::save_player_data()
+void Player::SavePlayerData()
 {
 	// 각 컴포넌트에서 플레이어 데이터를 수집
-	auto save_data = std::make_shared<PlayerData>();
+	auto save_data = std::make_shared<PlayerSaveData>();
 
 	ForEachComponent([&save_data](Component& component)
 	{
-		if (component.isDirty())
+		if (component.IsDirty())
 		{
-			component.save(save_data.get());
-			component.clearDirty();
+			component.Save(save_data.get());
+			component.ClearDirty();
 		}
 	});
 

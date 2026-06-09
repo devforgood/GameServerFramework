@@ -43,7 +43,7 @@ bool Character::pre_create(std::shared_ptr<Player> player)
 		return false;
 	}
 
-	if (player->character() != nullptr)
+	if (player->GetCharacter() != nullptr)
 	{
 		LOG.error("OnAddAgent error: player already has a character");
 		return false;
@@ -61,7 +61,7 @@ bool Character::post_create(std::shared_ptr<Player> player, std::shared_ptr<Game
 		return false;
 	}
 
-	player->possess(character);
+	player->Possess(character);
 	return true;
 }
 

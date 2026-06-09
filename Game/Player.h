@@ -10,7 +10,7 @@
 class game_session;
 class game_server;
 class Character;
-struct PlayerData;
+struct PlayerLoadData;
 class Player : public GameObject, public std::enable_shared_from_this<Player>
 {
 private:
@@ -30,35 +30,35 @@ public:
 	Player();
 	~Player();
 
-	void set_name(std::string name)
+	void SetName(std::string name)
 	{
 		name_ = name;
 	}
 
-	void set_level(int level)
+	void SetLevel(int level)
 	{
 		level_ = level;
 	}
-	void set_session(std::shared_ptr<game_session> session);
-	void set_server(game_server* server);
+	void SetSession(std::shared_ptr<game_session> session);
+	void SetServer(game_server* server);
 
-	std::shared_ptr<game_session> get_session() { return session_.lock(); }
-	game_server* get_server() { return server_; }
+	std::shared_ptr<game_session> GetSession() { return session_.lock(); }
+	game_server* GetServer() { return server_; }
 
-	long player_id() { return player_id_; }
-	std::string name() { return name_; }
+	long GetPlayerId() { return player_id_; }
+	std::string GetName() { return name_; }
 
-	void possess(std::shared_ptr<Character> character);
+	void Possess(std::shared_ptr<Character> character);
 
-	void send(std::shared_ptr<send_message>& msg);
-	void close();
+	void Send(std::shared_ptr<send_message>& msg);
+	void Close();
 
-	std::shared_ptr<Character> & character() { return character_; }
+	std::shared_ptr<Character> & GetCharacter() { return character_; }
 
-	bool switch_session(std::shared_ptr<Player> player);
+	bool SwitchSession(std::shared_ptr<Player> player);
 
 	template<typename CreateFunc, typename... Args>
-	void send(
+	void Send(
 		CreateFunc createFunc,
 		syncnet::GameMessages msgType,
 		int32_t id,
@@ -75,15 +75,15 @@ public:
 			result
 		);
 		builder_ptr->Finish(send_msg);
-		this->send(builder_ptr);
+		this->Send(builder_ptr);
 	}
 	
-	void on_loaded_data(PlayerData data);
+	void OnLoadedData(const PlayerLoadData & data);
 
 	virtual void update(float dt) override;
 
-	std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> get_strand();
+	std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> GetStrand();
 
-	void save_player_data();
+	void SavePlayerData();
 };
 

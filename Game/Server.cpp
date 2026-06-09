@@ -80,8 +80,8 @@ void game_session::start()
 void game_session::set_player(std::shared_ptr<Player> player)
 {
 	player_ = player;
-	player_->set_session(shared_from_this());
-	player_->set_server(server_);
+	player_->SetSession(shared_from_this());
+	player_->SetServer(server_);
 	player_controller_->player_ = player_;
 	player_controller_->world_ = room_.world();
 }

@@ -42,7 +42,7 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 		agent_id = actor->agent_id();
 	}
 
-	player_->send(
+	player_->Send(
 		syncnet::CreateAddAgent
 		, syncnet::GameMessages::GameMessages_AddAgent
 		, last_message_id_
@@ -68,26 +68,26 @@ void PlayerController::handle(const syncnet::SetMoveTarget* msg)
 		return;
 	}
 
-	if(!player_->character())
+	if(!player_->GetCharacter())
 	{
 		LOG.error("character is null");
 		return;
 	}
 
-	if(player_->character()->is_input_locked())
+	if(player_->GetCharacter()->is_input_locked())
 	{
 		LOG.debug("character is input locked");
 		return;
 	}
 
-	LOG.debug("move target agent id :{}, pos:({},{},{})", player_->character()->agent_id(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
-	world_->OnSetMoveTarget(player_->character()->agent_id(), msg->pos());
+	LOG.debug("move target agent id :{}, pos:({},{},{})", player_->GetCharacter()->agent_id(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
+	world_->OnSetMoveTarget(player_->GetCharacter()->agent_id(), msg->pos());
 }
 
 void PlayerController::handle(const syncnet::Ping* msg)
 {
 	//std::cout << "ping seq : " << msg->seq() << std::endl;
-	player_->send(
+	player_->Send(
 		syncnet::CreatePing
 		, syncnet::GameMessages_Ping
 		, last_message_id_
@@ -109,7 +109,7 @@ void PlayerController::handle(const syncnet::Login* msg)
 
 	PlayerDataLoader::AsyncLoad(player_);
 
-	player_->send(
+	player_->Send(
 		syncnet::CreateLoginDirect
 		, syncnet::GameMessages::GameMessages_Login
 		, last_message_id_
@@ -123,14 +123,14 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 {
 	LOG.info("UseSkill id :{}, skillId :{}, targetId :{} pos:({},{},{})", msg->id(), msg->skillId(), msg->targetId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 
-	auto character = player_->character();
+	auto character = player_->GetCharacter();
 	if (!character)
 	{
 		LOG.error("character is null");
 		return;
 	}
 
-	if (player_->character()->is_input_locked())
+	if (player_->GetCharacter()->is_input_locked())
 	{
 		LOG.debug("character is input locked");
 		return;

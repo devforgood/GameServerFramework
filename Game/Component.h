@@ -23,9 +23,10 @@ public:
 
     virtual uint32_t GetTypeId() const = 0;
 
-    bool isDirty() const { return dirty_; }
-    void clearDirty() { dirty_ = false; }
-    virtual void save(std::any data) { };
+    bool IsDirty() const { return dirty_; }
+    void ClearDirty() { dirty_ = false; }
+    virtual void Save(std::any data) { };
+    virtual void Load(std::any data) {};
 
 protected:
     void markDirty() { dirty_ = true; }

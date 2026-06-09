@@ -148,9 +148,6 @@
     <ClCompile Include="PlayerQuest.cpp">
       <Filter>Player</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerData.cpp">
-      <Filter>Player</Filter>
-    </ClCompile>
     <ClCompile Include="PlayerDataSaver.cpp">
       <Filter>Player</Filter>
     </ClCompile>
@@ -168,6 +165,9 @@
     </ClCompile>
     <ClCompile Include="Component.h">
       <Filter>GameObject</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerSaveData.h">
+      <Filter>Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -301,7 +301,7 @@
     <ClInclude Include="PlayerQuest.h">
       <Filter>Player</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerData.h">
+    <ClInclude Include="PlayerLoadData.h">
       <Filter>Player</Filter>
     </ClInclude>
     <ClInclude Include="PlayerDataSaver.h">

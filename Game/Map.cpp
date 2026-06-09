@@ -288,7 +288,7 @@ void Map::SendBroadcast(std::shared_ptr<send_message> msg)
 {
 	for (auto itr = players_.begin(); itr != players_.end(); ++itr)
 	{
-		itr->second->send(msg);
+		itr->second->Send(msg);
 	}
 }
 
@@ -299,7 +299,7 @@ void Map::SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Playe
 		if (itr->second.get() == except.get())
 			continue;
 
-		itr->second->send(msg);
+		itr->second->Send(msg);
 	}
 }
 
@@ -399,13 +399,13 @@ void Map::join(std::shared_ptr<Player> player)
 		LOG.error("Map::join error player is nullptr");
 		return;
 	}
-	auto itr = players_.find(player->player_id());
+	auto itr = players_.find(player->GetPlayerId());
 	if (itr != players_.end())
 	{
 		LOG.error("Map::join error player already exists");
 		return;
 	}
-	players_.insert(std::make_pair(player->player_id(), player));
+	players_.insert(std::make_pair(player->GetPlayerId(), player));
 
 	// 유닛 상태 동기화
 	auto builder_ptr = std::make_shared<send_message>();
@@ -414,7 +414,7 @@ void Map::join(std::shared_ptr<Player> player)
 	auto updateActorNotify = syncnet::CreateUpdateActorNotifyDirect(*builder_ptr, &agents, nullptr);
 	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
 	builder_ptr->Finish(send_msg);
-	player->send(builder_ptr);
+	player->Send(builder_ptr);
 }
 
 void Map::leave(std::shared_ptr<Player> player)
@@ -424,7 +424,7 @@ void Map::leave(std::shared_ptr<Player> player)
 		LOG.error("Map::leave error player is nullptr");
 		return;
 	}
-	auto itr = players_.find(player->player_id());
+	auto itr = players_.find(player->GetPlayerId());
 	if (itr == players_.end())
 	{
 		LOG.error("Map::leave error player not found");
