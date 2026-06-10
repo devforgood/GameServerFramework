@@ -14,7 +14,7 @@ public:
     virtual void Save(std::any data) override;
 
     // 이벤트 핸들러
-    void OnEventActorKilled(const EventActorKilled& message);
+    void OnEventActorDead(const EventActorDead& message);
     void OnEventPlayerJoined(const EventPlayerJoined& message);
 
     // 퀘스트 수락: 이미 진행 중이면 false 반환

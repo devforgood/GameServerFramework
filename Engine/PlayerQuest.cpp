@@ -7,11 +7,11 @@
 void PlayerQuest::Start()
 {
     auto eventBroker = game_object->GetComponent<PlayerEventBroker>();
-    eventBroker->subscribe<PlayerQuest, EventActorKilled, &PlayerQuest::OnEventActorKilled>(this);
+    eventBroker->subscribe<PlayerQuest, EventActorDead, &PlayerQuest::OnEventActorDead>(this);
     eventBroker->subscribe<PlayerQuest, EventPlayerJoined, &PlayerQuest::OnEventPlayerJoined>(this);
 }
 
-void PlayerQuest::OnEventActorKilled(const EventActorKilled& message)
+void PlayerQuest::OnEventActorDead(const EventActorDead& message)
 {
     // 예시: 처치 이벤트에 반응하여 퀘스트 진행도 갱신
     int quest_id = 1; // 예시 퀘스트 ID

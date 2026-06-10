@@ -3,7 +3,7 @@
 #include <string>
 #include <iostream>
 
-struct EventActorKilled
+struct EventActorDead
 {
 	int killer_id;
 	int victim_id;
@@ -15,6 +15,6 @@ struct EventPlayerJoined
 };
 
 using EventMessage = std::variant<
-	EventActorKilled
+	EventActorDead
 	, EventPlayerJoined
 >;
