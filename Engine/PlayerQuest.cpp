@@ -1,6 +1,46 @@
 #include "PlayerQuest.h"
 #include "PlayerLoadData.h"
 #include "PlayerSaveData.h"
+#include "PlayerEventBroker.h"
+#include "GameObject.h"
+
+void PlayerQuest::Start()
+{
+    auto eventBroker = game_object->GetComponent<PlayerEventBroker>();
+    eventBroker->subscribe<PlayerQuest, EventActorKilled, &PlayerQuest::OnEventActorKilled>(this);
+    eventBroker->subscribe<PlayerQuest, EventPlayerJoined, &PlayerQuest::OnEventPlayerJoined>(this);
+}
+
+void PlayerQuest::OnEventActorKilled(const EventActorKilled& message)
+{
+    // 예시: 처치 이벤트에 반응하여 퀘스트 진행도 갱신
+    int quest_id = 1; // 예시 퀘스트 ID
+    if (IsActive(quest_id))
+    {
+        // 진행도 업데이트 (예시로 progress1 증가)
+        const QuestActiveVO* vo = GetActiveQuest(quest_id);
+        if (vo)
+        {
+            UpdateProgress(quest_id, vo->progress1 + 1, vo->progress2, vo->progress3);
+        }
+    }
+}
+
+void PlayerQuest::OnEventPlayerJoined(const EventPlayerJoined& message)
+{
+    // 예시: 처치 이벤트에 반응하여 퀘스트 진행도 갱신
+    int quest_id = 1; // 예시 퀘스트 ID
+    if (IsActive(quest_id))
+    {
+        // 진행도 업데이트 (예시로 progress1 증가)
+        const QuestActiveVO* vo = GetActiveQuest(quest_id);
+        if (vo)
+        {
+            UpdateProgress(quest_id, vo->progress1 + 1, vo->progress2, vo->progress3);
+        }
+    }
+}
+
 
 void PlayerQuest::Load(std::any data)
 {

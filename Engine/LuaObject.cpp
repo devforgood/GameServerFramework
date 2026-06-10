@@ -4,7 +4,7 @@
 #include "LuaObject.h"
 #include "Monster.h"
 
-// LuaObject<Monster>ÀÇ Á¤Àû ¸â¹ö º¯¼ö Á¤ÀÇ
+// LuaObject<Monster>ì˜ ì •ì  ë©¤ë²„ ë³€ìˆ˜ ì •ì˜
 template <>
 lua_State* LuaObject<Monster>::L = nullptr;
 

@@ -14,6 +14,7 @@
 #include "PlayerSkill.h"
 #include "PlayerDataSaver.h"
 #include "PlayerSaveData.h"
+#include "PlayerEventBroker.h"
 
 // todo :  Player ID 디비에서 관리 개선 필요
 static long next_player_id = 1;
@@ -25,6 +26,7 @@ Player::Player()
 
 	playerLazySaveAcc_ = 0.0f;
 
+	this->AddComponent<PlayerEventBroker>();
 	this->AddComponent<PlayerQuest>();
 	this->AddComponent<PlayerItem>();
 	this->AddComponent<PlayerSkill>();

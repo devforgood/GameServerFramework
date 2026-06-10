@@ -1,0 +1,24 @@
+<Project>
+  <!--
+    vcpkg applocal DLL 배포를 PowerShell(pwsh.exe) 대신 vcpkg.exe의 내장 z-applocal로 수행한다.
+    이 머신에는 pwsh.exe가 없는데, vcpkg.targets의 pwsh 경로는 UseCommandProcessor=false라
+    pwsh 부재 시 종료코드 9009가 나오지 않아 system powershell 폴백(== 9009 조건)이 트리거되지 않는다.
+    그 결과 디버그 빌드 폴더에 릴리스 abseil_dll.dll 등이 stale로 남아 libprotobufd.dll과 ABI가
+    어긋나 protobuf 정적 초기화 중 크래시가 발생했다. 내장 경로는 PowerShell에 의존하지 않으므로
+    구성에 맞는 (debug/release) DLL을 항상 정확히 배포한다.
+  -->
+  <PropertyGroup>
+    <VcpkgXUseBuiltInApplocalDeps>true</VcpkgXUseBuiltInApplocalDeps>
+  </PropertyGroup>
+
+  <!--
+    소스를 항상 UTF-8로 해석한다. BOM 없는 UTF-8 파일을 시스템 코드페이지(CP949)로
+    읽으면 한글 주석 끝 글자의 마지막 바이트가 2바이트 선행 바이트로 오인되어 개행을
+    삼키고, 다음 줄이 주석에 빨려 들어가 사라지는 MSVC 버그가 발생한다.
+  -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>

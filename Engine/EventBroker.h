@@ -19,6 +19,11 @@ public:
         bus_.template subscribe<TObject, Method>(object);
     }
 
+    template<typename TObject, typename TEvent, auto Method>
+    void subscribe(TObject* object) {
+        bus_.template subscribe<TObject, TEvent, Method>(object);
+    }
+
     void publishImmediate(const MessageType& message) {
         bus_.publish(message);
     }

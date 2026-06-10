@@ -1,6 +1,7 @@
 #pragma once
 #include "Component.h"
 #include "DbChangeTracker.h"
+#include "EventMessage.h"
 #include "./SQL/generated/vo.h"
 #include <vector>
 #include <cstdint>
@@ -8,8 +9,13 @@
 class PlayerQuest : public ComponentBase<PlayerQuest>
 {
 public:
+    virtual void Start() override;
     virtual void Load(std::any data) override;
     virtual void Save(std::any data) override;
+
+    // 이벤트 핸들러
+    void OnEventActorKilled(const EventActorKilled& message);
+    void OnEventPlayerJoined(const EventPlayerJoined& message);
 
     // 퀘스트 수락: 이미 진행 중이면 false 반환
     bool AcceptQuest(int quest_id);

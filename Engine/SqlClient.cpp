@@ -6,37 +6,37 @@
 
 void SqlClient::test() {  
     try {
-        // MariaDB ¿¬°á ¼³Á¤
+        // MariaDB ì—°ê²° ì„¤ì •
         sql::SQLString url("jdbc:mariadb://localhost:3306/testdb");
         sql::Properties properties({
             {"user", "root"},
             {"password", "1234"}
             });
 
-        // µå¶óÀÌ¹ö ¹× ¿¬°á »ı¼º
+        // ë“œë¼ì´ë²„ ë° ì—°ê²° ìƒì„±
         sql::Driver* driver = sql::mariadb::get_driver_instance();
         std::unique_ptr<sql::Connection> conn(driver->connect(url, properties));
 
-        // ¿¬°á È®ÀÎ
+        // ì—°ê²° í™•ì¸
         if (conn->isValid()) {
-            std::cout << "MariaDB¿¡ ¼º°øÀûÀ¸·Î ¿¬°áµÇ¾ú½À´Ï´Ù!" << std::endl;
+            std::cout << "MariaDBì— ì„±ê³µì ìœ¼ë¡œ ì—°ê²°ë˜ì—ˆìŠµë‹ˆë‹¤!" << std::endl;
         }
 
-        // Äõ¸® ½ÇÇà
+        // ì¿¼ë¦¬ ì‹¤í–‰
         std::unique_ptr<sql::Statement> stmt(conn->createStatement());
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery("SELECT id, name FROM users"));
 
-        // °á°ú Ãâ·Â
+        // ê²°ê³¼ ì¶œë ¥
         while (res->next()) {
             std::cout << "ID: " << res->getInt("id")
                 << ", Name: " << res->getString("name") << std::endl;
         }
     }
     catch (const sql::SQLException& e) {
-        std::cerr << "SQL ¿À·ù: " << e.what() << std::endl;
+        std::cerr << "SQL ì˜¤ë¥˜: " << e.what() << std::endl;
     }
     catch (const std::exception& e) {
-        std::cerr << "¿À·ù: " << e.what() << std::endl;
+        std::cerr << "ì˜¤ë¥˜: " << e.what() << std::endl;
     }
 
    
@@ -45,27 +45,27 @@ void SqlClient::test() {
 SqlClient::SqlClient()
 {
     try {
-        // MariaDB ¿¬°á ¼³Á¤
+        // MariaDB ì—°ê²° ì„¤ì •
         sql::SQLString url("jdbc:mariadb://localhost:3306/testdb");
         sql::Properties properties({
             {"user", "root"},
             {"password", "1234"}
             });
 
-        // µå¶óÀÌ¹ö ¹× ¿¬°á »ı¼º
+        // ë“œë¼ì´ë²„ ë° ì—°ê²° ìƒì„±
         sql::Driver* driver = sql::mariadb::get_driver_instance();
 		conn_ = std::unique_ptr<sql::Connection>(driver->connect(url, properties));
 
-        // ¿¬°á È®ÀÎ
+        // ì—°ê²° í™•ì¸
         if (conn_->isValid()) {
-            std::cout << "MariaDB¿¡ ¼º°øÀûÀ¸·Î ¿¬°áµÇ¾ú½À´Ï´Ù!" << std::endl;
+            std::cout << "MariaDBì— ì„±ê³µì ìœ¼ë¡œ ì—°ê²°ë˜ì—ˆìŠµë‹ˆë‹¤!" << std::endl;
         }
     }
     catch (const sql::SQLException& e) {
-        std::cerr << "SQL ¿À·ù: " << e.what() << std::endl;
+        std::cerr << "SQL ì˜¤ë¥˜: " << e.what() << std::endl;
     }
     catch (const std::exception& e) {
-        std::cerr << "¿À·ù: " << e.what() << std::endl;
+        std::cerr << "ì˜¤ë¥˜: " << e.what() << std::endl;
     }
 }
 
@@ -76,23 +76,23 @@ SqlClient::~SqlClient()
 void SqlClient::select(const std::string& query, const std::vector<std::string>& params, IResultParser& parser)
 {
 	try {
-        // PreparedStatement »ı¼º
+        // PreparedStatement ìƒì„±
         std::unique_ptr<sql::PreparedStatement> pstmt(conn_->prepareStatement(query));
 
-        // ¸Å°³º¯¼ö ¹ÙÀÎµù
+        // ë§¤ê°œë³€ìˆ˜ ë°”ì¸ë”©
         for (size_t i = 0; i < params.size(); ++i) {
-            pstmt->setString(i + 1, params[i]); // ¸Å°³º¯¼ö´Â 1ºÎÅÍ ½ÃÀÛ
+            pstmt->setString(i + 1, params[i]); // ë§¤ê°œë³€ìˆ˜ëŠ” 1ë¶€í„° ì‹œì‘
         }
 
 		std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
-		// °á°ú ÆÄ½Ì
+		// ê²°ê³¼ íŒŒì‹±
 		parser.parse(res.get());
 	}
 	catch (const sql::SQLException& e) {
-		throw std::runtime_error(std::string("SQL ¿À·ù: ") + e.what());
+		throw std::runtime_error(std::string("SQL ì˜¤ë¥˜: ") + e.what());
 	}
 	catch (const std::exception& e) {
-		throw std::runtime_error(std::string("¿À·ù: ") + e.what());
+		throw std::runtime_error(std::string("ì˜¤ë¥˜: ") + e.what());
 	}
 }
 

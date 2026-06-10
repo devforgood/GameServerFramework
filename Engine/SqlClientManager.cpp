@@ -1,5 +1,5 @@
 #include "SqlClientManager.h"
-#include "SqlClient.h" // SqlClient Çì´õ ÆÄÀÏ Æ÷ÇÔ
+#include "SqlClient.h" // SqlClient í—¤ë” íŒŒì¼ í¬í•¨
 #include <fstream> // std::ifstream
 #include <sstream> // std::stringstream
 #include <memory> // std::unique_ptr
@@ -10,10 +10,10 @@
 
 void SqlClientManager::init()
 {
-	// SqlClient °´Ã¼¸¦ »ı¼ºÇÏ¿© thread_specific_ptr¿¡ ÀúÀåÇÕ´Ï´Ù.
+	// SqlClient ê°ì²´ë¥¼ ìƒì„±í•˜ì—¬ thread_specific_ptrì— ì €ì¥í•©ë‹ˆë‹¤.
 	sqlClientPtr.reset(new SqlClient());
     if(!create_tables())     {
-        // Å×ÀÌºí »ı¼º ½ÇÆĞ ½Ã Ã³¸®
+        // í…Œì´ë¸” ìƒì„± ì‹¤íŒ¨ ì‹œ ì²˜ë¦¬
 		LOG.error("Failed to create tables.");
 	}
 }
@@ -21,7 +21,7 @@ void SqlClientManager::init()
 bool SqlClientManager::create_tables()
 {
     try {
-        // create_tables.sql ÆÄÀÏÀ» ÀĞ¾î SQL ¹®ÀÚ¿­·Î ¸¸µì´Ï´Ù.
+        // create_tables.sql íŒŒì¼ì„ ì½ì–´ SQL ë¬¸ìì—´ë¡œ ë§Œë“­ë‹ˆë‹¤.
         std::ifstream file("SQL/generated/create_tables.sql");
         if (file)
         {
@@ -29,7 +29,7 @@ bool SqlClientManager::create_tables()
             buffer << file.rdbuf();
             std::string sql = buffer.str();
 
-            // SqlClientÀÇ ConnectionÀ» ÅëÇØ SQL ½ÇÇà
+            // SqlClientì˜ Connectionì„ í†µí•´ SQL ì‹¤í–‰
             sql::Connection* conn = sqlClientPtr->getConnection();
             if (conn)
             {
@@ -39,21 +39,21 @@ bool SqlClientManager::create_tables()
         }
         else
         {
-            // ÆÄÀÏÀÌ ¾øÀ» °æ¿ì ·Î±ë µî Ã³¸®
-            // ¿¹: std::cerr << "create_tables.sql ÆÄÀÏÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù." << std::endl;
+            // íŒŒì¼ì´ ì—†ì„ ê²½ìš° ë¡œê¹… ë“± ì²˜ë¦¬
+            // ì˜ˆ: std::cerr << "create_tables.sql íŒŒì¼ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤." << std::endl;
             LOG.error("create_tables.sql file not found.");
             return false;
         }
     }
     catch (sql::SQLException& e)
     {
-        // SQL ¿¹¿Ü Ã³¸®
+        // SQL ì˜ˆì™¸ ì²˜ë¦¬
 		LOG.error("SQLException: " + std::string(e.what()));
         return false;
     }
     catch (std::exception& e)
     {
-		// ÀÏ¹İ ¿¹¿Ü Ã³¸®
+		// ì¼ë°˜ ì˜ˆì™¸ ì²˜ë¦¬
 		LOG.error("Exception: " + std::string(e.what()));
         return false;
     }

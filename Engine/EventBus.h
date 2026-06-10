@@ -7,6 +7,7 @@
 #include <atomic>
 #include <algorithm>
 #include <cstdint>
+#include <variant>
 #include "ThreadSafe.h"
 #include "NonThreadSafe.h"
 
@@ -49,6 +50,23 @@ public:
         new_list->push_back({object, &stub_helper<TObject, Method>});
         
         // 원자적 포인터 교체
+        subscribers_.store(new_list, std::memory_order_release);
+    }
+
+    // 특정 이벤트 타입만 받아 핸들러에 풀어 전달 (MessageType 이 std::variant 일 때)
+    template<typename TObject, typename TEvent, auto Method>
+    static void typed_stub_helper(void* object, const MessageType& message) {
+        if (const auto* event = std::get_if<TEvent>(&message)) {
+            (static_cast<TObject*>(object)->*Method)(*event);
+        }
+    }
+
+    template<typename TObject, typename TEvent, auto Method>
+    void subscribe(TObject* object) {
+        std::lock_guard<ThreadSafe> lock(lockPolicy_);
+        auto current_list = subscribers_.load(std::memory_order_acquire);
+        auto new_list = std::make_shared<std::vector<Subscriber>>(*current_list);
+        new_list->push_back({object, &typed_stub_helper<TObject, TEvent, Method>});
         subscribers_.store(new_list, std::memory_order_release);
     }
 

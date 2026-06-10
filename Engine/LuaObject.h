@@ -8,7 +8,7 @@ class LuaObject
 {
 private:
 
-    // Lua ½ºÅ©¸³Æ® ·Îµù ÇÔ¼ö
+    // Lua ìŠ¤í¬ë¦½íŠ¸ ë¡œë”© í•¨ìˆ˜
     static void loadLuaScript(lua_State* L, const std::string& script) {
         if (luaL_loadfile(L, script.c_str()) != LUA_OK) {
             std::cerr << "Lua Error: " << lua_tostring(L, -1) << std::endl;
@@ -24,24 +24,24 @@ public :
     static lua_State* L;
 
 	static void Initialize(const std::string& script_file_name) {
-        // Lua »óÅÂ °´Ã¼ »ı¼º
+        // Lua ìƒíƒœ ê°ì²´ ìƒì„±
         L = luaL_newstate();
         luaL_openlibs(L);
 
 
-        // Lua ½ºÅ©¸³Æ® ·Îµù
+        // Lua ìŠ¤í¬ë¦½íŠ¸ ë¡œë”©
         loadLuaScript(L, script_file_name);
 
 	}
 
 	static void close() {
-		// Lua »óÅÂ °´Ã¼ ´İ±â
+		// Lua ìƒíƒœ ê°ì²´ ë‹«ê¸°
 		lua_close(L);
 	}
 
 
 
-    // C++¿¡¼­ Lua Behavior Tree ½ÇÇà
+    // C++ì—ì„œ Lua Behavior Tree ì‹¤í–‰
     void runBehaviorTree(T* obj) {
         lua_getglobal(L, "runTree");
         lua_pushlightuserdata(L, obj);
@@ -54,7 +54,7 @@ public :
         lua_pop(L, 1);
     }
 
-    // Lua Æ®¸® ±¸Á¶ ÇÁ¸°Æ® ÇÔ¼ö
+    // Lua íŠ¸ë¦¬ êµ¬ì¡° í”„ë¦°íŠ¸ í•¨ìˆ˜
     void printBehaviorTree() {
         lua_getglobal(L, "printTree");
         if (lua_pcall(L, 0, 0, 0) != LUA_OK) {
@@ -68,7 +68,7 @@ public :
 };
 
 
-// Á¤Àû ¸â¹ö º¯¼öÀÇ Á¤ÀÇ
+// ì •ì  ë©¤ë²„ ë³€ìˆ˜ì˜ ì •ì˜
 template <typename T>
 lua_State* LuaObject<T>::L = nullptr;
 

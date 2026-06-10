@@ -1,5 +1,5 @@
 #pragma once
-#include <memory> // std::unique_ptr¸¦ »ç¿ëÇÏ±â À§ÇØ ÇÊ¿ä
+#include <memory> // std::unique_ptrë¥¼ ì‚¬ìš©í•˜ê¸° ìœ„í•´ í•„ìš”
 #include <string>
 #include <vector>
 
@@ -13,14 +13,14 @@ class IResultParser {
 public:
     virtual ~IResultParser() = default;
 
-    // ResultSet¿¡¼­ µ¥ÀÌÅÍ¸¦ ÆÄ½ÌÇÏ´Â ¼ø¼ö °¡»ó ÇÔ¼ö
+    // ResultSetì—ì„œ ë°ì´í„°ë¥¼ íŒŒì‹±í•˜ëŠ” ìˆœìˆ˜ ê°€ìƒ í•¨ìˆ˜
     virtual void parse(sql::ResultSet* resultSet) = 0;
 };
 
 class SqlClient
 {
 private:
-	std::unique_ptr<sql::Connection> conn_; // MariaDB ¿¬°á °´Ã¼
+	std::unique_ptr<sql::Connection> conn_; // MariaDB ì—°ê²° ê°ì²´
 
 public:
 	static void test();
