@@ -12,6 +12,9 @@
 #include "Common.h"
 #include "Map.h"
 #include "BTDebugManager.h"
+#include "Player.h"
+#include "PlayerEventBroker.h"
+#include "EventMessage.h"
 
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
@@ -122,6 +125,27 @@ int Monster::Resume()
 	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(agent_id());
 	this_agent->desiredSpeed = this->speed;
 	return 0;
+}
+
+void Monster::NotifyKilledBy()
+{
+	if (dead_notified_)
+		return;
+	dead_notified_ = true;
+
+	long killer_id = last_attacker_player_id();
+	if (killer_id < 0)
+		return; // 플레이어에 의한 처치가 아니면 발행하지 않음
+
+	auto killer = map_->FindPlayer(killer_id);
+	if (killer == nullptr)
+		return; // 킬러가 이미 떠났음
+
+	auto eventBroker = killer->GetComponent<PlayerEventBroker>();
+	if (eventBroker == nullptr)
+		return;
+
+	eventBroker->publish(EventActorDead{ static_cast<int>(killer_id), agent_id_ });
 }
 
 

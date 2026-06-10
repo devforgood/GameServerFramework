@@ -20,7 +20,7 @@ public:
 	{
 		player_id_ = player_id;
 	}
-	long player_id() { return player_id_; }
+	long player_id() const override { return player_id_; }
 	void use_skill(const syncnet::UseSkill* msg);
 	virtual void update(float deltaTime) override;
 	virtual bool pre_create(std::shared_ptr<Player> player) override;

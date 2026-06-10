@@ -172,6 +172,8 @@ public:
 	{
 		// 사망 상태로 변경
 		monster_->SetState(syncnet::AIState::AIState_Dead);
+		// 킬한 플레이어에게 사망 이벤트 발행(최초 1회)
+		monster_->NotifyKilledBy();
 		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionDead, "ActionDead", BT::NodeStatus::SUCCESS, "dead state applied");
 		LOG.info("Monster dead");
 		return BT::NodeStatus::SUCCESS;

@@ -86,10 +86,15 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	}
 #endif
 
+	// 공격자가 플레이어 캐릭터라면 킬 판정을 위해 플레이어 ID를 확보(아니면 -1)
+	long attacker_player_id = actor->player_id();
+
 	// 데미지 적용
 	int hit_count = 0;
 	for (auto target : actors_in_range) {
 		if (target && target != actor) {
+			// 사망 시 킬러를 추적할 수 있도록 마지막 공격자를 기록
+			target->setLastAttackerPlayerId(attacker_player_id);
 			target->decrementHealth(damage);
 			hit_count++;
 #ifdef _DEBUG

@@ -22,6 +22,7 @@ private:
 	float spawn_pos_[3];
 	dtPolyRef spawn_ref_;
 	BT::Tree* tree_;
+	bool dead_notified_ = false; // 사망 이벤트 중복 발행 방지
 
 public:
 	int target_agent_id_;
@@ -38,6 +39,9 @@ public:
 	int AttackRange();
 	int Attack();
 	int Resume();
+
+	// 사망 시 킬한 플레이어에게 EventActorDead 이벤트를 발행한다(최초 1회).
+	void NotifyKilledBy();
 
 	static void registerLuaFunctionAll();
 

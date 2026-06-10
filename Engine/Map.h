@@ -71,6 +71,8 @@ public:
 	void join(std::shared_ptr<Player> player);
 	void leave(std::shared_ptr<Player> player);
 
+	std::shared_ptr<Player> FindPlayer(long player_id);
+
 	friend class Actor;
 	friend class ActorFactory;
 	friend class Monster;

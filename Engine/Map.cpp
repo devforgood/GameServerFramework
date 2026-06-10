@@ -435,6 +435,14 @@ void Map::leave(std::shared_ptr<Player> player)
 	players_.erase(itr);
 }
 
+std::shared_ptr<Player> Map::FindPlayer(long player_id)
+{
+	auto itr = players_.find(player_id);
+	if (itr == players_.end())
+		return nullptr;
+	return itr->second;
+}
+
 void Map::GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector)
 {
 	for (std::list<std::shared_ptr<Actor>>::iterator itr = actor_list_.begin(); itr != actor_list_.end(); ++itr)

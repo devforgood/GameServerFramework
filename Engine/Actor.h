@@ -30,6 +30,7 @@ protected:
 	float rotation_speed_ = 5.0f; // 회전 속도 (초당 회전 각도)
 	Vector3 position_;        // 위치 정보를 protected로 이동
 	int health_ = 100;
+	long last_attacker_player_id_ = -1; // 마지막으로 데미지를 입힌 플레이어 ID (킬 판정용)
 	syncnet::GameObjectType game_object_type_;
 	int32_t entity_id_ = -1; // 엔티티 ID (필요시 사용)
 
@@ -105,9 +106,17 @@ public:
 	}
 
 	virtual void decrementHealth(int amount)
-	{ 
-		decrement_health(amount); 
+	{
+		decrement_health(amount);
 	}
+
+	virtual void setLastAttackerPlayerId(long player_id) override
+	{
+		last_attacker_player_id_ = player_id;
+	}
+
+	// 이 액터를 조종하는 플레이어 ID. 플레이어 캐릭터가 아니면 -1.
+	virtual long player_id() const { return -1; }
 
 	// 위치 얻기
 	const Vector3& get_position() const { return position_; }
@@ -189,6 +198,9 @@ public:
 			&& !is_input_locked_; // if input is locked, we don't want to change the position
 	}
 	virtual int health() { return health_; }
+
+	// 마지막으로 데미지를 입힌 플레이어(킬러) ID
+	long last_attacker_player_id() const { return last_attacker_player_id_; }
 
 	virtual flatbuffers::Offset<syncnet::ActorInfo> get_actor_info(flatbuffers::FlatBufferBuilder& _fbb, long flag);
 
