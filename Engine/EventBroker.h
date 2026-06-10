@@ -4,8 +4,8 @@
 #include "EventBus.h"
 #include "NonThreadSafeBus.h"
 
-namespace Engine {
-namespace EventBroker {
+namespace engine {
+namespace event_broker {
 
 template <
     typename MessageType, 

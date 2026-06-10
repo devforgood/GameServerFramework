@@ -4,8 +4,8 @@
 #include "BoostConcurrentQueue.h"
 #include "NonThreadSafeQueue.h"
 
-namespace Engine {
-namespace EventBroker {
+namespace engine {
+namespace event_broker {
 
 // EventQueue 껍데기 (인터페이스 래퍼)
 template <typename MessageType, template<typename> class QueuePolicy = BoostConcurrentQueue>

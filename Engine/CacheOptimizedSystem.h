@@ -9,11 +9,11 @@
 #include <array>
 #include <immintrin.h> // For SIMD intrinsics
 
-namespace Engine
+namespace engine
 {
     // Cache-optimized batch processing system
     template<typename... Components>
-    class CacheOptimizedSystem : public Engine::ISystem
+    class CacheOptimizedSystem : public engine::ISystem
     {
     public:
         using BatchUpdateFunction = std::function<void(float, size_t, Components*...)>;
@@ -140,7 +140,7 @@ namespace Engine
     };
     
     // SIMD-optimized system for specific component types
-    class SIMDOptimizedMovementSystem : public Engine::ISystem
+    class SIMDOptimizedMovementSystem : public engine::ISystem
     {
     public:
         SIMDOptimizedMovementSystem(EntityManager* entityManager)

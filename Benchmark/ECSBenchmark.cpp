@@ -6,7 +6,7 @@
 
 #include "../Engine/Systems.h"
 
-using namespace Engine;
+using namespace engine;
 
 // Cache Miss Pattern Analysis: Sequential Access
 static void BM_ECSCacheSequential(benchmark::State& state) {

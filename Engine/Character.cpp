@@ -22,7 +22,7 @@ Character::Character(Map* map) : Actor(map)
 
 
 	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entityManager.AddComponent(entity_id_, Engine::TimerComponent());
+	entityManager.AddComponent(entity_id_, engine::TimerComponent());
 }
 
 Character::~Character() 
@@ -129,7 +129,7 @@ bool Character::init(Vector3& pos)
 	this->agent_id_ = agent_id;
 	this->speed = speed;
 	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entityManager.GetComponent<Engine::StateComponent>(entity_id_).agentID = agent_id;
+	entityManager.GetComponent<engine::StateComponent>(entity_id_).agentID = agent_id;
 
 	return true;
 }

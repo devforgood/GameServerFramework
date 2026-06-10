@@ -10,8 +10,8 @@
 #include "ThreadSafe.h"
 #include "NonThreadSafe.h"
 
-namespace Engine {
-    namespace EventBroker {
+namespace engine {
+    namespace event_broker {
         template <typename MessageType>
         class NonThreadSafeBus {
         public:

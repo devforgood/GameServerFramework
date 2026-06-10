@@ -59,7 +59,7 @@ bool Monster::init(Vector3& pos)
 	agent_id_ = agent_id;
 	this->speed = speed;
 	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entityManager.GetComponent<Engine::StateComponent>(entity_id_).agentID = agent_id;
+	entityManager.GetComponent<engine::StateComponent>(entity_id_).agentID = agent_id;
 
 
 	bt_ = MonsterCodeBaseBT::createTree(this);

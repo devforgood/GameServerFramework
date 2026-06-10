@@ -2,7 +2,7 @@
 #include "ECS.h"
 #include <cstdint>
 
-namespace Engine
+namespace engine
 {
     // Position component - only primitive types for cache optimization
     struct PositionComponent

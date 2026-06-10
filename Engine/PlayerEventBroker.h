@@ -3,10 +3,10 @@
 #include "EventBroker.h"
 #include "EventMessage.h"
 
-class PlayerSkill : public ComponentBase<PlayerSkill>
+class PlayerEventBroker : public ComponentBase<PlayerEventBroker>
 {
 private:
-    EventBroker<EventMessage> eventBroker_;
+    engine::event_broker::EventBroker<EventMessage> eventBroker_;
 public:
 
 };

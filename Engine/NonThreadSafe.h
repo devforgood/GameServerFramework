@@ -1,7 +1,7 @@
 #pragma once
 
-namespace Engine {
-namespace EventBroker {
+namespace engine {
+namespace event_broker {
 
 // 넌 쓰레드 세이프 정책: 아무런 락 동작을 수행하지 않음 (오버헤드 없음)
 struct NonThreadSafe {

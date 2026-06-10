@@ -19,7 +19,7 @@ class send_message;
 class RandomUtil;
 class IGridActor;
 class Map;
-namespace Engine {
+namespace engine {
 	class SystemManager;
 }
 

@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace Engine
+namespace engine
 {
     // Movement system - processes Position and Velocity components
     class MovementSystem

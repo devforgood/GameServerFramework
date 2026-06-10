@@ -94,32 +94,32 @@ void Map::Init()
 
 	builder_ptr_ = std::make_shared<send_message>();
 
-	system_manager_ = new Engine::SystemManager();
+	system_manager_ = new engine::SystemManager();
 
 	auto& entityManager = system_manager_->GetEntityManager();
 
 	// 모든 컴포넌트 타입 등록
-	entityManager.RegisterComponent<Engine::PositionComponent>();
-	entityManager.RegisterComponent<Engine::VelocityComponent>();
-	entityManager.RegisterComponent<Engine::HealthComponent>();
-	entityManager.RegisterComponent<Engine::PhysicsComponent>();
-	entityManager.RegisterComponent<Engine::AIComponent>();
-	entityManager.RegisterComponent<Engine::CollisionComponent>();
-	entityManager.RegisterComponent<Engine::InputComponent>();
-	entityManager.RegisterComponent<Engine::AnimationComponent>();
-	entityManager.RegisterComponent<Engine::TimerComponent>();
-	entityManager.RegisterComponent<Engine::ParticleComponent>();
-	entityManager.RegisterComponent<Engine::NetworkComponent>();
-	entityManager.RegisterComponent<Engine::StateComponent>();
+	entityManager.RegisterComponent<engine::PositionComponent>();
+	entityManager.RegisterComponent<engine::VelocityComponent>();
+	entityManager.RegisterComponent<engine::HealthComponent>();
+	entityManager.RegisterComponent<engine::PhysicsComponent>();
+	entityManager.RegisterComponent<engine::AIComponent>();
+	entityManager.RegisterComponent<engine::CollisionComponent>();
+	entityManager.RegisterComponent<engine::InputComponent>();
+	entityManager.RegisterComponent<engine::AnimationComponent>();
+	entityManager.RegisterComponent<engine::TimerComponent>();
+	entityManager.RegisterComponent<engine::ParticleComponent>();
+	entityManager.RegisterComponent<engine::NetworkComponent>();
+	entityManager.RegisterComponent<engine::StateComponent>();
 
-	system_manager_->RegisterSystem<Engine::TimerComponent>(
-		[](float deltaTime, Engine::TimerComponent& timer) {
-			Engine::TimerSystem::Update(deltaTime, timer);
+	system_manager_->RegisterSystem<engine::TimerComponent>(
+		[](float deltaTime, engine::TimerComponent& timer) {
+			engine::TimerSystem::Update(deltaTime, timer);
 		});
 
 	Map* map = this;
-	system_manager_->RegisterSystem<Engine::StateComponent, Engine::PositionComponent>(
-		[map](float deltaTime, Engine::StateComponent& state, Engine::PositionComponent& position) {
+	system_manager_->RegisterSystem<engine::StateComponent, engine::PositionComponent>(
+		[map](float deltaTime, engine::StateComponent& state, engine::PositionComponent& position) {
 			if (state.stateID == syncnet::AIState::AIState_Destroyed) {
 				map->removed_agents_.push_back(state.agentID);
 			}

@@ -18,7 +18,7 @@ class TimeStamp;
 class send_message;
 class RandomUtil;
 class IGridActor;
-namespace Engine {
+namespace engine {
 	class SystemManager;
 }
 class World;
@@ -41,7 +41,7 @@ private:
 	GridManager* grid_manager_;
 
 
-	Engine::SystemManager* system_manager_;
+	engine::SystemManager* system_manager_;
 
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
 

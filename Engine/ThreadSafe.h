@@ -2,8 +2,8 @@
 
 #include <atomic>
 
-namespace Engine {
-namespace EventBroker {
+namespace engine {
+namespace event_broker {
 
 // 쓰레드 세이프 정책: std::mutex를 대체하는 경량화된 Lock-Free 기반(SpinLock) 동작
 struct ThreadSafe {

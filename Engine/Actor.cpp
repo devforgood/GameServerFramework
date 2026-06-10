@@ -10,9 +10,9 @@ void Actor::init()
 	auto& entityManager = map_->system_manager_->GetEntityManager();
 	entity_id_ = entityManager.CreateEntity();
 
-	entityManager.AddComponent(entity_id_, Engine::TimerComponent());
-	entityManager.AddComponent(entity_id_, Engine::StateComponent());
-	entityManager.AddComponent(entity_id_, Engine::PositionComponent());
+	entityManager.AddComponent(entity_id_, engine::TimerComponent());
+	entityManager.AddComponent(entity_id_, engine::StateComponent());
+	entityManager.AddComponent(entity_id_, engine::PositionComponent());
 }
 
 void Actor::clear()
@@ -40,7 +40,7 @@ void Actor::set_position(float x, float y, float z)
 	position_.set(x, y, z);
 	add_changed_flag(static_cast<long>(GameObjectChangeType::Position));
 	auto& entityManager = map_->system_manager_->GetEntityManager();
-	Engine::PositionComponent& transform = entityManager.GetComponent<Engine::PositionComponent>(entity_id_);
+	engine::PositionComponent& transform = entityManager.GetComponent<engine::PositionComponent>(entity_id_);
 	transform.x = x;
 	transform.y = y;
 	transform.z = z;
@@ -51,14 +51,14 @@ void Actor::SetState(syncnet::AIState state) {
 	add_changed_flag(static_cast<long>(GameObjectChangeType::State));
 	state_ = state;
 	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entityManager.GetComponent<Engine::StateComponent>(entity_id_).stateID = static_cast<int>(state);
+	entityManager.GetComponent<engine::StateComponent>(entity_id_).stateID = static_cast<int>(state);
 }
 
 void Actor::set_changed(long flag)
 {
 	change_flag_ = flag;
 	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entityManager.GetComponent<Engine::StateComponent>(entity_id_).changeFlag = get_changed_flag();
+	entityManager.GetComponent<engine::StateComponent>(entity_id_).changeFlag = get_changed_flag();
 }
 
 

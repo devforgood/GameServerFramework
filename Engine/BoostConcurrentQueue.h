@@ -3,8 +3,8 @@
 #include <utility>
 #include <boost/lockfree/queue.hpp>
 
-namespace Engine {
-namespace EventBroker {
+namespace engine {
+namespace event_broker {
 
 // 1. Thread-safe 큐 정책 (동시성 큐 - Lock-Free 알고리즘)
 // std::mutex와 lock_guard를 제거하고 부스트의 lockfree::queue를 활용합니다.

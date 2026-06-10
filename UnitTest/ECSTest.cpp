@@ -11,10 +11,10 @@
 #include "Common.h"
 #include "Systems.h"
 
-using namespace Engine;
+using namespace engine;
 
 // Cache optimized system for testing
-namespace Engine {
+namespace engine {
     template<typename... Components>
     class CacheOptimizedSystem {
     public:

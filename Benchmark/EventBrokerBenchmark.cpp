@@ -7,7 +7,7 @@
 #include "../Engine/BoostConcurrentQueue.h"
 #include "../Engine/MoodycamelConcurrentQueue.h"
 
-using namespace Engine::EventBroker;
+using namespace engine::event_broker;
 
 // 벤치마크용 더미 메시지 구조체
 struct DummyMessage {

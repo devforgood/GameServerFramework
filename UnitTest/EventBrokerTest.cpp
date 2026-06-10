@@ -8,7 +8,7 @@ struct TestMessage {
     char data[32];
 };
 
-using TestEventBroker = Engine::EventBroker::EventBroker<TestMessage>;
+using TestEventBroker = engine::event_broker::EventBroker<TestMessage>;
 
 class EventBrokerTest : public ::testing::Test {
 protected:

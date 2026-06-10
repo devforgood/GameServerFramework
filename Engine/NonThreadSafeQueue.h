@@ -3,8 +3,8 @@
 #include <queue>
 #include <utility>
 
-namespace Engine {
-namespace EventBroker {
+namespace engine {
+namespace event_broker {
 
 // 2. Non Thread-safe 큐 정책
 template <typename T>

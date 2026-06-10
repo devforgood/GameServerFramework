@@ -8,11 +8,11 @@
 #include <utility>
 #include <array>
 
-namespace Engine
+namespace engine
 {
     // Cache-friendly system that processes components in arrays
     template<typename... Components>
-    class ComponentSystem : public Engine::ISystem
+    class ComponentSystem : public engine::ISystem
     {
     public:
         using UpdateFunction = std::function<void(float, Components&...)>;
@@ -132,6 +132,6 @@ namespace Engine
         
     private:
         EntityManager m_EntityManager;
-        std::vector<std::unique_ptr<Engine::ISystem>> m_Systems;
+        std::vector<std::unique_ptr<engine::ISystem>> m_Systems;
     };
 } 

@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <stdexcept>
 
-namespace Engine
+namespace engine
 {
     // Entity is just an ID
     using EntityID = uint32_t;
