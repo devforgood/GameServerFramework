@@ -209,6 +209,7 @@
     <ClInclude Include="MoodycamelConcurrentQueue.h" />
     <ClInclude Include="NonThreadSafe.h" />
     <ClInclude Include="NonThreadSafeQueue.h" />
+    <ClInclude Include="PlayerEventBroker.h" />
     <ClInclude Include="RandomUtil.h" />
     <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="SystemManager.h" />
