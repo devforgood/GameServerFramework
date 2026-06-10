@@ -7,8 +7,8 @@
 #include "SendMessage.h"
 #include "GameObject.h"
 
-class game_session;
-class game_server;
+class GameSession;
+class GameServer;
 class Character;
 struct PlayerLoadData;
 class Player : public GameObject, public std::enable_shared_from_this<Player>
@@ -21,8 +21,8 @@ private:
 
 
 	std::shared_ptr<Character> character_;
-	std::weak_ptr<game_session> session_;
-	game_server* server_;
+	std::weak_ptr<GameSession> session_;
+	GameServer* server_;
 
 	float playerLazySaveAcc_;
 
@@ -39,11 +39,11 @@ public:
 	{
 		level_ = level;
 	}
-	void SetSession(std::shared_ptr<game_session> session);
-	void SetServer(game_server* server);
+	void SetSession(std::shared_ptr<GameSession> session);
+	void SetServer(GameServer* server);
 
-	std::shared_ptr<game_session> GetSession() { return session_.lock(); }
-	game_server* GetServer() { return server_; }
+	std::shared_ptr<GameSession> GetSession() { return session_.lock(); }
+	GameServer* GetServer() { return server_; }
 
 	long GetPlayerId() { return player_id_; }
 	std::string GetName() { return name_; }

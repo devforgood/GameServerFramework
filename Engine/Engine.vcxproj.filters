@@ -65,6 +65,9 @@
     <Filter Include="flatbuffers">
       <UniqueIdentifier>{dd7a7d75-0d93-450e-834c-8e053449af7d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="EventMessage">
+      <UniqueIdentifier>{4c073c03-99dc-43c1-856a-543bfd3e8160}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <!-- Engine core ClCompile -->
   <ItemGroup>
@@ -318,7 +321,7 @@
     </ClInclude>
     <ClInclude Include="MapFactory.h" />
     <ClInclude Include="MathHelper.h" />
-    <ClInclude Include="Message.h">
+    <ClInclude Include="GameMessage.h">
       <Filter>Message</Filter>
     </ClInclude>
     <ClInclude Include="Monster.h">
@@ -406,6 +409,10 @@
     </ClInclude>
     <ClInclude Include="World.h">
       <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="DbChangeTracker.h" />
+    <ClInclude Include="EventMessage.h">
+      <Filter>EventMessage</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

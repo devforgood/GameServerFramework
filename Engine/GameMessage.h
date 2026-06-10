@@ -1,12 +1,12 @@
 #pragma once
 
-class game_message
+class GameMessage
 {
 public:
 	enum { header_length = 2 };
 	enum { max_body_length = 512 };
 
-	game_message()
+	GameMessage()
 		: body_length_(0)
 	{
 	}

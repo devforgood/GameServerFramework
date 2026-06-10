@@ -18,7 +18,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include "Message.h"
+#include "GameMessage.h"
 #include "PerfTimer.h"
 #include "PlayerController.h"
 #include "SendMessage.h"
@@ -28,86 +28,83 @@ using boost::asio::ip::tcp;
 
 class Player;
 class PlayerController;
-class game_server;
+class GameServer;
 class RingBuffer;
 
 //----------------------------------------------------------------------
 
-typedef std::deque<std::shared_ptr<send_message>> game_message_queue;
+typedef std::deque<std::shared_ptr<send_message>> GameMessageQueue;
 
 //----------------------------------------------------------------------
 
-class game_participant
+class GameParticipant
 {
 public:
-	virtual ~game_participant() {}
-	virtual void send(std::shared_ptr<send_message>& msg) = 0;
-	virtual std::shared_ptr<Player> get_player() = 0;
+	virtual ~GameParticipant() {}
+	virtual void Send(std::shared_ptr<send_message>& msg) = 0;
+	virtual std::shared_ptr<Player> GetPlayer() = 0;
 };
 
-typedef std::shared_ptr<game_participant> game_participant_ptr;
+typedef std::shared_ptr<GameParticipant> GameParticipantPtr;
 
 //----------------------------------------------------------------------
 
 class World;
-class game_channel
+class GameChannel
 {
 public:
-	void join(game_participant_ptr participant);
+	void Join(GameParticipantPtr participant);
 
-	void leave(game_participant_ptr participant);
+	void Leave(GameParticipantPtr participant);
 
-	void update_players();
+	void UpdatePlayers();
 
-	game_channel();
+	GameChannel();
 
-	World* world() { return world_; }
+	World* GetWorld() { return world_; }
 private:
 	World * world_;
-	std::set<game_participant_ptr> participants_;
+	std::set<GameParticipantPtr> participants_;
 };
 
 //----------------------------------------------------------------------
 
-class game_session
-	: public game_participant,
-	public std::enable_shared_from_this<game_session>
+class GameSession
+	: public GameParticipant,
+	public std::enable_shared_from_this<GameSession>
 {
 public:
-	game_session(tcp::socket socket, game_channel& room, boost::asio::thread_pool & db_thread_pool, game_server * server);
-	~game_session();
+	GameSession(tcp::socket socket, GameChannel& room, boost::asio::thread_pool & db_thread_pool, GameServer * server);
+	~GameSession();
 
-	void start();
+	void Start();
 
-	void send(std::shared_ptr<send_message>& msg);
-	void close();
+	void Send(std::shared_ptr<send_message>& msg);
+	void Close();
 
-	virtual std::shared_ptr<Player> get_player() override
+	virtual std::shared_ptr<Player> GetPlayer() override
 	{
 		return player_;
 	}
-	void set_player(std::shared_ptr<Player> player);
+	void SetPlayer(std::shared_ptr<Player> player);
 private:
-	void do_read_header();
-
-	void do_read_body();
-
-	void do_write();
-
-	void do_read();
-	void process_packets();
-	void handle_packet(std::span<const char> data);
+	void DoReadHeader();
+	void DoReadBody();
+	void DoWrite();
+	void DoRead();
+	void ProcessPackets();
+	void HandlePacket(std::span<const char> data);
 
 
 	tcp::socket socket_;
-	game_channel& room_;
+	GameChannel& room_;
 	RingBuffer* ring_buf_;
-	game_message read_msg_;
-	game_message_queue write_msgs_;
+	GameMessage read_msg_;
+	GameMessageQueue write_msgs_;
 	PlayerController* player_controller_;
 	std::shared_ptr<Player> player_;
 	boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
-	game_server* server_;
+	GameServer* server_;
 
 	friend Player;
 
@@ -115,13 +112,13 @@ private:
 
 //----------------------------------------------------------------------
 
-class game_server
+class GameServer
 {
 	const static int TICK_RATES = 100; // ms
 	const static int DB_THREAD_POOL_SIZE = 4;
 
 public:
-	game_server(std::shared_ptr<boost::asio::io_context> io_context,
+	GameServer(std::shared_ptr<boost::asio::io_context> io_context,
 		const tcp::endpoint& endpoint);
 
 	std::shared_ptr<boost::asio::io_context> get_io_context()
@@ -132,10 +129,10 @@ public:
 	void UpdateGameLogic(float delta);
 
 private:
-	void do_accept();
+	void DoAccept();
 
 	tcp::acceptor acceptor_;
-	game_channel channel_;
+	GameChannel channel_;
 	float timeAcc;
 	float playerUpdateAcc_;
 	std::shared_ptr<boost::asio::io_context> io_context_;
@@ -143,7 +140,7 @@ private:
 
 
 private:
-	void initialize_db_thread_pool();
+	void InitializeDbThreadPool();
 };
 
 class ServerManager
@@ -155,6 +152,6 @@ public:
 	void Run();
 
 private:
-	std::list<std::shared_ptr<game_server>> servers_;
+	std::list<std::shared_ptr<GameServer>> servers_;
 	std::shared_ptr<boost::asio::io_context> io_context_;
 };

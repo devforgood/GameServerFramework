@@ -201,6 +201,7 @@
     <ClInclude Include="ECS.h" />
     <ClInclude Include="EventBroker.h" />
     <ClInclude Include="EventBus.h" />
+    <ClInclude Include="EventMessage.h" />
     <ClInclude Include="EventPolicy.h" />
     <ClInclude Include="EventQueue.h" />
     <ClInclude Include="GridManager.h" />
@@ -243,7 +244,7 @@
     <ClInclude Include="Map.h" />
     <ClInclude Include="MapFactory.h" />
     <ClInclude Include="MathHelper.h" />
-    <ClInclude Include="Message.h" />
+    <ClInclude Include="GameMessage.h" />
     <ClInclude Include="Monster.h" />
     <ClInclude Include="MonsterBT.h" />
     <ClInclude Include="MonsterCodeBaseBT.h" />

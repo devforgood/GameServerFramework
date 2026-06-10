@@ -11,7 +11,7 @@ private:
 	std::shared_ptr<Player> player_;
 	int last_message_id_;
 
-	friend class game_session;
+	friend class GameSession;
 
 public:
 	void handle(const syncnet::GameMessage* msg);

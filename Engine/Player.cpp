@@ -35,12 +35,12 @@ Player::~Player()
 }
 
 
-void Player::SetSession(std::shared_ptr<game_session> session)
+void Player::SetSession(std::shared_ptr<GameSession> session)
 {
 	session_ = session;
 }
 
-void Player::SetServer(game_server* server)
+void Player::SetServer(GameServer* server)
 {
 	server_ = server;
 }
@@ -57,7 +57,7 @@ void Player::Send(std::shared_ptr<send_message>& msg)
 	auto session = session_.lock();
 	if (session)
 	{
-		session->send(msg);
+		session->Send(msg);
 	}
 	else
 	{
@@ -70,7 +70,7 @@ void Player::Close()
 	auto session = session_.lock();
 	if (session)
 	{
-		session->close();
+		session->Close();
 	}
 	else
 	{
@@ -96,7 +96,7 @@ bool Player::SwitchSession(std::shared_ptr<Player> player)
 		return false;
 	}
 
-	session->set_player(shared_from_this());
+	session->SetPlayer(shared_from_this());
 	LOG.info("Switching session for player {} to new session", player_id_);
 	return true;
 }

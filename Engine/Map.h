@@ -6,7 +6,7 @@
 #include "NavMap.h"
 #include "syncnet_generated.h"
 
-class game_session;
+class GameSession;
 class Monster;
 class GameObject;
 class Character;

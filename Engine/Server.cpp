@@ -10,29 +10,29 @@
 #include "PlayerController.h"
 #include "Common.h"
 
-game_channel::game_channel()
+GameChannel::GameChannel()
 {
 	world_ = new World();
 	world_->Init();
 }
 
-void game_channel::join(game_participant_ptr participant)
+void GameChannel::Join(GameParticipantPtr participant)
 {
 	participants_.insert(participant);
-	world_->join(participant->get_player());
+	world_->join(participant->GetPlayer());
 }
 
-void game_channel::leave(game_participant_ptr participant)
+void GameChannel::Leave(GameParticipantPtr participant)
 {
-	world_->leave(participant->get_player());
+	world_->leave(participant->GetPlayer());
 	participants_.erase(participant);
 }
 
-void game_channel::update_players()
+void GameChannel::UpdatePlayers()
 {
 	for (auto& participant : participants_)
 	{
-		auto player = participant->get_player();
+		auto player = participant->GetPlayer();
 		if (player)
 		{
 			player->update(1.0f);
@@ -43,7 +43,7 @@ void game_channel::update_players()
 
 //----------------------------------------------------------------------
 
-game_session::game_session(tcp::socket socket, game_channel& room, boost::asio::thread_pool& db_thread_pool, game_server * server)
+GameSession::GameSession(tcp::socket socket, GameChannel& room, boost::asio::thread_pool& db_thread_pool, GameServer * server)
 	: socket_(std::move(socket)),
 	room_(room),
 	strand_(db_thread_pool.get_executor()),
@@ -54,7 +54,7 @@ game_session::game_session(tcp::socket socket, game_channel& room, boost::asio::
 	ring_buf_ = new RingBuffer(8192); // 8192 bytes
 }
 
-game_session::~game_session()
+GameSession::~GameSession()
 {
 	if (player_controller_ != nullptr)
 	{
@@ -68,42 +68,42 @@ game_session::~game_session()
 	}
 }
 
-void game_session::start()
+void GameSession::Start()
 {
-	set_player(std::make_shared<Player>());
+	SetPlayer(std::make_shared<Player>());
 
-	room_.join(shared_from_this());
-	do_read();
+	room_.Join(shared_from_this());
+	DoRead();
 
 }
 
-void game_session::set_player(std::shared_ptr<Player> player)
+void GameSession::SetPlayer(std::shared_ptr<Player> player)
 {
 	player_ = player;
 	player_->SetSession(shared_from_this());
 	player_->SetServer(server_);
 	player_controller_->player_ = player_;
-	player_controller_->world_ = room_.world();
+	player_controller_->world_ = room_.GetWorld();
 }
 
-void game_session::send(std::shared_ptr<send_message>& msg)
+void GameSession::Send(std::shared_ptr<send_message>& msg)
 {
 	bool write_in_progress = !write_msgs_.empty();
 	write_msgs_.push_back(msg);
 	if (!write_in_progress)
 	{
-		do_write();
+		DoWrite();
 	}
 }
 
-void game_session::close()
+void GameSession::Close()
 {
 	boost::system::error_code ignored_ec;
 	socket_.close(ignored_ec);
-	room_.leave(shared_from_this());
+	room_.Leave(shared_from_this());
 }
 
-void game_session::do_read() {
+void GameSession::DoRead() {
 	size_t space = 0;
 	char* write_ptr = ring_buf_->write_ptr(space);
 	if (!write_ptr || space == 0) return;
@@ -112,75 +112,75 @@ void game_session::do_read() {
 		[this](boost::system::error_code ec, std::size_t bytes_transferred) {
 			if (!ec) {
 				ring_buf_->commit_write(bytes_transferred);
-				process_packets();
-				do_read();
+				ProcessPackets();
+				DoRead();
 			}
 		});
 }
 
-void game_session::process_packets() {
+void GameSession::ProcessPackets() {
 	while (true) {
-		if (ring_buf_->size() < game_message::header_length)
+		if (ring_buf_->size() < GameMessage::header_length)
 			return;
 
 		const char* hdr_ptr = nullptr;
 		uint16_t body_len = 0;
 
-		if (ring_buf_->peek_ptr(hdr_ptr, game_message::header_length)) {
-			std::memcpy(&body_len, hdr_ptr, game_message::header_length);
+		if (ring_buf_->peek_ptr(hdr_ptr, GameMessage::header_length)) {
+			std::memcpy(&body_len, hdr_ptr, GameMessage::header_length);
 		}
 		else {
-			char tmp[game_message::header_length];
-			if (!ring_buf_->peek(tmp, game_message::header_length)) return;
-			std::memcpy(&body_len, tmp, game_message::header_length);
+			char tmp[GameMessage::header_length];
+			if (!ring_buf_->peek(tmp, GameMessage::header_length)) return;
+			std::memcpy(&body_len, tmp, GameMessage::header_length);
 		}
 
-		if (ring_buf_->size() < game_message::header_length + body_len)
+		if (ring_buf_->size() < GameMessage::header_length + body_len)
 			return;
 
-		ring_buf_->read(nullptr, game_message::header_length);  // consume header
+		ring_buf_->read(nullptr, GameMessage::header_length);  // consume header
 
 		auto body_view = ring_buf_->try_peek_span_cpp20(body_len);
 		if (body_view) {
-			handle_packet(*body_view);
+			HandlePacket(*body_view);
 			ring_buf_->read(nullptr, body_len);  // consume body
 		}
 		else {
 			// fallback
 			std::vector<char> body(body_len);
 			ring_buf_->read(body.data(), body_len);
-			handle_packet(std::span<const char>(body));
+			HandlePacket(std::span<const char>(body));
 		}
 	}
 }
 
-void game_session::handle_packet(std::span<const char> data) {
+void GameSession::HandlePacket(std::span<const char> data) {
 	const uint8_t* udata = reinterpret_cast<const uint8_t*>(data.data());
 	player_controller_->handle(syncnet::GetGameMessage(udata));
 }
 
 
-void game_session::do_read_header()
+void GameSession::DoReadHeader()
 {
 	auto self(shared_from_this());
 	boost::asio::async_read(socket_,
-		boost::asio::buffer(read_msg_.data(), game_message::header_length),
+		boost::asio::buffer(read_msg_.data(), GameMessage::header_length),
 		[this, self](boost::system::error_code ec, std::size_t /*length*/)
 		{
 			//std::cout << "recv header" << std::endl;
 
 			if (!ec && read_msg_.decode_header())
 			{
-				do_read_body();
+				DoReadBody();
 			}
 			else
 			{
-				room_.leave(shared_from_this());
+				room_.Leave(shared_from_this());
 			}
 		});
 }
 
-void game_session::do_read_body()
+void GameSession::DoReadBody()
 {
 	auto self(shared_from_this());
 	boost::asio::async_read(socket_,
@@ -194,17 +194,17 @@ void game_session::do_read_body()
 				player_controller_->handle(syncnet::GetGameMessage(read_msg_.body()));
 				//std::cout << "recv message type : " << msg->msg_type() << std::endl;
 
-				do_read_header();
+				DoReadHeader();
 			}
 			else
 			{
-				room_.leave(shared_from_this());
+				room_.Leave(shared_from_this());
 			}
 		});
 }
 
 
-void game_session::do_write()
+void GameSession::DoWrite()
 {
 	auto self(shared_from_this());
 	boost::asio::async_write(socket_, write_msgs_.front()->to_buffers(),
@@ -215,12 +215,12 @@ void game_session::do_write()
 				write_msgs_.pop_front();
 				if (!write_msgs_.empty())
 				{
-					do_write();
+					DoWrite();
 				}
 			}
 			else
 			{
-				room_.leave(shared_from_this());
+				room_.Leave(shared_from_this());
 			}
 		});
 }
@@ -228,13 +228,13 @@ void game_session::do_write()
 //----------------------------------------------------------------------
 
 
-game_server::game_server(std::shared_ptr<boost::asio::io_context> io_context, const tcp::endpoint& endpoint)
+GameServer::GameServer(std::shared_ptr<boost::asio::io_context> io_context, const tcp::endpoint& endpoint)
 	: acceptor_(*io_context, endpoint)
 	, io_context_(io_context)
 	, db_thread_pool_(DB_THREAD_POOL_SIZE)
 {
-	initialize_db_thread_pool();
-	do_accept();
+	InitializeDbThreadPool();
+	DoAccept();
 
 	timeAcc = 0.0f;
 	playerUpdateAcc_ = 0.0f;
@@ -243,7 +243,7 @@ game_server::game_server(std::shared_ptr<boost::asio::io_context> io_context, co
 
 std::atomic<int> initialized_threads(0); // 초기화된 스레드 수 추적
 
-void game_server::initialize_db_thread_pool()
+void GameServer::InitializeDbThreadPool()
 {
 	std::cout << "Initializing DB thread pool..." 
 		<< " on Thread " << std::this_thread::get_id() << std::endl;
@@ -273,7 +273,7 @@ void game_server::initialize_db_thread_pool()
 	}
 }
 
-void game_server::do_accept()
+void GameServer::DoAccept()
 {
 	LOG.info("Game Server Ready");
 
@@ -284,14 +284,14 @@ void game_server::do_accept()
 			{
 				std::cout << "connected" << std::endl;
 
-				std::make_shared<game_session>(std::move(socket), channel_, db_thread_pool_, this)->start();
+				std::make_shared<GameSession>(std::move(socket), channel_, db_thread_pool_, this)->Start();
 			}
 
-			do_accept();
+			DoAccept();
 		});
 }
 
-void game_server::UpdateGameLogic(float delta)
+void GameServer::UpdateGameLogic(float delta)
 {
 	//std::cout << "tick " << delta << std::endl;
 
@@ -305,7 +305,7 @@ void game_server::UpdateGameLogic(float delta)
 		timeAcc -= DELTA_TIME;
 		if (simIter < 5)
 		{
-			channel_.world()->update(DELTA_TIME);
+			channel_.GetWorld()->update(DELTA_TIME);
 		}
 		simIter++;
 	}
@@ -314,7 +314,7 @@ void game_server::UpdateGameLogic(float delta)
 	playerUpdateAcc_ += delta;
 	if (playerUpdateAcc_ >= 1.0f)
 	{
-		channel_.update_players();
+		channel_.UpdatePlayers();
 		playerUpdateAcc_ -= 1.0f;
 	}
 }
@@ -328,7 +328,7 @@ bool ServerManager::Initialize(std::list<tcp::endpoint>& endpoints)
 		for (std::list<tcp::endpoint>::iterator it = endpoints.begin();
 			it != endpoints.end(); ++it)
 		{
-			auto server = std::make_shared<game_server>(io_context_, *it);
+			auto server = std::make_shared<GameServer>(io_context_, *it);
 			servers_.push_back(server);
 		}
 

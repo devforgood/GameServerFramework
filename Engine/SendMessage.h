@@ -1,7 +1,7 @@
 #pragma once
 #include "syncnet_generated.h"
 #include <boost/asio.hpp>
-#include "Message.h"
+#include "GameMessage.h"
 
 class send_message : public flatbuffers::FlatBufferBuilder
 {
@@ -18,7 +18,7 @@ public:
 	{
 		std::vector<boost::asio::const_buffer> buffers;
 		size = this->GetSize();
-		buffers.push_back(boost::asio::buffer(&size, game_message::header_length));
+		buffers.push_back(boost::asio::buffer(&size, GameMessage::header_length));
 		buffers.push_back(boost::asio::buffer(this->GetBufferPointer(), this->GetSize()));
 		return buffers;
 	}
