@@ -19,6 +19,14 @@ public:
         queue_.pop();
         return true;
     }
+
+    template<typename F>
+    void drain(F&& func) {
+        while (!queue_.empty()) {
+            func(std::move(queue_.front()));
+            queue_.pop();
+        }
+    }
     
     bool empty() { return queue_.empty(); }
     size_t size() { return queue_.size(); }
