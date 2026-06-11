@@ -37,10 +37,9 @@ public:
     }
 
     void processEvents() {
-        MessageType message;
-        while (queue_.pop(message)) {
+        queue_.drain([&](MessageType&& message) {
             bus_.publish(message);
-        }
+        });
     }
 
     void clear() {
