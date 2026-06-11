@@ -29,19 +29,19 @@ class Map
 private:
 	World* world_;
 	NavMap* map_;
-	std::list<std::shared_ptr<Actor>> actor_list_;
-	std::unordered_map<int, std::list<std::shared_ptr<Actor>>::iterator> actor_map_;
+	std::list<std::shared_ptr<Actor>> actorList_;
+	std::unordered_map<int, std::list<std::shared_ptr<Actor>>::iterator> actorMap_;
 
 	std::vector<syncnet::Vec3> raycasts_;
-	std::shared_ptr<send_message> builder_ptr_;
-	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agent_info_vector_;
-	std::vector<int> removed_agents_;
+	std::shared_ptr<send_message> builderPtr_;
+	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agentInfoVector_;
+	std::vector<int> removedAgents_;
 
 
-	GridManager* grid_manager_;
+	GridManager* gridManager_;
 
 
-	engine::SystemManager* system_manager_;
+	engine::SystemManager* systemManager_;
 
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
 

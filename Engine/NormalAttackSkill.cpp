@@ -30,7 +30,7 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 		return -1;
 	}
 
-	if (is_casting_)
+	if (isCasting_)
 	{
 		LOG.error("Already casting a skill. Cannot cast another one.");
 		return -1;

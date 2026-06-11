@@ -19,13 +19,13 @@ class Monster : public Actor, public LuaObject<Monster>
 {
 private:
 	BT::BehaviorTree * bt_;
-	float spawn_pos_[3];
-	dtPolyRef spawn_ref_;
+	float spawnPos_[3];
+	dtPolyRef spawnRef_;
 	BT::Tree* tree_;
-	bool dead_notified_ = false; // 사망 이벤트 중복 발행 방지
+	bool deadNotified_ = false; // 사망 이벤트 중복 발행 방지
 
 public:
-	int target_agent_id_;
+	int targetAgentId_;
 	std::string name_;
 
 public:

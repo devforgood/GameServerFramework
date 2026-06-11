@@ -17,12 +17,12 @@ Character::Character(Map* map) : Actor(map)
 		skills_[skill.first] = SkillFactory::Create(skill.first);
 	}
 
-	is_input_locked_ = false;
-	game_object_type_ = syncnet::GameObjectType::GameObjectType_Character;
+	isInputLocked_ = false;
+	gameObjectType_ = syncnet::GameObjectType::GameObjectType_Character;
 
 
-	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entityManager.AddComponent(entity_id_, engine::TimerComponent());
+	auto& entityManager = map_->systemManager_->GetEntityManager();
+	entityManager.AddComponent(entityId_, engine::TimerComponent());
 }
 
 Character::~Character() 
@@ -32,7 +32,7 @@ Character::~Character()
 		delete skill.second;
 	}
 	skills_.clear();
-	LOG.info("Character {} destroyed", player_id_);
+	LOG.info("Character {} destroyed", playerId_);
 }
 
 bool Character::pre_create(std::shared_ptr<Player> player)
@@ -67,11 +67,11 @@ bool Character::post_create(std::shared_ptr<Player> player, std::shared_ptr<Game
 
 void Character::use_skill(const syncnet::UseSkill* msg)
 {
-	float serverClientTimeOffset = map_->world_->time_stamp_->getServerClientTimeOffset(msg->timestamp());
+	float serverClientTimeOffset = map_->world_->timeStamp_->getServerClientTimeOffset(msg->timestamp());
 
 	// Implement skill usage logic here
 	LOG.info("Character {} using skill {} at position ({}, {}, {}) serverClientTimeOffset {} timestamp {}"
-		, player_id_, msg->skillId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z(), serverClientTimeOffset, msg->timestamp());
+		, playerId_, msg->skillId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z(), serverClientTimeOffset, msg->timestamp());
 
 	auto itr = skills_.find(msg->skillId());
 
@@ -81,17 +81,17 @@ void Character::use_skill(const syncnet::UseSkill* msg)
 		int result = skill->cast_skill(this, msg, serverClientTimeOffset);
 		if (result == 0)
 		{
-			LOG.info("Skill {} cast successfully by character {}", msg->skillId(), player_id_);
+			LOG.info("Skill {} cast successfully by character {}", msg->skillId(), playerId_);
 		}
 		else
 		{
-			LOG.error("Failed to cast skill {} by character {}. Error code: {}", msg->skillId(), player_id_, result);
+			LOG.error("Failed to cast skill {} by character {}. Error code: {}", msg->skillId(), playerId_, result);
 		}
 
 	}
 	else
 	{
-		LOG.error("Skill {} not found for character {}", msg->skillId(), player_id_);
+		LOG.error("Skill {} not found for character {}", msg->skillId(), playerId_);
 	}
 }
 
@@ -108,7 +108,7 @@ void Character::update(float dt)
 bool Character::init(Vector3& pos)
 {
 	// Initialize character-specific properties here
-	LOG.info("Character {} initialized", player_id_);
+	LOG.info("Character {} initialized", playerId_);
 
 	float speed = 4.5f;
 
@@ -119,17 +119,17 @@ bool Character::init(Vector3& pos)
 		return false;
 	}
 
-	if (map_->actor_map_.find(agent_id) != map_->actor_map_.end())
+	if (map_->actorMap_.find(agent_id) != map_->actorMap_.end())
 	{
-		LOG.error("OnAddAgent error already exist in actor_map_");
+		LOG.error("OnAddAgent error already exist in actorMap_");
 		return false;
 	}
 
 	this->set_position(pos.x, pos.y, pos.z);
-	this->agent_id_ = agent_id;
+	this->agentId_ = agent_id;
 	this->speed = speed;
-	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entityManager.GetComponent<engine::StateComponent>(entity_id_).agentID = agent_id;
+	auto& entityManager = map_->systemManager_->GetEntityManager();
+	entityManager.GetComponent<engine::StateComponent>(entityId_).agentID = agent_id;
 
 	return true;
 }

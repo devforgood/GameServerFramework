@@ -98,10 +98,10 @@ private:
 
 	tcp::socket socket_;
 	GameChannel& room_;
-	RingBuffer* ring_buf_;
-	GameMessage read_msg_;
-	GameMessageQueue write_msgs_;
-	PlayerController* player_controller_;
+	RingBuffer* ringBuf_;
+	GameMessage readMsg_;
+	GameMessageQueue writeMsgs_;
+	PlayerController* playerController_;
 	std::shared_ptr<Player> player_;
 	boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;
 	GameServer* server_;
@@ -123,7 +123,7 @@ public:
 
 	std::shared_ptr<boost::asio::io_context> get_io_context()
 	{
-		return io_context_;
+		return ioContext_;
 	}
 
 	void UpdateGameLogic(float delta);
@@ -135,8 +135,8 @@ private:
 	GameChannel channel_;
 	float timeAcc;
 	float playerUpdateAcc_;
-	std::shared_ptr<boost::asio::io_context> io_context_;
-	boost::asio::thread_pool db_thread_pool_;
+	std::shared_ptr<boost::asio::io_context> ioContext_;
+	boost::asio::thread_pool dbThreadPool_;
 
 
 private:
@@ -153,5 +153,5 @@ public:
 
 private:
 	std::list<std::shared_ptr<GameServer>> servers_;
-	std::shared_ptr<boost::asio::io_context> io_context_;
+	std::shared_ptr<boost::asio::io_context> ioContext_;
 };

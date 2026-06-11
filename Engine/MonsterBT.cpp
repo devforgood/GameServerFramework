@@ -25,8 +25,8 @@ public:
 
 	BT::NodeStatus tick() override
 	{
-		monster_->target_agent_id_ = monster_->map()->DetectEnemy(monster_);
-		if (monster_->target_agent_id_ >= 0)
+		monster_->targetAgentId_ = monster_->map()->DetectEnemy(monster_);
+		if (monster_->targetAgentId_ >= 0)
 		{
 			monster_->SetState(syncnet::AIState_Detect);
 			BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionDetectEnemy, "ConditionDetectEnemy", BT::NodeStatus::SUCCESS, "enemy detected");
@@ -56,7 +56,7 @@ public:
 
 	BT::NodeStatus tick() override
 	{
-		monster_->map()->GetNavMap()->patrol(monster_->agent_id(), monster_->spawn_pos_, monster_->spawn_ref_);
+		monster_->map()->GetNavMap()->patrol(monster_->agent_id(), monster_->spawnPos_, monster_->spawnRef_);
 		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionPatrol, "ActionPatrol", BT::NodeStatus::SUCCESS, "patrol command issued");
 		return BT::NodeStatus::SUCCESS;
 	}
@@ -77,7 +77,7 @@ public:
 	{
 		monster_->SetState(syncnet::AIState_Detect);
 		monster_->Resume();
-		monster_->map()->GetNavMap()->setMoveTarget(monster_->map()->GetNavMap()->getPos(monster_->target_agent_id_), false, monster_->agent_id());
+		monster_->map()->GetNavMap()->setMoveTarget(monster_->map()->GetNavMap()->getPos(monster_->targetAgentId_), false, monster_->agent_id());
 		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionChase, "ActionChase", BT::NodeStatus::SUCCESS, "chase target position updated");
 		return BT::NodeStatus::SUCCESS;
 	}

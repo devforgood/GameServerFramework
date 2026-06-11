@@ -95,7 +95,7 @@ void BTDebugManager::BeginTick(Monster* monster)
 	auto& context = GetOrCreateContext(monster);
 	context.bt_tick++;
 	context.ai_state = monster->state();
-	context.target_agent_id = monster->target_agent_id_;
+	context.target_agent_id = monster->targetAgentId_;
 	context.executed_nodes_this_tick.clear();
 	context.changed_nodes.clear();
 	context.dirty = false;
@@ -138,7 +138,7 @@ void BTDebugManager::Record(Monster* monster, uint16_t node_id, std::string_view
 
 	context.executed_nodes_this_tick.push_back(node_id);
 	context.ai_state = monster->state();
-	context.target_agent_id = monster->target_agent_id_;
+	context.target_agent_id = monster->targetAgentId_;
 
 	if (changed)
 	{
@@ -155,7 +155,7 @@ void BTDebugManager::EndTick(Monster* monster)
 	std::lock_guard<std::mutex> lock(g_mutex);
 	auto& context = GetOrCreateContext(monster);
 	context.ai_state = monster->state();
-	context.target_agent_id = monster->target_agent_id_;
+	context.target_agent_id = monster->targetAgentId_;
 
 	if (!context.dirty)
 		return;

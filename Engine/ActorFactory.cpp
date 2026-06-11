@@ -47,7 +47,7 @@ std::shared_ptr<Actor> ActorFactory::CreateActor(Map* map, std::shared_ptr<Playe
 		return nullptr;
 	}
 
-	map->grid_manager_->add(actor.get());
+	map->gridManager_->add(actor.get());
 
 	return actor;
 }

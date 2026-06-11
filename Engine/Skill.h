@@ -22,12 +22,12 @@ public:
 	const gamedata::Skill* gamedata; // Pointer to gamedata for skill information
 
 protected:
-	int skill_id_;
-	std::vector<int> skill_properties_;
+	int skillId_;
+	std::vector<int> skillProperties_;
 	float cooldown_;
 	float duration_;
-	bool is_casting_;
-	Vector3* target_pos_;
+	bool isCasting_;
+	Vector3* targetPos_;
 	Actor* actor_;
 
 public:

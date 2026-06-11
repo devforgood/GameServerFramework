@@ -5,16 +5,16 @@
 #include "LogHelper.h"
 
 Skill::Skill()
-	: actor_(nullptr), skill_id_(0), target_pos_(nullptr), is_casting_(false), duration_(0.0f)
+	: actor_(nullptr), skillId_(0), targetPos_(nullptr), isCasting_(false), duration_(0.0f)
 {
 }
 
 Skill::~Skill()
 {
-	if(target_pos_)
+	if(targetPos_)
 	{
-		delete target_pos_;
-		target_pos_ = nullptr;
+		delete targetPos_;
+		targetPos_ = nullptr;
 	}
 }
 

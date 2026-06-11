@@ -6,16 +6,16 @@
 #include "Map.h"
 
 JumpSkill::JumpSkill()
-	: actor_(nullptr), skill_id_(0), target_pos_(nullptr), is_casting_(false), duration_(0.0f)
+	: actor_(nullptr), skillId_(0), targetPos_(nullptr), isCasting_(false), duration_(0.0f)
 {
 }
 
 JumpSkill::~JumpSkill()
 {
-	if (target_pos_)
+	if (targetPos_)
 	{
-		delete target_pos_;
-		target_pos_ = nullptr;
+		delete targetPos_;
+		targetPos_ = nullptr;
 	}
 }
 
@@ -27,18 +27,18 @@ int JumpSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, float serv
 		return -1; // Invalid parameters
 	}
 
-	if (is_casting_)
+	if (isCasting_)
 	{
 		LOG.error("Already casting a skill. Cannot cast another one.");
 		return -1; // Already casting a skill
 	}
 
 	actor_ = actor;
-	skill_id_ = msg->skillId();
-	target_pos_ = new Vector3(msg->pos());
+	skillId_ = msg->skillId();
+	targetPos_ = new Vector3(msg->pos());
 	duration_ = msg->duration() - serverClientTimeOffset; // Adjust duration with server-client time offset
 
-	is_casting_ = true;
+	isCasting_ = true;
 	actor_->set_input_locked(true); // Lock input while casting
 
 	return 0;
@@ -46,13 +46,13 @@ int JumpSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, float serv
 
 void JumpSkill::update(float dt)
 {
-	if (is_casting_)
+	if (isCasting_)
 	{
 		duration_ -= dt;
 		if (duration_ <= 0)
 		{
 			end_duration_skill();
-			is_casting_ = false;
+			isCasting_ = false;
 			actor_->set_input_locked(false); // Unlock input after casting
 			duration_ = 0;
 		}
@@ -61,13 +61,13 @@ void JumpSkill::update(float dt)
 
 int JumpSkill::end_duration_skill()
 {
-	if (!is_casting_)
+	if (!isCasting_)
 	{
 		LOG.error("No skill is currently being casted.");
 		return -1; // No skill is currently being casted
 	}
 
-	if (!actor_ || !target_pos_)
+	if (!actor_ || !targetPos_)
 	{
 		LOG.error("Invalid parameters: actor or target_pos is null.");
 		return -1; // Invalid parameters
@@ -75,7 +75,7 @@ int JumpSkill::end_duration_skill()
 
 	auto agent_id = actor_->agent_id();
 	auto map = actor_->map();
-	map->GetNavMap()->teleportAgent(agent_id, target_pos_->pos());
+	map->GetNavMap()->teleportAgent(agent_id, targetPos_->pos());
 
 	return 0;
 }

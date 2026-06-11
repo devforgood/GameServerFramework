@@ -22,7 +22,7 @@ static long next_player_id = 1;
 Player::Player()
 {
 	uuid_ = boost::uuids::random_generator()();
-	player_id_ = next_player_id++;
+	playerId_ = next_player_id++;
 
 	playerLazySaveAcc_ = 0.0f;
 
@@ -51,7 +51,7 @@ void Player::SetServer(GameServer* server)
 void Player::Possess(std::shared_ptr<Character> character)
 {
 	character_ = character;
-	character_->set_player_id(player_id_);
+	character_->set_player_id(playerId_);
 }
 
 void Player::Send(std::shared_ptr<send_message>& msg)
@@ -99,13 +99,13 @@ bool Player::SwitchSession(std::shared_ptr<Player> player)
 	}
 
 	session->SetPlayer(shared_from_this());
-	LOG.info("Switching session for player {} to new session", player_id_);
+	LOG.info("Switching session for player {} to new session", playerId_);
 	return true;
 }
 
 void Player::OnLoadedData(const PlayerLoadData & data)
 {
-	LOG.info("Player {} loaded data: name={}, items={}, skills={}", player_id_, data.player.name, data.items.size(), data.skills.size());
+	LOG.info("Player {} loaded data: name={}, items={}, skills={}", playerId_, data.player.name, data.items.size(), data.skills.size());
 	SetName(data.player.name);
 	SetLevel(data.player.level);
 

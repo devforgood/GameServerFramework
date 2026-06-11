@@ -36,13 +36,13 @@ private:
     QuestStateVO buildStateVO() const;
 
     // 진행 중 퀘스트의 DB 변경 추적 (quest_id 기준)
-    DbCollectionTracker<int, QuestActiveVO> active_quests_;
+    DbCollectionTracker<int, QuestActiveVO> activeQuests_;
 
     // quest_state 행(완료 플래그)의 DB 변경 추적
-    DbRowTracker<QuestStateVO> quest_state_;
+    DbRowTracker<QuestStateVO> questState_;
 
     // 완료 퀘스트 플래그: quest_id 당 1비트, 바이트 단위로 패킹
-    std::vector<uint8_t> completed_bits_;
+    std::vector<uint8_t> completedBits_;
 
-    int character_id_ = 0;
+    int characterId_ = 0;
 };

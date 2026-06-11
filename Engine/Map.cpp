@@ -61,9 +61,9 @@ Map::Map(World* world)
 {
 	world_ = world;
 	map_ = nullptr;
-	grid_manager_ = nullptr;
+	gridManager_ = nullptr;
 
-	system_manager_ = nullptr;
+	systemManager_ = nullptr;
 }
 
 Map::~Map()
@@ -73,16 +73,16 @@ Map::~Map()
 		delete map_;
 		map_ = nullptr;
 	}
-	if (grid_manager_)
+	if (gridManager_)
 	{
-		delete grid_manager_;
-		grid_manager_ = nullptr;
+		delete gridManager_;
+		gridManager_ = nullptr;
 	}
 
-	if (system_manager_)
+	if (systemManager_)
 	{
-		delete system_manager_;
-		system_manager_ = nullptr;
+		delete systemManager_;
+		systemManager_ = nullptr;
 	}
 }
 
@@ -90,13 +90,13 @@ void Map::Init()
 {
 	map_ = new NavMap();
 	map_->Init();
-	grid_manager_ = new GridManager(100, 100, 2);
+	gridManager_ = new GridManager(100, 100, 2);
 
-	builder_ptr_ = std::make_shared<send_message>();
+	builderPtr_ = std::make_shared<send_message>();
 
-	system_manager_ = new engine::SystemManager();
+	systemManager_ = new engine::SystemManager();
 
-	auto& entityManager = system_manager_->GetEntityManager();
+	auto& entityManager = systemManager_->GetEntityManager();
 
 	// 모든 컴포넌트 타입 등록
 	entityManager.RegisterComponent<engine::PositionComponent>();
@@ -112,16 +112,16 @@ void Map::Init()
 	entityManager.RegisterComponent<engine::NetworkComponent>();
 	entityManager.RegisterComponent<engine::StateComponent>();
 
-	system_manager_->RegisterSystem<engine::TimerComponent>(
+	systemManager_->RegisterSystem<engine::TimerComponent>(
 		[](float deltaTime, engine::TimerComponent& timer) {
 			engine::TimerSystem::Update(deltaTime, timer);
 		});
 
 	Map* map = this;
-	system_manager_->RegisterSystem<engine::StateComponent, engine::PositionComponent>(
+	systemManager_->RegisterSystem<engine::StateComponent, engine::PositionComponent>(
 		[map](float deltaTime, engine::StateComponent& state, engine::PositionComponent& position) {
 			if (state.stateID == syncnet::AIState::AIState_Destroyed) {
-				map->removed_agents_.push_back(state.agentID);
+				map->removedAgents_.push_back(state.agentID);
 			}
 
 			const dtCrowdAgent* agent = map->map_->crowd()->getAgent(state.agentID);
@@ -133,10 +133,10 @@ void Map::Init()
 				return;
 
 
-			auto itr = map->actor_map_.find(state.agentID);
-			if (itr == map->actor_map_.end())
+			auto itr = map->actorMap_.find(state.agentID);
+			if (itr == map->actorMap_.end())
 			{
-				LOG.error("SendWorldState error agent not found in actor_map_");
+				LOG.error("SendWorldState error agent not found in actorMap_");
 				return;
 			}
 			auto actor = (Actor*)itr->second->get();
@@ -144,10 +144,10 @@ void Map::Init()
 			if (changed_position)
 			{
 				actor->set_position(agent->npos[0], agent->npos[1], agent->npos[2]);
-				map->grid_manager_->move(actor, agent->npos[0], agent->npos[2]);
+				map->gridManager_->move(actor, agent->npos[0], agent->npos[2]);
 			}
 
-			map->agent_info_vector_.push_back(actor->get_actor_info(*map->builder_ptr_, actor->get_changed_flag()));
+			map->agentInfoVector_.push_back(actor->get_actor_info(*map->builderPtr_, actor->get_changed_flag()));
 
 			actor->reset_changed();
 		});
@@ -158,12 +158,12 @@ void Map::update(float deltaTime)
 {
 
 	//LOG.info("World update begin");
-	for (std::list<std::shared_ptr<Actor>>::iterator itr = actor_list_.begin(); itr != actor_list_.end(); ++itr)
+	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
 		(*itr)->update(deltaTime);
 
 	map_->update(deltaTime);
 
-	system_manager_->Update(deltaTime);
+	systemManager_->Update(deltaTime);
 
 	SendWorldState();
 	//LOG.info("World update end");
@@ -171,37 +171,37 @@ void Map::update(float deltaTime)
 
 void Map::SendWorldState()
 {
-	auto agents = builder_ptr_->CreateVector(agent_info_vector_);
+	auto agents = builderPtr_->CreateVector(agentInfoVector_);
 
 	// ----------------------------
 	flatbuffers::Offset<syncnet::DebugRaycast> debug_raycast;
 	std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> debug_raycast_vector;
 	for (int i = 0; i < this->raycasts_.size(); ++i)
 	{
-		debug_raycast = syncnet::CreateDebugRaycast(*builder_ptr_, 0, &this->raycasts_[i]);
+		debug_raycast = syncnet::CreateDebugRaycast(*builderPtr_, 0, &this->raycasts_[i]);
 		debug_raycast_vector.push_back(debug_raycast);
 	}
 	this->raycasts_.clear();
-	auto debug_raycasts = builder_ptr_->CreateVector(debug_raycast_vector);
+	auto debug_raycasts = builderPtr_->CreateVector(debug_raycast_vector);
 	// ----------------------------
 
-	auto updateActorNotify = syncnet::CreateUpdateActorNotify(*builder_ptr_, agents, debug_raycasts);
+	auto updateActorNotify = syncnet::CreateUpdateActorNotify(*builderPtr_, agents, debug_raycasts);
 
-	auto send_msg = syncnet::CreateGameMessage(*builder_ptr_, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
-	builder_ptr_->Finish(send_msg);
+	auto send_msg = syncnet::CreateGameMessage(*builderPtr_, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
+	builderPtr_->Finish(send_msg);
 
-	SendBroadcast(builder_ptr_);
+	SendBroadcast(builderPtr_);
 
 	SendTreeDebugSync();
 
-	for (auto& agent_id : removed_agents_)
+	for (auto& agent_id : removedAgents_)
 	{
 		OnRemoveAgent(agent_id);
 	}
 
-	builder_ptr_ = std::make_shared<send_message>();
-	agent_info_vector_.clear();
-	removed_agents_.clear();
+	builderPtr_ = std::make_shared<send_message>();
+	agentInfoVector_.clear();
+	removedAgents_.clear();
 }
 
 void Map::SendTreeDebugSync()
@@ -307,10 +307,10 @@ void Map::SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Playe
 
 void Map::OnRemoveAgent(int agent_id)
 {
-	auto itr = actor_map_.find(agent_id);
-	if (itr == actor_map_.end())
+	auto itr = actorMap_.find(agent_id);
+	if (itr == actorMap_.end())
 	{
-		LOG.error("OnRemoveAgent error not exist in monsters_map_");
+		LOG.error("OnRemoveAgent error not exist in monstersMap_");
 		return;
 	}
 
@@ -325,9 +325,9 @@ void Map::OnRemoveAgent(int agent_id)
 		}
 	}
 
-	grid_manager_->remove((Actor*)itr->second->get());
-	actor_list_.erase(itr->second);
-	actor_map_.erase(itr);
+	gridManager_->remove((Actor*)itr->second->get());
+	actorList_.erase(itr->second);
+	actorMap_.erase(itr);
 
 	map_->removeAgent(agent_id);
 
@@ -342,8 +342,8 @@ std::shared_ptr<Actor> Map::OnAddAgent(std::shared_ptr<Player> player, syncnet::
 		return nullptr;
 	}
 
-	auto itr = actor_list_.insert(actor_list_.end(), actor);
-	actor_map_.insert(std::make_pair(actor->agent_id(), itr));
+	auto itr = actorList_.insert(actorList_.end(), actor);
+	actorMap_.insert(std::make_pair(actor->agent_id(), itr));
 	actor->set_changed(static_cast<long>(GameObjectChangeType::All));
 
 	return actor;
@@ -371,7 +371,7 @@ int Map::DetectEnemy(Actor* actor)
 	const dtCrowdAgent* this_agent = this->GetNavMap()->crowd()->getAgent(actor->agent_id());
 	float hitPoint[3];
 
-	auto targets = grid_manager_->getEntitiesInViewRange(actor, g_fDistance);
+	auto targets = gridManager_->getEntitiesInViewRange(actor, g_fDistance);
 
 	for (auto itr = targets.begin(); itr != targets.end(); ++itr)
 	{
@@ -391,7 +391,7 @@ int Map::DetectEnemy(Actor* actor)
 
 std::vector<IGridActor*> Map::get_actors_in_range(Actor* actor, float range, float dirDeg, float angle)
 {
-	return grid_manager_->getEntitiesInAoEMask(actor->get_vecter2_x(), actor->get_vecter2_y(), range, dirDeg, angle);
+	return gridManager_->getEntitiesInAoEMask(actor->get_vecter2_x(), actor->get_vecter2_y(), range, dirDeg, angle);
 }
 
 void Map::join(std::shared_ptr<Player> player)
@@ -445,7 +445,7 @@ std::shared_ptr<Player> Map::FindPlayer(long player_id)
 
 void Map::GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector)
 {
-	for (std::list<std::shared_ptr<Actor>>::iterator itr = actor_list_.begin(); itr != actor_list_.end(); ++itr)
+	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
 	{
 		auto actor = itr->get();
 		agent_info_vector.push_back(actor->get_actor_info(*msg, static_cast<long>(GameObjectChangeType::All)));

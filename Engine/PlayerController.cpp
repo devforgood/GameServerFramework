@@ -12,7 +12,7 @@
 
 void PlayerController::handle(const syncnet::GameMessage* msg)
 {
-	last_message_id_ = msg->id();
+	lastMessageId_ = msg->id();
 
 	switch (msg->msg_type())
 	{
@@ -45,7 +45,7 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 	player_->Send(
 		syncnet::CreateAddAgent
 		, syncnet::GameMessages::GameMessages_AddAgent
-		, last_message_id_
+		, lastMessageId_
 		, status
 		, msg->gameObjectType()
 		, msg->pos()
@@ -90,7 +90,7 @@ void PlayerController::handle(const syncnet::Ping* msg)
 	player_->Send(
 		syncnet::CreatePing
 		, syncnet::GameMessages_Ping
-		, last_message_id_
+		, lastMessageId_
 		, syncnet::StatusCode::StatusCode_Success
 		, msg->seq()
 	);
@@ -105,14 +105,14 @@ void PlayerController::handle(const syncnet::SetRaycast* msg)
 
 void PlayerController::handle(const syncnet::Login* msg)
 {
-	LOG.info("Login id :{}, lastMessageId:{}", msg->userId()->c_str(), last_message_id_);
+	LOG.info("Login id :{}, lastMessageId:{}", msg->userId()->c_str(), lastMessageId_);
 
 	PlayerDataLoader::AsyncLoad(player_);
 
 	player_->Send(
 		syncnet::CreateLoginDirect
 		, syncnet::GameMessages::GameMessages_Login
-		, last_message_id_
+		, lastMessageId_
 		, syncnet::StatusCode::StatusCode_Success
 		, msg->userId()->c_str()
 		, msg->password()->c_str()

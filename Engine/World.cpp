@@ -18,21 +18,21 @@
 
 World::World()
 {
-	random_util_ = nullptr;
-	time_stamp_ = nullptr;
+	randomUtil_ = nullptr;
+	timeStamp_ = nullptr;
 }
 
 World::~World()
 {
-	if (random_util_)
+	if (randomUtil_)
 	{
-		delete random_util_;
-		random_util_ = nullptr;
+		delete randomUtil_;
+		randomUtil_ = nullptr;
 	}
-	if (time_stamp_)
+	if (timeStamp_)
 	{
-		delete time_stamp_;
-		time_stamp_ = nullptr;
+		delete timeStamp_;
+		timeStamp_ = nullptr;
 	}
 }
 
@@ -41,21 +41,21 @@ void World::Init()
 	Monster::Initialize("mob.lua");
 	Monster::registerLuaFunctionAll();
 
-	random_util_ = new RandomUtil();
-	time_stamp_ = new TimeStamp();
+	randomUtil_ = new RandomUtil();
+	timeStamp_ = new TimeStamp();
 
 	// Initialize maps
 	std::shared_ptr<Map> map = std::make_shared<Map>(this);
 	map->Init();
-	map_list_.push_back(map);
+	mapList_.push_back(map);
 }
 
 void World::update(float deltaTime)
 {
-	time_stamp_->update();
+	timeStamp_->update();
 
 	//LOG.info("World update begin");
-	for (std::list<std::shared_ptr<Map>>::iterator itr = map_list_.begin();itr!= map_list_.end();++itr)
+	for (std::list<std::shared_ptr<Map>>::iterator itr = mapList_.begin();itr!= mapList_.end();++itr)
 		(*itr)->update(deltaTime);
 }
 
@@ -75,7 +75,7 @@ void World::join(std::shared_ptr<Player> player)
 	players_.insert(std::make_pair(player->GetPlayerId(), player));
 
 	// todo : map 선택 로직 추가
-	map_list_.begin()->get()->join(player);
+	mapList_.begin()->get()->join(player);
 }
 
 void World::leave(std::shared_ptr<Player> player)
@@ -93,7 +93,7 @@ void World::leave(std::shared_ptr<Player> player)
 	}
 	players_.erase(itr);
 	// todo : map 선택 로직 추가
-	map_list_.begin()->get()->leave(player);
+	mapList_.begin()->get()->leave(player);
 }
 
 
@@ -101,23 +101,23 @@ void World::leave(std::shared_ptr<Player> player)
 std::shared_ptr<Actor> World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
 	// todo : map 선택 로직 추가
-	return map_list_.begin()->get()->OnAddAgent(player, type, pos);
+	return mapList_.begin()->get()->OnAddAgent(player, type, pos);
 }
 
 void World::OnRemoveAgent(int agent_id)
 {
 	// todo : map 선택 로직 추가
-	map_list_.begin()->get()->OnRemoveAgent(agent_id);
+	mapList_.begin()->get()->OnRemoveAgent(agent_id);
 }
 
 void World::OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos)
 {
 	// todo : map 선택 로직 추가
-	map_list_.begin()->get()->OnSetMoveTarget(agent_id, pos);
+	mapList_.begin()->get()->OnSetMoveTarget(agent_id, pos);
 }
 
 void World::OnSetRaycast(const syncnet::Vec3* pos)
 {
 	// todo : map 선택 로직 추가
-	map_list_.begin()->get()->OnSetRaycast(pos);
+	mapList_.begin()->get()->OnSetRaycast(pos);
 }

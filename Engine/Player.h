@@ -14,7 +14,7 @@ struct PlayerLoadData;
 class Player : public GameObject, public std::enable_shared_from_this<Player>
 {
 private:
-	long player_id_;
+	long playerId_;
 	std::string name_;
 	int level_;
 	boost::uuids::uuid uuid_;
@@ -45,7 +45,7 @@ public:
 	std::shared_ptr<GameSession> GetSession() { return session_.lock(); }
 	GameServer* GetServer() { return server_; }
 
-	long GetPlayerId() { return player_id_; }
+	long GetPlayerId() { return playerId_; }
 	std::string GetName() { return name_; }
 
 	void Possess(std::shared_ptr<Character> character);

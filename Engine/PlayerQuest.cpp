@@ -46,19 +46,19 @@ void PlayerQuest::Load(std::any data)
 {
     const auto& load_data = std::any_cast<const PlayerLoadData&>(data);
 
-    character_id_ = load_data.player.id;
+    characterId_ = load_data.player.id;
 
     // 진행 중 퀘스트를 기존(Persisted) 상태로 로드
-    active_quests_.Clear();
+    activeQuests_.Clear();
     for (const auto& vo : load_data.quest_actives)
-        active_quests_.AddPersisted(vo.quest_id, vo);
+        activeQuests_.AddPersisted(vo.quest_id, vo);
 
     // 완료 퀘스트 플래그를 DB 의 raw 바이트 문자열에서 복원
     const std::string& flags = load_data.quest_state.flags;
-    completed_bits_.assign(flags.begin(), flags.end());
+    completedBits_.assign(flags.begin(), flags.end());
 
     // character_id 가 0 이면 행이 아직 없음 -> 첫 저장 시 INSERT
-    quest_state_.SetPersisted(load_data.quest_state.character_id != 0);
+    questState_.SetPersisted(load_data.quest_state.character_id != 0);
 }
 
 void PlayerQuest::Save(std::any data)
@@ -66,18 +66,18 @@ void PlayerQuest::Save(std::any data)
     auto* save_data = std::any_cast<PlayerSaveData*>(data);
 
     // 변경된 진행 퀘스트만 INSERT/UPDATE/DELETE 레코드로
-    if (active_quests_.HasPendingChanges())
-        save_data->quest_actives = active_quests_.Flush();
+    if (activeQuests_.HasPendingChanges())
+        save_data->quest_actives = activeQuests_.Flush();
 
     // 완료 플래그가 변경되었거나 신규 행이면 quest_state 레코드 생성
-    if (auto record = quest_state_.Flush(buildStateVO()))
+    if (auto record = questState_.Flush(buildStateVO()))
         save_data->quest_state = std::move(record);
 }
 
 bool PlayerQuest::AcceptQuest(int quest_id)
 {
     QuestActiveVO vo{};
-    vo.character_id = character_id_;
+    vo.character_id = characterId_;
     vo.quest_id = quest_id;
     vo.state = 0;
     vo.progress1 = 0;
@@ -85,7 +85,7 @@ bool PlayerQuest::AcceptQuest(int quest_id)
     vo.progress3 = 0;
     vo.accept_time = std::chrono::system_clock::now();
 
-    if (!active_quests_.Add(quest_id, vo))
+    if (!activeQuests_.Add(quest_id, vo))
         return false;
 
     markDirty();
@@ -94,18 +94,18 @@ bool PlayerQuest::AcceptQuest(int quest_id)
 
 bool PlayerQuest::CompleteQuest(int quest_id)
 {
-    if (!active_quests_.Contains(quest_id))
+    if (!activeQuests_.Contains(quest_id))
         return false;
 
     // 진행 목록에서 제거(기존 행이면 DELETE 대기열로, 신규 행이면 그냥 폐기)
-    active_quests_.Remove(quest_id);
+    activeQuests_.Remove(quest_id);
     setCompleted(quest_id);  // 완료 플래그 갱신 + markDirty
     return true;
 }
 
 void PlayerQuest::UpdateProgress(int quest_id, int progress1, int progress2, int progress3)
 {
-    QuestActiveVO* vo = active_quests_.Modify(quest_id);
+    QuestActiveVO* vo = activeQuests_.Modify(quest_id);
     if (vo == nullptr)
         return;
 
@@ -117,36 +117,36 @@ void PlayerQuest::UpdateProgress(int quest_id, int progress1, int progress2, int
 
 bool PlayerQuest::IsActive(int quest_id) const
 {
-    return active_quests_.Contains(quest_id);
+    return activeQuests_.Contains(quest_id);
 }
 
 bool PlayerQuest::IsCompleted(int quest_id) const
 {
     size_t byte_idx = static_cast<size_t>(quest_id) / 8;
-    if (byte_idx >= completed_bits_.size())
+    if (byte_idx >= completedBits_.size())
         return false;
-    return (completed_bits_[byte_idx] >> (quest_id % 8)) & 1;
+    return (completedBits_[byte_idx] >> (quest_id % 8)) & 1;
 }
 
 const QuestActiveVO* PlayerQuest::GetActiveQuest(int quest_id) const
 {
-    return active_quests_.Find(quest_id);
+    return activeQuests_.Find(quest_id);
 }
 
 void PlayerQuest::setCompleted(int quest_id)
 {
     size_t byte_idx = static_cast<size_t>(quest_id) / 8;
-    if (byte_idx >= completed_bits_.size())
-        completed_bits_.resize(byte_idx + 1, 0);
-    completed_bits_[byte_idx] |= static_cast<uint8_t>(1 << (quest_id % 8));
-    quest_state_.MarkDirty();
+    if (byte_idx >= completedBits_.size())
+        completedBits_.resize(byte_idx + 1, 0);
+    completedBits_[byte_idx] |= static_cast<uint8_t>(1 << (quest_id % 8));
+    questState_.MarkDirty();
     markDirty();
 }
 
 QuestStateVO PlayerQuest::buildStateVO() const
 {
     QuestStateVO vo;
-    vo.character_id = character_id_;
-    vo.flags.assign(completed_bits_.begin(), completed_bits_.end());
+    vo.character_id = characterId_;
+    vo.flags.assign(completedBits_.begin(), completedBits_.end());
     return vo;
 }

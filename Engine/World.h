@@ -27,11 +27,11 @@ class World
 {
 private:
 
-	RandomUtil* random_util_;
-	TimeStamp* time_stamp_;
+	RandomUtil* randomUtil_;
+	TimeStamp* timeStamp_;
 
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
-	std::list<std::shared_ptr<Map>> map_list_;
+	std::list<std::shared_ptr<Map>> mapList_;
 
 
 public:
@@ -41,7 +41,7 @@ public:
 	void Init();
 	void update(float deltaTime);
 
-	RandomUtil* random_util() { return random_util_; }
+	RandomUtil* random_util() { return randomUtil_; }
 
 	void SendWorldState();
 	void GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector);

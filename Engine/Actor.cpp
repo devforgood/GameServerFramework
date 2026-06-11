@@ -7,18 +7,18 @@
 
 void Actor::init()
 {
-	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entity_id_ = entityManager.CreateEntity();
+	auto& entityManager = map_->systemManager_->GetEntityManager();
+	entityId_ = entityManager.CreateEntity();
 
-	entityManager.AddComponent(entity_id_, engine::TimerComponent());
-	entityManager.AddComponent(entity_id_, engine::StateComponent());
-	entityManager.AddComponent(entity_id_, engine::PositionComponent());
+	entityManager.AddComponent(entityId_, engine::TimerComponent());
+	entityManager.AddComponent(entityId_, engine::StateComponent());
+	entityManager.AddComponent(entityId_, engine::PositionComponent());
 }
 
 void Actor::clear()
 {
-	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entityManager.DestroyEntity(entity_id_);
+	auto& entityManager = map_->systemManager_->GetEntityManager();
+	entityManager.DestroyEntity(entityId_);
 }
 
 void Actor::update(float dt)
@@ -30,7 +30,7 @@ void Actor::update(float dt)
 	if (speed > 0) {
 		Vector3 velocity(get_vecter2_x(), 0, get_vecter2_y());
 		if (velocity.length() > 0.001f) {
-			front_vector_ = velocity.normalized();
+			frontVector_ = velocity.normalized();
 		}
 	}
 }
@@ -39,8 +39,8 @@ void Actor::set_position(float x, float y, float z)
 {
 	position_.set(x, y, z);
 	add_changed_flag(static_cast<long>(GameObjectChangeType::Position));
-	auto& entityManager = map_->system_manager_->GetEntityManager();
-	engine::PositionComponent& transform = entityManager.GetComponent<engine::PositionComponent>(entity_id_);
+	auto& entityManager = map_->systemManager_->GetEntityManager();
+	engine::PositionComponent& transform = entityManager.GetComponent<engine::PositionComponent>(entityId_);
 	transform.x = x;
 	transform.y = y;
 	transform.z = z;
@@ -50,15 +50,15 @@ void Actor::set_position(float x, float y, float z)
 void Actor::SetState(syncnet::AIState state) {
 	add_changed_flag(static_cast<long>(GameObjectChangeType::State));
 	state_ = state;
-	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entityManager.GetComponent<engine::StateComponent>(entity_id_).stateID = static_cast<int>(state);
+	auto& entityManager = map_->systemManager_->GetEntityManager();
+	entityManager.GetComponent<engine::StateComponent>(entityId_).stateID = static_cast<int>(state);
 }
 
 void Actor::set_changed(long flag)
 {
-	change_flag_ = flag;
-	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entityManager.GetComponent<engine::StateComponent>(entity_id_).changeFlag = get_changed_flag();
+	changeFlag_ = flag;
+	auto& entityManager = map_->systemManager_->GetEntityManager();
+	entityManager.GetComponent<engine::StateComponent>(entityId_).changeFlag = get_changed_flag();
 }
 
 
@@ -73,7 +73,7 @@ flatbuffers::Offset<syncnet::ActorInfo> Actor::get_actor_info(flatbuffers::FlatB
 	syncnet::ActorHealth* healthPtr = changed_flag(flag, static_cast<long>(GameObjectChangeType::Health)) ? &health : nullptr;
 
 	//LOG.debug("Actor::get_actor_info: agent_id={}, pos=({}, {}, {}), type={}, state={}, health={}, is_input_locked={}",
-	//	this->agent_id(), pos.x(), pos.y(), pos.z(), this->type(), this->state_, this->health_, this->is_input_locked_);
+	//	this->agent_id(), pos.x(), pos.y(), pos.z(), this->type(), this->state_, this->health_, this->isInputLocked_);
 
 	return syncnet::CreateActorInfo(
 		_fbb, 
@@ -82,6 +82,6 @@ flatbuffers::Offset<syncnet::ActorInfo> Actor::get_actor_info(flatbuffers::FlatB
 		this->type(), 
 		statePtr, 
 		healthPtr, 
-		this->is_input_locked_
+		this->isInputLocked_
 	);
 }

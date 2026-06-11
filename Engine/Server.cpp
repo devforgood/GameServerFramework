@@ -50,21 +50,21 @@ GameSession::GameSession(tcp::socket socket, GameChannel& room, boost::asio::thr
 	server_(server)
 {
 	player_ = nullptr;
-	player_controller_ = new PlayerController();
-	ring_buf_ = new RingBuffer(8192); // 8192 bytes
+	playerController_ = new PlayerController();
+	ringBuf_ = new RingBuffer(8192); // 8192 bytes
 }
 
 GameSession::~GameSession()
 {
-	if (player_controller_ != nullptr)
+	if (playerController_ != nullptr)
 	{
-		delete player_controller_;
-		player_controller_ = nullptr;
+		delete playerController_;
+		playerController_ = nullptr;
 	}
-	if (ring_buf_ != nullptr)
+	if (ringBuf_ != nullptr)
 	{
-		delete ring_buf_;
-		ring_buf_ = nullptr;
+		delete ringBuf_;
+		ringBuf_ = nullptr;
 	}
 }
 
@@ -82,14 +82,14 @@ void GameSession::SetPlayer(std::shared_ptr<Player> player)
 	player_ = player;
 	player_->SetSession(shared_from_this());
 	player_->SetServer(server_);
-	player_controller_->player_ = player_;
-	player_controller_->world_ = room_.GetWorld();
+	playerController_->player_ = player_;
+	playerController_->world_ = room_.GetWorld();
 }
 
 void GameSession::Send(std::shared_ptr<send_message>& msg)
 {
-	bool write_in_progress = !write_msgs_.empty();
-	write_msgs_.push_back(msg);
+	bool write_in_progress = !writeMsgs_.empty();
+	writeMsgs_.push_back(msg);
 	if (!write_in_progress)
 	{
 		DoWrite();
@@ -105,13 +105,13 @@ void GameSession::Close()
 
 void GameSession::DoRead() {
 	size_t space = 0;
-	char* write_ptr = ring_buf_->write_ptr(space);
+	char* write_ptr = ringBuf_->write_ptr(space);
 	if (!write_ptr || space == 0) return;
 
 	socket_.async_read_some(boost::asio::buffer(write_ptr, space),
 		[this](boost::system::error_code ec, std::size_t bytes_transferred) {
 			if (!ec) {
-				ring_buf_->commit_write(bytes_transferred);
+				ringBuf_->commit_write(bytes_transferred);
 				ProcessPackets();
 				DoRead();
 			}
@@ -120,35 +120,35 @@ void GameSession::DoRead() {
 
 void GameSession::ProcessPackets() {
 	while (true) {
-		if (ring_buf_->size() < GameMessage::header_length)
+		if (ringBuf_->size() < GameMessage::header_length)
 			return;
 
 		const char* hdr_ptr = nullptr;
 		uint16_t body_len = 0;
 
-		if (ring_buf_->peek_ptr(hdr_ptr, GameMessage::header_length)) {
+		if (ringBuf_->peek_ptr(hdr_ptr, GameMessage::header_length)) {
 			std::memcpy(&body_len, hdr_ptr, GameMessage::header_length);
 		}
 		else {
 			char tmp[GameMessage::header_length];
-			if (!ring_buf_->peek(tmp, GameMessage::header_length)) return;
+			if (!ringBuf_->peek(tmp, GameMessage::header_length)) return;
 			std::memcpy(&body_len, tmp, GameMessage::header_length);
 		}
 
-		if (ring_buf_->size() < GameMessage::header_length + body_len)
+		if (ringBuf_->size() < GameMessage::header_length + body_len)
 			return;
 
-		ring_buf_->read(nullptr, GameMessage::header_length);  // consume header
+		ringBuf_->read(nullptr, GameMessage::header_length);  // consume header
 
-		auto body_view = ring_buf_->try_peek_span_cpp20(body_len);
+		auto body_view = ringBuf_->try_peek_span_cpp20(body_len);
 		if (body_view) {
 			HandlePacket(*body_view);
-			ring_buf_->read(nullptr, body_len);  // consume body
+			ringBuf_->read(nullptr, body_len);  // consume body
 		}
 		else {
 			// fallback
 			std::vector<char> body(body_len);
-			ring_buf_->read(body.data(), body_len);
+			ringBuf_->read(body.data(), body_len);
 			HandlePacket(std::span<const char>(body));
 		}
 	}
@@ -156,7 +156,7 @@ void GameSession::ProcessPackets() {
 
 void GameSession::HandlePacket(std::span<const char> data) {
 	const uint8_t* udata = reinterpret_cast<const uint8_t*>(data.data());
-	player_controller_->handle(syncnet::GetGameMessage(udata));
+	playerController_->handle(syncnet::GetGameMessage(udata));
 }
 
 
@@ -164,12 +164,12 @@ void GameSession::DoReadHeader()
 {
 	auto self(shared_from_this());
 	boost::asio::async_read(socket_,
-		boost::asio::buffer(read_msg_.data(), GameMessage::header_length),
+		boost::asio::buffer(readMsg_.data(), GameMessage::header_length),
 		[this, self](boost::system::error_code ec, std::size_t /*length*/)
 		{
 			//std::cout << "recv header" << std::endl;
 
-			if (!ec && read_msg_.decode_header())
+			if (!ec && readMsg_.decode_header())
 			{
 				DoReadBody();
 			}
@@ -184,14 +184,14 @@ void GameSession::DoReadBody()
 {
 	auto self(shared_from_this());
 	boost::asio::async_read(socket_,
-		boost::asio::buffer(read_msg_.body(), read_msg_.body_length()),
+		boost::asio::buffer(readMsg_.body(), readMsg_.body_length()),
 		[this, self](boost::system::error_code ec, std::size_t /*length*/)
 		{
 			if (!ec)
 			{
-				//room_.deliver(read_msg_);
+				//room_.deliver(readMsg_);
 
-				player_controller_->handle(syncnet::GetGameMessage(read_msg_.body()));
+				playerController_->handle(syncnet::GetGameMessage(readMsg_.body()));
 				//std::cout << "recv message type : " << msg->msg_type() << std::endl;
 
 				DoReadHeader();
@@ -207,13 +207,13 @@ void GameSession::DoReadBody()
 void GameSession::DoWrite()
 {
 	auto self(shared_from_this());
-	boost::asio::async_write(socket_, write_msgs_.front()->to_buffers(),
+	boost::asio::async_write(socket_, writeMsgs_.front()->to_buffers(),
 		[this, self](boost::system::error_code ec, std::size_t /*length*/)
 		{
 			if (!ec)
 			{
-				write_msgs_.pop_front();
-				if (!write_msgs_.empty())
+				writeMsgs_.pop_front();
+				if (!writeMsgs_.empty())
 				{
 					DoWrite();
 				}
@@ -230,8 +230,8 @@ void GameSession::DoWrite()
 
 GameServer::GameServer(std::shared_ptr<boost::asio::io_context> io_context, const tcp::endpoint& endpoint)
 	: acceptor_(*io_context, endpoint)
-	, io_context_(io_context)
-	, db_thread_pool_(DB_THREAD_POOL_SIZE)
+	, ioContext_(io_context)
+	, dbThreadPool_(DB_THREAD_POOL_SIZE)
 {
 	InitializeDbThreadPool();
 	DoAccept();
@@ -251,7 +251,7 @@ void GameServer::InitializeDbThreadPool()
 
 	// 각 스레드에서 초기화 작업 수행
 	for (int i = 0; i < DB_THREAD_POOL_SIZE; ++i) {
-		boost::asio::post(db_thread_pool_, [i]() {
+		boost::asio::post(dbThreadPool_, [i]() {
 			static thread_local bool initialized = false;
 			if (!initialized) {
 				LOG.info("DB thread pool initialized on thread: {}, thread ID {}", i, std::hash<std::thread::id>{}(std::this_thread::get_id()));
@@ -284,7 +284,7 @@ void GameServer::DoAccept()
 			{
 				std::cout << "connected" << std::endl;
 
-				std::make_shared<GameSession>(std::move(socket), channel_, db_thread_pool_, this)->Start();
+				std::make_shared<GameSession>(std::move(socket), channel_, dbThreadPool_, this)->Start();
 			}
 
 			DoAccept();
@@ -323,12 +323,12 @@ bool ServerManager::Initialize(std::list<tcp::endpoint>& endpoints)
 {
 	try
 	{
-		io_context_ = std::make_shared<boost::asio::io_context>();
+		ioContext_ = std::make_shared<boost::asio::io_context>();
 
 		for (std::list<tcp::endpoint>::iterator it = endpoints.begin();
 			it != endpoints.end(); ++it)
 		{
-			auto server = std::make_shared<GameServer>(io_context_, *it);
+			auto server = std::make_shared<GameServer>(ioContext_, *it);
 			servers_.push_back(server);
 		}
 
@@ -360,7 +360,7 @@ void ServerManager::Run()
 	{
 		auto frameStart = std::chrono::steady_clock::now();
 
-		io_context_->poll();
+		ioContext_->poll();
 
 		TimeVal curTime = getPerfTime();
 		float delta = getPerfTimeUsec(curTime - lastTime) / 1000000.0f;

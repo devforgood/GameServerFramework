@@ -23,8 +23,8 @@ extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::defau
 Monster::Monster(Map* map)
 	: Actor(map), bt_(nullptr), tree_(nullptr)
 {
-	game_object_type_ = syncnet::GameObjectType::GameObjectType_Monster;
-	target_agent_id_ = -1;
+	gameObjectType_ = syncnet::GameObjectType::GameObjectType_Monster;
+	targetAgentId_ = -1;
 }
 
 Monster::~Monster()
@@ -52,32 +52,32 @@ bool Monster::init(Vector3& pos)
 		return false;
 	}
 
-	if (map_->actor_map_.find(agent_id) != map_->actor_map_.end())
+	if (map_->actorMap_.find(agent_id) != map_->actorMap_.end())
 	{
-		LOG.error("OnAddAgent error already exist in actor_map_");
+		LOG.error("OnAddAgent error already exist in actorMap_");
 		return false;
 	}
 
 	this->set_position(pos.x, pos.y, pos.z);
-	agent_id_ = agent_id;
+	agentId_ = agent_id;
 	this->speed = speed;
-	auto& entityManager = map_->system_manager_->GetEntityManager();
-	entityManager.GetComponent<engine::StateComponent>(entity_id_).agentID = agent_id;
+	auto& entityManager = map_->systemManager_->GetEntityManager();
+	entityManager.GetComponent<engine::StateComponent>(entityId_).agentID = agent_id;
 
 
 	bt_ = MonsterCodeBaseBT::createTree(this);
 
 
 	if (map_ != nullptr) {
-		auto agent = map_->GetNavMap()->getAgent(agent_id_);
+		auto agent = map_->GetNavMap()->getAgent(agentId_);
 		if (agent != nullptr)
 		{
-			dtVcopy(spawn_pos_, agent->npos);
-			spawn_ref_ = agent->corridor.getPath()[0];
+			dtVcopy(spawnPos_, agent->npos);
+			spawnRef_ = agent->corridor.getPath()[0];
 		}
 	}
 
-	name_ = "Monster:" + std::to_string(agent_id_);
+	name_ = "Monster:" + std::to_string(agentId_);
 
 
 
@@ -101,7 +101,7 @@ void Monster::update(float dt)
 int Monster::AttackRange()
 {
 	const dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getAgent(agent_id());
-	const dtCrowdAgent* agent = map_->GetNavMap()->crowd()->getAgent(target_agent_id_);
+	const dtCrowdAgent* agent = map_->GetNavMap()->crowd()->getAgent(targetAgentId_);
 
 	if (ManhattanDistance(this_agent->npos, agent->npos) > 3)
 		return -1;
@@ -109,7 +109,7 @@ int Monster::AttackRange()
 	float hitPoint[3];
 	if (map_->GetNavMap()->raycast(agent_id(), agent->npos, hitPoint) == false)
 	{
-		return target_agent_id_;
+		return targetAgentId_;
 	}
 	return -1;
 }
@@ -129,9 +129,9 @@ int Monster::Resume()
 
 void Monster::NotifyKilledBy()
 {
-	if (dead_notified_)
+	if (deadNotified_)
 		return;
-	dead_notified_ = true;
+	deadNotified_ = true;
 
 	long killer_id = last_attacker_player_id();
 	if (killer_id < 0)
@@ -145,7 +145,7 @@ void Monster::NotifyKilledBy()
 	if (eventBroker == nullptr)
 		return;
 
-	eventBroker->publish(EventActorDead{ static_cast<int>(killer_id), agent_id_ });
+	eventBroker->publish(EventActorDead{ static_cast<int>(killer_id), agentId_ });
 }
 
 
