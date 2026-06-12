@@ -22,6 +22,7 @@ namespace BT
 	{
 	public:
 		BehaviorTree(Behavior* InRoot):Root(InRoot) {}
+		virtual ~BehaviorTree() {}
 		void Tick();
 		bool HaveRoot() { return Root ? true : false; }
 		void SetRoot(Behavior* InNode) { Root = InNode; }
