@@ -1,141 +1,128 @@
 import json
-from google.protobuf import json_format
-from generate_factory import generate_factory
-from generate_resource_loader import generate_resource_loader
-import gamedata_pb2
-import shutil
 import os
+import shutil
+
+from schema_infer import build_structs
+from generate_factory import generate_factory
+from generate_resource_loader import (
+    generate_gamedata_header,
+    generate_resource_loader,
+    generate_csharp_model,
+)
 
 # ANSI escape codes
 RED = '\033[91m'
 GREEN = '\033[92m'
 RESET = '\033[0m'
 
-# Dynamic protobuf class mapping
-def get_pb_class(class_name):
-    """Dynamically get protobuf class by name"""
-    try:
-        # Handle gamedata_pb2. prefix
-        if class_name.startswith("gamedata_pb2."):
-            class_name = class_name.replace("gamedata_pb2.", "")
-        return getattr(gamedata_pb2, class_name)
-    except AttributeError:
-        print(f"{RED}[ERROR] Protobuf class '{class_name}' not found in gamedata_pb2{RESET}")
-        return None
+# Source data
+GAMEDATA_DIR = "../GameData"
 
-def load_table_meta():
-    """Load table meta information from JSON file"""
-    try:
-        with open("../GameData/table_meta.json", encoding="utf-8") as f:
-            meta_data = json.load(f)
-        return meta_data
-    except Exception as e:
-        print(f"{RED}[ERROR] Failed to load table_meta.json: {e}{RESET}")
-        return None
-
-def initialize_json_proto_map():
-    """Initialize JSON_PROTO_MAP from meta table"""
-    meta_data = load_table_meta()
-    if not meta_data:
-        return []
-    
-    json_proto_map = []
-    for table in meta_data.get("tables", []):
-        # Skip disabled tables
-        if table.get("enabled", True) == False:
-            continue
-            
-        pb_class_name = table.get("pb_class")
-        pb_cls = get_pb_class(pb_class_name)
-        if pb_cls is None:
-            print(f"{RED}[WARNING] Unknown protobuf class: {pb_class_name}{RESET}")
-            continue
-            
-        json_proto_map.append({
-            "json_path": f"../GameData/{table['json_path']}",
-            "pb_cls": pb_cls,
-            "repeated_field": table["repeated_field"],
-            "out_path": table["output_file"],
-            "table_name": table["name"]
-        })
-    
-    return json_proto_map
-
-# Initialize JSON_PROTO_MAP from meta table
-JSON_PROTO_MAP = initialize_json_proto_map()
-
-# 복사 대상 폴더
-CLIENT_DIR = "../Client/Assets/Resources/GameData/"
-SERVER_DIR = "../Game/GameData/"
-UNITTEST_DIR = "../UnitTest/GameData/"
+# Generated C++ data model + loader (built into the Engine static lib)
+ENGINE_GAMEDATA_DIR = "../Engine/GameData/"
+# Hand-written-by-default C++ classes + generated factories
 SERVER_SRC_DIR = "../Engine/"
+# Generated C# factories (Unity client)
 CLIENT_SRC_DIR = "../Client/Assets/Scripts/"
-PROTOBUF_SRC_DIR = "../GameDataProtobuf/"
+# Generated C# data model (Unity client)
+CLIENT_MODEL_PATH = "../Client/Assets/Scripts/GameData/Gamedata.cs"
+
+# JSON data is copied verbatim into each consumer's runtime GameData folder
+DATA_COPY_DIRS = [
+    "../Client/Assets/Resources/GameData/",
+    "../Game/GameData/",
+    "../UnitTest/GameData/",
+]
 
 # GameData에서 관리되는 lua 스크립트
 LUA_SCRIPTS = [
     "../GameData/behavior_tree.lua",
     "../GameData/mob.lua",
 ]
-LUA_COPY_DIRS = [SERVER_DIR, UNITTEST_DIR]
+LUA_COPY_DIRS = ["../Game/GameData/", "../UnitTest/GameData/"]
 
-class GameDataProcessor:
 
-    def convert_json_to_protobuf(self, json_path, pb_cls, repeated_field, out_path, table_name):
+def load_table_meta():
+    try:
+        with open(os.path.join(GAMEDATA_DIR, "table_meta.json"), encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"{RED}[ERROR] Failed to load table_meta.json: {e}{RESET}")
+        return None
+
+
+def load_table_data(json_path):
+    try:
+        with open(os.path.join(GAMEDATA_DIR, json_path), encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"{RED}[ERROR] {json_path} read/parse error: {e}{RESET}")
+        return None
+
+
+def main():
+    meta = load_table_meta()
+    if not meta:
+        return
+
+    tables = [t for t in meta.get("tables", []) if t.get("enabled", True)]
+
+    all_structs = []          # combined C++/C# model structs (across all tables)
+    seen_struct_names = set()
+    table_names = []          # top-level table class names (for C# list wrappers)
+
+    for table in tables:
+        table_name = table["name"]
+        data = load_table_data(table["json_path"])
+        if data is None:
+            continue
+
+        # Infer the data model from the JSON itself.
         try:
-            with open(json_path, encoding="utf-8") as f:
-                data = json.load(f)
+            structs = build_structs(data, table_name)
         except Exception as e:
-            print(f"{RED}[ERROR] {json_path} file read/parse error: {e}{RESET}")
-            return
+            print(f"{RED}[ERROR] schema inference failed for {table_name}: {e}{RESET}")
+            continue
 
-        pb_list = pb_cls()
-        try:
-            for entry in data:
-                json_format.ParseDict(entry, getattr(pb_list, repeated_field).add())
-            with open(out_path, "wb") as f:
-                f.write(pb_list.SerializeToString())
-            print(f"{GREEN}[OK] {json_path} -> {out_path} conversion complete{RESET}")
-        except Exception as e:
-            print(f"{RED}[ERROR] {json_path} -> {out_path} conversion error: {e}{RESET}")
-            return
+        for s in structs:
+            if s['name'] not in seen_struct_names:
+                seen_struct_names.add(s['name'])
+                all_structs.append(s)
+        table_names.append(table_name)
 
-        # Factory 코드 생성
+        # Factory / base-class code generation (C++ + C#).
         try:
             generate_factory(SERVER_SRC_DIR, CLIENT_SRC_DIR, table_name, data)
             print(f"{GREEN}[OK] Generated factory for {table_name}{RESET}")
         except Exception as e:
             print(f"{RED}[ERROR] Failed to generate factory for {table_name}: {e}{RESET}")
-            return
 
-        # 바이너리 파일 복사
-        for target_dir in [CLIENT_DIR, SERVER_DIR, UNITTEST_DIR]:
+        # Copy the JSON verbatim into each runtime data folder.
+        for target_dir in DATA_COPY_DIRS:
             try:
                 os.makedirs(target_dir, exist_ok=True)
-                shutil.copy2(out_path, os.path.join(target_dir, out_path))
-                print(f"{GREEN}[OK] {out_path} copied to {target_dir}{RESET}")
+                shutil.copy2(os.path.join(GAMEDATA_DIR, table["output_file"]),
+                             os.path.join(target_dir, table["output_file"]))
+                print(f"{GREEN}[OK] {table['output_file']} copied to {target_dir}{RESET}")
             except Exception as e:
-                print(f"{RED}[ERROR] {out_path} copy to {target_dir} failed: {e}{RESET}")
+                print(f"{RED}[ERROR] {table['output_file']} copy to {target_dir} failed: {e}{RESET}")
 
-def main():
-    processor = GameDataProcessor()
-    for info in JSON_PROTO_MAP:
-        processor.convert_json_to_protobuf(
-            json_path=info["json_path"],
-            pb_cls=info["pb_cls"],
-            repeated_field=info["repeated_field"],
-            out_path=info["out_path"],
-            table_name=info["table_name"]
-        )
+    # C++ data model + loader
+    try:
+        generate_gamedata_header(ENGINE_GAMEDATA_DIR, all_structs)
+        generate_resource_loader(ENGINE_GAMEDATA_DIR, tables)
+        print(f"{GREEN}[OK] Generated C++ gamedata.h + ResourceLoader{RESET}")
+    except Exception as e:
+        print(f"{RED}[ERROR] Failed to generate C++ model/loader: {e}{RESET}")
 
-    meta_data = load_table_meta()
-    if meta_data:
-        try:
-            generate_resource_loader(PROTOBUF_SRC_DIR, meta_data.get("tables", []))
-            print(f"{GREEN}[OK] Generated ResourceLoader{RESET}")
-        except Exception as e:
-            print(f"{RED}[ERROR] Failed to generate ResourceLoader: {e}{RESET}")
+    # C# data model (Unity client)
+    try:
+        generate_csharp_model(CLIENT_MODEL_PATH, all_structs, table_names)
+        print(f"{GREEN}[OK] Generated C# Gamedata model{RESET}")
+    except Exception as e:
+        print(f"{RED}[ERROR] Failed to generate C# model: {e}{RESET}")
 
+    # lua 스크립트 복사
     for target_dir in LUA_COPY_DIRS:
         os.makedirs(target_dir, exist_ok=True)
         for lua_path in LUA_SCRIPTS:
@@ -145,6 +132,6 @@ def main():
             except Exception as e:
                 print(f"{RED}[ERROR] {lua_path} copy to {target_dir} failed: {e}{RESET}")
 
+
 if __name__ == "__main__":
     main()
-

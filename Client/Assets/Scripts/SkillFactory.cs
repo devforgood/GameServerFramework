@@ -16,7 +16,7 @@ public static class SkillFactory
         }
 
         
-        switch (res.CodeName)
+        switch (res.code_name)
         {
             
             case "JumpSkill": obj = new JumpSkill(); break;

@@ -5,7 +5,7 @@
 
 namespace gamedata
 {
-	class Item; // Forward declaration of gamedata::Item
+	struct Item; // Forward declaration of gamedata::Item
 }
 
 class Item

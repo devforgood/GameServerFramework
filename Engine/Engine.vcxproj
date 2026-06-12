@@ -142,6 +142,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
+  <!-- Generated GameData model + JSON resource loader -->
+  <ItemGroup>
+    <ClCompile Include="GameData\ResourceLoader.cpp" />
+    <ClInclude Include="GameData\ResourceLoader.h" />
+    <ClInclude Include="GameData\gamedata.h" />
+  </ItemGroup>
   <!-- Engine core sources -->
   <ItemGroup>
     <ClCompile Include="GridManager.cpp" />
@@ -280,9 +286,6 @@
   <ItemGroup>
     <ProjectReference Include="..\BehaviorTree\BehaviorTree.vcxproj">
       <Project>{f441c4b3-58a8-4627-b07c-264c21891861}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\GameDataProtobuf\GameDataProtobuf.vcxproj">
-      <Project>{e4b71ef2-efbd-456c-b30d-22d40f00c989}</Project>
     </ProjectReference>
     <ProjectReference Include="..\recastnavigation\recastnavigation.vcxproj">
       <Project>{8e24c208-4d79-43be-941d-dbd48e5a4264}</Project>

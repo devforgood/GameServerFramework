@@ -17,7 +17,7 @@ Skill* SkillFactory::Create(int32_t id) {
     }
 
 
-    const std::string& codeName = res->code_name();
+    const std::string& codeName = res->code_name;
 
     if (codeName == "JumpSkill") {
         obj = new JumpSkill();

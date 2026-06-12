@@ -10,7 +10,7 @@ enum skillProperties
 
 namespace gamedata
 {
-	class Skill; // Forward declaration of gamedata::Skill
+	struct Skill; // Forward declaration of gamedata::Skill
 }
 
 class Actor; // Forward declaration

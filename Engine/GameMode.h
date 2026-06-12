@@ -2,7 +2,7 @@
 
 namespace gamedata
 {
-	class GameMode; // Forward declaration of gamedata::GameMode
+	struct GameMode; // Forward declaration of gamedata::GameMode
 }
 
 

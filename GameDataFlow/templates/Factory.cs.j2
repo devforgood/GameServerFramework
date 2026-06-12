@@ -16,7 +16,7 @@ public static class {{table_name}}Factory
         }
 
         {% if has_code_name_items %}
-        switch (res.CodeName)
+        switch (res.code_name)
         {
             {% for code_name in code_names %}
             case "{{code_name}}": obj = new {{code_name}}(); break;

@@ -1,5 +1,5 @@
 
-#include "../GameDataProtobuf/ResourceLoader.h"
+#include "GameData/ResourceLoader.h"
 #include "GridManager.h"
 #include "RandomUtil.h"
 #include "RingBuffer.h"

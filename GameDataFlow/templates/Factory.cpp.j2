@@ -15,7 +15,7 @@
     }
 
 {% if has_code_name_items %}
-    const std::string& codeName = res->code_name();
+    const std::string& codeName = res->code_name;
 {% for code_name in code_names %}
     {% if loop.first %}if{% else %}else if{% endif %} (codeName == "{{code_name}}") {
         obj = new {{code_name}}();

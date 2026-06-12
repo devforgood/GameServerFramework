@@ -5,7 +5,7 @@
 
 namespace gamedata
 {
-	class Quest; // Forward declaration of gamedata::Quest
+	struct Quest; // Forward declaration of gamedata::Quest
 }
 
 class Quest

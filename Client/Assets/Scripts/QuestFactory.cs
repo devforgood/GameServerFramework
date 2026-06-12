@@ -16,7 +16,7 @@ public static class QuestFactory
         }
 
         
-        switch (res.CodeName)
+        switch (res.code_name)
         {
             
             case "LimitedTimeQuest": obj = new LimitedTimeQuest(); break;

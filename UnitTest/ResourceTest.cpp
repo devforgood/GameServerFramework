@@ -1,7 +1,7 @@
 #include "pch.h"
 #include <gtest/gtest.h>
 #include <filesystem>
-#include "../GameDataProtobuf/ResourceLoader.h"
+#include "../Engine/GameData/ResourceLoader.h"
 
 TEST(ResourceTest, LoadItems)
 {
@@ -15,7 +15,7 @@ TEST(ResourceTest, LoadItems)
     bool loaded = false;
     for (const auto& path : possiblePaths)
     {
-        if (std::filesystem::exists(path + "skill.bytes"))
+        if (std::filesystem::exists(path + "skill.json"))
         {
             loaded = ResourceLoader::Instance().LoadResources(path);
             break;
@@ -29,6 +29,6 @@ TEST(ResourceTest, LoadItems)
     if (itr != ResourceLoader::Instance().GetItems().end())
     {
         EXPECT_EQ(itr->first, 1);
-        EXPECT_FALSE(itr->second->name_id().empty());
+        EXPECT_FALSE(itr->second->name_id.empty());
     }
 }

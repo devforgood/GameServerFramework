@@ -16,7 +16,7 @@ def _ensure_default_class(server_src_dir, table_name):
                 '\n'
                 'namespace gamedata\n'
                 '{\n'
-                f'\tclass {table_name}; // Forward declaration of gamedata::{table_name}\n'
+                f'\tstruct {table_name}; // Forward declaration of gamedata::{table_name}\n'
                 '}\n'
                 '\n'
                 f'class {table_name}\n'

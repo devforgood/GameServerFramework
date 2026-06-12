@@ -62,29 +62,77 @@ ResourceLoader::~ResourceLoader()
 
 void ResourceLoader::ClearResources()
 {
-{% for table in tables %}
-    {{ table.map_name }}.clear();
-    storage_{{ table.map_name }}.clear();
-{% endfor %}
+
+    skills.clear();
+    storage_skills.clear();
+
+    items.clear();
+    storage_items.clear();
+
+    quests.clear();
+    storage_quests.clear();
+
+    game_modes.clear();
+    storage_game_modes.clear();
+
+    maps.clear();
+    storage_maps.clear();
+
 }
 
 bool ResourceLoader::LoadResources(const std::string& basePath)
 {
-{% for table in tables %}
-    std::deque<gamedata::{{ table.name }}> tmp_storage_{{ table.map_name }};
-    std::unordered_map<long, const gamedata::{{ table.name }}*> tmp_{{ table.map_name }};
-{% endfor %}
 
-{% for table in tables %}
-    if (!LoadJsonFile<gamedata::{{ table.name }}>(basePath + "{{ table.output_file }}", tmp_storage_{{ table.map_name }}, tmp_{{ table.map_name }}))
+    std::deque<gamedata::Skill> tmp_storage_skills;
+    std::unordered_map<long, const gamedata::Skill*> tmp_skills;
+
+    std::deque<gamedata::Item> tmp_storage_items;
+    std::unordered_map<long, const gamedata::Item*> tmp_items;
+
+    std::deque<gamedata::Quest> tmp_storage_quests;
+    std::unordered_map<long, const gamedata::Quest*> tmp_quests;
+
+    std::deque<gamedata::GameMode> tmp_storage_game_modes;
+    std::unordered_map<long, const gamedata::GameMode*> tmp_game_modes;
+
+    std::deque<gamedata::Map> tmp_storage_maps;
+    std::unordered_map<long, const gamedata::Map*> tmp_maps;
+
+
+
+    if (!LoadJsonFile<gamedata::Skill>(basePath + "skill.json", tmp_storage_skills, tmp_skills))
         return false;
-{% endfor %}
+
+    if (!LoadJsonFile<gamedata::Item>(basePath + "item.json", tmp_storage_items, tmp_items))
+        return false;
+
+    if (!LoadJsonFile<gamedata::Quest>(basePath + "quest.json", tmp_storage_quests, tmp_quests))
+        return false;
+
+    if (!LoadJsonFile<gamedata::GameMode>(basePath + "GameMode.json", tmp_storage_game_modes, tmp_game_modes))
+        return false;
+
+    if (!LoadJsonFile<gamedata::Map>(basePath + "Map.json", tmp_storage_maps, tmp_maps))
+        return false;
+
 
     // All files parsed successfully — swap in atomically.
     // (std::deque move preserves element addresses, so the maps stay valid.)
-{% for table in tables %}
-    storage_{{ table.map_name }} = std::move(tmp_storage_{{ table.map_name }});
-    {{ table.map_name }} = std::move(tmp_{{ table.map_name }});
-{% endfor %}
+
+    storage_skills = std::move(tmp_storage_skills);
+    skills = std::move(tmp_skills);
+
+    storage_items = std::move(tmp_storage_items);
+    items = std::move(tmp_items);
+
+    storage_quests = std::move(tmp_storage_quests);
+    quests = std::move(tmp_quests);
+
+    storage_game_modes = std::move(tmp_storage_game_modes);
+    game_modes = std::move(tmp_game_modes);
+
+    storage_maps = std::move(tmp_storage_maps);
+    maps = std::move(tmp_maps);
+
     return true;
 }

@@ -1,0 +1,108 @@
+[
+  {
+    "id": 1,
+    "name": "Field",
+    "name_id": "gamemode_field_name",
+    "desc_id": "gamemode_field_desc",
+    "category": "normal",
+    "type": "field",
+    "rules": {
+      "time_limit": -1,
+      "has_time_limit": false,
+      "end_condition": "none",
+      "max_players": 50,
+      "min_level": 1,
+      "allow_pvp": true,
+      "allow_trading": true,
+      "respawn_enabled": true,
+      "respawn_time": 10
+    },
+    "maps": [1, 2, 3, 4, 5],
+    "rewards": {
+      "exp_multiplier": 1.0,
+      "gold_multiplier": 1.0,
+      "drop_rate_multiplier": 1.0
+    }
+  },
+  {
+    "id": 2,
+    "name": "Raid",
+    "name_id": "gamemode_raid_name", 
+    "desc_id": "gamemode_raid_desc",
+    "category": "instance",
+    "type": "raid",
+    "rules": {
+      "time_limit": 1800,
+      "has_time_limit": true,
+      "end_condition": "boss_defeat",
+      "max_players": 10,
+      "min_level": 20,
+      "allow_pvp": false,
+      "allow_trading": false,
+      "respawn_enabled": false,
+      "respawn_time": 0
+    },
+    "maps": [6, 7, 8],
+    "rewards": {
+      "exp_multiplier": 2.0,
+      "gold_multiplier": 3.0,
+      "drop_rate_multiplier": 2.5
+    },
+    "boss_info": {
+      "boss_id": 1001,
+      "boss_name_id": "boss_dragon_lord_name",
+      "boss_level": 50,
+      "boss_hp": 100000
+    }
+  },
+  {
+    "id": 3,
+    "name": "Dungeon",
+    "name_id": "gamemode_dungeon_name",
+    "desc_id": "gamemode_dungeon_desc", 
+    "category": "instance",
+    "type": "dungeon",
+    "rules": {
+      "time_limit": 3600,
+      "has_time_limit": true,
+      "end_condition": "clear_all_enemies",
+      "max_players": 5,
+      "min_level": 15,
+      "allow_pvp": false,
+      "allow_trading": false,
+      "respawn_enabled": true,
+      "respawn_time": 30
+    },
+    "maps": [9, 10, 11],
+    "rewards": {
+      "exp_multiplier": 1.5,
+      "gold_multiplier": 2.0,
+      "drop_rate_multiplier": 1.8
+    }
+  },
+  {
+    "id": 4,
+    "name": "Arena",
+    "name_id": "gamemode_arena_name",
+    "desc_id": "gamemode_arena_desc",
+    "category": "instance", 
+    "type": "pvp",
+    "rules": {
+      "time_limit": 600,
+      "has_time_limit": true,
+      "end_condition": "last_survivor",
+      "max_players": 8,
+      "min_level": 25,
+      "allow_pvp": true,
+      "allow_trading": false,
+      "respawn_enabled": false,
+      "respawn_time": 0
+    },
+    "maps": [12, 13],
+    "rewards": {
+      "exp_multiplier": 1.2,
+      "gold_multiplier": 1.5,
+      "drop_rate_multiplier": 1.0
+    }
+  }
+] 

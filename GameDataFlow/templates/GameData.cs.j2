@@ -1,0 +1,24 @@
+// This file is auto-generated. Do not modify directly.
+using System;
+using System.Collections.Generic;
+
+namespace Gamedata
+{
+{% for s in structs %}
+    [Serializable]
+    public class {{ s.name }}
+    {
+{% for f in s.fields %}        public {{ f.cs_type }} {{ f.name }};
+{% endfor %}    }
+
+{% endfor %}
+{% for table in tables %}
+    // Wrapper so UnityEngine.JsonUtility can parse the top-level JSON array.
+    [Serializable]
+    public class {{ table }}List
+    {
+        public List<{{ table }}> items;
+    }
+
+{% endfor %}
+}

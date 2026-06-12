@@ -1,0 +1,23 @@
+// This file is auto-generated. Do not modify directly.
+#pragma once
+#include <string>
+#include <vector>
+#include <nlohmann/json.hpp>
+
+namespace gamedata
+{
+{% for s in structs %}
+    struct {{ s.name }}
+    {
+{% for f in s.fields %}        {{ f.cpp_type }} {{ f.name }}{{ f.cpp_init }};
+{% endfor %}    };
+
+{% endfor %}
+{% for s in structs %}
+    inline void from_json(const nlohmann::json& j, {{ s.name }}& o)
+    {
+{% for f in s.fields %}        if (j.contains("{{ f.name }}") && !j.at("{{ f.name }}").is_null()) j.at("{{ f.name }}").get_to(o.{{ f.name }});
+{% endfor %}    }
+
+{% endfor %}
+}

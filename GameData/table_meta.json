@@ -3,48 +3,43 @@
     {
       "name": "Skill",
       "json_path": "skill.json",
-      "pb_class": "gamedata_pb2.SkillList",
       "repeated_field": "skills",
-      "output_file": "skill.bytes",
+      "output_file": "skill.json",
       "description": "Game skill definitions and properties"
     },
     {
-      "name": "Item", 
+      "name": "Item",
       "json_path": "item.json",
-      "pb_class": "gamedata_pb2.ItemList",
       "repeated_field": "items",
-      "output_file": "item.bytes",
+      "output_file": "item.json",
       "description": "Game item definitions and properties"
     },
     {
       "name": "Quest",
-      "json_path": "quest.json", 
-      "pb_class": "gamedata_pb2.QuestList",
+      "json_path": "quest.json",
       "repeated_field": "quests",
-      "output_file": "quest.bytes",
+      "output_file": "quest.json",
       "description": "Game quest definitions and properties",
       "enabled": true
     },
     {
       "name": "GameMode",
       "json_path": "GameMode.json",
-      "pb_class": "gamedata_pb2.GameModeList",
       "repeated_field": "game_modes",
-      "output_file": "gamemode.bytes",
+      "output_file": "GameMode.json",
       "description": "Game mode definitions including field, raid, dungeon, and arena modes",
       "enabled": true
     },
     {
       "name": "Map",
       "json_path": "Map.json",
-      "pb_class": "gamedata_pb2.MapList",
       "repeated_field": "maps",
-      "output_file": "map.bytes",
+      "output_file": "Map.json",
       "description": "Map definitions including gates, spawn points, and objects",
       "enabled": true
     }
   ],
   "version": "1.0.0",
-  "last_updated": "2024-01-01",
+  "last_updated": "2026-06-12",
   "description": "Meta information for GameData JSON tables"
-} 
+}

@@ -1,0 +1,757 @@
+[
+  {
+    "id": 1,
+    "name": "Starting Village",
+    "name_id": "map_starting_village_name",
+    "desc_id": "map_starting_village_desc",
+    "game_mode_id": 1,
+    "size": {
+      "width": 1000.0,
+      "height": 1000.0
+    },
+    "gates": [
+      {
+        "id": 1,
+        "name": "Village to Forest Gate",
+        "position": {
+          "x": 950.0,
+          "y": 0.0,
+          "z": 500.0
+        },
+        "target_map_id": 2,
+        "target_gate_id": 1,
+        "required_level": 1
+      },
+      {
+        "id": 2,
+        "name": "Village to Shop Gate",
+        "position": {
+          "x": 500.0,
+          "y": 0.0,
+          "z": 950.0
+        },
+        "target_map_id": 3,
+        "target_gate_id": 1,
+        "required_level": 1
+      }
+    ],
+    "spawn_points": {
+      "player_spawn": [
+        {
+          "position": {
+            "x": 100.0,
+            "y": 0.0,
+            "z": 100.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 150.0,
+            "y": 0.0,
+            "z": 100.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 200.0,
+            "y": 0.0,
+            "z": 100.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
+      "monster_spawn": [
+        {
+          "position": {
+            "x": 300.0,
+            "y": 0.0,
+            "z": 300.0
+          },
+          "monster_id": 1,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 400.0,
+            "y": 0.0,
+            "z": 400.0
+          },
+          "monster_id": 2,
+          "spawn_interval": 45,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
+      "boss_spawn": []
+    },
+    "objects": {
+      "static_objects": [
+        {
+          "id": 1,
+          "type": "building",
+          "name": "Village Hall",
+          "position": {
+            "x": 500,
+            "y": 0,
+            "z": 500
+          },
+          "size": {
+            "x": 50,
+            "y": 30,
+            "z": 50
+          },
+          "collision": true
+        },
+        {
+          "id": 2,
+          "type": "decoration",
+          "name": "Fountain",
+          "position": {
+            "x": 600,
+            "y": 0,
+            "z": 600
+          },
+          "size": {
+            "x": 10,
+            "y": 5,
+            "z": 10
+          },
+          "collision": false
+        }
+      ],
+      "movable_objects": [
+        {
+          "id": 3,
+          "type": "npc",
+          "name": "Village Elder",
+          "position": {
+            "x": 520,
+            "y": 0,
+            "z": 520
+          },
+          "movement_range": 20,
+          "movement_speed": 1.0
+        }
+      ]
+    },
+    "navmesh_path": null
+  },
+  {
+    "id": 2,
+    "name": "Dark Forest",
+    "name_id": "map_dark_forest_name",
+    "desc_id": "map_dark_forest_desc",
+    "game_mode_id": 1,
+    "size": {
+      "width": 1500.0,
+      "height": 1500.0
+    },
+    "gates": [
+      {
+        "id": 1,
+        "name": "Forest to Village Gate",
+        "position": {
+          "x": 50.0,
+          "y": 0.0,
+          "z": 750.0
+        },
+        "target_map_id": 1,
+        "target_gate_id": 1,
+        "required_level": 1
+      },
+      {
+        "id": 2,
+        "name": "Forest to Cave Gate",
+        "position": {
+          "x": 1450.0,
+          "y": 0.0,
+          "z": 750.0
+        },
+        "target_map_id": 4,
+        "target_gate_id": 1,
+        "required_level": 5
+      }
+    ],
+    "spawn_points": {
+      "player_spawn": [
+        {
+          "position": {
+            "x": 100.0,
+            "y": 0.0,
+            "z": 750.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 150.0,
+            "y": 0.0,
+            "z": 750.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
+      "monster_spawn": [
+        {
+          "position": {
+            "x": 400.0,
+            "y": 0.0,
+            "z": 400.0
+          },
+          "monster_id": 3,
+          "spawn_interval": 20,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 800.0,
+            "y": 0.0,
+            "z": 800.0
+          },
+          "monster_id": 4,
+          "spawn_interval": 25,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 1200.0,
+            "y": 0.0,
+            "z": 400.0
+          },
+          "monster_id": 5,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
+      "boss_spawn": []
+    },
+    "objects": {
+      "static_objects": [
+        {
+          "id": 4,
+          "type": "tree",
+          "name": "Ancient Tree",
+          "position": {
+            "x": 750,
+            "y": 0,
+            "z": 750
+          },
+          "size": {
+            "x": 20,
+            "y": 40,
+            "z": 20
+          },
+          "collision": true
+        }
+      ],
+      "movable_objects": [
+        {
+          "id": 5,
+          "type": "npc",
+          "name": "Forest Guardian",
+          "position": {
+            "x": 800,
+            "y": 0,
+            "z": 800
+          },
+          "movement_range": 50,
+          "movement_speed": 1.5
+        }
+      ]
+    },
+    "navmesh_path": null
+  },
+  {
+    "id": 6,
+    "name": "Dragon's Lair",
+    "name_id": "map_dragon_lair_name",
+    "desc_id": "map_dragon_lair_desc",
+    "game_mode_id": 2,
+    "size": {
+      "width": 800.0,
+      "height": 800.0
+    },
+    "gates": [
+      {
+        "id": 1,
+        "name": "Lair Entrance",
+        "position": {
+          "x": 50.0,
+          "y": 0.0,
+          "z": 400.0
+        },
+        "target_map_id": 2,
+        "target_gate_id": 3,
+        "required_level": 20
+      }
+    ],
+    "spawn_points": {
+      "player_spawn": [
+        {
+          "position": {
+            "x": 100.0,
+            "y": 0.0,
+            "z": 400.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 150.0,
+            "y": 0.0,
+            "z": 400.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
+      "monster_spawn": [],
+      "boss_spawn": [
+        {
+          "position": {
+            "x": 700.0,
+            "y": 0.0,
+            "z": 400.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 1001,
+          "spawn_delay": 10
+        }
+      ]
+    },
+    "objects": {
+      "static_objects": [
+        {
+          "id": 6,
+          "type": "boss_platform",
+          "name": "Dragon Platform",
+          "position": {
+            "x": 700,
+            "y": 0,
+            "z": 400
+          },
+          "size": {
+            "x": 100,
+            "y": 10,
+            "z": 100
+          },
+          "collision": true
+        },
+        {
+          "id": 7,
+          "type": "decoration",
+          "name": "Dragon Bones",
+          "position": {
+            "x": 300,
+            "y": 0,
+            "z": 300
+          },
+          "size": {
+            "x": 30,
+            "y": 5,
+            "z": 30
+          },
+          "collision": false
+        }
+      ],
+      "movable_objects": []
+    },
+    "navmesh_path": null
+  },
+  {
+    "id": 9,
+    "name": "Ancient Dungeon",
+    "name_id": "map_ancient_dungeon_name",
+    "desc_id": "map_ancient_dungeon_desc",
+    "game_mode_id": 3,
+    "size": {
+      "width": 1200.0,
+      "height": 1200.0
+    },
+    "gates": [
+      {
+        "id": 1,
+        "name": "Dungeon Entrance",
+        "position": {
+          "x": 50.0,
+          "y": 0.0,
+          "z": 600.0
+        },
+        "target_map_id": 2,
+        "target_gate_id": 2,
+        "required_level": 15
+      }
+    ],
+    "spawn_points": {
+      "player_spawn": [
+        {
+          "position": {
+            "x": 100.0,
+            "y": 0.0,
+            "z": 600.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 150.0,
+            "y": 0.0,
+            "z": 600.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
+      "monster_spawn": [
+        {
+          "position": {
+            "x": 300.0,
+            "y": 0.0,
+            "z": 300.0
+          },
+          "monster_id": 6,
+          "spawn_interval": 15,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 600.0,
+            "y": 0.0,
+            "z": 600.0
+          },
+          "monster_id": 7,
+          "spawn_interval": 20,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 900.0,
+            "y": 0.0,
+            "z": 300.0
+          },
+          "monster_id": 8,
+          "spawn_interval": 25,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 900.0,
+            "y": 0.0,
+            "z": 900.0
+          },
+          "monster_id": 9,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
+      "boss_spawn": []
+    },
+    "objects": {
+      "static_objects": [
+        {
+          "id": 8,
+          "type": "trap",
+          "name": "Spike Trap",
+          "position": {
+            "x": 400,
+            "y": 0,
+            "z": 400
+          },
+          "size": {
+            "x": 10,
+            "y": 2,
+            "z": 10
+          },
+          "collision": true,
+          "damage": 50
+        },
+        {
+          "id": 9,
+          "type": "treasure_chest",
+          "name": "Ancient Chest",
+          "position": {
+            "x": 1000,
+            "y": 0,
+            "z": 1000
+          },
+          "size": {
+            "x": 5,
+            "y": 3,
+            "z": 5
+          },
+          "collision": true,
+          "loot_table_id": 1
+        }
+      ],
+      "movable_objects": [
+        {
+          "id": 10,
+          "type": "patrol_guard",
+          "name": "Dungeon Guard",
+          "position": {
+            "x": 500,
+            "y": 0,
+            "z": 500
+          },
+          "movement_range": 100,
+          "movement_speed": 2.0,
+          "patrol_path": [
+            {
+              "x": 500,
+              "y": 0,
+              "z": 500
+            },
+            {
+              "x": 700,
+              "y": 0,
+              "z": 500
+            },
+            {
+              "x": 700,
+              "y": 0,
+              "z": 700
+            },
+            {
+              "x": 500,
+              "y": 0,
+              "z": 700
+            }
+          ]
+        }
+      ]
+    },
+    "navmesh_path": null
+  },
+  {
+    "id": 12,
+    "name": "Battle Arena",
+    "name_id": "map_battle_arena_name",
+    "desc_id": "map_battle_arena_desc",
+    "game_mode_id": 4,
+    "size": {
+      "width": 600.0,
+      "height": 600.0
+    },
+    "gates": [
+      {
+        "id": 1,
+        "name": "Arena Entrance",
+        "position": {
+          "x": 50.0,
+          "y": 0.0,
+          "z": 300.0
+        },
+        "target_map_id": 1,
+        "target_gate_id": 3,
+        "required_level": 25
+      }
+    ],
+    "spawn_points": {
+      "player_spawn": [
+        {
+          "position": {
+            "x": 100.0,
+            "y": 0.0,
+            "z": 100.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 100.0,
+            "y": 0.0,
+            "z": 500.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 500.0,
+            "y": 0.0,
+            "z": 100.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "position": {
+            "x": 500.0,
+            "y": 0.0,
+            "z": 500.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 0,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
+      "monster_spawn": [],
+      "boss_spawn": []
+    },
+    "objects": {
+      "static_objects": [
+        {
+          "id": 11,
+          "type": "arena_wall",
+          "name": "Arena Boundary",
+          "position": {
+            "x": 300,
+            "y": 0,
+            "z": 300
+          },
+          "size": {
+            "x": 600,
+            "y": 20,
+            "z": 600
+          },
+          "collision": true
+        },
+        {
+          "id": 12,
+          "type": "cover",
+          "name": "Stone Pillar",
+          "position": {
+            "x": 200,
+            "y": 0,
+            "z": 200
+          },
+          "size": {
+            "x": 10,
+            "y": 30,
+            "z": 10
+          },
+          "collision": true
+        }
+      ],
+      "movable_objects": []
+    },
+    "navmesh_path": null
+  },
+  {
+    "id": 13,
+    "name": "Field1",
+    "name_id": "map_field1_name",
+    "desc_id": "map_field1_desc",
+    "game_mode_id": 1,
+    "size": {
+      "width": 1000.0,
+      "height": 1000.0
+    },
+    "gates": [
+      {
+        "id": 1,
+        "name": "Gate1",
+        "position": {
+          "x": 23.71,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "target_map_id": 14,
+        "target_gate_id": 1,
+        "required_level": 1
+      }
+    ],
+    "spawn_points": {
+      "player_spawn": [
+        {
+          "position": {
+            "x": -13.7,
+            "y": 0.0,
+            "z": 0.0
+          },
+          "monster_id": 0,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
+      "monster_spawn": [],
+      "boss_spawn": []
+    },
+    "objects": {
+      "static_objects": [],
+      "movable_objects": []
+    },
+    "navmesh_path": "Field1_navmesh.bin"
+  },
+  {
+    "id": 14,
+    "name": "Field2",
+    "name_id": "map_field2_name",
+    "desc_id": "map_field2_desc",
+    "game_mode_id": 1,
+    "size": {
+      "width": 1000.0,
+      "height": 1000.0
+    },
+    "gates": [
+      {
+        "id": 1,
+        "name": "Gate1",
+        "position": {
+          "x": -23.39,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "target_map_id": 13,
+        "target_gate_id": 1,
+        "required_level": 1
+      }
+    ],
+    "spawn_points": {
+      "player_spawn": [],
+      "monster_spawn": [],
+      "boss_spawn": []
+    },
+    "objects": {
+      "static_objects": [],
+      "movable_objects": []
+    },
+    "navmesh_path": "Field2_navmesh.bin"
+  }
+]

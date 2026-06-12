@@ -601,7 +601,7 @@ public class Session : MonoBehaviour
 
 
         SendMessage(PacketFactory.CreateUseSkillMessage(skillId, player_agnet_id, pos, type, timestamp));
-		if (resSkill.CodeName == "JumpSkill")
+		if (resSkill.code_name == "JumpSkill")
 		{
 			jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, skill_duration, skill_height, timestamp));
 		}
