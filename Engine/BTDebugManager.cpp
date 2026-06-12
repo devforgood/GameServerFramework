@@ -54,7 +54,7 @@ namespace
 
 	MonsterBTDebugContext& GetOrCreateContext(Monster* monster)
 	{
-		auto monster_id = static_cast<int64_t>(monster->GetAgentId());
+		auto monster_id = static_cast<int64_t>(monster->GetActorId());
 		auto& context = g_contexts[monster_id];
 		context.monster_id = monster_id;
 		return context;
@@ -169,7 +169,7 @@ void BTDebugManager::PublishTreeDefinition(Monster* monster)
 		return;
 
 	std::lock_guard<std::mutex> lock(g_mutex);
-	g_definitions.push_back(BuildMonsterTreeDefinition(monster->GetAgentId()));
+	g_definitions.push_back(BuildMonsterTreeDefinition(monster->GetActorId()));
 }
 
 BTDebugSyncSnapshot BTDebugManager::ConsumeSnapshot()

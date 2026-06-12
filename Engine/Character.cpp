@@ -126,10 +126,10 @@ bool Character::Init(Vector3& pos)
 	}
 
 	this->SetPosition(pos.x, pos.y, pos.z);
-	this->agentId_ = agent_id;
+	this->actorId_ = agent_id;
 	this->speed = speed;
 	auto& entityManager = map_->systemManager_->GetEntityManager();
-	entityManager.GetComponent<engine::StateComponent>(entityId_).agentID = agent_id;
+	entityManager.GetComponent<engine::StateComponent>(entityId_).ActorID = agent_id;
 
 	return true;
 }

@@ -121,10 +121,10 @@ void Map::Init()
 	systemManager_->RegisterSystem<engine::StateComponent, engine::PositionComponent>(
 		[map](float deltaTime, engine::StateComponent& state, engine::PositionComponent& position) {
 			if (state.stateID == syncnet::AIState::AIState_Destroyed) {
-				map->removedAgents_.push_back(state.agentID);
+				map->removedAgents_.push_back(state.ActorID);
 			}
 
-			const dtCrowdAgent* agent = map->map_->crowd()->getAgent(state.agentID);
+			const dtCrowdAgent* agent = map->map_->crowd()->getAgent(state.ActorID);
 			if (agent->active == false)
 				return;
 
@@ -133,7 +133,7 @@ void Map::Init()
 				return;
 
 
-			auto itr = map->actorMap_.find(state.agentID);
+			auto itr = map->actorMap_.find(state.ActorID);
 			if (itr == map->actorMap_.end())
 			{
 				LOG.error("SendWorldState error agent not found in actorMap_");
@@ -343,7 +343,7 @@ std::shared_ptr<Actor> Map::OnAddAgent(std::shared_ptr<Player> player, syncnet::
 	}
 
 	auto itr = actorList_.insert(actorList_.end(), actor);
-	actorMap_.insert(std::make_pair(actor->GetAgentId(), itr));
+	actorMap_.insert(std::make_pair(actor->GetActorId(), itr));
 	actor->SetChangedFlag(static_cast<long>(GameObjectChangeType::All));
 
 	return actor;
@@ -368,7 +368,7 @@ void Map::OnSetRaycast(const syncnet::Vec3* pos)
 
 int Map::DetectEnemy(Actor* actor)
 {
-	const dtCrowdAgent* this_agent = this->GetNavMap()->crowd()->getAgent(actor->GetAgentId());
+	const dtCrowdAgent* this_agent = this->GetNavMap()->crowd()->getAgent(actor->GetActorId());
 	float hitPoint[3];
 
 	auto targets = gridManager_->getEntitiesInViewRange(actor, g_fDistance);
@@ -378,12 +378,12 @@ int Map::DetectEnemy(Actor* actor)
 		if (!(*itr)->IsCharacter())
 			continue;
 
-		const dtCrowdAgent* agent = this->GetNavMap()->crowd()->getAgent((*itr)->GetAgentID());
+		const dtCrowdAgent* agent = this->GetNavMap()->crowd()->getAgent((*itr)->GetActorId());
 
 
-		if (this->GetNavMap()->raycast(actor->GetAgentId(), agent->npos, hitPoint) == false)
+		if (this->GetNavMap()->raycast(actor->GetActorId(), agent->npos, hitPoint) == false)
 		{
-			return (*itr)->GetAgentID();
+			return (*itr)->GetActorId();
 		}
 	}
 	return -1;

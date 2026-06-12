@@ -27,7 +27,7 @@ public:
     virtual int GetGridY() const override { return gridY; }
     virtual float GetVector2X() const override { return x; }
     virtual float GetVector2Y() const override { return y; }
-    virtual int GetAgentID() const override { return agentId; }
+    virtual int GetActorId() const override { return agentId; }
 	virtual void DecrementHealth(int amount) override {}
     virtual void SetLastAttackerPlayerId(long player_id) override { lastAttackerPlayerId = player_id; }
 
@@ -122,7 +122,7 @@ TEST_F(GridManagerTest, GetEntitiesInViewRange) {
     // farActor는 포함되지 않아야 함
     bool foundFarActor = false;
     for (auto entity : entities) {
-        if (entity->GetAgentID() == 3) {
+        if (entity->GetActorId() == 3) {
             foundFarActor = true;
             break;
         }
@@ -154,7 +154,7 @@ TEST_F(GridManagerTest, GetEntitiesInAoEMask) {
     // actor3는 포함되지 않아야 함
     bool foundActor3 = false;
     for (auto entity : entities) {
-        if (entity->GetAgentID() == 3) {
+        if (entity->GetActorId() == 3) {
             foundActor3 = true;
             break;
         }
@@ -280,7 +280,7 @@ TEST_F(GridManagerTest, MoveAndSearch) {
     auto entities1 = gridManager->getEntitiesInViewRange(actor.get(), 20.0f);
     bool foundTarget1 = false;
     for (auto entity : entities1) {
-        if (entity->GetAgentID() == 2) {
+        if (entity->GetActorId() == 2) {
             foundTarget1 = true;
             break;
         }
@@ -295,7 +295,7 @@ TEST_F(GridManagerTest, MoveAndSearch) {
     auto entities2 = gridManager->getEntitiesInViewRange(actor.get(), 20.0f);
     bool foundTarget2 = false;
     for (auto entity : entities2) {
-        if (entity->GetAgentID() == 2) {
+        if (entity->GetActorId() == 2) {
             foundTarget2 = true;
             break;
         }
@@ -329,7 +329,7 @@ TEST_F(GridManagerTest, AoEMaskDistanceFiltering) {
     
     std::vector<int> foundIds;
     for (auto entity : entities) {
-        foundIds.push_back(entity->GetAgentID());
+        foundIds.push_back(entity->GetActorId());
     }
     
     EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 1) != foundIds.end()); // 거리 5
@@ -426,7 +426,7 @@ TEST_F(GridManagerTest, AoEMaskFullCircle) {
     // 각 방향의 타겟이 모두 포함되어야 함
     std::vector<int> foundIds;
     for (auto entity : entities) {
-        foundIds.push_back(entity->GetAgentID());
+        foundIds.push_back(entity->GetActorId());
     }
     
     EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 1) != foundIds.end());
@@ -462,7 +462,7 @@ TEST_F(GridManagerTest, AoEMask90DegreeEast) {
     
     std::vector<int> foundIds;
     for (auto entity : entities) {
-        foundIds.push_back(entity->GetAgentID());
+        foundIds.push_back(entity->GetActorId());
     }
     
     EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 1) != foundIds.end()); // 정동쪽

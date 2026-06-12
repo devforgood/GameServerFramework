@@ -65,7 +65,7 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	// 디버깅 로그 (개발 환경에서만)
 #ifdef _DEBUG
 	LOG.info("=== NormalAttackSkill Debug ===");
-	LOG.info("Actor ID: {}, Position: ({}, {}, {})", actor->GetAgentID(), actor_pos.x, actor_pos.y, actor_pos.z);
+	LOG.info("Actor ID: {}, Position: ({}, {}, {})", actor->GetActorId(), actor_pos.x, actor_pos.y, actor_pos.z);
 	LOG.info("Target Position: ({}, {}, {})", target_pos.x, target_pos.y, target_pos.z);
 	LOG.info("Direction to target: ({}, {}, {}), Target angle: {:.2f} degrees", 
 		to_target.x, to_target.y, to_target.z, target_angle);
@@ -81,7 +81,7 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 			float target_angle = calculateAngle(actor_pos, target_position);
 			
 			LOG.info("  - Target ID: {}, Position: ({}, {}), Distance: {:.2f}, Angle: {:.2f} degrees", 
-				target->GetAgentID(), target->GetVector2X(), target->GetVector2Y(), distance, target_angle);
+				target->GetActorId(), target->GetVector2X(), target->GetVector2Y(), distance, target_angle);
 		}
 	}
 #endif
@@ -98,7 +98,7 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 			target->DecrementHealth(damage);
 			hit_count++;
 #ifdef _DEBUG
-			LOG.info("Applied {} damage to target ID: {}", damage, target->GetAgentID());
+			LOG.info("Applied {} damage to target ID: {}", damage, target->GetActorId());
 #endif
 		}
 	}

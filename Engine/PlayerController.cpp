@@ -39,7 +39,7 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 	}
 	else
 	{ 
-		agent_id = actor->GetAgentId();
+		agent_id = actor->GetActorId();
 	}
 
 	player_->Send(
@@ -80,8 +80,8 @@ void PlayerController::handle(const syncnet::SetMoveTarget* msg)
 		return;
 	}
 
-	LOG.debug("move target agent id :{}, pos:({},{},{})", player_->GetCharacter()->GetAgentId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
-	world_->OnSetMoveTarget(player_->GetCharacter()->GetAgentId(), msg->pos());
+	LOG.debug("move target agent id :{}, pos:({},{},{})", player_->GetCharacter()->GetActorId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
+	world_->OnSetMoveTarget(player_->GetCharacter()->GetActorId(), msg->pos());
 }
 
 void PlayerController::handle(const syncnet::Ping* msg)

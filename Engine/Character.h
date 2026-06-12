@@ -16,7 +16,7 @@ public:
 
 
 
-	void set_player_id(long player_id)
+	void SetPlayerId(long player_id)
 	{
 		playerId_ = player_id;
 	}

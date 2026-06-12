@@ -53,7 +53,7 @@ protected:
 	virtual ~Action_Chase() {}
 	virtual BT::EStatus Update() override
 	{
-		monster_->GetMap()->GetNavMap()->setMoveTarget(monster_->GetMap()->GetNavMap()->getPos(monster_->targetAgentId_), false, monster_->GetAgentId());
+		monster_->GetMap()->GetNavMap()->setMoveTarget(monster_->GetMap()->GetNavMap()->getPos(monster_->targetAgentId_), false, monster_->GetActorId());
 
 		return BT::EStatus::Success;
 	}
@@ -73,7 +73,7 @@ protected:
 	virtual ~Action_Patrol() {}
 	virtual BT::EStatus Update() override
 	{
-		monster_->GetMap()->GetNavMap()->patrol(monster_->GetAgentId(), monster_->spawnPos_, monster_->spawnRef_);
+		monster_->GetMap()->GetNavMap()->patrol(monster_->GetActorId(), monster_->spawnPos_, monster_->spawnRef_);
 		return BT::EStatus::Success;
 	}
 };

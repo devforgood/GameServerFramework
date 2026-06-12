@@ -35,7 +35,7 @@ namespace BT
 	{
 	public:
 		BehaviorTreeBuilder() { }
-		~BehaviorTreeBuilder() { }
+		virtual ~BehaviorTreeBuilder() { }
 		BehaviorTreeBuilder* Sequence();
 		BehaviorTreeBuilder* Action(EActionMode ActionModes);
 		BehaviorTreeBuilder* Condition(EConditionMode ConditionMode, bool IsNegation);

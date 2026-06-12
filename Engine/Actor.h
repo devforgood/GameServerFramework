@@ -24,7 +24,7 @@ class send_message; // Forward declaration
 class Actor : public GameObject, public IGridActor
 {
 protected:
-	int agentId_ = -1;
+	int actorId_ = -1;
 	bool isInputLocked_ = false;
 	Vector3 frontVector_;    // 캐릭터가 바라보는 방향
 	float rotationSpeed_ = 5.0f; // 회전 속도 (초당 회전 각도)
@@ -67,7 +67,7 @@ public:
 
 	virtual void Update(float dt) override;
 
-	int GetAgentId() { return agentId_; }
+	int GetActorId() { return actorId_; }
 
 	virtual void SetPosition(float x, float y, float z);
 
@@ -100,9 +100,10 @@ public:
 	{
 		return GetVecter2Y();
 	}
-	virtual int GetAgentID() const
-	{ 
-		return agentId_; 
+
+	virtual int GetActorId() const override
+	{
+		return actorId_;
 	}
 
 	virtual void SetLastAttackerPlayerId(long player_id) override

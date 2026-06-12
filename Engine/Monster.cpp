@@ -59,17 +59,17 @@ bool Monster::Init(Vector3& pos)
 	}
 
 	this->SetPosition(pos.x, pos.y, pos.z);
-	agentId_ = agent_id;
+	actorId_ = agent_id;
 	this->speed = speed;
 	auto& entityManager = map_->systemManager_->GetEntityManager();
-	entityManager.GetComponent<engine::StateComponent>(entityId_).agentID = agent_id;
+	entityManager.GetComponent<engine::StateComponent>(entityId_).ActorID = actorId_;
 
 
 	bt_ = MonsterCodeBaseBT::createTree(this);
 
 
 	if (map_ != nullptr) {
-		auto agent = map_->GetNavMap()->getAgent(agentId_);
+		auto agent = map_->GetNavMap()->getAgent(actorId_);
 		if (agent != nullptr)
 		{
 			dtVcopy(spawnPos_, agent->npos);
@@ -77,7 +77,7 @@ bool Monster::Init(Vector3& pos)
 		}
 	}
 
-	name_ = "Monster:" + std::to_string(agentId_);
+	name_ = "Monster:" + std::to_string(actorId_);
 
 
 
@@ -100,14 +100,14 @@ void Monster::Update(float dt)
 
 int Monster::AttackRange()
 {
-	const dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getAgent(GetAgentId());
+	const dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getAgent(GetActorId());
 	const dtCrowdAgent* agent = map_->GetNavMap()->crowd()->getAgent(targetAgentId_);
 
 	if (ManhattanDistance(this_agent->npos, agent->npos) > 3)
 		return -1;
 
 	float hitPoint[3];
-	if (map_->GetNavMap()->raycast(GetAgentId(), agent->npos, hitPoint) == false)
+	if (map_->GetNavMap()->raycast(GetActorId(), agent->npos, hitPoint) == false)
 	{
 		return targetAgentId_;
 	}
@@ -116,13 +116,13 @@ int Monster::AttackRange()
 
 int Monster::Attack()
 {
-	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(GetAgentId());
+	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(GetActorId());
 	this_agent->desiredSpeed = 0.0f;
 	return 0;
 }
 int Monster::Resume()
 {
-	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(GetAgentId());
+	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(GetActorId());
 	this_agent->desiredSpeed = this->speed;
 	return 0;
 }
@@ -145,7 +145,7 @@ void Monster::NotifyKilledBy()
 	if (eventBroker == nullptr)
 		return;
 
-	eventBroker->publish(EventActorDead{ static_cast<int>(killer_id), agentId_ });
+	eventBroker->publish(EventActorDead{ static_cast<int>(killer_id), actorId_ });
 }
 
 

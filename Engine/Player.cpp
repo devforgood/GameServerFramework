@@ -51,7 +51,7 @@ void Player::SetServer(GameServer* server)
 void Player::Possess(std::shared_ptr<Character> character)
 {
 	character_ = character;
-	character_->set_player_id(playerId_);
+	character_->SetPlayerId(playerId_);
 }
 
 void Player::Send(std::shared_ptr<send_message>& msg)

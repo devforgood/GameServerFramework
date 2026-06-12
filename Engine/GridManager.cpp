@@ -225,7 +225,7 @@ std::vector<IGridActor*> GridManager::getEntitiesInViewRange(IGridActor* viewer,
 void GridManager::broadcastToNearby(float x, float y, float range, const std::string& msg) {
     auto entities = getEntitiesInAoEMask(x, y, range, 0);
     for (auto* e : entities) {
-        std::cout << "Broadcast to Entity " << e->GetAgentID() << ": " << msg << "\n";
+        std::cout << "Broadcast to Entity " << e->GetActorId() << ": " << msg << "\n";
     }
 }
 

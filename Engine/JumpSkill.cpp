@@ -73,7 +73,7 @@ int JumpSkill::end_duration_skill()
 		return -1; // Invalid parameters
 	}
 
-	auto agent_id = actor_->GetAgentId();
+	auto agent_id = actor_->GetActorId();
 	auto map = actor_->GetMap();
 	map->GetNavMap()->teleportAgent(agent_id, targetPos_->pos());
 

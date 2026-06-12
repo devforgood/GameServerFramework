@@ -77,7 +77,7 @@ flatbuffers::Offset<syncnet::ActorInfo> Actor::GetActorInfo(flatbuffers::FlatBuf
 
 	return syncnet::CreateActorInfo(
 		_fbb, 
-		this->GetAgentId(), 
+		this->GetActorId(), 
 		posPtr,
 		this->GetType(), 
 		statePtr, 
