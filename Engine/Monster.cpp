@@ -42,7 +42,7 @@ Monster::~Monster()
 	}
 }
 
-bool Monster::init(Vector3& pos)
+bool Monster::Init(Vector3& pos)
 {
 	float speed = 3.5f;
 	int agent_id = map_->GetNavMap()->addAgent(pos.pos(), speed);
@@ -58,7 +58,7 @@ bool Monster::init(Vector3& pos)
 		return false;
 	}
 
-	this->set_position(pos.x, pos.y, pos.z);
+	this->SetPosition(pos.x, pos.y, pos.z);
 	agentId_ = agent_id;
 	this->speed = speed;
 	auto& entityManager = map_->systemManager_->GetEntityManager();
@@ -88,9 +88,9 @@ bool Monster::init(Vector3& pos)
 	return true;
 }
 
-void Monster::update(float dt)
+void Monster::Update(float dt)
 {
-	Actor::update(dt);
+	Actor::Update(dt);
 	//bt_->Tick();
 	//runBehaviorTree(this);
 	BT_DEBUG_BEGIN_TICK(this);
@@ -100,14 +100,14 @@ void Monster::update(float dt)
 
 int Monster::AttackRange()
 {
-	const dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getAgent(agent_id());
+	const dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getAgent(GetAgentId());
 	const dtCrowdAgent* agent = map_->GetNavMap()->crowd()->getAgent(targetAgentId_);
 
 	if (ManhattanDistance(this_agent->npos, agent->npos) > 3)
 		return -1;
 
 	float hitPoint[3];
-	if (map_->GetNavMap()->raycast(agent_id(), agent->npos, hitPoint) == false)
+	if (map_->GetNavMap()->raycast(GetAgentId(), agent->npos, hitPoint) == false)
 	{
 		return targetAgentId_;
 	}
@@ -116,13 +116,13 @@ int Monster::AttackRange()
 
 int Monster::Attack()
 {
-	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(agent_id());
+	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(GetAgentId());
 	this_agent->desiredSpeed = 0.0f;
 	return 0;
 }
 int Monster::Resume()
 {
-	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(agent_id());
+	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(GetAgentId());
 	this_agent->desiredSpeed = this->speed;
 	return 0;
 }
@@ -133,7 +133,7 @@ void Monster::NotifyKilledBy()
 		return;
 	deadNotified_ = true;
 
-	long killer_id = last_attacker_player_id();
+	long killer_id = GetLastAttackerPlayerId();
 	if (killer_id < 0)
 		return; // 플레이어에 의한 처치가 아니면 발행하지 않음
 

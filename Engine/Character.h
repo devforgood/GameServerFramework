@@ -20,11 +20,11 @@ public:
 	{
 		playerId_ = player_id;
 	}
-	long player_id() const override { return playerId_; }
+	long GetPlayerId() const override { return playerId_; }
 	void use_skill(const syncnet::UseSkill* msg);
-	virtual void update(float deltaTime) override;
-	virtual bool pre_create(std::shared_ptr<Player> player) override;
-	virtual bool init(Vector3& pos) override;
-	virtual bool post_create(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object) override;
+	virtual void Update(float deltaTime) override;
+	virtual bool PreCreate(std::shared_ptr<Player> player) override;
+	virtual bool Init(Vector3& pos) override;
+	virtual bool PostCreate(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object) override;
 };
 

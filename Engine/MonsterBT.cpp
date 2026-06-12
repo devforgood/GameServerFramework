@@ -25,7 +25,7 @@ public:
 
 	BT::NodeStatus tick() override
 	{
-		monster_->targetAgentId_ = monster_->map()->DetectEnemy(monster_);
+		monster_->targetAgentId_ = monster_->GetMap()->DetectEnemy(monster_);
 		if (monster_->targetAgentId_ >= 0)
 		{
 			monster_->SetState(syncnet::AIState_Detect);
@@ -56,7 +56,7 @@ public:
 
 	BT::NodeStatus tick() override
 	{
-		monster_->map()->GetNavMap()->patrol(monster_->agent_id(), monster_->spawnPos_, monster_->spawnRef_);
+		monster_->GetMap()->GetNavMap()->patrol(monster_->GetAgentId(), monster_->spawnPos_, monster_->spawnRef_);
 		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionPatrol, "ActionPatrol", BT::NodeStatus::SUCCESS, "patrol command issued");
 		return BT::NodeStatus::SUCCESS;
 	}
@@ -77,7 +77,7 @@ public:
 	{
 		monster_->SetState(syncnet::AIState_Detect);
 		monster_->Resume();
-		monster_->map()->GetNavMap()->setMoveTarget(monster_->map()->GetNavMap()->getPos(monster_->targetAgentId_), false, monster_->agent_id());
+		monster_->GetMap()->GetNavMap()->setMoveTarget(monster_->GetMap()->GetNavMap()->getPos(monster_->targetAgentId_), false, monster_->GetAgentId());
 		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionChase, "ActionChase", BT::NodeStatus::SUCCESS, "chase target position updated");
 		return BT::NodeStatus::SUCCESS;
 	}
@@ -146,7 +146,7 @@ public:
 	{
 
 		// 체력이 0보다 크면 성공, 아니면 실패
-		if (monster_->health() > 0)
+		if (monster_->GetHealth() > 0)
 		{
 			BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionCheckHealth, "ConditionCheckHealth", BT::NodeStatus::SUCCESS, "health > 0");
 			return BT::NodeStatus::SUCCESS;

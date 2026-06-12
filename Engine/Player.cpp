@@ -115,9 +115,9 @@ void Player::OnLoadedData(const PlayerLoadData & data)
 	});
 }
 
-void Player::update(float dt)
+void Player::Update(float dt)
 {
-	GameObject::update(dt);
+	GameObject::Update(dt);
 
 
 	// 1분마다 플레이어 데이터를 디비에 저장하는 로직

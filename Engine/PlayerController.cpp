@@ -39,7 +39,7 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 	}
 	else
 	{ 
-		agent_id = actor->agent_id();
+		agent_id = actor->GetAgentId();
 	}
 
 	player_->Send(
@@ -74,14 +74,14 @@ void PlayerController::handle(const syncnet::SetMoveTarget* msg)
 		return;
 	}
 
-	if(player_->GetCharacter()->is_input_locked())
+	if(player_->GetCharacter()->IsInputLocked())
 	{
 		LOG.debug("character is input locked");
 		return;
 	}
 
-	LOG.debug("move target agent id :{}, pos:({},{},{})", player_->GetCharacter()->agent_id(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
-	world_->OnSetMoveTarget(player_->GetCharacter()->agent_id(), msg->pos());
+	LOG.debug("move target agent id :{}, pos:({},{},{})", player_->GetCharacter()->GetAgentId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
+	world_->OnSetMoveTarget(player_->GetCharacter()->GetAgentId(), msg->pos());
 }
 
 void PlayerController::handle(const syncnet::Ping* msg)
@@ -130,7 +130,7 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 		return;
 	}
 
-	if (player_->GetCharacter()->is_input_locked())
+	if (player_->GetCharacter()->IsInputLocked())
 	{
 		LOG.debug("character is input locked");
 		return;
@@ -154,5 +154,5 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 		).Union()
 	);
 	builder_ptr->Finish(send_msg);
-	character->map()->SendBroadcast(builder_ptr, player_);
+	character->GetMap()->SendBroadcast(builder_ptr, player_);
 }

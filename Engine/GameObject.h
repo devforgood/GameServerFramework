@@ -38,13 +38,13 @@ public:
     }
 
 public:
-    virtual void update(float dt)
+    virtual void Update(float dt)
     {
         (void)dt;
 
         for (auto& component : components_)
         {
-            component->Update();
+            component->Update(dt);
         }
     }
 

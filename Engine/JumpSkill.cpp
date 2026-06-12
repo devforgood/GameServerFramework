@@ -39,7 +39,7 @@ int JumpSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, float serv
 	duration_ = msg->duration() - serverClientTimeOffset; // Adjust duration with server-client time offset
 
 	isCasting_ = true;
-	actor_->set_input_locked(true); // Lock input while casting
+	actor_->SetInputLocked(true); // Lock input while casting
 
 	return 0;
 }
@@ -53,7 +53,7 @@ void JumpSkill::update(float dt)
 		{
 			end_duration_skill();
 			isCasting_ = false;
-			actor_->set_input_locked(false); // Unlock input after casting
+			actor_->SetInputLocked(false); // Unlock input after casting
 			duration_ = 0;
 		}
 	}
@@ -73,8 +73,8 @@ int JumpSkill::end_duration_skill()
 		return -1; // Invalid parameters
 	}
 
-	auto agent_id = actor_->agent_id();
-	auto map = actor_->map();
+	auto agent_id = actor_->GetAgentId();
+	auto map = actor_->GetMap();
 	map->GetNavMap()->teleportAgent(agent_id, targetPos_->pos());
 
 	return 0;

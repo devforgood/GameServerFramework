@@ -20,16 +20,16 @@ public:
     virtual ~MockGridActor() = default;
 
     // IGridActor 인터페이스 구현
-    virtual bool isCharacter() const override { return isCharacterType; }
-    virtual void setGridX(int gx) override { gridX = gx; }
-    virtual void setGridY(int gy) override { gridY = gy; }
-    virtual int getGridX() const override { return gridX; }
-    virtual int getGridY() const override { return gridY; }
-    virtual float getVector2X() const override { return x; }
-    virtual float getVector2Y() const override { return y; }
-    virtual int getAgentID() const override { return agentId; }
-	virtual void decrementHealth(int amount) override {}
-    virtual void setLastAttackerPlayerId(long player_id) override { lastAttackerPlayerId = player_id; }
+    virtual bool IsCharacter() const override { return isCharacterType; }
+    virtual void SetGridX(int gx) override { gridX = gx; }
+    virtual void SetGridY(int gy) override { gridY = gy; }
+    virtual int GetGridX() const override { return gridX; }
+    virtual int GetGridY() const override { return gridY; }
+    virtual float GetVector2X() const override { return x; }
+    virtual float GetVector2Y() const override { return y; }
+    virtual int GetAgentID() const override { return agentId; }
+	virtual void DecrementHealth(int amount) override {}
+    virtual void SetLastAttackerPlayerId(long player_id) override { lastAttackerPlayerId = player_id; }
 
     // 위치 설정 메서드
     void setPosition(float newX, float newY) {
@@ -72,8 +72,8 @@ TEST_F(GridManagerTest, AddActor) {
     // 그리드 좌표가 올바르게 설정되었는지 확인
     // NEGATIVE_VALUE_OFFSET = 100 * 10 / 2 = 500
     // (50 + 500) / 10 = 55
-    EXPECT_EQ(actor->getGridX(), 55);
-    EXPECT_EQ(actor->getGridY(), 55);
+    EXPECT_EQ(actor->GetGridX(), 55);
+    EXPECT_EQ(actor->GetGridY(), 55);
 }
 
 // Actor 이동 테스트
@@ -81,15 +81,15 @@ TEST_F(GridManagerTest, MoveActor) {
     auto actor = std::make_unique<MockGridActor>(1, 50.0f, 50.0f, true);
     
     gridManager->add(actor.get());
-    int originalGridX = actor->getGridX();
-    int originalGridY = actor->getGridY();
+    int originalGridX = actor->GetGridX();
+    int originalGridY = actor->GetGridY();
     
     // 다른 셀로 이동
     actor->setPosition(150.0f, 150.0f);
     gridManager->move(actor.get(), 150.0f, 150.0f);
     
     // 그리드 좌표가 변경되었는지 확인
-    EXPECT_TRUE(actor->getGridX() != originalGridX || actor->getGridY() != originalGridY);
+    EXPECT_TRUE(actor->GetGridX() != originalGridX || actor->GetGridY() != originalGridY);
 }
 
 // Actor 제거 테스트
@@ -122,7 +122,7 @@ TEST_F(GridManagerTest, GetEntitiesInViewRange) {
     // farActor는 포함되지 않아야 함
     bool foundFarActor = false;
     for (auto entity : entities) {
-        if (entity->getAgentID() == 3) {
+        if (entity->GetAgentID() == 3) {
             foundFarActor = true;
             break;
         }
@@ -154,7 +154,7 @@ TEST_F(GridManagerTest, GetEntitiesInAoEMask) {
     // actor3는 포함되지 않아야 함
     bool foundActor3 = false;
     for (auto entity : entities) {
-        if (entity->getAgentID() == 3) {
+        if (entity->GetAgentID() == 3) {
             foundActor3 = true;
             break;
         }
@@ -177,12 +177,12 @@ TEST_F(GridManagerTest, CharacterMonsterSeparation) {
     
     // character는 자신을 제외하므로 monster만 검색되어야 함
     EXPECT_EQ(entities.size(), 1);
-    EXPECT_FALSE(entities[0]->isCharacter()); // 몬스터여야 함
+    EXPECT_FALSE(entities[0]->IsCharacter()); // 몬스터여야 함
     
     // monster의 관점에서 검색하면 character가 검색되어야 함
     auto entities2 = gridManager->getEntitiesInViewRange(monster.get(), 20.0f);
     EXPECT_EQ(entities2.size(), 1);
-    EXPECT_TRUE(entities2[0]->isCharacter()); // 캐릭터여야 함
+    EXPECT_TRUE(entities2[0]->IsCharacter()); // 캐릭터여야 함
 }
 
 // 경계 조건 테스트
@@ -193,8 +193,8 @@ TEST_F(GridManagerTest, BoundaryConditions) {
     auto actor = std::make_unique<MockGridActor>(1, 95.0f, 95.0f, true);
     
     EXPECT_NO_THROW(smallGrid.add(actor.get()));
-    EXPECT_GE(actor->getGridX(), 0);
-    EXPECT_GE(actor->getGridY(), 0);
+    EXPECT_GE(actor->GetGridX(), 0);
+    EXPECT_GE(actor->GetGridY(), 0);
 }
 
 // 성능 테스트
@@ -280,7 +280,7 @@ TEST_F(GridManagerTest, MoveAndSearch) {
     auto entities1 = gridManager->getEntitiesInViewRange(actor.get(), 20.0f);
     bool foundTarget1 = false;
     for (auto entity : entities1) {
-        if (entity->getAgentID() == 2) {
+        if (entity->GetAgentID() == 2) {
             foundTarget1 = true;
             break;
         }
@@ -295,7 +295,7 @@ TEST_F(GridManagerTest, MoveAndSearch) {
     auto entities2 = gridManager->getEntitiesInViewRange(actor.get(), 20.0f);
     bool foundTarget2 = false;
     for (auto entity : entities2) {
-        if (entity->getAgentID() == 2) {
+        if (entity->GetAgentID() == 2) {
             foundTarget2 = true;
             break;
         }
@@ -329,7 +329,7 @@ TEST_F(GridManagerTest, AoEMaskDistanceFiltering) {
     
     std::vector<int> foundIds;
     for (auto entity : entities) {
-        foundIds.push_back(entity->getAgentID());
+        foundIds.push_back(entity->GetAgentID());
     }
     
     EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 1) != foundIds.end()); // 거리 5
@@ -426,7 +426,7 @@ TEST_F(GridManagerTest, AoEMaskFullCircle) {
     // 각 방향의 타겟이 모두 포함되어야 함
     std::vector<int> foundIds;
     for (auto entity : entities) {
-        foundIds.push_back(entity->getAgentID());
+        foundIds.push_back(entity->GetAgentID());
     }
     
     EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 1) != foundIds.end());
@@ -462,7 +462,7 @@ TEST_F(GridManagerTest, AoEMask90DegreeEast) {
     
     std::vector<int> foundIds;
     for (auto entity : entities) {
-        foundIds.push_back(entity->getAgentID());
+        foundIds.push_back(entity->GetAgentID());
     }
     
     EXPECT_TRUE(std::find(foundIds.begin(), foundIds.end(), 1) != foundIds.end()); // 정동쪽

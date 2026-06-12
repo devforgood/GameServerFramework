@@ -37,7 +37,7 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	}
 
 	// 공격 방향 설정
-	Vector3 actor_pos = actor->get_position();
+	Vector3 actor_pos = actor->GetPosition();
 	Vector3 target_pos(msg->pos());
 	
 	// 타겟을 향한 방향 벡터 계산
@@ -48,24 +48,24 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	float target_angle = calculateAngle(actor_pos, target_pos);
 
 	// 캐릭터를 목표 지점 방향으로 회전
-	actor->rotate_to_target(target_pos, serverClientTimeOffset);
+	actor->RotateToTarget(target_pos, serverClientTimeOffset);
 
 	// 공격 방향 결정 (회전이 완료되지 않았을 경우 타겟 방향으로 강제 설정)
-	float attack_direction = actor->get_front_angle_degrees();
+	float attack_direction = actor->GetFrontAngleDegrees();
 	if (calculateAngleDifference(attack_direction, target_angle) > 45.0f) {
 		attack_direction = target_angle;
 	}
 
 	// 데미지 계산
-	double damage = actor->map()->world()->random_util()->GetRandomDouble(gamedata->min_damage, gamedata->max_damage);
+	double damage = actor->GetMap()->world()->random_util()->GetRandomDouble(gamedata->min_damage, gamedata->max_damage);
 
 	// AoE 범위 내 대상 검색
-	std::vector<IGridActor*> actors_in_range = actor->map()->get_actors_in_range(actor, gamedata->range, attack_direction, gamedata->angle);
+	std::vector<IGridActor*> actors_in_range = actor->GetMap()->get_actors_in_range(actor, gamedata->range, attack_direction, gamedata->angle);
 
 	// 디버깅 로그 (개발 환경에서만)
 #ifdef _DEBUG
 	LOG.info("=== NormalAttackSkill Debug ===");
-	LOG.info("Actor ID: {}, Position: ({}, {}, {})", actor->getAgentID(), actor_pos.x, actor_pos.y, actor_pos.z);
+	LOG.info("Actor ID: {}, Position: ({}, {}, {})", actor->GetAgentID(), actor_pos.x, actor_pos.y, actor_pos.z);
 	LOG.info("Target Position: ({}, {}, {})", target_pos.x, target_pos.y, target_pos.z);
 	LOG.info("Direction to target: ({}, {}, {}), Target angle: {:.2f} degrees", 
 		to_target.x, to_target.y, to_target.z, target_angle);
@@ -76,29 +76,29 @@ int NormalAttackSkill::cast_skill(Actor* actor, const syncnet::UseSkill* msg, fl
 	LOG.info("=== Targets in AoE Range ===");
 	for (auto target : actors_in_range) {
 		if (target && target != actor) {
-			Vector3 target_position(target->getVector2X(), 0, target->getVector2Y());
+			Vector3 target_position(target->GetVector2X(), 0, target->GetVector2Y());
 			float distance = (target_position - actor_pos).length();
 			float target_angle = calculateAngle(actor_pos, target_position);
 			
 			LOG.info("  - Target ID: {}, Position: ({}, {}), Distance: {:.2f}, Angle: {:.2f} degrees", 
-				target->getAgentID(), target->getVector2X(), target->getVector2Y(), distance, target_angle);
+				target->GetAgentID(), target->GetVector2X(), target->GetVector2Y(), distance, target_angle);
 		}
 	}
 #endif
 
 	// 공격자가 플레이어 캐릭터라면 킬 판정을 위해 플레이어 ID를 확보(아니면 -1)
-	long attacker_player_id = actor->player_id();
+	long attacker_player_id = actor->GetPlayerId();
 
 	// 데미지 적용
 	int hit_count = 0;
 	for (auto target : actors_in_range) {
 		if (target && target != actor) {
 			// 사망 시 킬러를 추적할 수 있도록 마지막 공격자를 기록
-			target->setLastAttackerPlayerId(attacker_player_id);
-			target->decrementHealth(damage);
+			target->SetLastAttackerPlayerId(attacker_player_id);
+			target->DecrementHealth(damage);
 			hit_count++;
 #ifdef _DEBUG
-			LOG.info("Applied {} damage to target ID: {}", damage, target->getAgentID());
+			LOG.info("Applied {} damage to target ID: {}", damage, target->GetAgentID());
 #endif
 		}
 	}

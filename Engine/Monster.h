@@ -32,8 +32,8 @@ public:
 
 	Monster(Map* map);
 	virtual ~Monster();
-	virtual void update(float dt);
-	virtual bool init(Vector3& pos) override;
+	virtual void Update(float dt);
+	virtual bool Init(Vector3& pos) override;
 
 
 	int AttackRange();

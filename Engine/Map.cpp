@@ -143,13 +143,13 @@ void Map::Init()
 
 			if (changed_position)
 			{
-				actor->set_position(agent->npos[0], agent->npos[1], agent->npos[2]);
+				actor->SetPosition(agent->npos[0], agent->npos[1], agent->npos[2]);
 				map->gridManager_->move(actor, agent->npos[0], agent->npos[2]);
 			}
 
-			map->agentInfoVector_.push_back(actor->get_actor_info(*map->builderPtr_, actor->get_changed_flag()));
+			map->agentInfoVector_.push_back(actor->GetActorInfo(*map->builderPtr_, actor->GetChangedFlag()));
 
-			actor->reset_changed();
+			actor->ResetChangedFlag();
 		});
 
 }
@@ -159,7 +159,7 @@ void Map::update(float deltaTime)
 
 	//LOG.info("World update begin");
 	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
-		(*itr)->update(deltaTime);
+		(*itr)->Update(deltaTime);
 
 	map_->update(deltaTime);
 
@@ -314,11 +314,11 @@ void Map::OnRemoveAgent(int agent_id)
 		return;
 	}
 
-	if (itr->second->get()->type() == syncnet::GameObjectType_Character)
+	if (itr->second->get()->GetType() == syncnet::GameObjectType_Character)
 	{
 		auto character = std::dynamic_pointer_cast<Character>(*itr->second);
 
-		auto itr_player = players_.find(character->player_id());
+		auto itr_player = players_.find(character->GetPlayerId());
 		if (itr_player != players_.end())
 		{
 			players_.erase(itr_player);
@@ -343,8 +343,8 @@ std::shared_ptr<Actor> Map::OnAddAgent(std::shared_ptr<Player> player, syncnet::
 	}
 
 	auto itr = actorList_.insert(actorList_.end(), actor);
-	actorMap_.insert(std::make_pair(actor->agent_id(), itr));
-	actor->set_changed(static_cast<long>(GameObjectChangeType::All));
+	actorMap_.insert(std::make_pair(actor->GetAgentId(), itr));
+	actor->SetChangedFlag(static_cast<long>(GameObjectChangeType::All));
 
 	return actor;
 }
@@ -368,22 +368,22 @@ void Map::OnSetRaycast(const syncnet::Vec3* pos)
 
 int Map::DetectEnemy(Actor* actor)
 {
-	const dtCrowdAgent* this_agent = this->GetNavMap()->crowd()->getAgent(actor->agent_id());
+	const dtCrowdAgent* this_agent = this->GetNavMap()->crowd()->getAgent(actor->GetAgentId());
 	float hitPoint[3];
 
 	auto targets = gridManager_->getEntitiesInViewRange(actor, g_fDistance);
 
 	for (auto itr = targets.begin(); itr != targets.end(); ++itr)
 	{
-		if (!(*itr)->isCharacter())
+		if (!(*itr)->IsCharacter())
 			continue;
 
-		const dtCrowdAgent* agent = this->GetNavMap()->crowd()->getAgent((*itr)->getAgentID());
+		const dtCrowdAgent* agent = this->GetNavMap()->crowd()->getAgent((*itr)->GetAgentID());
 
 
-		if (this->GetNavMap()->raycast(actor->agent_id(), agent->npos, hitPoint) == false)
+		if (this->GetNavMap()->raycast(actor->GetAgentId(), agent->npos, hitPoint) == false)
 		{
-			return (*itr)->getAgentID();
+			return (*itr)->GetAgentID();
 		}
 	}
 	return -1;
@@ -391,7 +391,7 @@ int Map::DetectEnemy(Actor* actor)
 
 std::vector<IGridActor*> Map::get_actors_in_range(Actor* actor, float range, float dirDeg, float angle)
 {
-	return gridManager_->getEntitiesInAoEMask(actor->get_vecter2_x(), actor->get_vecter2_y(), range, dirDeg, angle);
+	return gridManager_->getEntitiesInAoEMask(actor->GetVecter2X(), actor->GetVecter2Y(), range, dirDeg, angle);
 }
 
 void Map::join(std::shared_ptr<Player> player)
@@ -448,6 +448,6 @@ void Map::GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuff
 	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
 	{
 		auto actor = itr->get();
-		agent_info_vector.push_back(actor->get_actor_info(*msg, static_cast<long>(GameObjectChangeType::All)));
+		agent_info_vector.push_back(actor->GetActorInfo(*msg, static_cast<long>(GameObjectChangeType::All)));
 	}
 }

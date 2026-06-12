@@ -3,9 +3,9 @@
 #include "../Engine/GridManager.h"
 
 void useAoESkill(Actor* caster, GridManager& grid, float range, float dirDeg) {
-    auto targets = grid.getEntitiesInAoEMask(caster->get_vecter2_x(), caster->get_vecter2_y(), range, dirDeg);
+    auto targets = grid.getEntitiesInAoEMask(caster->GetVecter2X(), caster->GetVecter2Y(), range, dirDeg);
     for (IGridActor* t : targets) {
-        std::cout << "Skill hit Entity " << t->getAgentID() << "\n";
+        std::cout << "Skill hit Entity " << t->GetAgentID() << "\n";
     }
-    grid.broadcastToNearby(caster->get_vecter2_x(), caster->get_vecter2_y(), range, "Skill Effect Shown");
+    grid.broadcastToNearby(caster->GetVecter2X(), caster->GetVecter2Y(), range, "Skill Effect Shown");
 }

@@ -33,7 +33,7 @@ public:
         startCount++;
     }
 
-    void Update() override {
+    void Update(float dt) override {
         updateCount++;
     }
 };
@@ -113,10 +113,10 @@ TEST(ComponentPattern, GameObject_UpdateCallsComponentUpdate) {
     EXPECT_EQ(mock->startCount, 1); // AddComponent 시 Start 호출 확인
     EXPECT_EQ(mock->updateCount, 0);
     
-    obj.update(0.16f);
+    obj.Update(0.16f);
     EXPECT_EQ(mock->updateCount, 1);
     
-    obj.update(0.16f);
+    obj.Update(0.16f);
     EXPECT_EQ(mock->updateCount, 2);
 }
 

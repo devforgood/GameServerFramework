@@ -54,7 +54,7 @@ namespace
 
 	MonsterBTDebugContext& GetOrCreateContext(Monster* monster)
 	{
-		auto monster_id = static_cast<int64_t>(monster->agent_id());
+		auto monster_id = static_cast<int64_t>(monster->GetAgentId());
 		auto& context = g_contexts[monster_id];
 		context.monster_id = monster_id;
 		return context;
@@ -94,7 +94,7 @@ void BTDebugManager::BeginTick(Monster* monster)
 	std::lock_guard<std::mutex> lock(g_mutex);
 	auto& context = GetOrCreateContext(monster);
 	context.bt_tick++;
-	context.ai_state = monster->state();
+	context.ai_state = monster->GetState();
 	context.target_agent_id = monster->targetAgentId_;
 	context.executed_nodes_this_tick.clear();
 	context.changed_nodes.clear();
@@ -137,7 +137,7 @@ void BTDebugManager::Record(Monster* monster, uint16_t node_id, std::string_view
 	}
 
 	context.executed_nodes_this_tick.push_back(node_id);
-	context.ai_state = monster->state();
+	context.ai_state = monster->GetState();
 	context.target_agent_id = monster->targetAgentId_;
 
 	if (changed)
@@ -154,7 +154,7 @@ void BTDebugManager::EndTick(Monster* monster)
 
 	std::lock_guard<std::mutex> lock(g_mutex);
 	auto& context = GetOrCreateContext(monster);
-	context.ai_state = monster->state();
+	context.ai_state = monster->GetState();
 	context.target_agent_id = monster->targetAgentId_;
 
 	if (!context.dirty)
@@ -169,7 +169,7 @@ void BTDebugManager::PublishTreeDefinition(Monster* monster)
 		return;
 
 	std::lock_guard<std::mutex> lock(g_mutex);
-	g_definitions.push_back(BuildMonsterTreeDefinition(monster->agent_id()));
+	g_definitions.push_back(BuildMonsterTreeDefinition(monster->GetAgentId()));
 }
 
 BTDebugSyncSnapshot BTDebugManager::ConsumeSnapshot()

@@ -23,7 +23,7 @@ protected:
 	virtual ~Condition_DetectEnemy() {}
 	virtual BT::EStatus Update() override
 	{
-		monster_->targetAgentId_ = monster_->map()->DetectEnemy(monster_);
+		monster_->targetAgentId_ = monster_->GetMap()->DetectEnemy(monster_);
 		if (monster_->targetAgentId_ >= 0)
 		{
 			monster_->SetState(syncnet::AIState_Detect);
@@ -53,7 +53,7 @@ protected:
 	virtual ~Action_Chase() {}
 	virtual BT::EStatus Update() override
 	{
-		monster_->map()->GetNavMap()->setMoveTarget(monster_->map()->GetNavMap()->getPos(monster_->targetAgentId_), false, monster_->agent_id());
+		monster_->GetMap()->GetNavMap()->setMoveTarget(monster_->GetMap()->GetNavMap()->getPos(monster_->targetAgentId_), false, monster_->GetAgentId());
 
 		return BT::EStatus::Success;
 	}
@@ -73,7 +73,7 @@ protected:
 	virtual ~Action_Patrol() {}
 	virtual BT::EStatus Update() override
 	{
-		monster_->map()->GetNavMap()->patrol(monster_->agent_id(), monster_->spawnPos_, monster_->spawnRef_);
+		monster_->GetMap()->GetNavMap()->patrol(monster_->GetAgentId(), monster_->spawnPos_, monster_->spawnRef_);
 		return BT::EStatus::Success;
 	}
 };

@@ -41,93 +41,88 @@ protected:
 public:
 	Actor(Map* map) : map_(map), frontVector_(0, 0, 1)  // 초기 방향은 z축 양의 방향
 	{
-		init();
+		Init();
 	}
 
 	virtual ~Actor() 
 	{
-		clear();
+		Clear();
 	}
 
-	bool changed_flag(long flag) { return (get_changed_flag() & flag) != 0; }
-	bool changed_flag(long myself_flag, long flag) { return  (myself_flag & flag) != 0; }
-	virtual void reset_changed() { set_changed(static_cast<long>(GameObjectChangeType::None)); }
-	long get_changed_flag() { return changeFlag_; }
-	void add_changed_flag(long flag) { set_changed(get_changed_flag() | flag); }
+	bool IsChangedFlag(long flag) { return (GetChangedFlag() & flag) != 0; }
+	bool IsChangedFlag(long myself_flag, long flag) { return  (myself_flag & flag) != 0; }
+	virtual void ResetChangedFlag() { SetChangedFlag(static_cast<long>(GameObjectChangeType::None)); }
+	long GetChangedFlag() { return changeFlag_; }
+	void AddChangedFlag(long flag) { SetChangedFlag(GetChangedFlag() | flag); }
 
-	virtual bool pre_create(std::shared_ptr<Player> player) { return true; }
-	virtual bool post_create(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object) { return true; }
+	virtual bool PreCreate(std::shared_ptr<Player> player) { return true; }
+	virtual bool PostCreate(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object) { return true; }
 
-	Map* map() { return map_; }
-	syncnet::AIState state() { return state_; }
+	Map* GetMap() { return map_; }
+	syncnet::AIState GetState() { return state_; }
 
-	void init();
-	virtual bool init(Vector3& pos) { return false; }
-	void clear();
+	void Init();
+	virtual bool Init(Vector3& pos) { return false; }
+	void Clear();
 
-	virtual void update(float dt) override;
+	virtual void Update(float dt) override;
 
-	int agent_id() { return agentId_; }
+	int GetAgentId() { return agentId_; }
 
-	virtual void set_position(float x, float y, float z);
+	virtual void SetPosition(float x, float y, float z);
 
-	virtual bool isCharacter() const
+	virtual bool IsCharacter() const
 	{
 		return gameObjectType_ == syncnet::GameObjectType::GameObjectType_Character;
 	}
 
-	virtual void setGridX(int gridX)
+	virtual void SetGridX(int gridX)
 	{
 		this->gridX = gridX; 
 	}
-	virtual void setGridY(int gridY)
+	virtual void SetGridY(int gridY)
 	{
 		this->gridY = gridY; 
 	}
-	virtual int getGridX() const
+	virtual int GetGridX() const
 	{ 
 		return gridX; 
 	}
-	virtual int getGridY() const
+	virtual int GetGridY() const
 		{ 
 		return gridY; 
 	}
-	virtual float getVector2X() const
+	virtual float GetVector2X() const
 	{
-		return get_vecter2_x();
+		return GetVecter2X();
 	}
-	virtual float getVector2Y() const
+	virtual float GetVector2Y() const
 	{
-		return get_vecter2_y();
+		return GetVecter2Y();
 	}
-	virtual int getAgentID() const
+	virtual int GetAgentID() const
 	{ 
 		return agentId_; 
 	}
 
-	virtual void decrementHealth(int amount)
-	{
-		decrement_health(amount);
-	}
-
-	virtual void setLastAttackerPlayerId(long player_id) override
+	virtual void SetLastAttackerPlayerId(long player_id) override
 	{
 		lastAttackerPlayerId_ = player_id;
 	}
 
 	// 이 액터를 조종하는 플레이어 ID. 플레이어 캐릭터가 아니면 -1.
-	virtual long player_id() const { return -1; }
+	virtual long GetPlayerId() const { return -1; }
 
 	// 위치 얻기
-	const Vector3& get_position() const { return position_; }
+	const Vector3& GetPosition() const { return position_; }
 
 	// front vector 관련 메서드
-	const Vector3& get_front_vector() const { return frontVector_; }
-	void set_front_vector(const Vector3& front) { frontVector_ = front.normalized(); }
-	void set_front_vector(float x, float y, float z) { frontVector_ = Vector3(x, y, z).normalized(); }
+	const Vector3& GetFrontVector() const { return frontVector_; }
+	void SetFrontVector(const Vector3& front) { frontVector_ = front.normalized(); }
+	void SetFrontVector(float x, float y, float z) { frontVector_ = Vector3(x, y, z).normalized(); }
 
 	// front vector를 각도로 변환 (도 단위, 0도는 동쪽, 90도는 북쪽)
-	float get_front_angle_degrees() const
+	float GetFrontAngleDegrees() const
 	{
 		// front vector를 2D 평면에서 각도로 변환 (표준 수학 좌표계)
 		// 표준 수학 좌표계: atan2(y, x) 사용 (0도는 동쪽, 90도는 북쪽)
@@ -143,9 +138,9 @@ public:
 	}
 
 	// 목표 지점을 향해 front vector를 회전
-	void rotate_to_target(const Vector3& target_pos, float dt)
+	void RotateToTarget(const Vector3& target_pos, float dt)
 	{
-		Vector3 to_target = (target_pos - get_position()).normalized();
+		Vector3 to_target = (target_pos - GetPosition()).normalized();
 		to_target.y = 0; // y축 회전만 고려
 		to_target = to_target.normalized();
 
@@ -175,50 +170,50 @@ public:
 		}
 	}
 
-	virtual void increment_health(int amount) 
+	virtual void IncrementHealth(int amount) 
 	{
 		health_ += amount;
-		add_changed_flag(static_cast<long>(GameObjectChangeType::Health));
+		AddChangedFlag(static_cast<long>(GameObjectChangeType::Health));
 	}
 
-	virtual void decrement_health(int amount) 
+	virtual void DecrementHealth(int amount) 
 	{
 		health_ -= amount;
-		add_changed_flag(static_cast<long>(GameObjectChangeType::Health));
+		AddChangedFlag(static_cast<long>(GameObjectChangeType::Health));
 	}
 
-	virtual bool is_changed_position(float x, float y, float z) 
+	virtual bool IsChangedPosition(float x, float y, float z) 
 	{ 
 		return (this->position_.x != x || this->position_.y != y || this->position_.z != z);
 	}
 
-	virtual bool is_changed() 
+	virtual bool IsChanged() 
 	{ 
-		return get_changed_flag() != static_cast<long>(GameObjectChangeType::None)
+		return GetChangedFlag() != static_cast<long>(GameObjectChangeType::None)
 			&& !isInputLocked_; // if input is locked, we don't want to change the position
 	}
-	virtual int health() { return health_; }
+	virtual int GetHealth() { return health_; }
 
 	// 마지막으로 데미지를 입힌 플레이어(킬러) ID
-	long last_attacker_player_id() const { return lastAttackerPlayerId_; }
+	long GetLastAttackerPlayerId() const { return lastAttackerPlayerId_; }
 
-	virtual flatbuffers::Offset<syncnet::ActorInfo> get_actor_info(flatbuffers::FlatBufferBuilder& _fbb, long flag);
+	virtual flatbuffers::Offset<syncnet::ActorInfo> GetActorInfo(flatbuffers::FlatBufferBuilder& _fbb, long flag);
 
-	bool is_input_locked() const { return isInputLocked_; }
-	void set_input_locked(bool locked) 
+	bool IsInputLocked() const { return isInputLocked_; }
+	void SetInputLocked(bool locked) 
 	{ 
 		isInputLocked_ = locked; 
-		add_changed_flag(static_cast<long>(GameObjectChangeType::InputLocked));
+		AddChangedFlag(static_cast<long>(GameObjectChangeType::InputLocked));
 	}
 
-	float get_vecter2_x() const { return position_.get_vecter2_x(); }
-	float get_vecter2_y() const { return position_.get_vecter2_y(); }
+	float GetVecter2X() const { return position_.get_vecter2_x(); }
+	float GetVecter2Y() const { return position_.get_vecter2_y(); }
 
-	virtual syncnet::GameObjectType type() { return gameObjectType_; }
+	virtual syncnet::GameObjectType GetType() { return gameObjectType_; }
 
 	virtual void SetState(syncnet::AIState state);
 
-	virtual void set_changed(long flag);
+	virtual void SetChangedFlag(long flag);
 
 public:
 	int gridX = -1;

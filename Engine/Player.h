@@ -80,7 +80,7 @@ public:
 	
 	void OnLoadedData(const PlayerLoadData & data);
 
-	virtual void update(float dt) override;
+	virtual void Update(float dt) override;
 
 	std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> GetStrand();
 

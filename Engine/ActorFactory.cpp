@@ -29,19 +29,19 @@ std::shared_ptr<Actor> ActorFactory::CreateActor(Map* map, std::shared_ptr<Playe
 		return nullptr;
 	}
 
-	if (actor->pre_create(player) == false)
+	if (actor->PreCreate(player) == false)
 	{
 		LOG.error("OnAddAgent error in Actor::before_create()");
 		return nullptr;
 	}
 
-	if (actor->init(target_pos) == false)
+	if (actor->Init(target_pos) == false)
 	{
 		LOG.error("OnAddAgent error in Actor::init()");
 		return nullptr;
 	}
 
-	if (actor->post_create(player, actor) == false)
+	if (actor->PostCreate(player, actor) == false)
 	{
 		LOG.error("OnAddAgent error in Actor::after_create()");
 		return nullptr;

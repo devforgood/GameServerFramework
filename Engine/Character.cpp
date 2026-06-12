@@ -35,7 +35,7 @@ Character::~Character()
 	LOG.info("Character {} destroyed", playerId_);
 }
 
-bool Character::pre_create(std::shared_ptr<Player> player)
+bool Character::PreCreate(std::shared_ptr<Player> player)
 {
 	if (player == nullptr)
 	{
@@ -52,7 +52,7 @@ bool Character::pre_create(std::shared_ptr<Player> player)
 	return true;
 }
 
-bool Character::post_create(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object)
+bool Character::PostCreate(std::shared_ptr<Player> player, std::shared_ptr<GameObject> game_object)
 {
 	auto character = std::dynamic_pointer_cast<Character>(game_object);
 	if (player == nullptr || character == nullptr)
@@ -95,9 +95,9 @@ void Character::use_skill(const syncnet::UseSkill* msg)
 	}
 }
 
-void Character::update(float dt)
+void Character::Update(float dt)
 {
-	Actor::update(dt);
+	Actor::Update(dt);
 	for(auto itr = skills_.begin(); itr != skills_.end(); ++itr)
 	{
 		Skill* skill = itr->second;
@@ -105,7 +105,7 @@ void Character::update(float dt)
 	}
 }
 
-bool Character::init(Vector3& pos)
+bool Character::Init(Vector3& pos)
 {
 	// Initialize character-specific properties here
 	LOG.info("Character {} initialized", playerId_);
@@ -125,7 +125,7 @@ bool Character::init(Vector3& pos)
 		return false;
 	}
 
-	this->set_position(pos.x, pos.y, pos.z);
+	this->SetPosition(pos.x, pos.y, pos.z);
 	this->agentId_ = agent_id;
 	this->speed = speed;
 	auto& entityManager = map_->systemManager_->GetEntityManager();
