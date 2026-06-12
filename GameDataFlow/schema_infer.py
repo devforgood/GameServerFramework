@@ -149,9 +149,14 @@ def _cs_type(node):
 
 
 def _collect(node, out, seen):
-    """Post-order walk: emit nested structs before the structs that use them."""
+    """Post-order walk: emit nested structs before the structs that use them.
+
+    Fields are emitted sorted by name so the generated member order is stable
+    across runs (the inference merge uses sets, whose iteration order is not
+    deterministic between Python processes)."""
     if node['kind'] == 'object':
-        for child in node['fields'].values():
+        sorted_fields = sorted(node['fields'].items())
+        for key, child in sorted_fields:
             _collect(child, out, seen)
         if node['name'] not in seen:
             seen.add(node['name'])
@@ -162,7 +167,7 @@ def _collect(node, out, seen):
                      'cpp_type': _cpp_type(child),
                      'cpp_init': _cpp_init(child),
                      'cs_type': _cs_type(child)}
-                    for key, child in node['fields'].items()
+                    for key, child in sorted_fields
                 ],
             })
     elif node['kind'] == 'array':
