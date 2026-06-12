@@ -3,8 +3,10 @@
 #include <cstdio>
 #include <deque>
 #include <fstream>
+#include <future>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 #include <nlohmann/json.hpp>
 #include "gamedata.h"
 
@@ -75,10 +77,20 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
     std::unordered_map<long, const gamedata::{{ table.name }}*> tmp_{{ table.map_name }};
 {% endfor %}
 
+    // Each table reads its own file into its own storage, so the loads share no
+    // state and run concurrently — one task (thread) per table.
+    std::vector<std::future<bool>> tasks;
 {% for table in tables %}
-    if (!LoadJsonFile<gamedata::{{ table.name }}>(basePath + "{{ table.output_file }}", tmp_storage_{{ table.map_name }}, tmp_{{ table.map_name }}))
-        return false;
+    tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::{{ table.name }}>,
+        basePath + "{{ table.output_file }}", std::ref(tmp_storage_{{ table.map_name }}), std::ref(tmp_{{ table.map_name }})));
 {% endfor %}
+
+    // get() every future (so all threads join) before deciding success.
+    bool ok = true;
+    for (auto& task : tasks)
+        ok = task.get() && ok;
+    if (!ok)
+        return false;
 
     // All files parsed successfully — swap in atomically.
     // (std::deque move preserves element addresses, so the maps stay valid.)

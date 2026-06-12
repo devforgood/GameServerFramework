@@ -3,8 +3,10 @@
 #include <cstdio>
 #include <deque>
 #include <fstream>
+#include <future>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 #include <nlohmann/json.hpp>
 #include "gamedata.h"
 
@@ -99,22 +101,32 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
     std::unordered_map<long, const gamedata::Map*> tmp_maps;
 
 
+    // Each table reads its own file into its own storage, so the loads share no
+    // state and run concurrently — one task (thread) per table.
+    std::vector<std::future<bool>> tasks;
 
-    if (!LoadJsonFile<gamedata::Skill>(basePath + "skill.json", tmp_storage_skills, tmp_skills))
+    tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::Skill>,
+        basePath + "skill.json", std::ref(tmp_storage_skills), std::ref(tmp_skills)));
+
+    tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::Item>,
+        basePath + "item.json", std::ref(tmp_storage_items), std::ref(tmp_items)));
+
+    tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::Quest>,
+        basePath + "quest.json", std::ref(tmp_storage_quests), std::ref(tmp_quests)));
+
+    tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::GameMode>,
+        basePath + "GameMode.json", std::ref(tmp_storage_game_modes), std::ref(tmp_game_modes)));
+
+    tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::Map>,
+        basePath + "Map.json", std::ref(tmp_storage_maps), std::ref(tmp_maps)));
+
+
+    // get() every future (so all threads join) before deciding success.
+    bool ok = true;
+    for (auto& task : tasks)
+        ok = task.get() && ok;
+    if (!ok)
         return false;
-
-    if (!LoadJsonFile<gamedata::Item>(basePath + "item.json", tmp_storage_items, tmp_items))
-        return false;
-
-    if (!LoadJsonFile<gamedata::Quest>(basePath + "quest.json", tmp_storage_quests, tmp_quests))
-        return false;
-
-    if (!LoadJsonFile<gamedata::GameMode>(basePath + "GameMode.json", tmp_storage_game_modes, tmp_game_modes))
-        return false;
-
-    if (!LoadJsonFile<gamedata::Map>(basePath + "Map.json", tmp_storage_maps, tmp_maps))
-        return false;
-
 
     // All files parsed successfully — swap in atomically.
     // (std::deque move preserves element addresses, so the maps stay valid.)

@@ -43,7 +43,7 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
 
-        resource.Load(); // Load resources on startup
+        StartCoroutine(resource.LoadAsync()); // 시작 시 게임 데이터를 병렬로 로드
     }
 
     async Task Start()
