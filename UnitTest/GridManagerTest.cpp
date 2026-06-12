@@ -11,6 +11,7 @@ private:
     float x, y;
     int gridX, gridY;
     bool isCharacterType;
+    long lastAttackerPlayerId = 0;
 
 public:
     MockGridActor(int id, float posX, float posY, bool isChar = false) 
@@ -27,7 +28,8 @@ public:
     virtual float getVector2X() const override { return x; }
     virtual float getVector2Y() const override { return y; }
     virtual int getAgentID() const override { return agentId; }
-	virtual void decrementHealth(int amount) override {} 
+	virtual void decrementHealth(int amount) override {}
+    virtual void setLastAttackerPlayerId(long player_id) override { lastAttackerPlayerId = player_id; }
 
     // 위치 설정 메서드
     void setPosition(float newX, float newY) {

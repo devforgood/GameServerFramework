@@ -19,6 +19,14 @@ public:
         return queue_.try_dequeue(outItem);
     }
 
+    template<typename F>
+    void drain(F&& func) {
+        T item;
+        while (queue_.try_dequeue(item)) {
+            func(std::move(item));
+        }
+    }
+
     bool empty() {
         return queue_.size_approx() == 0;
     }
