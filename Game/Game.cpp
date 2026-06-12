@@ -20,6 +20,9 @@ int main(int argc, char* argv[])
 {
 	try
 	{
+		SetConsoleOutputCP(CP_UTF8);
+		SetConsoleCP(CP_UTF8);
+
 		InitLog();
 		LOG.info("Game Server start!!");
 
