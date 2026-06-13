@@ -5,8 +5,8 @@
 
 struct EventActorDead
 {
-	int killer_id;
-	int victim_id;
+	int killer_actor_id;
+	int victim_actor_id;
 };
 
 struct EventPlayerJoined

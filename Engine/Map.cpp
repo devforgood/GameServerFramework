@@ -443,6 +443,14 @@ std::shared_ptr<Player> Map::FindPlayer(long player_id)
 	return itr->second;
 }
 
+std::shared_ptr<Actor> Map::FindActor(int actor_id)
+{
+	auto itr = actorMap_.find(actor_id);
+	if (itr == actorMap_.end())
+		return nullptr;
+	return *itr->second;
+}
+
 void Map::GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector)
 {
 	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)

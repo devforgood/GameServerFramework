@@ -72,6 +72,7 @@ public:
 	void leave(std::shared_ptr<Player> player);
 
 	std::shared_ptr<Player> FindPlayer(long player_id);
+	std::shared_ptr<Actor> FindActor(int actor_id);
 
 	friend class Actor;
 	friend class ActorFactory;

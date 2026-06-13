@@ -15,6 +15,7 @@
 #include "PlayerDataSaver.h"
 #include "PlayerSaveData.h"
 #include "PlayerEventBroker.h"
+#include "PlayerEventBrokerProxy.h"
 
 // todo :  Player ID 디비에서 관리 개선 필요
 static long next_player_id = 1;
@@ -52,6 +53,12 @@ void Player::Possess(std::shared_ptr<Character> character)
 {
 	character_ = character;
 	character_->SetPlayerId(playerId_);
+
+	// Player가 소유한 PlayerEventBroker를 Character가 동일하게 사용할 수 있도록
+	// 프록시 컴포넌트를 부착해 원본 브로커를 가리키게 한다.
+	auto* broker = GetComponent<PlayerEventBroker>();
+	auto* proxy = character_->AddComponent<PlayerEventBrokerProxy>();
+	proxy->SetBroker(broker);
 }
 
 void Player::Send(std::shared_ptr<send_message>& msg)

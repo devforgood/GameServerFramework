@@ -13,7 +13,8 @@
 #include "Map.h"
 #include "BTDebugManager.h"
 #include "Player.h"
-#include "PlayerEventBroker.h"
+#include "Character.h"
+#include "PlayerEventBrokerProxy.h"
 #include "EventMessage.h"
 
 
@@ -133,19 +134,21 @@ void Monster::NotifyKilledBy()
 		return;
 	deadNotified_ = true;
 
-	long killer_id = GetLastAttackerPlayerId();
-	if (killer_id < 0)
-		return; // 플레이어에 의한 처치가 아니면 발행하지 않음
+	int killer_actor_id = GetLastAttackerActorId();
+	if (killer_actor_id < 0)
+		return; // 공격자 정보가 없으면 발행하지 않음
 
-	auto killer = map_->FindPlayer(killer_id);
-	if (killer == nullptr)
-		return; // 킬러가 이미 떠났음
+	// Actor 레이어는 플레이어를 모른다. 여기(게임 로직 레이어)에서 액터 → 캐릭터 → 플레이어로 변환한다.
+	auto attacker = map_->FindActor(killer_actor_id);
+	if (attacker == nullptr)
+		return; // 공격자가 이미 떠났음
 
-	auto eventBroker = killer->GetComponent<PlayerEventBroker>();
+	// Possess 시점에 부착된 프록시를 통해 Player의 PlayerEventBroker로 발행한다.
+	auto eventBroker = attacker->GetComponent<PlayerEventBrokerProxy>();
 	if (eventBroker == nullptr)
 		return;
 
-	eventBroker->publish(EventActorDead{ static_cast<int>(killer_id), actorId_ });
+	eventBroker->publish(EventActorDead{ killer_actor_id, actorId_ });
 }
 
 

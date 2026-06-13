@@ -417,5 +417,8 @@
     <ClInclude Include="PlayerEventBroker.h">
       <Filter>Player</Filter>
     </ClInclude>
+    <ClInclude Include="PlayerEventBrokerProxy.h">
+      <Filter>Player</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
