@@ -55,10 +55,9 @@ void Player::Possess(std::shared_ptr<Character> character)
 	character_->SetPlayerId(playerId_);
 
 	// Player가 소유한 PlayerEventBroker를 Character가 동일하게 사용할 수 있도록
-	// 프록시 컴포넌트를 부착해 원본 브로커를 가리키게 한다.
-	auto* broker = GetComponent<PlayerEventBroker>();
+	// 프록시 컴포넌트를 부착하고, 브로커의 소유자(Player)를 약하게 참조하게 한다.
 	auto* proxy = character_->AddComponent<PlayerEventBrokerProxy>();
-	proxy->SetBroker(broker);
+	proxy->SetBrokerOwner(weak_from_this());
 }
 
 void Player::Send(std::shared_ptr<send_message>& msg)
