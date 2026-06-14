@@ -13,6 +13,8 @@
 #include "ActorFactory.h"
 #include "Common.h"
 #include "Map.h"
+#include "GameMode.h"
+#include "GameModeFactory.h"
 
 
 
@@ -41,6 +43,9 @@ void World::Init()
 	Monster::Initialize("mob.lua");
 	Monster::registerLuaFunctionAll();
 
+	// 게임 모드용 공유 lua 상태 생성 + 호스트 함수(GM_*) 등록.
+	GameMode::InitializeLua();
+
 	randomUtil_ = new RandomUtil();
 	timeStamp_ = new TimeStamp();
 
@@ -48,6 +53,16 @@ void World::Init()
 	std::shared_ptr<Map> map = std::make_shared<Map>(this);
 	map->Init();
 	mapList_.push_back(map);
+
+	// 기본 게임 모드 부트스트랩(현재는 Field, id=1).
+	// 추후 매치메이킹/세션이 모드 id 를 결정하도록 확장한다.
+	gameMode_.reset(GameModeFactory::Create(1));
+	if (gameMode_)
+	{
+		gameMode_->SetMap(map.get());
+		gameMode_->LoadScript();
+		gameMode_->Start();
+	}
 }
 
 void World::update(float deltaTime)
@@ -57,6 +72,9 @@ void World::update(float deltaTime)
 	//LOG.info("World update begin");
 	for (std::list<std::shared_ptr<Map>>::iterator itr = mapList_.begin();itr!= mapList_.end();++itr)
 		(*itr)->update(deltaTime);
+
+	if (gameMode_)
+		gameMode_->Update(deltaTime);
 }
 
 void World::join(std::shared_ptr<Player> player)

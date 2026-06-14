@@ -1,1 +1,366 @@
 #include "GameMode.h"
+
+#include <iostream>
+#include <lua.hpp>
+
+#include "Common.h" // gamedata::GameMode 전체 정의
+
+lua_State* GameMode::L_ = nullptr;
+std::string GameMode::scriptBasePath_ = "GameData/";
+
+//---------------------------------------------------------------------------------------
+// 라이프사이클
+//---------------------------------------------------------------------------------------
+
+GameMode::~GameMode()
+{
+	if (L_ != nullptr && scriptRef_ != LUA_NOREF)
+	{
+		luaL_unref(L_, LUA_REGISTRYINDEX, scriptRef_);
+		scriptRef_ = LUA_NOREF;
+	}
+}
+
+bool GameMode::LoadScript()
+{
+	if (L_ == nullptr)
+	{
+		std::cerr << "[GameMode] LoadScript called before InitializeLua" << std::endl;
+		return false;
+	}
+	if (gamedata == nullptr || gamedata->script.empty())
+	{
+		// 스크립트가 없는 모드는 진행 로직 없이 동작한다.
+		return false;
+	}
+
+	const std::string path = scriptBasePath_ + gamedata->script;
+
+	if (luaL_loadfile(L_, path.c_str()) != LUA_OK)
+	{
+		std::cerr << "[GameMode] load '" << path << "' failed: " << lua_tostring(L_, -1) << std::endl;
+		lua_pop(L_, 1);
+		return false;
+	}
+	if (lua_pcall(L_, 0, 1, 0) != LUA_OK) // 모듈 테이블을 반환받는다.
+	{
+		std::cerr << "[GameMode] exec '" << path << "' failed: " << lua_tostring(L_, -1) << std::endl;
+		lua_pop(L_, 1);
+		return false;
+	}
+	if (!lua_istable(L_, -1))
+	{
+		std::cerr << "[GameMode] script '" << path << "' did not return a table" << std::endl;
+		lua_pop(L_, 1);
+		return false;
+	}
+
+	if (scriptRef_ != LUA_NOREF)
+		luaL_unref(L_, LUA_REGISTRYINDEX, scriptRef_);
+	scriptRef_ = luaL_ref(L_, LUA_REGISTRYINDEX); // 테이블을 pop 하며 ref 보관
+	return true;
+}
+
+bool GameMode::PushHandler(const char* fn)
+{
+	if (L_ == nullptr || scriptRef_ == LUA_NOREF)
+		return false;
+
+	lua_rawgeti(L_, LUA_REGISTRYINDEX, scriptRef_); // [module]
+	if (!lua_istable(L_, -1))
+	{
+		lua_pop(L_, 1);
+		return false;
+	}
+	lua_getfield(L_, -1, fn); // [module, fn]
+	if (!lua_isfunction(L_, -1))
+	{
+		lua_pop(L_, 2);
+		return false;
+	}
+	return true; // 스택: [module, fn]
+}
+
+void GameMode::Start()
+{
+	if (started_)
+		return;
+	started_ = true;
+
+	if (!PushHandler("on_start"))
+		return;
+
+	lua_pushlightuserdata(L_, this); // mode
+	if (lua_pcall(L_, 1, 0, 0) != LUA_OK)
+	{
+		std::cerr << "[GameMode] on_start error: " << lua_tostring(L_, -1) << std::endl;
+		lua_pop(L_, 1); // error
+	}
+	lua_pop(L_, 1); // module
+}
+
+void GameMode::Update(float dt)
+{
+	if (ended_ || !started_)
+		return;
+
+	// 제한 시간 카운트다운(타이머가 켜진 모드만).
+	if (remainingTime_ > 0.0f)
+	{
+		remainingTime_ -= dt;
+		if (remainingTime_ < 0.0f)
+			remainingTime_ = 0.0f;
+	}
+
+	if (PushHandler("on_update"))
+	{
+		lua_pushlightuserdata(L_, this); // mode
+		lua_pushnumber(L_, dt);
+		if (lua_pcall(L_, 2, 0, 0) != LUA_OK)
+		{
+			std::cerr << "[GameMode] on_update error: " << lua_tostring(L_, -1) << std::endl;
+			lua_pop(L_, 1); // error
+		}
+		lua_pop(L_, 1); // module
+	}
+
+	if (CheckEnd())
+		End();
+}
+
+bool GameMode::CheckEnd()
+{
+	if (!PushHandler("check_end"))
+		return endRequested_; // check_end 가 없으면 RequestEnd 여부로 판단
+
+	lua_pushlightuserdata(L_, this); // mode
+	bool result = false;
+	if (lua_pcall(L_, 1, 1, 0) != LUA_OK)
+	{
+		std::cerr << "[GameMode] check_end error: " << lua_tostring(L_, -1) << std::endl;
+		lua_pop(L_, 1); // error
+	}
+	else
+	{
+		result = lua_toboolean(L_, -1) != 0;
+		lua_pop(L_, 1); // 반환값
+	}
+	lua_pop(L_, 1); // module
+	return result;
+}
+
+void GameMode::OnPlayerJoin(void* player)
+{
+	if (!PushHandler("on_player_join"))
+		return;
+
+	lua_pushlightuserdata(L_, this); // mode
+	if (player) lua_pushlightuserdata(L_, player); else lua_pushnil(L_);
+	if (lua_pcall(L_, 2, 0, 0) != LUA_OK)
+	{
+		std::cerr << "[GameMode] on_player_join error: " << lua_tostring(L_, -1) << std::endl;
+		lua_pop(L_, 1); // error
+	}
+	lua_pop(L_, 1); // module
+}
+
+void GameMode::OnPlayerDead(void* player)
+{
+	if (!PushHandler("on_player_dead"))
+		return;
+
+	lua_pushlightuserdata(L_, this); // mode
+	if (player) lua_pushlightuserdata(L_, player); else lua_pushnil(L_);
+	if (lua_pcall(L_, 2, 0, 0) != LUA_OK)
+	{
+		std::cerr << "[GameMode] on_player_dead error: " << lua_tostring(L_, -1) << std::endl;
+		lua_pop(L_, 1); // error
+	}
+	lua_pop(L_, 1); // module
+}
+
+void GameMode::End()
+{
+	if (ended_)
+		return;
+	ended_ = true;
+
+	if (!PushHandler("on_end"))
+		return;
+
+	lua_pushlightuserdata(L_, this); // mode
+	if (lua_pcall(L_, 1, 0, 0) != LUA_OK)
+	{
+		std::cerr << "[GameMode] on_end error: " << lua_tostring(L_, -1) << std::endl;
+		lua_pop(L_, 1); // error
+	}
+	lua_pop(L_, 1); // module
+}
+
+//---------------------------------------------------------------------------------------
+// 공유 lua 상태
+//---------------------------------------------------------------------------------------
+
+void GameMode::InitializeLua(const std::string& script_base_path)
+{
+	scriptBasePath_ = script_base_path;
+	if (L_ == nullptr)
+	{
+		L_ = luaL_newstate();
+		luaL_openlibs(L_);
+		RegisterHostFunctions();
+	}
+}
+
+void GameMode::CloseLua()
+{
+	if (L_ != nullptr)
+	{
+		lua_close(L_);
+		L_ = nullptr;
+	}
+}
+
+//---------------------------------------------------------------------------------------
+// 호스트 함수(GM_*): lua 스크립트가 진행 상태를 조회/조작하기 위해 호출한다.
+// 모든 함수는 첫 번째 인자로 mode(GameMode* lightuserdata)를 받는다.
+//---------------------------------------------------------------------------------------
+
+namespace
+{
+	GameMode* ArgMode(lua_State* L)
+	{
+		return static_cast<GameMode*>(lua_touserdata(L, 1));
+	}
+
+	// --- gamedata 조회 ---
+	int GM_GetTimeLimit(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		lua_pushinteger(L, (m && m->gamedata) ? m->gamedata->rules.time_limit : 0);
+		return 1;
+	}
+	int GM_GetRespawnTime(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		lua_pushinteger(L, (m && m->gamedata) ? m->gamedata->rules.respawn_time : 0);
+		return 1;
+	}
+	int GM_GetBossId(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		lua_pushinteger(L, (m && m->gamedata) ? m->gamedata->boss_info.boss_id : 0);
+		return 1;
+	}
+
+	// --- 타이머 ---
+	int GM_StartTimer(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		if (m) m->set_remaining_time(static_cast<float>(lua_tonumber(L, 2)));
+		return 0;
+	}
+	int GM_GetRemainingTime(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		lua_pushnumber(L, m ? m->remaining_time() : 0.0);
+		return 1;
+	}
+
+	// --- 종료/결과 ---
+	int GM_SetResult(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		const char* r = lua_tostring(L, 2);
+		if (m && r) m->set_result(r);
+		return 0;
+	}
+	int GM_GetResult(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		lua_pushstring(L, m ? m->result().c_str() : "");
+		return 1;
+	}
+	int GM_RequestEnd(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		if (m) m->request_end();
+		return 0;
+	}
+	int GM_IsEndRequested(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		lua_pushboolean(L, (m && m->end_requested()) ? 1 : 0);
+		return 1;
+	}
+
+	// --- 보스/플레이어 (TODO: Map/World 연동) ---
+	int GM_SpawnBoss(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		const int bossId = static_cast<int>(lua_tointeger(L, 2));
+		// TODO: Map 에 보스 몬스터를 스폰한다. 현재는 로그만 출력.
+		std::cout << "[GameMode] SpawnBoss id=" << bossId << std::endl;
+		(void)m;
+		return 0;
+	}
+	int GM_IsBossDead(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		lua_pushboolean(L, (m && m->boss_dead()) ? 1 : 0);
+		return 1;
+	}
+	int GM_GetAlivePlayerCount(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		lua_pushinteger(L, m ? m->alive_player_count() : 0);
+		return 1;
+	}
+	int GM_SchedulePlayerRespawn(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		const double secs = lua_tonumber(L, 3);
+		// TODO: respawn 을 스케줄링한다. 현재는 로그만 출력.
+		std::cout << "[GameMode] SchedulePlayerRespawn in " << secs << "s" << std::endl;
+		(void)m;
+		return 0;
+	}
+	int GM_GrantRewards(lua_State* L)
+	{
+		GameMode* m = ArgMode(L);
+		// TODO: rewards 배수에 따라 보상을 지급한다. 현재는 로그만 출력.
+		std::cout << "[GameMode] GrantRewards" << std::endl;
+		(void)m;
+		return 0;
+	}
+} // namespace
+
+void GameMode::RegisterHostFunctions()
+{
+	if (L_ == nullptr)
+		return;
+
+	const struct
+	{
+		const char* name;
+		lua_CFunction fn;
+	} funcs[] = {
+		{ "GM_GetTimeLimit",          GM_GetTimeLimit },
+		{ "GM_GetRespawnTime",        GM_GetRespawnTime },
+		{ "GM_GetBossId",             GM_GetBossId },
+		{ "GM_StartTimer",            GM_StartTimer },
+		{ "GM_GetRemainingTime",      GM_GetRemainingTime },
+		{ "GM_SetResult",             GM_SetResult },
+		{ "GM_GetResult",             GM_GetResult },
+		{ "GM_RequestEnd",            GM_RequestEnd },
+		{ "GM_IsEndRequested",        GM_IsEndRequested },
+		{ "GM_SpawnBoss",             GM_SpawnBoss },
+		{ "GM_IsBossDead",            GM_IsBossDead },
+		{ "GM_GetAlivePlayerCount",   GM_GetAlivePlayerCount },
+		{ "GM_SchedulePlayerRespawn", GM_SchedulePlayerRespawn },
+		{ "GM_GrantRewards",          GM_GrantRewards },
+	};
+
+	for (const auto& f : funcs)
+		lua_register(L_, f.name, f.fn);
+}

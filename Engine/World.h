@@ -19,6 +19,7 @@ class send_message;
 class RandomUtil;
 class IGridActor;
 class Map;
+class GameMode;
 namespace engine {
 	class SystemManager;
 }
@@ -32,6 +33,8 @@ private:
 
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
 	std::list<std::shared_ptr<Map>> mapList_;
+
+	std::unique_ptr<GameMode> gameMode_;
 
 
 public:
