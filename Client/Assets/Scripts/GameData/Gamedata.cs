@@ -298,6 +298,15 @@ namespace Gamedata
     }
 
 
+    [Serializable]
+    public class Level
+    {
+        public int id;
+        public int level;
+        public int required_exp;
+    }
+
+
 
     // Wrapper so UnityEngine.JsonUtility can parse the top-level JSON array.
     [Serializable]
@@ -336,6 +345,14 @@ namespace Gamedata
     public class MapList
     {
         public List<Map> items;
+    }
+
+
+    // Wrapper so UnityEngine.JsonUtility can parse the top-level JSON array.
+    [Serializable]
+    public class LevelList
+    {
+        public List<Level> items;
     }
 
 

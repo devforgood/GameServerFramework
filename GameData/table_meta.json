@@ -37,9 +37,17 @@
       "output_file": "Map.json",
       "description": "Map definitions including gates, spawn points, and objects",
       "enabled": true
+    },
+    {
+      "name": "Level",
+      "json_path": "level.json",
+      "repeated_field": "levels",
+      "output_file": "level.json",
+      "description": "Character level table mapping cumulative required experience to each level",
+      "enabled": true
     }
   ],
   "version": "1.0.0",
-  "last_updated": "2026-06-12",
+  "last_updated": "2026-06-14",
   "description": "Meta information for GameData JSON tables"
 }

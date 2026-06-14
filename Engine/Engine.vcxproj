@@ -167,6 +167,8 @@
     <ClCompile Include="GameMode.cpp" />
     <ClCompile Include="GameModeFactory.cpp" />
     <ClCompile Include="JumpSkill.cpp" />
+    <ClCompile Include="Level.cpp" />
+    <ClCompile Include="LevelFactory.cpp" />
     <ClCompile Include="LimitedTimeQuest.cpp" />
     <ClCompile Include="LuaObject.cpp" />
     <ClCompile Include="MainQuest.cpp" />
@@ -245,6 +247,8 @@
     <ClInclude Include="Item.h" />
     <ClInclude Include="ItemFactory.h" />
     <ClInclude Include="JumpSkill.h" />
+    <ClInclude Include="Level.h" />
+    <ClInclude Include="LevelFactory.h" />
     <ClInclude Include="LimitedTimeQuest.h" />
     <ClInclude Include="LogHelper.h" />
     <ClInclude Include="LuaObject.h" />

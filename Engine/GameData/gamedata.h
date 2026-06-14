@@ -274,6 +274,14 @@ namespace gamedata
     };
 
 
+    struct Level
+    {
+        int id = 0;
+        int level = 0;
+        int required_exp = 0;
+    };
+
+
 
     inline void from_json(const nlohmann::json& j, Skill& o)
     {
@@ -539,6 +547,14 @@ namespace gamedata
         if (j.contains("objects") && !j.at("objects").is_null()) j.at("objects").get_to(o.objects);
         if (j.contains("size") && !j.at("size").is_null()) j.at("size").get_to(o.size);
         if (j.contains("spawn_points") && !j.at("spawn_points").is_null()) j.at("spawn_points").get_to(o.spawn_points);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, Level& o)
+    {
+        if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
+        if (j.contains("level") && !j.at("level").is_null()) j.at("level").get_to(o.level);
+        if (j.contains("required_exp") && !j.at("required_exp").is_null()) j.at("required_exp").get_to(o.required_exp);
     }
 
 

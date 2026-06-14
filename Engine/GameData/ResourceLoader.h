@@ -25,6 +25,9 @@ private:
     std::deque<gamedata::Map> storage_maps;
     std::unordered_map<long, const gamedata::Map*> maps;
 
+    std::deque<gamedata::Level> storage_levels;
+    std::unordered_map<long, const gamedata::Level*> levels;
+
 public:
     static ResourceLoader& Instance() {
         static ResourceLoader instance;
@@ -46,6 +49,9 @@ public:
 
     const std::unordered_map<long, const gamedata::Map*>& GetMaps() const { return maps; }
     const gamedata::Map* GetMap(long id) const { auto itr = maps.find(id); return itr != maps.end() ? itr->second : nullptr; }
+
+    const std::unordered_map<long, const gamedata::Level*>& GetLevels() const { return levels; }
+    const gamedata::Level* GetLevel(long id) const { auto itr = levels.find(id); return itr != levels.end() ? itr->second : nullptr; }
 
 private:
     ResourceLoader() = default;

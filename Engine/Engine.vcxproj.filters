@@ -47,6 +47,9 @@
     <Filter Include="Player">
       <UniqueIdentifier>{20a3f127-da87-4d53-a9a2-38a2076b6a42}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Level">
+      <UniqueIdentifier>{3f7b1e2a-9c4d-4e6f-8a1b-2c5d7e9f0a13}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Quest">
       <UniqueIdentifier>{523c06b1-c4fa-4fba-8a53-d671dae0bc79}</UniqueIdentifier>
     </Filter>
@@ -165,6 +168,12 @@
     </ClCompile>
     <ClCompile Include="PlayerSkill.cpp">
       <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Level.cpp">
+      <Filter>Level</Filter>
+    </ClCompile>
+    <ClCompile Include="LevelFactory.cpp">
+      <Filter>Level</Filter>
     </ClCompile>
     <ClCompile Include="Quest.cpp">
       <Filter>Quest</Filter>
@@ -366,6 +375,12 @@
     </ClInclude>
     <ClInclude Include="Quest.h">
       <Filter>Quest</Filter>
+    </ClInclude>
+    <ClInclude Include="Level.h">
+      <Filter>Level</Filter>
+    </ClInclude>
+    <ClInclude Include="LevelFactory.h">
+      <Filter>Level</Filter>
     </ClInclude>
     <ClInclude Include="QuestFactory.h">
       <Filter>Quest</Filter>
