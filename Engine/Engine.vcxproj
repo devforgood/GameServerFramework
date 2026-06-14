@@ -187,6 +187,7 @@
     <ClCompile Include="PlayerQuest.cpp" />
     <ClCompile Include="PlayerSaveData.h" />
     <ClCompile Include="PlayerSkill.cpp" />
+    <ClCompile Include="PlayerLevel.cpp" />
     <ClCompile Include="Quest.cpp" />
     <ClCompile Include="QuestFactory.cpp" />
     <ClCompile Include="RepeatedQuest.cpp" />
@@ -271,6 +272,7 @@
     <ClInclude Include="PlayerLoadData.h" />
     <ClInclude Include="PlayerQuest.h" />
     <ClInclude Include="PlayerSkill.h" />
+    <ClInclude Include="PlayerLevel.h" />
     <ClInclude Include="Quest.h" />
     <ClInclude Include="QuestFactory.h" />
     <ClInclude Include="RepeatedQuest.h" />

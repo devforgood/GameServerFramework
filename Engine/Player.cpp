@@ -12,6 +12,7 @@
 #include "PlayerQuest.h"
 #include "PlayerItem.h"
 #include "PlayerSkill.h"
+#include "PlayerLevel.h"
 #include "PlayerDataSaver.h"
 #include "PlayerSaveData.h"
 #include "PlayerEventBroker.h"
@@ -31,6 +32,7 @@ Player::Player()
 	this->AddComponent<PlayerQuest>();
 	this->AddComponent<PlayerItem>();
 	this->AddComponent<PlayerSkill>();
+	this->AddComponent<PlayerLevel>();
 }
 
 Player::~Player() 
