@@ -1,6 +1,6 @@
-# Engine - 고성능 게임 서버 공간 분할 시스템
+# Engine - 고성능 게임 서버 엔진
 
-GridManager를 포함한 고성능 게임 서버 엔진 라이브러리입니다. SIMD 최적화, 삼각함수 Look-up 테이블, 그리고 적응형 그리드 구조를 통해 수천 개의 엔티티를 실시간으로 처리할 수 있습니다.
+모듈식 고성능 게임 서버 엔진입니다. SIMD로 최적화된 `GridManager` 공간 분할 코어를 중심으로, ECS, 이벤트 브로커, 액터/AI 시스템, 그리고 SQL 영속화를 기반으로 한 플레이어 성장(아이템 · 스킬 · 퀘스트 · 레벨) 시스템을 제공합니다. 코드는 도메인별 모듈 폴더로 정리되어 있으며, Visual Studio 프로젝트 필터 구조와 일치합니다.
 
 ## 🌍 언어 선택
 
@@ -23,6 +23,13 @@ GridManager를 포함한 고성능 게임 서버 엔진 라이브러리입니다
 - **SIMD 벡터화**: AVX2 명령어를 사용한 8개 거리 동시 계산
 - **삼각함수 Look-up 테이블**: 미리 계산된 삼각함수 값으로 빠른 각도 계산
 - **배치 처리**: 대량의 엔티티를 배치 단위로 처리하여 캐시 효율성 향상
+
+### 게임 시스템
+- **ECS**: 캐시 최적화 시스템과 시스템 매니저를 갖춘 Entity-Component-System
+- **이벤트 기반 아키텍처**: 스레드 안전 및 락프리(Boost/Moodycamel) 큐를 지원하는 이벤트 브로커/버스
+- **액터 & AI**: 비헤이비어 트리로 구동되는 Actor/Character/Monster 엔티티 (BT 디버깅 및 Lua 스크립팅 포함)
+- **플레이어 성장**: 데이터 로드/세이브를 갖춘 아이템 · 스킬 · 퀘스트 · **레벨** 시스템
+- **영속화**: 생성된 DAO/VO와 변경 추적을 지원하는 SQL 클라이언트
 
 ## 🏗️ 아키텍처
 
@@ -170,17 +177,34 @@ gridManager.broadcastToNearby(100.0f, 100.0f, 50.0f, "Hello World!");
 
 ## 📁 프로젝트 구조
 
+소스는 도메인별 폴더로 정리되어 있으며 Visual Studio 프로젝트 필터 구조와 일치합니다. 파일은 평면 `#include "Name.h"` 방식을 사용하며, 모든 모듈 폴더(및 프로젝트 루트)가 `AdditionalIncludeDirectories`에 등록되어 있어 물리적 폴더 위치와 무관하게 헤더가 해석됩니다.
+
 ```
 Engine/
-├── Engine.vcxproj          # Visual Studio 프로젝트 파일
-├── Engine.vcxproj.filters  # 프로젝트 필터
-├── GridManager.cpp         # 그리드 매니저 구현
-├── GridManager.h           # 그리드 매니저 헤더
-├── IGridActor.h            # 그리드 액터 인터페이스
-├── TrigLookupTable.h       # 삼각함수 룩업 테이블
-├── TrigLookupTable.cpp     # 삼각함수 룩업 테이블 구현
-└── x64/                    # 빌드 출력
-    └── Debug/
+├── Engine.vcxproj / .filters   # Visual Studio 프로젝트 & 필터
+├── Grid/                       # 공간 분할 (GridManager, IGridActor)
+├── ECS/                        # Entity-Component-System (ECS, Components, Systems, SystemManager)
+├── GameObject/                 # GameObject 베이스, Component, ComponentTypeId
+├── Actor/                      # Actor / Character / Monster (+ ActorFactory)
+├── AI/                         # 비헤이비어 트리 AI (BehaviorTreeCPP, MonsterBT, BTDebug, LuaObject)
+├── Controller/                 # PlayerController
+├── Player/                     # Player + 데이터 로드/세이브, 아이템, 스킬, 퀘스트, 레벨, 이벤트 브로커
+├── Level/                      # 레벨 시스템 (Level, LevelFactory)
+├── Quest/                      # 퀘스트 시스템 (Main / Repeated / LimitedTime + QuestFactory)
+├── skill/                      # 스킬 시스템 (Skill, Jump/NormalAttack, SkillManager + SkillFactory)
+├── MonsterData/                # 몬스터 데이터 테이블 (+ MonsterDataFactory)
+├── GameMode/                   # GameMode (+ GameModeFactory)
+├── World/                      # World, Map, NavMap
+├── Movement/                   # Vector3, Walker
+├── EventBroker/                # 이벤트 버스/큐 (스레드 안전 & 락프리: Boost/Moodycamel)
+├── EventMessage/               # 이벤트 메시지 정의
+├── Message/                    # 게임 메시지 (GameMessage, SendMessage)
+├── SQL/                        # DB 영속화 (SqlClient, DbRecord, generated/ DAO & VO)
+├── GameData/                   # 게임 데이터 리소스 로딩 (ResourceLoader, gamedata)
+├── Random/ · RingBuffer/ · Time/   # 유틸리티 (RandomUtil, RingBuffer, TimeStamp)
+├── flatbuffers/                # 생성된 FlatBuffers 스키마 (syncnet_generated)
+├── (루트)                      # Common, Server, Item/ItemFactory, MapFactory, 헬퍼
+└── x64/Debug/                  # 빌드 출력
 ```
 
 ## 🔗 관련 프로젝트

@@ -1,6 +1,6 @@
-# Engine - High-Performance Game Server Spatial Partitioning System
+# Engine - High-Performance Game Server Engine
 
-High-performance game server engine library including GridManager. Can process thousands of entities in real-time through SIMD optimization, trigonometric look-up tables, and adaptive grid structures.
+A modular, high-performance game server engine. Built around a SIMD-optimized `GridManager` spatial-partitioning core, it also provides an ECS, an event broker, actor/AI systems, and player progression (item · skill · quest · level) backed by SQL persistence. Code is organized by domain into per-module folders that mirror the Visual Studio project filters.
 
 ## 🌍 Language Selection
 
@@ -23,6 +23,13 @@ High-performance game server engine library including GridManager. Can process t
 - **SIMD Vectorization**: Simultaneous calculation of 8 distances using AVX2 instructions
 - **Trigonometric Look-up Tables**: Fast angle calculation using pre-computed trigonometric values
 - **Batch Processing**: Process large numbers of entities in batches for improved cache efficiency
+
+### Game Systems
+- **ECS**: Entity-Component-System with cache-optimized systems and a system manager
+- **Event-Driven Architecture**: Event broker/bus with thread-safe and lock-free (Boost/Moodycamel) queues
+- **Actor & AI**: Actor/Character/Monster entities driven by Behavior Trees (with BT debugging and Lua scripting)
+- **Player Progression**: Item, skill, quest, and **level** systems with data load/save
+- **Persistence**: SQL client with generated DAO/VO and change tracking
 
 ## 🏗️ Architecture
 
@@ -170,17 +177,34 @@ gridManager.broadcastToNearby(100.0f, 100.0f, 50.0f, "Hello World!");
 
 ## 📁 Project Structure
 
+Sources are grouped by domain into folders that mirror the Visual Studio project filters. Files use flat `#include "Name.h"` includes; every module folder (plus the project root) is registered in `AdditionalIncludeDirectories`, so headers resolve regardless of their physical folder.
+
 ```
 Engine/
-├── Engine.vcxproj          # Visual Studio project file
-├── Engine.vcxproj.filters  # Project filters
-├── GridManager.cpp         # Grid manager implementation
-├── GridManager.h           # Grid manager header
-├── IGridActor.h            # Grid actor interface
-├── TrigLookupTable.h       # Trigonometric look-up table
-├── TrigLookupTable.cpp     # Trigonometric look-up table implementation
-└── x64/                    # Build output
-    └── Debug/
+├── Engine.vcxproj / .filters   # Visual Studio project & filters
+├── Grid/                       # Spatial partitioning (GridManager, IGridActor)
+├── ECS/                        # Entity-Component-System (ECS, Components, Systems, SystemManager)
+├── GameObject/                 # GameObject base, Component, ComponentTypeId
+├── Actor/                      # Actor / Character / Monster (+ ActorFactory)
+├── AI/                         # Behavior Tree AI (BehaviorTreeCPP, MonsterBT, BTDebug, LuaObject)
+├── Controller/                 # PlayerController
+├── Player/                     # Player + data load/save, item, skill, quest, level, event broker
+├── Level/                      # Leveling system (Level, LevelFactory)
+├── Quest/                      # Quest system (Main / Repeated / LimitedTime + QuestFactory)
+├── skill/                      # Skill system (Skill, Jump/NormalAttack, SkillManager + SkillFactory)
+├── MonsterData/                # Monster data tables (+ MonsterDataFactory)
+├── GameMode/                   # GameMode (+ GameModeFactory)
+├── World/                      # World, Map, NavMap
+├── Movement/                   # Vector3, Walker
+├── EventBroker/                # Event bus/queue (thread-safe & lock-free: Boost/Moodycamel)
+├── EventMessage/               # Event message definitions
+├── Message/                    # Game messages (GameMessage, SendMessage)
+├── SQL/                        # DB persistence (SqlClient, DbRecord, generated/ DAO & VO)
+├── GameData/                   # Game data resource loading (ResourceLoader, gamedata)
+├── Random/ · RingBuffer/ · Time/   # Utilities (RandomUtil, RingBuffer, TimeStamp)
+├── flatbuffers/                # Generated FlatBuffers schema (syncnet_generated)
+├── (root)                      # Common, Server, Item/ItemFactory, MapFactory, helpers
+└── x64/Debug/                  # Build output
 ```
 
 ## 🔗 Related Projects
