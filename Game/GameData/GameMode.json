@@ -6,6 +6,7 @@
     "desc_id": "gamemode_field_desc",
     "category": "normal",
     "type": "field",
+    "script": "gamemode_field.lua",
     "rules": {
       "time_limit": -1,
       "has_time_limit": false,
@@ -27,10 +28,11 @@
   {
     "id": 2,
     "name": "Raid",
-    "name_id": "gamemode_raid_name", 
+    "name_id": "gamemode_raid_name",
     "desc_id": "gamemode_raid_desc",
     "category": "instance",
     "type": "raid",
+    "script": "gamemode_raid.lua",
     "rules": {
       "time_limit": 1800,
       "has_time_limit": true,
@@ -54,55 +56,5 @@
       "boss_level": 50,
       "boss_hp": 100000
     }
-  },
-  {
-    "id": 3,
-    "name": "Dungeon",
-    "name_id": "gamemode_dungeon_name",
-    "desc_id": "gamemode_dungeon_desc", 
-    "category": "instance",
-    "type": "dungeon",
-    "rules": {
-      "time_limit": 3600,
-      "has_time_limit": true,
-      "end_condition": "clear_all_enemies",
-      "max_players": 5,
-      "min_level": 15,
-      "allow_pvp": false,
-      "allow_trading": false,
-      "respawn_enabled": true,
-      "respawn_time": 30
-    },
-    "maps": [9, 10, 11],
-    "rewards": {
-      "exp_multiplier": 1.5,
-      "gold_multiplier": 2.0,
-      "drop_rate_multiplier": 1.8
-    }
-  },
-  {
-    "id": 4,
-    "name": "Arena",
-    "name_id": "gamemode_arena_name",
-    "desc_id": "gamemode_arena_desc",
-    "category": "instance", 
-    "type": "pvp",
-    "rules": {
-      "time_limit": 600,
-      "has_time_limit": true,
-      "end_condition": "last_survivor",
-      "max_players": 8,
-      "min_level": 25,
-      "allow_pvp": true,
-      "allow_trading": false,
-      "respawn_enabled": false,
-      "respawn_time": 0
-    },
-    "maps": [12, 13],
-    "rewards": {
-      "exp_multiplier": 1.2,
-      "gold_multiplier": 1.5,
-      "drop_rate_multiplier": 1.0
-    }
   }
-] 
+]

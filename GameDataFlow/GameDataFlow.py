@@ -38,6 +38,8 @@ DATA_COPY_DIRS = [
 LUA_SCRIPTS = [
     "../GameData/behavior_tree.lua",
     "../GameData/mob.lua",
+    "../GameData/gamemode_field.lua",
+    "../GameData/gamemode_raid.lua",
 ]
 LUA_COPY_DIRS = ["../Game/GameData/", "../UnitTest/GameData/"]
 

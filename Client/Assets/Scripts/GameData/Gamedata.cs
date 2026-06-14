@@ -108,6 +108,7 @@ namespace Gamedata
         public string name_id;
         public GameModeRewards rewards;
         public GameModeRules rules;
+        public string script;
         public string type;
     }
 

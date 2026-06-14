@@ -102,6 +102,7 @@ namespace gamedata
         std::string name_id;
         GameModeRewards rewards;
         GameModeRules rules;
+        std::string script;
         std::string type;
     };
 
@@ -369,6 +370,7 @@ namespace gamedata
         if (j.contains("name_id") && !j.at("name_id").is_null()) j.at("name_id").get_to(o.name_id);
         if (j.contains("rewards") && !j.at("rewards").is_null()) j.at("rewards").get_to(o.rewards);
         if (j.contains("rules") && !j.at("rules").is_null()) j.at("rules").get_to(o.rules);
+        if (j.contains("script") && !j.at("script").is_null()) j.at("script").get_to(o.script);
         if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
     }
 
