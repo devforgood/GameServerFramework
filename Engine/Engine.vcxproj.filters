@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="리소스 파일">
@@ -77,355 +77,355 @@
   </ItemGroup>
   <!-- Engine core ClCompile -->
   <ItemGroup>
-    <ClCompile Include="GridManager.cpp">
+    <ClCompile Include="Grid\GridManager.cpp">
       <Filter>Grid</Filter>
     </ClCompile>
-    <ClCompile Include="RingBuffer.cpp">
+    <ClCompile Include="RingBuffer\RingBuffer.cpp">
       <Filter>RingBuffer</Filter>
     </ClCompile>
-    <ClCompile Include="RandomUtil.cpp">
+    <ClCompile Include="Random\RandomUtil.cpp">
       <Filter>Random</Filter>
     </ClCompile>
-    <ClCompile Include="TimeStamp.cpp">
+    <ClCompile Include="Time\TimeStamp.cpp">
       <Filter>Time</Filter>
     </ClCompile>
-    <ClCompile Include="NonThreadSafeBus.h">
+    <ClCompile Include="EventBroker\NonThreadSafeBus.h">
       <Filter>EventBroker</Filter>
     </ClCompile>
     <!-- Game ClCompile (moved) -->
-    <ClCompile Include="Actor.cpp">
+    <ClCompile Include="Actor\Actor.cpp">
       <Filter>Actor</Filter>
     </ClCompile>
-    <ClCompile Include="ActorFactory.cpp">
+    <ClCompile Include="Actor\ActorFactory.cpp">
       <Filter>Actor</Filter>
     </ClCompile>
-    <ClCompile Include="BTDebugManager.cpp">
+    <ClCompile Include="AI\BTDebugManager.cpp">
       <Filter>AI</Filter>
     </ClCompile>
-    <ClCompile Include="BehaviorTreeCPP.cpp">
+    <ClCompile Include="AI\BehaviorTreeCPP.cpp">
       <Filter>AI</Filter>
     </ClCompile>
-    <ClCompile Include="Character.cpp">
+    <ClCompile Include="Actor\Character.cpp">
       <Filter>Actor</Filter>
     </ClCompile>
-    <ClCompile Include="Component.h">
+    <ClCompile Include="GameObject\Component.h">
       <Filter>GameObject</Filter>
     </ClCompile>
-    <ClCompile Include="GameMode.cpp">
+    <ClCompile Include="GameMode\GameMode.cpp">
       <Filter>GameMode</Filter>
     </ClCompile>
-    <ClCompile Include="GameModeFactory.cpp">
+    <ClCompile Include="GameMode\GameModeFactory.cpp">
       <Filter>GameMode</Filter>
     </ClCompile>
-    <ClCompile Include="JumpSkill.cpp">
+    <ClCompile Include="skill\JumpSkill.cpp">
       <Filter>skill</Filter>
     </ClCompile>
-    <ClCompile Include="LimitedTimeQuest.cpp">
+    <ClCompile Include="Quest\LimitedTimeQuest.cpp">
       <Filter>Quest</Filter>
     </ClCompile>
-    <ClCompile Include="LuaObject.cpp">
+    <ClCompile Include="AI\LuaObject.cpp">
       <Filter>AI</Filter>
     </ClCompile>
-    <ClCompile Include="MainQuest.cpp">
+    <ClCompile Include="Quest\MainQuest.cpp">
       <Filter>Quest</Filter>
     </ClCompile>
-    <ClCompile Include="Map.cpp">
+    <ClCompile Include="World\Map.cpp">
       <Filter>World</Filter>
     </ClCompile>
-    <ClCompile Include="Monster.cpp">
+    <ClCompile Include="Actor\Monster.cpp">
       <Filter>Actor</Filter>
     </ClCompile>
-    <ClCompile Include="MonsterBT.cpp">
+    <ClCompile Include="AI\MonsterBT.cpp">
       <Filter>AI</Filter>
     </ClCompile>
-    <ClCompile Include="MonsterCodeBaseBT.cpp">
+    <ClCompile Include="AI\MonsterCodeBaseBT.cpp">
       <Filter>AI</Filter>
     </ClCompile>
-    <ClCompile Include="NavMap.cpp">
+    <ClCompile Include="World\NavMap.cpp">
       <Filter>World</Filter>
     </ClCompile>
-    <ClCompile Include="NormalAttackSkill.cpp">
+    <ClCompile Include="skill\NormalAttackSkill.cpp">
       <Filter>skill</Filter>
     </ClCompile>
     <ClCompile Include="PerfTimer.cpp" />
-    <ClCompile Include="Player.cpp">
+    <ClCompile Include="Player\Player.cpp">
       <Filter>Player</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerController.cpp">
+    <ClCompile Include="Controller\PlayerController.cpp">
       <Filter>Controller</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerDataLoader.cpp">
+    <ClCompile Include="Player\PlayerDataLoader.cpp">
       <Filter>Player</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerDataSaver.cpp">
+    <ClCompile Include="Player\PlayerDataSaver.cpp">
       <Filter>Player</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerItem.cpp">
+    <ClCompile Include="Player\PlayerItem.cpp">
       <Filter>Player</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerQuest.cpp">
+    <ClCompile Include="Player\PlayerQuest.cpp">
       <Filter>Player</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerSaveData.h">
+    <ClCompile Include="Player\PlayerSaveData.h">
       <Filter>Player</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerSkill.cpp">
+    <ClCompile Include="Player\PlayerSkill.cpp">
       <Filter>Player</Filter>
     </ClCompile>
-    <ClCompile Include="PlayerLevel.cpp">
+    <ClCompile Include="Player\PlayerLevel.cpp">
       <Filter>Player</Filter>
     </ClCompile>
-    <ClCompile Include="Level.cpp">
+    <ClCompile Include="Level\Level.cpp">
       <Filter>Level</Filter>
     </ClCompile>
-    <ClCompile Include="LevelFactory.cpp">
+    <ClCompile Include="Level\LevelFactory.cpp">
       <Filter>Level</Filter>
     </ClCompile>
-    <ClCompile Include="MonsterData.cpp">
+    <ClCompile Include="MonsterData\MonsterData.cpp">
       <Filter>MonsterData</Filter>
     </ClCompile>
-    <ClCompile Include="MonsterDataFactory.cpp">
+    <ClCompile Include="MonsterData\MonsterDataFactory.cpp">
       <Filter>MonsterData</Filter>
     </ClCompile>
-    <ClCompile Include="Quest.cpp">
+    <ClCompile Include="Quest\Quest.cpp">
       <Filter>Quest</Filter>
     </ClCompile>
-    <ClCompile Include="QuestFactory.cpp">
+    <ClCompile Include="Quest\QuestFactory.cpp">
       <Filter>Quest</Filter>
     </ClCompile>
-    <ClCompile Include="RepeatedQuest.cpp">
+    <ClCompile Include="Quest\RepeatedQuest.cpp">
       <Filter>Quest</Filter>
     </ClCompile>
     <ClCompile Include="Server.cpp" />
-    <ClCompile Include="Skill.cpp">
+    <ClCompile Include="skill\Skill.cpp">
       <Filter>skill</Filter>
     </ClCompile>
-    <ClCompile Include="SkillFactory.cpp">
+    <ClCompile Include="skill\SkillFactory.cpp">
       <Filter>skill</Filter>
     </ClCompile>
-    <ClCompile Include="SkillManager.cpp">
+    <ClCompile Include="skill\SkillManager.cpp">
       <Filter>skill</Filter>
     </ClCompile>
-    <ClCompile Include="SqlClient.cpp">
+    <ClCompile Include="SQL\SqlClient.cpp">
       <Filter>SQL</Filter>
     </ClCompile>
-    <ClCompile Include="SqlClientManager.cpp">
+    <ClCompile Include="SQL\SqlClientManager.cpp">
       <Filter>SQL</Filter>
     </ClCompile>
     <ClCompile Include="SQL\generated\dao.cpp">
       <Filter>SQL</Filter>
     </ClCompile>
-    <ClCompile Include="Vector3.cpp">
+    <ClCompile Include="Movement\Vector3.cpp">
       <Filter>Movement</Filter>
     </ClCompile>
-    <ClCompile Include="WalkerTest.cpp">
+    <ClCompile Include="Movement\WalkerTest.cpp">
       <Filter>Movement</Filter>
     </ClCompile>
-    <ClCompile Include="World.cpp">
+    <ClCompile Include="World\World.cpp">
       <Filter>World</Filter>
     </ClCompile>
   </ItemGroup>
   <!-- Engine core ClInclude -->
   <ItemGroup>
-    <ClInclude Include="BoostConcurrentQueue.h">
+    <ClInclude Include="EventBroker\BoostConcurrentQueue.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
-    <ClInclude Include="CacheOptimizedSystem.h">
+    <ClInclude Include="ECS\CacheOptimizedSystem.h">
       <Filter>ECS</Filter>
     </ClInclude>
-    <ClInclude Include="Components.h">
+    <ClInclude Include="ECS\Components.h">
       <Filter>ECS</Filter>
     </ClInclude>
-    <ClInclude Include="ECS.h">
+    <ClInclude Include="ECS\ECS.h">
       <Filter>ECS</Filter>
     </ClInclude>
-    <ClInclude Include="EventBroker.h">
+    <ClInclude Include="EventBroker\EventBroker.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
-    <ClInclude Include="EventBus.h">
+    <ClInclude Include="EventBroker\EventBus.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
-    <ClInclude Include="EventPolicy.h">
+    <ClInclude Include="EventBroker\EventPolicy.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
-    <ClInclude Include="EventQueue.h">
+    <ClInclude Include="EventBroker\EventQueue.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
-    <ClInclude Include="GridManager.h">
+    <ClInclude Include="Grid\GridManager.h">
       <Filter>Grid</Filter>
     </ClInclude>
-    <ClInclude Include="IGridActor.h">
+    <ClInclude Include="Grid\IGridActor.h">
       <Filter>Grid</Filter>
     </ClInclude>
-    <ClInclude Include="MoodycamelConcurrentQueue.h">
+    <ClInclude Include="EventBroker\MoodycamelConcurrentQueue.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
-    <ClInclude Include="NonThreadSafe.h">
+    <ClInclude Include="EventBroker\NonThreadSafe.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
-    <ClInclude Include="NonThreadSafeQueue.h">
+    <ClInclude Include="EventBroker\NonThreadSafeQueue.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
-    <ClInclude Include="RandomUtil.h">
+    <ClInclude Include="Random\RandomUtil.h">
       <Filter>Random</Filter>
     </ClInclude>
-    <ClInclude Include="RingBuffer.h">
+    <ClInclude Include="RingBuffer\RingBuffer.h">
       <Filter>RingBuffer</Filter>
     </ClInclude>
-    <ClInclude Include="SystemManager.h">
+    <ClInclude Include="ECS\SystemManager.h">
       <Filter>ECS</Filter>
     </ClInclude>
-    <ClInclude Include="Systems.h">
+    <ClInclude Include="ECS\Systems.h">
       <Filter>ECS</Filter>
     </ClInclude>
-    <ClInclude Include="ThreadSafe.h">
+    <ClInclude Include="EventBroker\ThreadSafe.h">
       <Filter>EventBroker</Filter>
     </ClInclude>
-    <ClInclude Include="TimeStamp.h">
+    <ClInclude Include="Time\TimeStamp.h">
       <Filter>Time</Filter>
     </ClInclude>
     <!-- Game headers (moved) -->
-    <ClInclude Include="Actor.h">
+    <ClInclude Include="Actor\Actor.h">
       <Filter>Actor</Filter>
     </ClInclude>
-    <ClInclude Include="ActorFactory.h">
+    <ClInclude Include="Actor\ActorFactory.h">
       <Filter>Actor</Filter>
     </ClInclude>
     <ClInclude Include="BaseItem.h" />
     <ClInclude Include="BaseSkill.h" />
-    <ClInclude Include="BTDebugManager.h">
+    <ClInclude Include="AI\BTDebugManager.h">
       <Filter>AI</Filter>
     </ClInclude>
-    <ClInclude Include="BTDebugNodeIds.h">
+    <ClInclude Include="AI\BTDebugNodeIds.h">
       <Filter>AI</Filter>
     </ClInclude>
-    <ClInclude Include="BehaviorTreeCPP.h">
+    <ClInclude Include="AI\BehaviorTreeCPP.h">
       <Filter>AI</Filter>
     </ClInclude>
-    <ClInclude Include="Character.h">
+    <ClInclude Include="Actor\Character.h">
       <Filter>Actor</Filter>
     </ClInclude>
     <ClInclude Include="Common.h" />
-    <ClInclude Include="ComponentTypeId.h">
+    <ClInclude Include="GameObject\ComponentTypeId.h">
       <Filter>GameObject</Filter>
     </ClInclude>
-    <ClInclude Include="DbRecord.h">
+    <ClInclude Include="SQL\DbRecord.h">
       <Filter>SQL</Filter>
     </ClInclude>
-    <ClInclude Include="GameMode.h">
+    <ClInclude Include="GameMode\GameMode.h">
       <Filter>GameMode</Filter>
     </ClInclude>
-    <ClInclude Include="GameModeFactory.h">
+    <ClInclude Include="GameMode\GameModeFactory.h">
       <Filter>GameMode</Filter>
     </ClInclude>
-    <ClInclude Include="GameObject.h">
+    <ClInclude Include="GameObject\GameObject.h">
       <Filter>GameObject</Filter>
     </ClInclude>
     <ClInclude Include="GameObjectChangeTypeOperators.h" />
     <ClInclude Include="Item.h" />
     <ClInclude Include="ItemFactory.h" />
-    <ClInclude Include="JumpSkill.h">
+    <ClInclude Include="skill\JumpSkill.h">
       <Filter>skill</Filter>
     </ClInclude>
-    <ClInclude Include="LimitedTimeQuest.h">
+    <ClInclude Include="Quest\LimitedTimeQuest.h">
       <Filter>Quest</Filter>
     </ClInclude>
     <ClInclude Include="LogHelper.h" />
-    <ClInclude Include="LuaObject.h">
+    <ClInclude Include="AI\LuaObject.h">
       <Filter>AI</Filter>
     </ClInclude>
-    <ClInclude Include="MainQuest.h">
+    <ClInclude Include="Quest\MainQuest.h">
       <Filter>Quest</Filter>
     </ClInclude>
-    <ClInclude Include="Map.h">
+    <ClInclude Include="World\Map.h">
       <Filter>World</Filter>
     </ClInclude>
     <ClInclude Include="MapFactory.h" />
     <ClInclude Include="MathHelper.h" />
-    <ClInclude Include="GameMessage.h">
+    <ClInclude Include="Message\GameMessage.h">
       <Filter>Message</Filter>
     </ClInclude>
-    <ClInclude Include="Monster.h">
+    <ClInclude Include="Actor\Monster.h">
       <Filter>Actor</Filter>
     </ClInclude>
-    <ClInclude Include="MonsterBT.h">
+    <ClInclude Include="AI\MonsterBT.h">
       <Filter>AI</Filter>
     </ClInclude>
-    <ClInclude Include="MonsterCodeBaseBT.h">
+    <ClInclude Include="AI\MonsterCodeBaseBT.h">
       <Filter>AI</Filter>
     </ClInclude>
-    <ClInclude Include="NavMap.h">
+    <ClInclude Include="World\NavMap.h">
       <Filter>World</Filter>
     </ClInclude>
-    <ClInclude Include="NormalAttackSkill.h">
+    <ClInclude Include="skill\NormalAttackSkill.h">
       <Filter>skill</Filter>
     </ClInclude>
     <ClInclude Include="PerfTimer.h" />
-    <ClInclude Include="Player.h">
+    <ClInclude Include="Player\Player.h">
       <Filter>Player</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerController.h">
+    <ClInclude Include="Controller\PlayerController.h">
       <Filter>Controller</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerDataLoader.h">
+    <ClInclude Include="Player\PlayerDataLoader.h">
       <Filter>Player</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerDataSaver.h">
+    <ClInclude Include="Player\PlayerDataSaver.h">
       <Filter>Player</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerItem.h">
+    <ClInclude Include="Player\PlayerItem.h">
       <Filter>Player</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerLoadData.h">
+    <ClInclude Include="Player\PlayerLoadData.h">
       <Filter>Player</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerQuest.h">
+    <ClInclude Include="Player\PlayerQuest.h">
       <Filter>Player</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerSkill.h">
+    <ClInclude Include="Player\PlayerSkill.h">
       <Filter>Player</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerLevel.h">
+    <ClInclude Include="Player\PlayerLevel.h">
       <Filter>Player</Filter>
     </ClInclude>
-    <ClInclude Include="Quest.h">
+    <ClInclude Include="Quest\Quest.h">
       <Filter>Quest</Filter>
     </ClInclude>
-    <ClInclude Include="Level.h">
+    <ClInclude Include="Level\Level.h">
       <Filter>Level</Filter>
     </ClInclude>
-    <ClInclude Include="LevelFactory.h">
+    <ClInclude Include="Level\LevelFactory.h">
       <Filter>Level</Filter>
     </ClInclude>
-    <ClInclude Include="MonsterData.h">
+    <ClInclude Include="MonsterData\MonsterData.h">
       <Filter>MonsterData</Filter>
     </ClInclude>
-    <ClInclude Include="MonsterDataFactory.h">
+    <ClInclude Include="MonsterData\MonsterDataFactory.h">
       <Filter>MonsterData</Filter>
     </ClInclude>
-    <ClInclude Include="QuestFactory.h">
+    <ClInclude Include="Quest\QuestFactory.h">
       <Filter>Quest</Filter>
     </ClInclude>
-    <ClInclude Include="RepeatedQuest.h">
+    <ClInclude Include="Quest\RepeatedQuest.h">
       <Filter>Quest</Filter>
     </ClInclude>
-    <ClInclude Include="SendMessage.h">
+    <ClInclude Include="Message\SendMessage.h">
       <Filter>Message</Filter>
     </ClInclude>
     <ClInclude Include="Server.h" />
-    <ClInclude Include="Skill.h">
+    <ClInclude Include="skill\Skill.h">
       <Filter>skill</Filter>
     </ClInclude>
-    <ClInclude Include="SkillFactory.h">
+    <ClInclude Include="skill\SkillFactory.h">
       <Filter>skill</Filter>
     </ClInclude>
-    <ClInclude Include="SkillManager.h">
+    <ClInclude Include="skill\SkillManager.h">
       <Filter>skill</Filter>
     </ClInclude>
-    <ClInclude Include="SqlClient.h">
+    <ClInclude Include="SQL\SqlClient.h">
       <Filter>SQL</Filter>
     </ClInclude>
-    <ClInclude Include="SqlClientManager.h">
+    <ClInclude Include="SQL\SqlClientManager.h">
       <Filter>SQL</Filter>
     </ClInclude>
     <ClInclude Include="SQL\generated\dao.h">
@@ -434,26 +434,26 @@
     <ClInclude Include="SQL\generated\vo.h">
       <Filter>SQL</Filter>
     </ClInclude>
-    <ClInclude Include="syncnet_generated.h">
+    <ClInclude Include="flatbuffers\syncnet_generated.h">
       <Filter>flatbuffers</Filter>
     </ClInclude>
-    <ClInclude Include="Vector3.h">
+    <ClInclude Include="Movement\Vector3.h">
       <Filter>Movement</Filter>
     </ClInclude>
-    <ClInclude Include="Walker.h">
+    <ClInclude Include="Movement\Walker.h">
       <Filter>Movement</Filter>
     </ClInclude>
-    <ClInclude Include="World.h">
+    <ClInclude Include="World\World.h">
       <Filter>World</Filter>
     </ClInclude>
     <ClInclude Include="DbChangeTracker.h" />
-    <ClInclude Include="EventMessage.h">
+    <ClInclude Include="EventMessage\EventMessage.h">
       <Filter>EventMessage</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerEventBroker.h">
+    <ClInclude Include="Player\PlayerEventBroker.h">
       <Filter>Player</Filter>
     </ClInclude>
-    <ClInclude Include="PlayerEventBrokerProxy.h">
+    <ClInclude Include="Player\PlayerEventBrokerProxy.h">
       <Filter>Player</Filter>
     </ClInclude>
   </ItemGroup>

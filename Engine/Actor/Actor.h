@@ -2,7 +2,7 @@
 #include "GameObject.h"
 #include "SendMessage.h"
 #include "Vector3.h"
-#include "..\Engine\IGridActor.h"
+#include "IGridActor.h"
 
 class World;
 class Map;

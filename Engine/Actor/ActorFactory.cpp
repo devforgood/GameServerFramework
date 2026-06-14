@@ -9,7 +9,7 @@
 #include "Vector3.h"
 #include "Common.h"
 #include "Map.h"
-#include "../Engine/GridManager.h"
+#include "GridManager.h"
 
 std::shared_ptr<Actor> ActorFactory::CreateActor(Map* map, std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
