@@ -307,6 +307,20 @@ namespace Gamedata
     }
 
 
+    [Serializable]
+    public class MonsterData
+    {
+        public int attack;
+        public int defense;
+        public int exp;
+        public int hp;
+        public int id;
+        public int level;
+        public string name;
+        public string name_id;
+    }
+
+
 
     // Wrapper so UnityEngine.JsonUtility can parse the top-level JSON array.
     [Serializable]
@@ -353,6 +367,14 @@ namespace Gamedata
     public class LevelList
     {
         public List<Level> items;
+    }
+
+
+    // Wrapper so UnityEngine.JsonUtility can parse the top-level JSON array.
+    [Serializable]
+    public class MonsterDataList
+    {
+        public List<MonsterData> items;
     }
 
 

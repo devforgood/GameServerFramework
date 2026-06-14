@@ -45,6 +45,14 @@
       "output_file": "level.json",
       "description": "Character level table mapping cumulative required experience to each level",
       "enabled": true
+    },
+    {
+      "name": "MonsterData",
+      "json_path": "monster.json",
+      "repeated_field": "monsters",
+      "output_file": "monster.json",
+      "description": "Monster definitions including combat stats and kill reward experience",
+      "enabled": true
     }
   ],
   "version": "1.0.0",

@@ -1,0 +1,12 @@
+[
+  { "id": 1,    "name": "Slime",         "name_id": "monster_slime_name",         "level": 1,  "hp": 50,   "attack": 5,   "defense": 2,  "exp": 20 },
+  { "id": 2,    "name": "Wolf",          "name_id": "monster_wolf_name",          "level": 2,  "hp": 80,   "attack": 8,   "defense": 3,  "exp": 35 },
+  { "id": 3,    "name": "Goblin",        "name_id": "monster_goblin_name",        "level": 3,  "hp": 100,  "attack": 10,  "defense": 4,  "exp": 50 },
+  { "id": 4,    "name": "Orc",           "name_id": "monster_orc_name",           "level": 5,  "hp": 150,  "attack": 15,  "defense": 6,  "exp": 90 },
+  { "id": 5,    "name": "Dark Elf",      "name_id": "monster_dark_elf_name",      "level": 6,  "hp": 180,  "attack": 18,  "defense": 8,  "exp": 120 },
+  { "id": 6,    "name": "Skeleton",      "name_id": "monster_skeleton_name",      "level": 7,  "hp": 200,  "attack": 20,  "defense": 10, "exp": 150 },
+  { "id": 7,    "name": "Zombie",        "name_id": "monster_zombie_name",        "level": 8,  "hp": 250,  "attack": 22,  "defense": 12, "exp": 180 },
+  { "id": 8,    "name": "Wraith",        "name_id": "monster_wraith_name",        "level": 10, "hp": 300,  "attack": 28,  "defense": 15, "exp": 250 },
+  { "id": 9,    "name": "Golem",         "name_id": "monster_golem_name",         "level": 12, "hp": 400,  "attack": 35,  "defense": 25, "exp": 350 },
+  { "id": 1001, "name": "Ancient Dragon", "name_id": "monster_ancient_dragon_name", "level": 20, "hp": 5000, "attack": 100, "defense": 50, "exp": 5000 }
+]

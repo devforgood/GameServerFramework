@@ -169,6 +169,8 @@
     <ClCompile Include="JumpSkill.cpp" />
     <ClCompile Include="Level.cpp" />
     <ClCompile Include="LevelFactory.cpp" />
+    <ClCompile Include="MonsterData.cpp" />
+    <ClCompile Include="MonsterDataFactory.cpp" />
     <ClCompile Include="LimitedTimeQuest.cpp" />
     <ClCompile Include="LuaObject.cpp" />
     <ClCompile Include="MainQuest.cpp" />
@@ -250,6 +252,8 @@
     <ClInclude Include="JumpSkill.h" />
     <ClInclude Include="Level.h" />
     <ClInclude Include="LevelFactory.h" />
+    <ClInclude Include="MonsterData.h" />
+    <ClInclude Include="MonsterDataFactory.h" />
     <ClInclude Include="LimitedTimeQuest.h" />
     <ClInclude Include="LogHelper.h" />
     <ClInclude Include="LuaObject.h" />

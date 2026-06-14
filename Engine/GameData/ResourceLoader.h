@@ -28,6 +28,9 @@ private:
     std::deque<gamedata::Level> storage_levels;
     std::unordered_map<long, const gamedata::Level*> levels;
 
+    std::deque<gamedata::MonsterData> storage_monsters;
+    std::unordered_map<long, const gamedata::MonsterData*> monsters;
+
 public:
     static ResourceLoader& Instance() {
         static ResourceLoader instance;
@@ -52,6 +55,9 @@ public:
 
     const std::unordered_map<long, const gamedata::Level*>& GetLevels() const { return levels; }
     const gamedata::Level* GetLevel(long id) const { auto itr = levels.find(id); return itr != levels.end() ? itr->second : nullptr; }
+
+    const std::unordered_map<long, const gamedata::MonsterData*>& GetMonsterDatas() const { return monsters; }
+    const gamedata::MonsterData* GetMonsterData(long id) const { auto itr = monsters.find(id); return itr != monsters.end() ? itr->second : nullptr; }
 
 private:
     ResourceLoader() = default;

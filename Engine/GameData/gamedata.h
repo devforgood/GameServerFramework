@@ -282,6 +282,19 @@ namespace gamedata
     };
 
 
+    struct MonsterData
+    {
+        int attack = 0;
+        int defense = 0;
+        int exp = 0;
+        int hp = 0;
+        int id = 0;
+        int level = 0;
+        std::string name;
+        std::string name_id;
+    };
+
+
 
     inline void from_json(const nlohmann::json& j, Skill& o)
     {
@@ -555,6 +568,19 @@ namespace gamedata
         if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("level") && !j.at("level").is_null()) j.at("level").get_to(o.level);
         if (j.contains("required_exp") && !j.at("required_exp").is_null()) j.at("required_exp").get_to(o.required_exp);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, MonsterData& o)
+    {
+        if (j.contains("attack") && !j.at("attack").is_null()) j.at("attack").get_to(o.attack);
+        if (j.contains("defense") && !j.at("defense").is_null()) j.at("defense").get_to(o.defense);
+        if (j.contains("exp") && !j.at("exp").is_null()) j.at("exp").get_to(o.exp);
+        if (j.contains("hp") && !j.at("hp").is_null()) j.at("hp").get_to(o.hp);
+        if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
+        if (j.contains("level") && !j.at("level").is_null()) j.at("level").get_to(o.level);
+        if (j.contains("name") && !j.at("name").is_null()) j.at("name").get_to(o.name);
+        if (j.contains("name_id") && !j.at("name_id").is_null()) j.at("name_id").get_to(o.name_id);
     }
 
 

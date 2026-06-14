@@ -83,6 +83,9 @@ void ResourceLoader::ClearResources()
     levels.clear();
     storage_levels.clear();
 
+    monsters.clear();
+    storage_monsters.clear();
+
 }
 
 bool ResourceLoader::LoadResources(const std::string& basePath)
@@ -106,6 +109,9 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
     std::deque<gamedata::Level> tmp_storage_levels;
     std::unordered_map<long, const gamedata::Level*> tmp_levels;
 
+    std::deque<gamedata::MonsterData> tmp_storage_monsters;
+    std::unordered_map<long, const gamedata::MonsterData*> tmp_monsters;
+
 
     // Each table reads its own file into its own storage, so the loads share no
     // state and run concurrently — one task (thread) per table.
@@ -128,6 +134,9 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
 
     tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::Level>,
         basePath + "level.json", std::ref(tmp_storage_levels), std::ref(tmp_levels)));
+
+    tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::MonsterData>,
+        basePath + "monster.json", std::ref(tmp_storage_monsters), std::ref(tmp_monsters)));
 
 
     // get() every future (so all threads join) before deciding success.
@@ -157,6 +166,9 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
 
     storage_levels = std::move(tmp_storage_levels);
     levels = std::move(tmp_levels);
+
+    storage_monsters = std::move(tmp_storage_monsters);
+    monsters = std::move(tmp_monsters);
 
     return true;
 }

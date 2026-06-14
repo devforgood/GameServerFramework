@@ -50,6 +50,9 @@
     <Filter Include="Level">
       <UniqueIdentifier>{3f7b1e2a-9c4d-4e6f-8a1b-2c5d7e9f0a13}</UniqueIdentifier>
     </Filter>
+    <Filter Include="MonsterData">
+      <UniqueIdentifier>{4a8c2f3b-1d5e-4f7a-9b2c-3d6e8f0a1b24}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Quest">
       <UniqueIdentifier>{523c06b1-c4fa-4fba-8a53-d671dae0bc79}</UniqueIdentifier>
     </Filter>
@@ -177,6 +180,12 @@
     </ClCompile>
     <ClCompile Include="LevelFactory.cpp">
       <Filter>Level</Filter>
+    </ClCompile>
+    <ClCompile Include="MonsterData.cpp">
+      <Filter>MonsterData</Filter>
+    </ClCompile>
+    <ClCompile Include="MonsterDataFactory.cpp">
+      <Filter>MonsterData</Filter>
     </ClCompile>
     <ClCompile Include="Quest.cpp">
       <Filter>Quest</Filter>
@@ -387,6 +396,12 @@
     </ClInclude>
     <ClInclude Include="LevelFactory.h">
       <Filter>Level</Filter>
+    </ClInclude>
+    <ClInclude Include="MonsterData.h">
+      <Filter>MonsterData</Filter>
+    </ClInclude>
+    <ClInclude Include="MonsterDataFactory.h">
+      <Filter>MonsterData</Filter>
     </ClInclude>
     <ClInclude Include="QuestFactory.h">
       <Filter>Quest</Filter>
