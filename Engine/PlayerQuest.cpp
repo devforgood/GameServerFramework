@@ -9,6 +9,7 @@ void PlayerQuest::Start()
     auto eventBroker = game_object->GetComponent<PlayerEventBroker>();
     eventBroker->subscribe<PlayerQuest, EventActorDead, &PlayerQuest::OnEventActorDead>(this);
     eventBroker->subscribe<PlayerQuest, EventPlayerJoined, &PlayerQuest::OnEventPlayerJoined>(this);
+    eventBroker->subscribe<PlayerQuest, EventLevelUp, &PlayerQuest::OnEventLevelUp>(this);
 }
 
 void PlayerQuest::OnEventActorDead(const EventActorDead& message)
@@ -37,6 +38,21 @@ void PlayerQuest::OnEventPlayerJoined(const EventPlayerJoined& message)
         if (vo)
         {
             UpdateProgress(quest_id, vo->progress1 + 1, vo->progress2, vo->progress3);
+        }
+    }
+}
+
+void PlayerQuest::OnEventLevelUp(const EventLevelUp& message)
+{
+    // 예시: 레벨 달성 퀘스트의 진행도를 도달한 레벨로 갱신
+    int quest_id = 1; // 예시 퀘스트 ID
+    if (IsActive(quest_id))
+    {
+        // 레벨 달성형 퀘스트는 진행도를 현재 도달 레벨로 직접 반영한다.
+        const QuestActiveVO* vo = GetActiveQuest(quest_id);
+        if (vo)
+        {
+            UpdateProgress(quest_id, message.new_level, vo->progress2, vo->progress3);
         }
     }
 }

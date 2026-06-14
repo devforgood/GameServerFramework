@@ -16,6 +16,7 @@ public:
     // 이벤트 핸들러
     void OnEventActorDead(const EventActorDead& message);
     void OnEventPlayerJoined(const EventPlayerJoined& message);
+    void OnEventLevelUp(const EventLevelUp& message);
 
     // 퀘스트 수락: 이미 진행 중이면 false 반환
     bool AcceptQuest(int quest_id);

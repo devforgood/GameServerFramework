@@ -3,6 +3,9 @@
 #include "../Engine/PlayerLoadData.h"
 #include "../Engine/PlayerSaveData.h"
 #include "../Engine/DbRecord.h"
+#include "../Engine/GameObject.h"
+#include "../Engine/PlayerEventBroker.h"
+#include "../Engine/EventMessage.h"
 
 // 실제 서버 흐름을 재현한 단위 테스트:
 //   PlayerLoadData (DB 조회 결과) -> Load() -> 게임 로직 -> Save() -> PlayerSaveData (DB 저장 대상)
@@ -468,6 +471,49 @@ TEST(PlayerQuestDirtyFlag, CleanAfterSaveAndClearDirty)
 // 전체 라운드트립 테스트
 // 실제 서버 흐름: Load -> 게임 플레이 -> Save -> 재로그인(Load) 재현
 // ============================================================
+
+// ============================================================
+// 이벤트 연동 테스트 (PlayerEventBroker 구독 -> 핸들러)
+//   GameObject 에 PlayerEventBroker + PlayerQuest 를 부착하면
+//   PlayerQuest::Start 가 이벤트를 구독한다.
+// ============================================================
+
+namespace
+{
+    // 브로커를 먼저 부착해야 PlayerQuest::Start 가 구독에 성공한다.
+    PlayerQuest* AttachQuest(GameObject& go)
+    {
+        go.AddComponent<PlayerEventBroker>();
+        return go.AddComponent<PlayerQuest>();
+    }
+}
+
+TEST(PlayerQuestEvent, LevelUp_UpdatesActiveQuestProgress)
+{
+    GameObject go;
+    PlayerQuest* quest = AttachQuest(go);
+    quest->Load(MakeNewPlayerData(1001));
+    quest->AcceptQuest(1); // 핸들러가 다루는 예시 퀘스트 ID
+
+    go.GetComponent<PlayerEventBroker>()->publish(EventLevelUp{ 1001, 5 });
+
+    const QuestActiveVO* vo = quest->GetActiveQuest(1);
+    ASSERT_NE(vo, nullptr);
+    // 레벨 달성형: 진행도를 도달 레벨로 직접 반영
+    EXPECT_EQ(vo->progress1, 5);
+}
+
+TEST(PlayerQuestEvent, LevelUp_NoActiveQuest_IsNoop)
+{
+    GameObject go;
+    PlayerQuest* quest = AttachQuest(go);
+    quest->Load(MakeNewPlayerData(1001));
+
+    // 퀘스트 1 을 수락하지 않은 상태 -> 크래시 없이 무시
+    go.GetComponent<PlayerEventBroker>()->publish(EventLevelUp{ 1001, 5 });
+
+    EXPECT_EQ(quest->GetActiveQuest(1), nullptr);
+}
 
 TEST(PlayerQuestRoundTrip, LoadPlaySaveReload)
 {
