@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../Engine/RingBuffer.h"
+#include "RingBuffer.h"
 #include <memory>
 #include <vector>
 #include <chrono>

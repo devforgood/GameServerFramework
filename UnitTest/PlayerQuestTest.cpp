@@ -1,11 +1,11 @@
 ﻿#include <gtest/gtest.h>
-#include "../Engine/PlayerQuest.h"
-#include "../Engine/PlayerLoadData.h"
-#include "../Engine/PlayerSaveData.h"
-#include "../Engine/DbRecord.h"
-#include "../Engine/GameObject.h"
-#include "../Engine/PlayerEventBroker.h"
-#include "../Engine/EventMessage.h"
+#include "PlayerQuest.h"
+#include "PlayerLoadData.h"
+#include "PlayerSaveData.h"
+#include "DbRecord.h"
+#include "GameObject.h"
+#include "PlayerEventBroker.h"
+#include "EventMessage.h"
 
 // 실제 서버 흐름을 재현한 단위 테스트:
 //   PlayerLoadData (DB 조회 결과) -> Load() -> 게임 로직 -> Save() -> PlayerSaveData (DB 저장 대상)

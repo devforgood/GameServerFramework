@@ -1,6 +1,6 @@
 #include "pch.h"
 #include <gtest/gtest.h>
-#include "../Engine/EventBroker.h"
+#include "EventBroker.h"
 #include <string>
 
 struct TestMessage {

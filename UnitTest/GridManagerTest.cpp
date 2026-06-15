@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../Engine/GridManager.h"
+#include "GridManager.h"
 #include <memory>
 #include <vector>
 #include <chrono>

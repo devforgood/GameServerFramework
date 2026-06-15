@@ -59,6 +59,12 @@
     <Filter Include="skill">
       <UniqueIdentifier>{9c6d76e4-1915-4245-a42b-da9c4c31da6a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Item">
+      <UniqueIdentifier>{1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Map">
+      <UniqueIdentifier>{2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e}</UniqueIdentifier>
+    </Filter>
     <Filter Include="SQL">
       <UniqueIdentifier>{cf05b3ec-c90a-4800-b9ab-fe562019ed30}</UniqueIdentifier>
     </Filter>
@@ -73,6 +79,9 @@
     </Filter>
     <Filter Include="EventMessage">
       <UniqueIdentifier>{4c073c03-99dc-43c1-856a-543bfd3e8160}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameData">
+      <UniqueIdentifier>{3dc3bec8-9ede-465f-aeb0-602b835d1225}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <!-- Engine core ClCompile -->
@@ -129,8 +138,11 @@
     <ClCompile Include="Quest\MainQuest.cpp">
       <Filter>Quest</Filter>
     </ClCompile>
-    <ClCompile Include="World\Map.cpp">
-      <Filter>World</Filter>
+    <ClCompile Include="Map\Map.cpp">
+      <Filter>Map</Filter>
+    </ClCompile>
+    <ClCompile Include="Item\ItemFactory.cpp">
+      <Filter>Item</Filter>
     </ClCompile>
     <ClCompile Include="Actor\Monster.cpp">
       <Filter>Actor</Filter>
@@ -147,7 +159,9 @@
     <ClCompile Include="skill\NormalAttackSkill.cpp">
       <Filter>skill</Filter>
     </ClCompile>
-    <ClCompile Include="PerfTimer.cpp" />
+    <ClCompile Include="System\PerfTimer.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
     <ClCompile Include="Player\Player.cpp">
       <Filter>Player</Filter>
     </ClCompile>
@@ -224,6 +238,9 @@
     <ClCompile Include="World\World.cpp">
       <Filter>World</Filter>
     </ClCompile>
+    <ClCompile Include="GameData\ResourceLoader.cpp">
+      <Filter>GameData</Filter>
+    </ClCompile>
   </ItemGroup>
   <!-- Engine core ClInclude -->
   <ItemGroup>
@@ -291,8 +308,12 @@
     <ClInclude Include="Actor\ActorFactory.h">
       <Filter>Actor</Filter>
     </ClInclude>
-    <ClInclude Include="BaseItem.h" />
-    <ClInclude Include="BaseSkill.h" />
+    <ClInclude Include="Item\BaseItem.h">
+      <Filter>Item</Filter>
+    </ClInclude>
+    <ClInclude Include="skill\BaseSkill.h">
+      <Filter>skill</Filter>
+    </ClInclude>
     <ClInclude Include="AI\BTDebugManager.h">
       <Filter>AI</Filter>
     </ClInclude>
@@ -305,7 +326,9 @@
     <ClInclude Include="Actor\Character.h">
       <Filter>Actor</Filter>
     </ClInclude>
-    <ClInclude Include="Common.h" />
+    <ClInclude Include="System\Common.h">
+      <Filter>System</Filter>
+    </ClInclude>
     <ClInclude Include="GameObject\ComponentTypeId.h">
       <Filter>GameObject</Filter>
     </ClInclude>
@@ -321,27 +344,39 @@
     <ClInclude Include="GameObject\GameObject.h">
       <Filter>GameObject</Filter>
     </ClInclude>
-    <ClInclude Include="GameObjectChangeTypeOperators.h" />
-    <ClInclude Include="Item.h" />
-    <ClInclude Include="ItemFactory.h" />
+    <ClInclude Include="GameObject\GameObjectChangeTypeOperators.h">
+      <Filter>GameObject</Filter>
+    </ClInclude>
+    <ClInclude Include="Item\Item.h">
+      <Filter>Item</Filter>
+    </ClInclude>
+    <ClInclude Include="Item\ItemFactory.h">
+      <Filter>Item</Filter>
+    </ClInclude>
     <ClInclude Include="skill\JumpSkill.h">
       <Filter>skill</Filter>
     </ClInclude>
     <ClInclude Include="Quest\LimitedTimeQuest.h">
       <Filter>Quest</Filter>
     </ClInclude>
-    <ClInclude Include="LogHelper.h" />
+    <ClInclude Include="System\LogHelper.h">
+      <Filter>System</Filter>
+    </ClInclude>
     <ClInclude Include="AI\LuaObject.h">
       <Filter>AI</Filter>
     </ClInclude>
     <ClInclude Include="Quest\MainQuest.h">
       <Filter>Quest</Filter>
     </ClInclude>
-    <ClInclude Include="World\Map.h">
-      <Filter>World</Filter>
+    <ClInclude Include="Map\Map.h">
+      <Filter>Map</Filter>
     </ClInclude>
-    <ClInclude Include="MapFactory.h" />
-    <ClInclude Include="MathHelper.h" />
+    <ClInclude Include="Map\MapFactory.h">
+      <Filter>Map</Filter>
+    </ClInclude>
+    <ClInclude Include="System\MathHelper.h">
+      <Filter>System</Filter>
+    </ClInclude>
     <ClInclude Include="Message\GameMessage.h">
       <Filter>Message</Filter>
     </ClInclude>
@@ -360,7 +395,9 @@
     <ClInclude Include="skill\NormalAttackSkill.h">
       <Filter>skill</Filter>
     </ClInclude>
-    <ClInclude Include="PerfTimer.h" />
+    <ClInclude Include="System\PerfTimer.h">
+      <Filter>System</Filter>
+    </ClInclude>
     <ClInclude Include="Player\Player.h">
       <Filter>Player</Filter>
     </ClInclude>
@@ -446,7 +483,9 @@
     <ClInclude Include="World\World.h">
       <Filter>World</Filter>
     </ClInclude>
-    <ClInclude Include="DbChangeTracker.h" />
+    <ClInclude Include="System\DbChangeTracker.h">
+      <Filter>System</Filter>
+    </ClInclude>
     <ClInclude Include="EventMessage\EventMessage.h">
       <Filter>EventMessage</Filter>
     </ClInclude>
@@ -455,6 +494,12 @@
     </ClInclude>
     <ClInclude Include="Player\PlayerEventBrokerProxy.h">
       <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="GameData\ResourceLoader.h">
+      <Filter>GameData</Filter>
+    </ClInclude>
+    <ClInclude Include="GameData\gamedata.h">
+      <Filter>GameData</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include "../Engine/GameObject.h"
-#include "../Engine/Component.h"
-#include "../Engine/ComponentTypeId.h"
+#include "GameObject.h"
+#include "Component.h"
+#include "ComponentTypeId.h"
 
 // 테스트용 컴포넌트 정의
 class PositionComponent : public ComponentBase<PositionComponent> {

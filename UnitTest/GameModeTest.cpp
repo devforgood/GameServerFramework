@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-#include "../Engine/GameData/ResourceLoader.h"
-#include "../Engine/GameMode.h"
-#include "../Engine/GameModeFactory.h"
+#include "GameData/ResourceLoader.h"
+#include "GameMode.h"
+#include "GameModeFactory.h"
 
 namespace
 {

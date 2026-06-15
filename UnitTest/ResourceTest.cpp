@@ -1,7 +1,7 @@
 #include "pch.h"
 #include <gtest/gtest.h>
 #include <filesystem>
-#include "../Engine/GameData/ResourceLoader.h"
+#include "GameData/ResourceLoader.h"
 
 TEST(ResourceTest, LoadItems)
 {

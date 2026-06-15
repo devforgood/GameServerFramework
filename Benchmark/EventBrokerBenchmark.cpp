@@ -3,9 +3,9 @@
 #include <thread>
 #include <memory>
 
-#include "../Engine/EventBroker.h"
-#include "../Engine/BoostConcurrentQueue.h"
-#include "../Engine/MoodycamelConcurrentQueue.h"
+#include "EventBroker.h"
+#include "BoostConcurrentQueue.h"
+#include "MoodycamelConcurrentQueue.h"
 
 using namespace engine::event_broker;
 

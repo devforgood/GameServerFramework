@@ -5,13 +5,13 @@
 #include <string>
 #include <vector>
 
-#include "../Engine/GameData/ResourceLoader.h"
-#include "../Engine/GameObject.h"
-#include "../Engine/PlayerEventBroker.h"
-#include "../Engine/PlayerLevel.h"
-#include "../Engine/PlayerLoadData.h"
-#include "../Engine/PlayerSaveData.h"
-#include "../Engine/EventMessage.h"
+#include "GameData/ResourceLoader.h"
+#include "GameObject.h"
+#include "PlayerEventBroker.h"
+#include "PlayerLevel.h"
+#include "PlayerLoadData.h"
+#include "PlayerSaveData.h"
+#include "EventMessage.h"
 
 // 이번 작업 검증 대상:
 //   1) Level 테이블(level.json)  : 누적 필요 경험치 -> 레벨 매핑
