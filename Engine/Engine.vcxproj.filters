@@ -344,9 +344,6 @@
     <ClInclude Include="GameObject\GameObject.h">
       <Filter>GameObject</Filter>
     </ClInclude>
-    <ClInclude Include="GameObject\GameObjectChangeTypeOperators.h">
-      <Filter>GameObject</Filter>
-    </ClInclude>
     <ClInclude Include="Item\Item.h">
       <Filter>Item</Filter>
     </ClInclude>

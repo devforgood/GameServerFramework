@@ -247,7 +247,6 @@
     <ClInclude Include="GameMode\GameMode.h" />
     <ClInclude Include="GameMode\GameModeFactory.h" />
     <ClInclude Include="GameObject\GameObject.h" />
-    <ClInclude Include="GameObject\GameObjectChangeTypeOperators.h" />
     <ClInclude Include="Item\Item.h" />
     <ClInclude Include="Item\ItemFactory.h" />
     <ClInclude Include="skill\JumpSkill.h" />
