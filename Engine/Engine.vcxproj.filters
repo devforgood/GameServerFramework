@@ -162,6 +162,9 @@
     <ClCompile Include="System\PerfTimer.cpp">
       <Filter>System</Filter>
     </ClCompile>
+    <ClCompile Include="System\DbThreadMonitor.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
     <ClCompile Include="Player\Player.cpp">
       <Filter>Player</Filter>
     </ClCompile>
@@ -479,6 +482,9 @@
     </ClInclude>
     <ClInclude Include="World\World.h">
       <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="System\DbThreadMonitor.h">
+      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="System\DbChangeTracker.h">
       <Filter>System</Filter>

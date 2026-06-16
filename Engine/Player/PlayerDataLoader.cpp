@@ -4,6 +4,7 @@
 #include "SqlClient.h"
 #include "SqlClientManager.h"
 #include "PlayerLoadData.h"
+#include "DbThreadMonitor.h"
 #include <iostream>
 
 using DataLoaderFunc = std::function<void(sql::Connection*, long, PlayerLoadData&)>;
@@ -46,7 +47,11 @@ void PlayerDataLoader::AsyncLoad(std::shared_ptr<Player> player) {
     auto io_context = player->GetServer()->get_io_context();
     std::weak_ptr<Player> weak_player = player;
 
-    boost::asio::post(player->GetStrand().value(), [weak_player, player_id, query_id, io_context]() {
+    // DB 스레드 풀 모니터링: post 시점에 큐 대기 측정을 시작한다.
+    uint64_t mon_token = DbThreadMonitor::Instance().BeginEnqueue("PlayerLoad", player_id);
+
+    boost::asio::post(player->GetStrand().value(), [weak_player, player_id, query_id, io_context, mon_token]() {
+        DbTaskScope mon_scope(mon_token);
         std::cout << "[Player " << player_id << "] Handling DB Query #" << query_id
             << " on Thread " << std::this_thread::get_id() << std::endl;
 

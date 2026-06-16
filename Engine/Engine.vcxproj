@@ -182,6 +182,7 @@
     <ClCompile Include="World\NavMap.cpp" />
     <ClCompile Include="skill\NormalAttackSkill.cpp" />
     <ClCompile Include="System\PerfTimer.cpp" />
+    <ClCompile Include="System\DbThreadMonitor.cpp" />
     <ClCompile Include="Player\Player.cpp" />
     <ClCompile Include="Controller\PlayerController.cpp" />
     <ClCompile Include="Player\PlayerDataLoader.cpp" />
@@ -243,6 +244,7 @@
     <ClInclude Include="System\Common.h" />
     <ClInclude Include="GameObject\ComponentTypeId.h" />
     <ClInclude Include="System\DbChangeTracker.h" />
+    <ClInclude Include="System\DbThreadMonitor.h" />
     <ClInclude Include="SQL\DbRecord.h" />
     <ClInclude Include="GameMode\GameMode.h" />
     <ClInclude Include="GameMode\GameModeFactory.h" />

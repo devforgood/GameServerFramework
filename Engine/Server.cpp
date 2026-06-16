@@ -9,6 +9,7 @@
 #include "SqlClientManager.h"
 #include "PlayerController.h"
 #include "Common.h"
+#include "DbThreadMonitor.h"
 
 GameChannel::GameChannel()
 {
@@ -356,6 +357,13 @@ void ServerManager::Run()
 	const std::chrono::milliseconds targetInterval(16);
 	TimeVal lastTime = getPerfTime();
 
+	// DB 스레드 풀의 멈춘(데드락/슬로우) 작업 감시 주기 (1초).
+	auto lastDbCheck = std::chrono::steady_clock::now();
+	const std::chrono::milliseconds dbCheckInterval(1000);
+	// 스레드별 사용 시간 리포트 주기 (10초).
+	auto lastDbReport = lastDbCheck;
+	const std::chrono::milliseconds dbReportInterval(10000);
+
 	while (running)
 	{
 		auto frameStart = std::chrono::steady_clock::now();
@@ -366,6 +374,18 @@ void ServerManager::Run()
 		float delta = getPerfTimeUsec(curTime - lastTime) / 1000000.0f;
 		lastTime = curTime;
 		Tick(delta);
+
+		if (frameStart - lastDbCheck >= dbCheckInterval)
+		{
+			DbThreadMonitor::Instance().CheckStuckTasks();
+			lastDbCheck = frameStart;
+		}
+
+		if (frameStart - lastDbReport >= dbReportInterval)
+		{
+			DbThreadMonitor::Instance().ReportThreadUsage();
+			lastDbReport = frameStart;
+		}
 
 		auto frameEnd = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(frameEnd - frameStart);

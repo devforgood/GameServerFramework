@@ -4,13 +4,18 @@
 #include "SqlClient.h"
 #include "SqlClientManager.h"
 #include "PlayerSaveData.h"
+#include "DbThreadMonitor.h"
 #include <iostream>
 #include "SQL/generated/dao.h"
 
 
 void PlayerDataSaver::AsyncSave(std::shared_ptr<Player> player, std::shared_ptr<PlayerSaveData> data)
 {
-    boost::asio::post(player->GetStrand().value(), [data]() {
+    // DB 스레드 풀 모니터링: post 시점에 큐 대기 측정을 시작한다.
+    uint64_t mon_token = DbThreadMonitor::Instance().BeginEnqueue("PlayerSave", player->GetPlayerId());
+
+    boost::asio::post(player->GetStrand().value(), [data, mon_token]() {
+        DbTaskScope mon_scope(mon_token);
 
         sql::Connection* conn = SqlClientManager::getInstance().sqlClientPtr->getConnection();
 
