@@ -63,15 +63,21 @@ namespace Assets.Scripts.GameData
             var skillReq = Resources.LoadAsync<TextAsset>("GameData/skill");
             var itemReq = Resources.LoadAsync<TextAsset>("GameData/item");
             var questReq = Resources.LoadAsync<TextAsset>("GameData/quest");
+            var levelReq = Resources.LoadAsync<TextAsset>("GameData/level");
+            var monsterReq = Resources.LoadAsync<TextAsset>("GameData/monster");
 
             // 모든 요청이 끝날 때까지 대기. (요청은 이미 동시에 진행 중)
             yield return skillReq;
             yield return itemReq;
             yield return questReq;
+            yield return levelReq;
+            yield return monsterReq;
 
             ParseTable<Gamedata.SkillList, Gamedata.Skill>((TextAsset)skillReq.asset, "GameData/skill", l => l.items, s => s.id, Skills);
             ParseTable<Gamedata.ItemList, Gamedata.Item>((TextAsset)itemReq.asset, "GameData/item", l => l.items, i => i.id, Items);
-            ParseTable<Gamedata.QuestList, Gamedata.Quest>((TextAsset)questReq.asset, "GameData/quest", l => l.items, q => q.id, GameManager.Instance.resource.Quests);
+            ParseTable<Gamedata.QuestList, Gamedata.Quest>((TextAsset)questReq.asset, "GameData/quest", l => l.items, q => q.id, Quests);
+            ParseTable<Gamedata.LevelList, Gamedata.Level>((TextAsset)levelReq.asset, "GameData/level", l => l.items, lv => lv.id, Levels);
+            ParseTable<Gamedata.MonsterDataList, Gamedata.MonsterData>((TextAsset)monsterReq.asset, "GameData/monster", l => l.items, m => m.id, MonsterDatas);
 
             // 게임 데이터 로드가 완료되었음을 로그로 남김
             Debug.Log("ResourceLoader: Game data loaded successfully.");
@@ -80,5 +86,7 @@ namespace Assets.Scripts.GameData
         public Dictionary<int, Gamedata.Skill> Skills = new Dictionary<int, Gamedata.Skill>();
         public Dictionary<int, Gamedata.Item> Items = new Dictionary<int, Gamedata.Item>();
         public Dictionary<int, Gamedata.Quest> Quests = new Dictionary<int, Gamedata.Quest>();
+        public Dictionary<int, Gamedata.Level> Levels = new Dictionary<int, Gamedata.Level>();
+        public Dictionary<int, Gamedata.MonsterData> MonsterDatas = new Dictionary<int, Gamedata.MonsterData>();
     }
 }

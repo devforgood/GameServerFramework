@@ -157,9 +157,6 @@
     <None Include="packages.config" />
     <None Include="Research.md" />
     <None Include="SQL\generated\create_tables.sql" />
-    <CopyFileToFolders Include="solo_navmesh.bin">
-      <FileType>Document</FileType>
-    </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BehaviorTree\BehaviorTree.vcxproj">
@@ -171,9 +168,6 @@
     <ProjectReference Include="..\recastnavigation\recastnavigation.vcxproj">
       <Project>{8e24c208-4d79-43be-941d-dbd48e5a4264}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Xml Include="Monster.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

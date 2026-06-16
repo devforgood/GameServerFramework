@@ -43,6 +43,13 @@ LUA_SCRIPTS = [
 ]
 LUA_COPY_DIRS = ["../Game/GameData/", "../UnitTest/GameData/"]
 
+# GameData에서 관리되는 정적 에셋 (behavior tree XML, navmesh 바이너리 등)
+STATIC_ASSETS = [
+    "../GameData/Monster.xml",
+    "../GameData/solo_navmesh.bin",
+]
+STATIC_ASSET_COPY_DIRS = ["../Game/GameData/", "../UnitTest/GameData/"]
+
 
 def load_table_meta():
     try:
@@ -133,6 +140,16 @@ def main():
                 print(f"{GREEN}[OK] {os.path.basename(lua_path)} copied to {target_dir}{RESET}")
             except Exception as e:
                 print(f"{RED}[ERROR] {lua_path} copy to {target_dir} failed: {e}{RESET}")
+
+    # 정적 에셋 복사 (Monster.xml, solo_navmesh.bin 등)
+    for target_dir in STATIC_ASSET_COPY_DIRS:
+        os.makedirs(target_dir, exist_ok=True)
+        for asset_path in STATIC_ASSETS:
+            try:
+                shutil.copy2(asset_path, os.path.join(target_dir, os.path.basename(asset_path)))
+                print(f"{GREEN}[OK] {os.path.basename(asset_path)} copied to {target_dir}{RESET}")
+            except Exception as e:
+                print(f"{RED}[ERROR] {asset_path} copy to {target_dir} failed: {e}{RESET}")
 
 
 if __name__ == "__main__":

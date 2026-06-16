@@ -25,14 +25,4 @@
     </None>
     <None Include="Research.md" />
   </ItemGroup>
-  <ItemGroup>
-    <CopyFileToFolders Include="solo_navmesh.bin">
-      <Filter>data</Filter>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <Xml Include="Monster.xml">
-      <Filter>data</Filter>
-    </Xml>
-  </ItemGroup>
 </Project>

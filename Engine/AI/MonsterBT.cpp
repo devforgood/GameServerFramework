@@ -265,7 +265,7 @@ BT::Tree* MonsterBT::createTree(Monster* monster)
 		});
 		
 
-	return new BT::Tree(factory.createTreeFromText(loadFile("Monster.xml")));
+	return new BT::Tree(factory.createTreeFromText(loadFile("GameData/Monster.xml")));
 
 }
 

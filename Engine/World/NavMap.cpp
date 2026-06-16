@@ -123,7 +123,7 @@ void NavMap::Init()
 	m_crowd = dtAllocCrowd();
 
 	dtFreeNavMesh(m_navMesh);
-	m_navMesh = loadAll("solo_navmesh.bin");
+	m_navMesh = loadAll("GameData/solo_navmesh.bin");
 	m_navQuery->init(m_navMesh, 2048);
 
 	dtNavMesh* nav = m_navMesh;
