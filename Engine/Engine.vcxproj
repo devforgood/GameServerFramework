@@ -272,6 +272,7 @@
     <ClInclude Include="System\PerfTimer.h" />
     <ClInclude Include="Player\Player.h" />
     <ClInclude Include="Controller\PlayerController.h" />
+    <ClInclude Include="Player\DbThreadDispatcher.h" />
     <ClInclude Include="Player\PlayerDataLoader.h" />
     <ClInclude Include="Player\PlayerDataSaver.h" />
     <ClInclude Include="Player\PlayerItem.h" />

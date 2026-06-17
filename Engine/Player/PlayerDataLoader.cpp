@@ -1,11 +1,6 @@
 #include "PlayerDataLoader.h"
-#include "Player.h"
-#include "Server.h"
-#include "SqlClient.h"
-#include "SqlClientManager.h"
 #include "PlayerLoadData.h"
-#include "DbThreadMonitor.h"
-#include <iostream>
+#include "DbThreadDispatcher.h"
 
 using DataLoaderFunc = std::function<void(sql::Connection*, long, PlayerLoadData&)>;
 
@@ -34,43 +29,15 @@ void PlayerDataLoader::LoadAll(sql::Connection* conn, long player_id, PlayerLoad
 }
 
 void PlayerDataLoader::AsyncLoad(std::shared_ptr<Player> player) {
-    long player_id = player->GetPlayerId();
-    int query_id = 2; // Can be a unique query tracker
-    std::cout << "[Player " << player_id << "] Handling DB Query #" << query_id
-        << " on post " << std::this_thread::get_id() << std::endl;
-
-    auto session = player->GetSession();
-    if (!session) {
-        std::cerr << "Session expired!" << std::endl;
-        return;
-    }
-    auto io_context = player->GetServer()->get_io_context();
-    std::weak_ptr<Player> weak_player = player;
-
-    // DB 스레드 풀 모니터링: post 시점에 큐 대기 측정을 시작한다.
-    uint64_t mon_token = DbThreadMonitor::Instance().BeginEnqueue("PlayerLoad", player_id);
-
-    boost::asio::post(player->GetStrand().value(), [weak_player, player_id, query_id, io_context, mon_token]() {
-        DbTaskScope mon_scope(mon_token);
-        std::cout << "[Player " << player_id << "] Handling DB Query #" << query_id
-            << " on Thread " << std::this_thread::get_id() << std::endl;
-
-        // Populate PlayerLoadData using the registered loaders
-        auto loaded_data = std::make_shared<PlayerLoadData>();
-        sql::Connection* conn = SqlClientManager::getInstance().sqlClientPtr->getConnection();
-        
-        LoadAll(conn, player_id, *loaded_data);
-
-        std::cout << "[Player " << player_id << "] Finished DB Query #" << query_id 
-            << ", Loaded " << loaded_data->items.size() << " items, "
-            << loaded_data->skills.size() << " skills." << std::endl;
-
-        boost::asio::post(*io_context, [loaded_data, weak_player]() {
-            if (auto player = weak_player.lock()) {
-                std::cout << "[Player " << loaded_data->player.id << "] Player Name: " << loaded_data->player.name
-                    << " on Thread " << std::this_thread::get_id() << std::endl;
-                player->OnLoadedData(*loaded_data);
-            }
+    DbThreadDispatcher::Dispatch(player, "PlayerLoad",
+        // DB 처리: 등록된 로더들로 PlayerLoadData 를 채운다.
+        [](sql::Connection* conn, long player_id) {
+            auto loaded_data = std::make_shared<PlayerLoadData>();
+            LoadAll(conn, player_id, *loaded_data);
+            return loaded_data;
+        },
+        // 결과 처리: 게임 스레드에서 플레이어에 로드 결과를 반영한다.
+        [](Player& player, const PlayerLoadData& data) {
+            player.OnLoadedData(data);
         });
-    });
 }

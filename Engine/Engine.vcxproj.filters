@@ -504,5 +504,8 @@
     <ClInclude Include="GameData\gamedata.h">
       <Filter>GameData</Filter>
     </ClInclude>
+    <ClInclude Include="Player\DbThreadDispatcher.h">
+      <Filter>Player</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,24 +1,14 @@
 #include "PlayerDataSaver.h"
-#include "Player.h"
-#include "Server.h"
-#include "SqlClient.h"
-#include "SqlClientManager.h"
 #include "PlayerSaveData.h"
-#include "DbThreadMonitor.h"
-#include <iostream>
+#include "DbThreadDispatcher.h"
 #include "SQL/generated/dao.h"
 
 
 void PlayerDataSaver::AsyncSave(std::shared_ptr<Player> player, std::shared_ptr<PlayerSaveData> data)
 {
-    // DB 스레드 풀 모니터링: post 시점에 큐 대기 측정을 시작한다.
-    uint64_t mon_token = DbThreadMonitor::Instance().BeginEnqueue("PlayerSave", player->GetPlayerId());
-
-    boost::asio::post(player->GetStrand().value(), [data, mon_token]() {
-        DbTaskScope mon_scope(mon_token);
-
-        sql::Connection* conn = SqlClientManager::getInstance().sqlClientPtr->getConnection();
-
+    // DB 처리: 수집된 변경분을 저장한다. (결과 후처리 없음)
+    DbThreadDispatcher::Dispatch(player, "PlayerSave",
+        [data](sql::Connection* conn, long /*player_id*/) {
         if (data->player)
         {
             PlayerDAO(conn).Update(*data->player);
@@ -62,3 +52,4 @@ void PlayerDataSaver::AsyncSave(std::shared_ptr<Player> player, std::shared_ptr<
         }
     });
 }
+
