@@ -34,37 +34,37 @@ public:
     //   on_complete : 결과를 들고 io_context 에서 실행. player 가 살아있을 때만 호출된다.
     template <typename DbWork, typename OnComplete>
     static void Dispatch(const std::shared_ptr<Player>& player,
-                         std::string task_name,
-                         DbWork&& db_work,
-                         OnComplete&& on_complete)
+                         std::string taskName,
+                         DbWork&& dbWork,
+                         OnComplete&& onComplete)
     {
         auto strand = player->GetStrand();
         if (!strand)
             return; // 세션 만료
 
-        const long player_id = player->GetPlayerId();
-        auto io_context = player->GetServer()->get_io_context();
-        std::weak_ptr<Player> weak_player = player;
+        const long playerId = player->GetPlayerId();
+        auto ioContext = player->GetServer()->get_io_context();
+        std::weak_ptr<Player> weakPlayer = player;
 
         // DB 스레드 풀 모니터링: post 시점에 큐 대기 측정을 시작한다.
-        const uint64_t mon_token = DbThreadMonitor::Instance().BeginEnqueue(task_name, player_id);
+        const uint64_t monToken = DbThreadMonitor::Instance().BeginEnqueue(taskName, playerId);
 
         boost::asio::post(strand.value(),
-            [player_id, io_context, weak_player, mon_token,
-             db_work = std::forward<DbWork>(db_work),
-             on_complete = std::forward<OnComplete>(on_complete)]() mutable
+            [playerId, ioContext, weakPlayer, monToken,
+             dbWork = std::forward<DbWork>(dbWork),
+             onComplete = std::forward<OnComplete>(onComplete)]() mutable
             {
-                DbTaskScope mon_scope(mon_token);
+                DbTaskScope mon_scope(monToken);
 
                 sql::Connection* conn = SqlClientManager::getInstance().sqlClientPtr->getConnection();
-                auto result = db_work(conn, player_id);
+                auto result = dbWork(conn, playerId);
 
-                boost::asio::post(*io_context,
-                    [weak_player, result = std::move(result),
-                     on_complete = std::move(on_complete)]() mutable
+                boost::asio::post(*ioContext,
+                    [weakPlayer, result = std::move(result),
+                     onComplete = std::move(onComplete)]() mutable
                     {
-                        if (auto player = weak_player.lock())
-                            on_complete(*player, *result);
+                        if (auto player = weakPlayer.lock())
+                            onComplete(*player, *result);
                     });
             });
     }
@@ -72,23 +72,23 @@ public:
     // 결과 후처리가 필요 없는 fire-and-forget 작업(예: 저장).
     template <typename DbWork>
     static void Dispatch(const std::shared_ptr<Player>& player,
-                         std::string task_name,
-                         DbWork&& db_work)
+                         std::string taskName,
+                         DbWork&& dbWork)
     {
         auto strand = player->GetStrand();
         if (!strand)
             return; // 세션 만료
 
-        const long player_id = player->GetPlayerId();
-        const uint64_t mon_token = DbThreadMonitor::Instance().BeginEnqueue(task_name, player_id);
+        const long playerId = player->GetPlayerId();
+        const uint64_t monToken = DbThreadMonitor::Instance().BeginEnqueue(taskName, playerId);
 
         boost::asio::post(strand.value(),
-            [player_id, mon_token, db_work = std::forward<DbWork>(db_work)]() mutable
+            [playerId, monToken, dbWork = std::forward<DbWork>(dbWork)]() mutable
             {
-                DbTaskScope mon_scope(mon_token);
+                DbTaskScope monScope(monToken);
 
                 sql::Connection* conn = SqlClientManager::getInstance().sqlClientPtr->getConnection();
-                db_work(conn, player_id);
+                dbWork(conn, playerId);
             });
     }
 };
