@@ -171,10 +171,7 @@
     <ClCompile Include="Controller\PlayerController.cpp">
       <Filter>Controller</Filter>
     </ClCompile>
-    <ClCompile Include="Player\PlayerDataLoader.cpp">
-      <Filter>Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Player\PlayerDataSaver.cpp">
+    <ClCompile Include="Player\PlayerRepository.cpp">
       <Filter>Player</Filter>
     </ClCompile>
     <ClCompile Include="Player\PlayerItem.cpp">
@@ -404,10 +401,7 @@
     <ClInclude Include="Controller\PlayerController.h">
       <Filter>Controller</Filter>
     </ClInclude>
-    <ClInclude Include="Player\PlayerDataLoader.h">
-      <Filter>Player</Filter>
-    </ClInclude>
-    <ClInclude Include="Player\PlayerDataSaver.h">
+    <ClInclude Include="Player\PlayerRepository.h">
       <Filter>Player</Filter>
     </ClInclude>
     <ClInclude Include="Player\PlayerItem.h">
@@ -504,7 +498,7 @@
     <ClInclude Include="GameData\gamedata.h">
       <Filter>GameData</Filter>
     </ClInclude>
-    <ClInclude Include="Player\DbThreadDispatcher.h">
+    <ClInclude Include="Player\PlayerDbDispatcher.h">
       <Filter>Player</Filter>
     </ClInclude>
   </ItemGroup>

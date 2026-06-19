@@ -14,7 +14,7 @@
 #include "DbThreadMonitor.h"
 
 //
-// DbThreadDispatcher
+// PlayerDbDispatcher
 // ------------------------------------------------------------------
 // 플레이어 관련 비동기 DB 작업을 DB 스레드 풀로 디스패치하는 헬퍼.
 //
@@ -26,7 +26,7 @@
 // 매번 반복되던 보일러플레이트는 모두 내부에서 캡슐화한다.
 // 세션이 만료되어 strand 를 얻을 수 없으면 작업은 조용히 무시된다.
 //
-class DbThreadDispatcher
+class PlayerDbDispatcher
 {
 public:
     // 결과를 게임 스레드로 되돌려 후처리하는 작업(예: 로드).

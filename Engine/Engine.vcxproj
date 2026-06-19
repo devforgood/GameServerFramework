@@ -185,8 +185,7 @@
     <ClCompile Include="System\DbThreadMonitor.cpp" />
     <ClCompile Include="Player\Player.cpp" />
     <ClCompile Include="Controller\PlayerController.cpp" />
-    <ClCompile Include="Player\PlayerDataLoader.cpp" />
-    <ClCompile Include="Player\PlayerDataSaver.cpp" />
+    <ClCompile Include="Player\PlayerRepository.cpp" />
     <ClCompile Include="Player\PlayerItem.cpp" />
     <ClCompile Include="Player\PlayerQuest.cpp" />
     <ClCompile Include="Player\PlayerSaveData.h" />
@@ -272,9 +271,8 @@
     <ClInclude Include="System\PerfTimer.h" />
     <ClInclude Include="Player\Player.h" />
     <ClInclude Include="Controller\PlayerController.h" />
-    <ClInclude Include="Player\DbThreadDispatcher.h" />
-    <ClInclude Include="Player\PlayerDataLoader.h" />
-    <ClInclude Include="Player\PlayerDataSaver.h" />
+    <ClInclude Include="Player\PlayerDbDispatcher.h" />
+    <ClInclude Include="Player\PlayerRepository.h" />
     <ClInclude Include="Player\PlayerItem.h" />
     <ClInclude Include="Player\PlayerLoadData.h" />
     <ClInclude Include="Player\PlayerQuest.h" />

@@ -7,13 +7,12 @@
 #include <mariadb/conncpp.hpp>
 #include "./SQL/generated/dao.h"
 #include "LogHelper.h"
-#include "PlayerDataLoader.h"
+#include "PlayerRepository.h"
 #include "PlayerLoadData.h"
 #include "PlayerQuest.h"
 #include "PlayerItem.h"
 #include "PlayerSkill.h"
 #include "PlayerLevel.h"
-#include "PlayerDataSaver.h"
 #include "PlayerSaveData.h"
 #include "PlayerEventBroker.h"
 #include "PlayerEventBrokerProxy.h"
@@ -162,5 +161,5 @@ void Player::SavePlayerData()
 	});
 
 	// 변경된 데이터만 비동기로 전달
-	PlayerDataSaver::AsyncSave(shared_from_this(), save_data);
+	PlayerRepository::AsyncSave(shared_from_this(), save_data);
 }
