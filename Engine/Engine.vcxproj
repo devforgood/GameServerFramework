@@ -74,11 +74,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;MI_DEBUG=0;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -92,11 +92,11 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;MI_DEBUG=0;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -108,13 +108,13 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;BOOST_BIND_GLOBAL_PLACEHOLDERS;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;MI_DEBUG=0;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;BOOST_BIND_GLOBAL_PLACEHOLDERS;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4251;4267;4819</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -128,13 +128,13 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_BIND_GLOBAL_PLACEHOLDERS;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;MI_DEBUG=0;BOOST_BIND_GLOBAL_PLACEHOLDERS;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4251;4267;4819</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -302,6 +302,11 @@
     <ProjectReference Include="..\recastnavigation\recastnavigation.vcxproj">
       <Project>{8e24c208-4d79-43be-941d-dbd48e5a4264}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\thirdparty\mimalloc\src\static.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
