@@ -239,3 +239,8 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
