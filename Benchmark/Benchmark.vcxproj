@@ -73,62 +73,66 @@
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;MI_DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MI_DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;MI_DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;MI_DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -137,6 +141,10 @@
   <ItemGroup>
     <ClCompile Include="ECSBenchmark.cpp" />
     <ClCompile Include="EventBrokerBenchmark.cpp" />
+    <ClCompile Include="GameObjectAllocBenchmark.cpp" />
+    <ClCompile Include="..\thirdparty\mimalloc\src\static.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
