@@ -128,6 +128,10 @@
       <AdditionalLibraryDirectories>..\flatbuffer\lib;..\Engine\3thparty\mariadb;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>flatbuffers.lib;mariadbcpp.lib;advapi32.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"</Command>
+      <Message>Deploying mariadbcpp.dll</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -149,6 +153,10 @@
       <AdditionalLibraryDirectories>..\flatbuffer\lib;..\Engine\3thparty\mariadb;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>flatbuffers_r.lib;mariadbcpp.lib;advapi32.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /Y /D "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"</Command>
+      <Message>Deploying mariadbcpp.dll</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Game.cpp" />
