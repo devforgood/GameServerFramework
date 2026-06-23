@@ -9,7 +9,7 @@
 // 실행 시 작업 디렉터리(또는 exe 디렉터리)에 GameData/ 자산이 있어야 한다
 // (solo_navmesh.bin, Monster.xml, *.lua, *.json). PostBuildEvent 가 exe 옆으로 복사한다.
 //
-// 주의: 네비메시 크라우드 정원은 NavMap::MAX_AGENTS(=1024) 이므로 스폰 수는 그 미만으로 둔다.
+// 주의: 스폰 수는 네비메시 크라우드 정원 NavMap::MAX_AGENTS 미만이어야 한다(현재 16384).
 // 의미 있는 수치를 위해 Release/x64 로 빌드/실행할 것.
 
 #include <benchmark/benchmark.h>
@@ -176,3 +176,31 @@ static void BM_WorldTick(benchmark::State& state)
 BENCHMARK(BM_WorldTick)
 	->Arg(1)->Arg(64)->Arg(128)->Arg(256)->Arg(512)->Arg(1000)
 	->Unit(benchmark::kMicrosecond);
+
+// 대규모: 몬스터 10000마리가 살아있는 월드의 update(dt) 평균 소요 시간.
+//  - 스폰(셋업)은 타이밍에서 제외된다(반복마다 1회).
+//  - MinTime 으로 충분한 반복 횟수를, Repetitions 로 평균/중앙값/표준편차를 산출한다.
+//    (NavMap::MAX_AGENTS 가 10000 이상이어야 한다.)
+static void BM_WorldTick10000(benchmark::State& state)
+{
+	const int count = static_cast<int>(state.range(0));
+	ValidSpawns(); // 1회성 좌표 탐색을 셋업에서 먼저 끝낸다.
+
+	World world;
+	world.Init();
+	const int spawned = SpawnMonsters(world, count);
+
+	for (auto _ : state)
+	{
+		world.update(kTickDt);
+	}
+
+	state.counters["monsters"] = spawned;
+	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
+}
+BENCHMARK(BM_WorldTick10000)
+	->Arg(10000)
+	->Unit(benchmark::kMillisecond)
+	->MinTime(3.0)            // 반복당 최소 3초 동안 충분히 돌려 평균을 안정화
+	->Repetitions(5)          // 5회 반복 → mean/median/stddev 리포트
+	->ReportAggregatesOnly(true);

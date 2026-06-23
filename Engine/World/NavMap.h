@@ -88,7 +88,10 @@ protected:
 	float m_detailSampleMaxError;
 	int m_partitionType;
 
-	static const int MAX_AGENTS = 1024;
+	// 크라우드 동시 에이전트 정원. dtCrowd 가 이 수만큼 에이전트 배열을 미리 할당하므로
+	// 값이 클수록 메모리를 더 쓴다(에이전트당 수 KB). 대규모 몬스터 벤치마크(예: 10000)를
+	// 수용하기 위해 16384 로 설정. 운영에서 메모리가 빠듯하면 줄여도 된다.
+	static const int MAX_AGENTS = 16384;
 
 	CrowdToolParams m_toolParams;
 
