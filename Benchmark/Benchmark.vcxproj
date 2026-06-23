@@ -73,10 +73,10 @@
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;..\Engine\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;MI_DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
@@ -88,12 +88,12 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;..\Engine\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MI_DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
@@ -105,35 +105,53 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;..\Engine\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;MI_DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>advapi32.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\Engine\3thparty\mariadb;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;mariadbcpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"
+xcopy /D /Y /I "$(ProjectDir)..\GameData\*.bin" "$(OutDir)GameData\"
+xcopy /D /Y /I "$(ProjectDir)..\GameData\*.xml" "$(OutDir)GameData\"
+xcopy /D /Y /I "$(ProjectDir)..\GameData\*.lua" "$(OutDir)GameData\"
+xcopy /D /Y /I "$(ProjectDir)..\GameData\*.json" "$(OutDir)GameData\"
+echo -- mob.lua stub: lua BT is unused by the benchmark (tick uses Monster.xml)&gt; "$(OutDir)mob.lua"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;..\Engine\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;MI_DEBUG=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>advapi32.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\Engine\3thparty\mariadb;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>advapi32.lib;bcrypt.lib;mariadbcpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"
+xcopy /D /Y /I "$(ProjectDir)..\GameData\*.bin" "$(OutDir)GameData\"
+xcopy /D /Y /I "$(ProjectDir)..\GameData\*.xml" "$(OutDir)GameData\"
+xcopy /D /Y /I "$(ProjectDir)..\GameData\*.lua" "$(OutDir)GameData\"
+xcopy /D /Y /I "$(ProjectDir)..\GameData\*.json" "$(OutDir)GameData\"
+echo -- mob.lua stub: lua BT is unused by the benchmark (tick uses Monster.xml)&gt; "$(OutDir)mob.lua"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -142,14 +160,23 @@
     <ClCompile Include="ECSBenchmark.cpp" />
     <ClCompile Include="EventBrokerBenchmark.cpp" />
     <ClCompile Include="GameObjectAllocBenchmark.cpp" />
-    <ClCompile Include="..\thirdparty\mimalloc\src\static.c">
-      <CompileAs>CompileAsC</CompileAs>
-    </ClCompile>
+    <ClCompile Include="WorldBenchmark.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Engine\Engine.vcxproj">
+      <Project>{9359d49d-1f4d-4140-a684-6a1fc6bc9c8d}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\gbenchmark.1.5.1\build\gbenchmark.targets" Condition="Exists('..\packages\gbenchmark.1.5.1\build\gbenchmark.targets')" />
     <Import Project="..\packages\googlebenchmark.1.8.3.1\build\googlebenchmark.targets" Condition="Exists('..\packages\googlebenchmark.1.8.3.1\build\googlebenchmark.targets')" />
+    <Import Project="..\packages\luajit.native.2.1.1739213504\build\native\luajit.native.targets" Condition="Exists('..\packages\luajit.native.2.1.1739213504\build\native\luajit.native.targets')" />
+    <Import Project="..\packages\spdlog_native.2021.07.30\build\native\spdlog_native.targets" Condition="Exists('..\packages\spdlog_native.2021.07.30\build\native\spdlog_native.targets')" />
+    <Import Project="..\packages\boost.1.87.0\build\boost.targets" Condition="Exists('..\packages\boost.1.87.0\build\boost.targets')" />
+    <Import Project="..\packages\boost_filesystem-vc143.1.87.0\build\boost_filesystem-vc143.targets" Condition="Exists('..\packages\boost_filesystem-vc143.1.87.0\build\boost_filesystem-vc143.targets')" />
+    <Import Project="..\packages\boost_thread-vc143.1.87.0\build\boost_thread-vc143.targets" Condition="Exists('..\packages\boost_thread-vc143.1.87.0\build\boost_thread-vc143.targets')" />
+    <Import Project="..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets" Condition="Exists('..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

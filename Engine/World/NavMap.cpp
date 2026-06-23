@@ -124,6 +124,12 @@ void NavMap::Init()
 
 	dtFreeNavMesh(m_navMesh);
 	m_navMesh = loadAll("GameData/solo_navmesh.bin");
+	if (m_navMesh == nullptr)
+	{
+		// 자산을 못 찾으면(작업 디렉터리 문제 등) 이후 크라우드 쿼리가 null 네비메시를
+		// 역참조하며 크래시한다. 원인을 명확히 남긴다.
+		LOG.error("NavMap::Init failed to load 'GameData/solo_navmesh.bin' (check working directory)");
+	}
 	m_navQuery->init(m_navMesh, 2048);
 
 	dtNavMesh* nav = m_navMesh;
@@ -211,6 +217,10 @@ int NavMap::addAgent(const float* p, float speed = 3.5f)
 {
 	dtCrowd* crowd = m_crowd;
 
+	// 네비메시 로드 실패 시 크라우드 쿼리가 null 을 역참조하므로 미리 차단한다.
+	if (m_navMesh == nullptr || crowd == nullptr)
+		return -1;
+
 	dtCrowdAgentParams ap;
 	memset(&ap, 0, sizeof(ap));
 	ap.radius = m_agentRadius;
@@ -234,12 +244,14 @@ int NavMap::addAgent(const float* p, float speed = 3.5f)
 	ap.separationWeight = m_toolParams.m_separationWeight;
 
 	int idx = crowd->addAgent(p, &ap);
-	if (idx != -1)
+	if (idx == -1)
 	{
-		if (m_targetRef)
-			crowd->requestMoveTarget(idx, m_targetRef, m_targetPos);
-
+		// 네비메시 인근이 아니면 크라우드가 -1 을 반환한다. getAgent(-1) 역참조 방지.
+		return -1;
 	}
+
+	if (m_targetRef)
+		crowd->requestMoveTarget(idx, m_targetRef, m_targetPos);
 
 	auto agent = crowd->getAgent(idx);
 	LOG.info("add agent {} pos({}, {}, {})", idx, -1 * agent->npos[0], agent->npos[1], agent->npos[2]);

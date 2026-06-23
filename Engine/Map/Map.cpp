@@ -68,6 +68,11 @@ Map::Map(World* world)
 
 Map::~Map()
 {
+	// 살아있는 액터를 먼저 정리한다. Actor 소멸자(Actor::Clear)가 systemManager_ 를
+	// 역참조하므로, systemManager_ 보다 먼저 파괴되어야 댕글링 포인터 접근을 막는다.
+	actorMap_.clear();
+	actorList_.clear();
+
 	if (map_)
 	{
 		delete map_;
