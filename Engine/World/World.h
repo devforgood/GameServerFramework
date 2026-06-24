@@ -3,6 +3,7 @@
 #include <list>
 #include <unordered_map>
 #include <memory>
+#include <string>
 #include "syncnet_generated.h"
 
 class GameSession;
@@ -40,7 +41,9 @@ public:
 	World();
 	virtual ~World();
 
-	void Init();
+	// movementOverride 가 비어있지 않으면 게임 모드 데이터의 이동 전략 대신
+	// 해당 전략("crowd"/"waypoint")을 강제한다(벤치마크/테스트용).
+	void Init(const std::string& movementOverride = "");
 	void update(float deltaTime);
 
 	RandomUtil* random_util() { return randomUtil_; }

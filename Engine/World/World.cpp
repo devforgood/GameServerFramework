@@ -38,7 +38,7 @@ World::~World()
 	}
 }
 
-void World::Init()
+void World::Init(const std::string& movementOverride)
 {
 	Monster::Initialize("mob.lua");
 	Monster::registerLuaFunctionAll();
@@ -58,6 +58,10 @@ void World::Init()
 	std::string movementType;
 	if (gameMode_ && gameMode_->gamedata)
 		movementType = gameMode_->gamedata->movement;
+
+	// 명시적 오버라이드가 있으면 게임 모드 설정보다 우선한다(벤치마크/테스트).
+	if (!movementOverride.empty())
+		movementType = movementOverride;
 
 	// Initialize maps
 	std::shared_ptr<Map> map = std::make_shared<Map>(this);
