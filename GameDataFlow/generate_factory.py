@@ -2,9 +2,23 @@ import json
 from jinja2 import Environment, FileSystemLoader
 import os
 
+def _resolve_path(server_src_dir, filename):
+    """Return the existing path of `filename` anywhere under server_src_dir
+    (recursive), or server_src_dir/filename if it does not exist yet.
+
+    The C++ sources were reorganised into per-table subfolders (Engine/Map/,
+    Engine/GameMode/, ...). Without this lookup the generator would re-create
+    flat copies at the Engine/ root, which shadow the real headers via the
+    include path. By resolving to the existing location we overwrite the real
+    generated files in place and never spawn shadowing stubs."""
+    for root, _, files in os.walk(server_src_dir):
+        if filename in files:
+            return os.path.join(root, filename)
+    return os.path.join(server_src_dir, filename)
+
 def _ensure_default_class(server_src_dir, table_name):
-    h_path = os.path.join(server_src_dir, f'{table_name}.h')
-    cpp_path = os.path.join(server_src_dir, f'{table_name}.cpp')
+    h_path = _resolve_path(server_src_dir, f'{table_name}.h')
+    cpp_path = _resolve_path(server_src_dir, f'{table_name}.cpp')
 
     if not os.path.exists(h_path):
         with open(h_path, 'w', encoding='utf-8') as f:
@@ -31,8 +45,8 @@ def _ensure_default_class(server_src_dir, table_name):
             f.write(f'#include "{table_name}.h"\n')
 
 def _ensure_default_derived_class(server_src_dir, table_name, class_name):
-    h_path = os.path.join(server_src_dir, f'{class_name}.h')
-    cpp_path = os.path.join(server_src_dir, f'{class_name}.cpp')
+    h_path = _resolve_path(server_src_dir, f'{class_name}.h')
+    cpp_path = _resolve_path(server_src_dir, f'{class_name}.cpp')
 
     if not os.path.exists(h_path):
         with open(h_path, 'w', encoding='utf-8') as f:
@@ -113,13 +127,13 @@ def generate_factory(server_src_dir, client_cs_dir, table_name, items):
 
     # Factory.h 생성
     template_h = env.get_template('Factory.h.j2')
-    h_path = os.path.join(server_src_dir, f'{table_name}Factory.h')
+    h_path = _resolve_path(server_src_dir, f'{table_name}Factory.h')
     with open(h_path, 'w', encoding='utf-8') as f:
         f.write(template_h.render(table_name=table_name))
 
     # Factory.cpp 생성
     template_cpp = env.get_template('Factory.cpp.j2')
-    cpp_path = os.path.join(server_src_dir, f'{table_name}Factory.cpp')
+    cpp_path = _resolve_path(server_src_dir, f'{table_name}Factory.cpp')
     with open(cpp_path, 'w', encoding='utf-8') as f:
         f.write(template_cpp.render(
             table_name=table_name,

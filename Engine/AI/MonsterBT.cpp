@@ -8,6 +8,7 @@
 #include <memory> // std::unique_ptr
 #include <iostream> // std::cerr
 #include "Map.h"
+#include "INavMovement.h"
 #include "BTDebugManager.h"
 #include "BTDebugNodeIds.h"
 
@@ -56,7 +57,7 @@ public:
 
 	BT::NodeStatus tick() override
 	{
-		monster_->GetMap()->GetNavMap()->patrol(monster_->GetActorId(), monster_->spawnPos_, monster_->spawnRef_);
+		monster_->GetMap()->GetNavMap()->Patrol(monster_->GetActorId(), monster_->spawnPos_);
 		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionPatrol, "ActionPatrol", BT::NodeStatus::SUCCESS, "patrol command issued");
 		return BT::NodeStatus::SUCCESS;
 	}
@@ -77,7 +78,8 @@ public:
 	{
 		monster_->SetState(syncnet::AIState_Detect);
 		monster_->Resume();
-		monster_->GetMap()->GetNavMap()->setMoveTarget(monster_->GetMap()->GetNavMap()->getPos(monster_->targetAgentId_), false, monster_->GetActorId());
+		INavMovement* nav = monster_->GetMap()->GetNavMap();
+		nav->SetMoveTarget(monster_->GetActorId(), nav->GetPos(monster_->targetAgentId_), false);
 		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionChase, "ActionChase", BT::NodeStatus::SUCCESS, "chase target position updated");
 		return BT::NodeStatus::SUCCESS;
 	}

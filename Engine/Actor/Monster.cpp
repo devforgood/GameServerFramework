@@ -11,6 +11,7 @@
 #include "MonsterCodeBaseBT.h"
 #include "Common.h"
 #include "Map.h"
+#include "INavMovement.h"
 #include "BTDebugManager.h"
 #include "Player.h"
 #include "Character.h"
@@ -46,7 +47,7 @@ Monster::~Monster()
 bool Monster::Init(Vector3& pos)
 {
 	float speed = 3.5f;
-	int agent_id = map_->GetNavMap()->addAgent(pos.pos(), speed);
+	int agent_id = map_->GetNavMap()->AddAgent(pos.pos(), speed);
 	if (agent_id < 0)
 	{
 		LOG.error("OnAddAgent error in Map.addAgent()");
@@ -70,12 +71,8 @@ bool Monster::Init(Vector3& pos)
 
 
 	if (map_ != nullptr) {
-		auto agent = map_->GetNavMap()->getAgent(actorId_);
-		if (agent != nullptr)
-		{
-			dtVcopy(spawnPos_, agent->npos);
-			spawnRef_ = agent->corridor.getPath()[0];
-		}
+		// 스폰 위치는 네비메시에 스냅된 현재 위치를 기준으로 삼는다(patrol 의 중심점).
+		dtVcopy(spawnPos_, map_->GetNavMap()->GetPos(actorId_));
 	}
 
 	name_ = "Monster:" + std::to_string(actorId_);
@@ -101,14 +98,15 @@ void Monster::Update(float dt)
 
 int Monster::AttackRange()
 {
-	const dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getAgent(GetActorId());
-	const dtCrowdAgent* agent = map_->GetNavMap()->crowd()->getAgent(targetAgentId_);
+	INavMovement* nav = map_->GetNavMap();
+	const float* this_pos = nav->GetPos(GetActorId());
+	const float* target_pos = nav->GetPos(targetAgentId_);
 
-	if (ManhattanDistance(this_agent->npos, agent->npos) > 3)
+	if (ManhattanDistance(this_pos, target_pos) > 3)
 		return -1;
 
 	float hitPoint[3];
-	if (map_->GetNavMap()->raycast(GetActorId(), agent->npos, hitPoint) == false)
+	if (nav->Raycast(GetActorId(), target_pos, hitPoint) == false)
 	{
 		return targetAgentId_;
 	}
@@ -117,14 +115,12 @@ int Monster::AttackRange()
 
 int Monster::Attack()
 {
-	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(GetActorId());
-	this_agent->desiredSpeed = 0.0f;
+	map_->GetNavMap()->Stop(GetActorId());
 	return 0;
 }
 int Monster::Resume()
 {
-	dtCrowdAgent* this_agent = map_->GetNavMap()->crowd()->getEditableAgent(GetActorId());
-	this_agent->desiredSpeed = this->speed;
+	map_->GetNavMap()->Resume(GetActorId());
 	return 0;
 }
 

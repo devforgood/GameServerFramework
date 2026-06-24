@@ -49,14 +49,21 @@ void World::Init()
 	randomUtil_ = new RandomUtil();
 	timeStamp_ = new TimeStamp();
 
-	// Initialize maps
-	std::shared_ptr<Map> map = std::make_shared<Map>(this);
-	map->Init();
-	mapList_.push_back(map);
-
 	// 기본 게임 모드 부트스트랩(현재는 Field, id=1).
 	// 추후 매치메이킹/세션이 모드 id 를 결정하도록 확장한다.
 	gameMode_.reset(GameModeFactory::Create(1));
+
+	// 게임 모드 데이터가 지정한 이동 전략으로 맵의 네비게이션을 초기화한다.
+	// 미지정 시 NavMovementFactory 가 crowd 로 폴백한다.
+	std::string movementType;
+	if (gameMode_ && gameMode_->gamedata)
+		movementType = gameMode_->gamedata->movement;
+
+	// Initialize maps
+	std::shared_ptr<Map> map = std::make_shared<Map>(this);
+	map->Init(movementType);
+	mapList_.push_back(map);
+
 	if (gameMode_)
 	{
 		gameMode_->SetMap(map.get());

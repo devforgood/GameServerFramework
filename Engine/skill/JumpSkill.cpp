@@ -4,6 +4,7 @@
 #include "Vector3.h"
 #include "LogHelper.h"
 #include "Map.h"
+#include "INavMovement.h"
 
 JumpSkill::JumpSkill()
 	: actor_(nullptr), skillId_(0), targetPos_(nullptr), isCasting_(false), duration_(0.0f)
@@ -75,7 +76,7 @@ int JumpSkill::end_duration_skill()
 
 	auto agent_id = actor_->GetActorId();
 	auto map = actor_->GetMap();
-	map->GetNavMap()->teleportAgent(agent_id, targetPos_->pos());
+	map->GetNavMap()->TeleportAgent(agent_id, targetPos_->pos());
 
 	return 0;
 }

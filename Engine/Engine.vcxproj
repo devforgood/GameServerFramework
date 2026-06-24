@@ -179,7 +179,10 @@
     <ClCompile Include="Actor\Monster.cpp" />
     <ClCompile Include="AI\MonsterBT.cpp" />
     <ClCompile Include="AI\MonsterCodeBaseBT.cpp" />
-    <ClCompile Include="World\NavMap.cpp" />
+    <ClCompile Include="World\NavMesh.cpp" />
+    <ClCompile Include="World\CrowdNavMovement.cpp" />
+    <ClCompile Include="World\WaypointNavMovement.cpp" />
+    <ClCompile Include="World\NavMovementFactory.cpp" />
     <ClCompile Include="skill\NormalAttackSkill.cpp" />
     <ClCompile Include="System\PerfTimer.cpp" />
     <ClCompile Include="System\DbThreadMonitor.cpp" />
@@ -266,7 +269,11 @@
     <ClInclude Include="Actor\Monster.h" />
     <ClInclude Include="AI\MonsterBT.h" />
     <ClInclude Include="AI\MonsterCodeBaseBT.h" />
-    <ClInclude Include="World\NavMap.h" />
+    <ClInclude Include="World\NavMesh.h" />
+    <ClInclude Include="World\INavMovement.h" />
+    <ClInclude Include="World\CrowdNavMovement.h" />
+    <ClInclude Include="World\WaypointNavMovement.h" />
+    <ClInclude Include="World\NavMovementFactory.h" />
     <ClInclude Include="skill\NormalAttackSkill.h" />
     <ClInclude Include="System\PerfTimer.h" />
     <ClInclude Include="Player\Player.h" />

@@ -3,7 +3,6 @@
 #include <list>
 #include <unordered_map>
 #include <memory>
-#include "NavMap.h"
 #include "syncnet_generated.h"
 
 class GameSession;

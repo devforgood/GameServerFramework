@@ -153,7 +153,16 @@
     <ClCompile Include="AI\MonsterCodeBaseBT.cpp">
       <Filter>AI</Filter>
     </ClCompile>
-    <ClCompile Include="World\NavMap.cpp">
+    <ClCompile Include="World\NavMesh.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World\CrowdNavMovement.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World\WaypointNavMovement.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World\NavMovementFactory.cpp">
       <Filter>World</Filter>
     </ClCompile>
     <ClCompile Include="skill\NormalAttackSkill.cpp">
@@ -386,7 +395,19 @@
     <ClInclude Include="AI\MonsterCodeBaseBT.h">
       <Filter>AI</Filter>
     </ClInclude>
-    <ClInclude Include="World\NavMap.h">
+    <ClInclude Include="World\NavMesh.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\INavMovement.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\CrowdNavMovement.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\WaypointNavMovement.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\NavMovementFactory.h">
       <Filter>World</Filter>
     </ClInclude>
     <ClInclude Include="skill\NormalAttackSkill.h">

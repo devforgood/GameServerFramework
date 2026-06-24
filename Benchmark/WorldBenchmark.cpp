@@ -9,7 +9,7 @@
 // 실행 시 작업 디렉터리(또는 exe 디렉터리)에 GameData/ 자산이 있어야 한다
 // (solo_navmesh.bin, Monster.xml, *.lua, *.json). PostBuildEvent 가 exe 옆으로 복사한다.
 //
-// 주의: 스폰 수는 네비메시 크라우드 정원 NavMap::MAX_AGENTS 미만이어야 한다(현재 16384).
+// 주의: 스폰 수는 네비메시 크라우드 정원 CrowdNavMovement::MAX_AGENTS 미만이어야 한다(현재 16384).
 // 의미 있는 수치를 위해 Release/x64 로 빌드/실행할 것.
 
 #include <benchmark/benchmark.h>
@@ -180,7 +180,7 @@ BENCHMARK(BM_WorldTick)
 // 대규모: 몬스터 10000마리가 살아있는 월드의 update(dt) 평균 소요 시간.
 //  - 스폰(셋업)은 타이밍에서 제외된다(반복마다 1회).
 //  - MinTime 으로 충분한 반복 횟수를, Repetitions 로 평균/중앙값/표준편차를 산출한다.
-//    (NavMap::MAX_AGENTS 가 10000 이상이어야 한다.)
+//    (CrowdNavMovement::MAX_AGENTS 가 10000 이상이어야 한다.)
 static void BM_WorldTick10000(benchmark::State& state)
 {
 	const int count = static_cast<int>(state.range(0));

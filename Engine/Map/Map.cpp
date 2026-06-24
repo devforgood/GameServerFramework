@@ -1,6 +1,5 @@
 #include "Map.h"
 #include "syncnet_generated.h"
-#include "DetourCrowd.h"
 #include <iostream>
 #include "Server.h"
 #include "Monster.h"
@@ -12,7 +11,9 @@
 #include "Player.h"
 #include "ActorFactory.h"
 #include "Common.h"
-#include "NavMap.h"
+#include "NavMesh.h"
+#include "INavMovement.h"
+#include "NavMovementFactory.h"
 #include "BTDebugManager.h"
 
 
@@ -60,7 +61,8 @@ namespace
 Map::Map(World* world)
 {
 	world_ = world;
-	map_ = nullptr;
+	navMesh_ = nullptr;
+	movement_ = nullptr;
 	gridManager_ = nullptr;
 
 	systemManager_ = nullptr;
@@ -73,10 +75,15 @@ Map::~Map()
 	actorMap_.clear();
 	actorList_.clear();
 
-	if (map_)
+	if (movement_)
 	{
-		delete map_;
-		map_ = nullptr;
+		delete movement_;
+		movement_ = nullptr;
+	}
+	if (navMesh_)
+	{
+		delete navMesh_;
+		navMesh_ = nullptr;
 	}
 	if (gridManager_)
 	{
@@ -91,10 +98,13 @@ Map::~Map()
 	}
 }
 
-void Map::Init()
+void Map::Init(const std::string& movementType)
 {
-	map_ = new NavMap();
-	map_->Init();
+	// 공유 네비메시 로드 후, 게임 모드가 지정한 이동 전략을 생성한다.
+	navMesh_ = new NavMesh();
+	navMesh_->Load("GameData/solo_navmesh.bin");
+	movement_ = NavMovementFactory::Create(movementType, navMesh_);
+	movement_->Init();
 	gridManager_ = new GridManager(100, 100, 2);
 
 	builderPtr_ = std::make_shared<send_message>();
@@ -129,11 +139,11 @@ void Map::Init()
 				map->removedAgents_.push_back(state.ActorID);
 			}
 
-			const dtCrowdAgent* agent = map->map_->crowd()->getAgent(state.ActorID);
-			if (agent->active == false)
+			if (map->movement_->IsActive(state.ActorID) == false)
 				return;
 
-			bool changed_position = !Vector3::equal(position.x, position.y, position.z, agent->npos[0], agent->npos[1], agent->npos[2]);
+			const float* npos = map->movement_->GetPos(state.ActorID);
+			bool changed_position = !Vector3::equal(position.x, position.y, position.z, npos[0], npos[1], npos[2]);
 			if (state.changeFlag == 0 && !changed_position)
 				return;
 
@@ -148,8 +158,8 @@ void Map::Init()
 
 			if (changed_position)
 			{
-				actor->SetPosition(agent->npos[0], agent->npos[1], agent->npos[2]);
-				map->gridManager_->move(actor, agent->npos[0], agent->npos[2]);
+				actor->SetPosition(npos[0], npos[1], npos[2]);
+				map->gridManager_->move(actor, npos[0], npos[2]);
 			}
 
 			map->agentInfoVector_.push_back(actor->GetActorInfo(*map->builderPtr_, actor->GetChangedFlag()));
@@ -166,7 +176,7 @@ void Map::update(float deltaTime)
 	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
 		(*itr)->Update(deltaTime);
 
-	map_->update(deltaTime);
+	movement_->Update(deltaTime);
 
 	systemManager_->Update(deltaTime);
 
@@ -334,7 +344,7 @@ void Map::OnRemoveAgent(int agent_id)
 	actorList_.erase(itr->second);
 	actorMap_.erase(itr);
 
-	map_->removeAgent(agent_id);
+	movement_->RemoveAgent(agent_id);
 
 }
 
@@ -357,14 +367,14 @@ std::shared_ptr<Actor> Map::OnAddAgent(std::shared_ptr<Player> player, syncnet::
 
 void Map::OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos)
 {
-	this->GetNavMap()->setMoveTarget(Vector3(pos).pos(), false, agent_id);
+	this->GetNavMap()->SetMoveTarget(agent_id, Vector3(pos).pos(), false);
 
 }
 
 void Map::OnSetRaycast(const syncnet::Vec3* pos)
 {
 	float hitPoint[3];
-	if (this->GetNavMap()->raycast(0, Vector3(pos).pos(), hitPoint))
+	if (this->GetNavMap()->Raycast(0, Vector3(pos).pos(), hitPoint))
 	{
 		syncnet::Vec3 pos(hitPoint[0] * -1, hitPoint[1], hitPoint[2]);
 		this->raycasts_.push_back(pos);
@@ -373,7 +383,6 @@ void Map::OnSetRaycast(const syncnet::Vec3* pos)
 
 int Map::DetectEnemy(Actor* actor)
 {
-	const dtCrowdAgent* this_agent = this->GetNavMap()->crowd()->getAgent(actor->GetActorId());
 	float hitPoint[3];
 
 	auto targets = gridManager_->getEntitiesInViewRange(actor, g_fDistance);
@@ -383,10 +392,9 @@ int Map::DetectEnemy(Actor* actor)
 		if (!(*itr)->IsCharacter())
 			continue;
 
-		const dtCrowdAgent* agent = this->GetNavMap()->crowd()->getAgent((*itr)->GetActorId());
+		const float* targetPos = this->GetNavMap()->GetPos((*itr)->GetActorId());
 
-
-		if (this->GetNavMap()->raycast(actor->GetActorId(), agent->npos, hitPoint) == false)
+		if (this->GetNavMap()->Raycast(actor->GetActorId(), targetPos, hitPoint) == false)
 		{
 			return (*itr)->GetActorId();
 		}

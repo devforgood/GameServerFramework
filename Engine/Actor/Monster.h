@@ -1,6 +1,5 @@
 #pragma once
 #include "Actor.h"
-#include "DetourNavMesh.h"
 #include "LuaObject.h"
 
 #include <string>
@@ -20,7 +19,6 @@ class Monster : public Actor, public LuaObject<Monster>
 private:
 	BT::BehaviorTree * bt_;
 	float spawnPos_[3];
-	dtPolyRef spawnRef_;
 	BT::Tree* tree_;
 	bool deadNotified_ = false; // 사망 이벤트 중복 발행 방지
 

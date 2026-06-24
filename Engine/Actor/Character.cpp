@@ -7,6 +7,7 @@
 #include "Common.h"
 #include "SkillFactory.h"
 #include "Map.h"
+#include "INavMovement.h"
 
 Character::Character(Map* map) : Actor(map)
 {
@@ -112,7 +113,7 @@ bool Character::Init(Vector3& pos)
 
 	float speed = 4.5f;
 
-	int agent_id = map_->GetNavMap()->addAgent(Vector3(pos).pos(), speed);
+	int agent_id = map_->GetNavMap()->AddAgent(Vector3(pos).pos(), speed);
 	if (agent_id < 0)
 	{
 		LOG.error("OnAddAgent error in Map.addAgent()");

@@ -3,6 +3,7 @@
 #include "Monster.h"
 #include "World.h"
 #include "Map.h"
+#include "INavMovement.h"
 
 class Condition_DetectEnemy : public BT::Condition
 {
@@ -53,7 +54,8 @@ protected:
 	virtual ~Action_Chase() {}
 	virtual BT::EStatus Update() override
 	{
-		monster_->GetMap()->GetNavMap()->setMoveTarget(monster_->GetMap()->GetNavMap()->getPos(monster_->targetAgentId_), false, monster_->GetActorId());
+		INavMovement* nav = monster_->GetMap()->GetNavMap();
+		nav->SetMoveTarget(monster_->GetActorId(), nav->GetPos(monster_->targetAgentId_), false);
 
 		return BT::EStatus::Success;
 	}
@@ -73,7 +75,7 @@ protected:
 	virtual ~Action_Patrol() {}
 	virtual BT::EStatus Update() override
 	{
-		monster_->GetMap()->GetNavMap()->patrol(monster_->GetActorId(), monster_->spawnPos_, monster_->spawnRef_);
+		monster_->GetMap()->GetNavMap()->Patrol(monster_->GetActorId(), monster_->spawnPos_);
 		return BT::EStatus::Success;
 	}
 };

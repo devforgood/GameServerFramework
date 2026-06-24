@@ -3,7 +3,7 @@
 #include <list>
 #include <unordered_map>
 #include <memory>
-#include "NavMap.h"
+#include <string>
 #include "syncnet_generated.h"
 
 class GameSession;
@@ -22,13 +22,15 @@ namespace engine {
 	class SystemManager;
 }
 class World;
-class NavMap;
+class NavMesh;
+class INavMovement;
 
 class Map
 {
 private:
 	World* world_;
-	NavMap* map_;
+	NavMesh* navMesh_;
+	INavMovement* movement_;
 	std::list<std::shared_ptr<Actor>> actorList_;
 	std::unordered_map<int, std::list<std::shared_ptr<Actor>>::iterator> actorMap_;
 
@@ -50,11 +52,11 @@ public:
 	Map(World* world);
 	virtual ~Map();
 
-	void Init();
+	void Init(const std::string& movementType);
 	void update(float deltaTime);
 
 	World* world() { return world_; }
-	NavMap* GetNavMap() { return map_; }
+	INavMovement* GetNavMap() { return movement_; }
 
 	void SendWorldState();
 	void SendTreeDebugSync();

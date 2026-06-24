@@ -7,6 +7,7 @@
     "category": "normal",
     "type": "field",
     "script": "gamemode_field.lua",
+    "movement": "waypoint",
     "rules": {
       "time_limit": -1,
       "has_time_limit": false,
@@ -33,6 +34,7 @@
     "category": "instance",
     "type": "raid",
     "script": "gamemode_raid.lua",
+    "movement": "crowd",
     "rules": {
       "time_limit": 1800,
       "has_time_limit": true,

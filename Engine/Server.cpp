@@ -3,6 +3,7 @@
 #include "flatbuffers/flatbuffers.h"
 #include "syncnet_generated.h"
 #include "DetourCrowd.h"
+#include "Recast.h"
 #include "LogHelper.h"
 #include "Player.h"
 #include "SqlClient.h"
@@ -324,6 +325,9 @@ bool ServerManager::Initialize(std::list<tcp::endpoint>& endpoints)
 {
 	try
 	{
+
+		ResourceLoader::Instance().LoadResources();
+
 		ioContext_ = std::make_shared<boost::asio::io_context>();
 
 		for (std::list<tcp::endpoint>::iterator it = endpoints.begin();
@@ -333,7 +337,6 @@ bool ServerManager::Initialize(std::list<tcp::endpoint>& endpoints)
 			servers_.push_back(server);
 		}
 
-		ResourceLoader::Instance().LoadResources();
 		return true;
 	}
 	catch (std::exception& e)

@@ -98,6 +98,7 @@ namespace gamedata
         std::string desc_id;
         int id = 0;
         std::vector<int> maps;
+        std::string movement;
         std::string name;
         std::string name_id;
         GameModeRewards rewards;
@@ -387,6 +388,7 @@ namespace gamedata
         if (j.contains("desc_id") && !j.at("desc_id").is_null()) j.at("desc_id").get_to(o.desc_id);
         if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("maps") && !j.at("maps").is_null()) j.at("maps").get_to(o.maps);
+        if (j.contains("movement") && !j.at("movement").is_null()) j.at("movement").get_to(o.movement);
         if (j.contains("name") && !j.at("name").is_null()) j.at("name").get_to(o.name);
         if (j.contains("name_id") && !j.at("name_id").is_null()) j.at("name_id").get_to(o.name_id);
         if (j.contains("rewards") && !j.at("rewards").is_null()) j.at("rewards").get_to(o.rewards);

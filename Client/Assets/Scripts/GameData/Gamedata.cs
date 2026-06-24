@@ -104,6 +104,7 @@ namespace Gamedata
         public string desc_id;
         public int id;
         public System.Collections.Generic.List<int> maps;
+        public string movement;
         public string name;
         public string name_id;
         public GameModeRewards rewards;
