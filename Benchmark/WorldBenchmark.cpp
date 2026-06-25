@@ -15,6 +15,7 @@
 #include <benchmark/benchmark.h>
 
 #include <array>
+#include <chrono>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -24,6 +25,7 @@
 #include <windows.h>
 
 #include "World.h"
+#include "Map.h"
 #include "Actor.h"
 #include "syncnet_generated.h"
 #include "LogHelper.h"
@@ -217,3 +219,89 @@ BENCHMARK_CAPTURE(BM_WorldTick10000, waypoint, "waypoint")
 	->MinTime(3.0)
 	->Repetitions(5)
 	->ReportAggregatesOnly(true);
+
+// update(dt) 의 어느 구간이 병목인지 찾기 위한 단계별 프로파일.
+//  Map::update 를 구성하는 4단계(actors → movement → systems → send)를 직접 호출하면서
+//  각 단계의 소요 시간을 누적하고, 평균(반복당, 단위 us)을 counters 로 출력한다.
+//  headline 시간(반복 전체)은 한 틱의 총 update 시간과 거의 같고, 그 안에서
+//  actors_us / movement_us / systems_us / send_us 의 합으로 분해돼 병목 구간이 드러난다.
+//
+//  출력 예) ... actors_us=12345 movement_us=6789 systems_us=234 send_us=567 monsters=10000
+//  → 가장 큰 *_us 값이 병목. crowd/waypoint 전략별로 따로 비교한다.
+static void BM_WorldTickPhases(benchmark::State& state, const char* movement)
+{
+	const int count = static_cast<int>(state.range(0));
+	ValidSpawns(movement); // 1회성 좌표 탐색을 셋업에서 먼저 끝낸다.
+
+	World world;
+	world.Init(movement);
+	const int spawned = SpawnMonsters(world, count, movement);
+	Map* map = world.GetPrimaryMap();
+
+	using clock = std::chrono::steady_clock;
+	double actors_ns = 0.0, move_ns = 0.0, sys_ns = 0.0, send_ns = 0.0;
+	int64_t iters = 0;
+
+	for (auto _ : state)
+	{
+		// world.update() 가 호출하는 것과 동일한 순서로 직접 단계를 돌린다.
+		const auto t0 = clock::now();
+		map->UpdateActors(kTickDt);
+		const auto t1 = clock::now();
+		map->UpdateMovement(kTickDt);
+		const auto t2 = clock::now();
+		map->UpdateSystems(kTickDt);
+		const auto t3 = clock::now();
+		map->SendWorldState();
+		const auto t4 = clock::now();
+
+		actors_ns += std::chrono::duration<double, std::nano>(t1 - t0).count();
+		move_ns   += std::chrono::duration<double, std::nano>(t2 - t1).count();
+		sys_ns    += std::chrono::duration<double, std::nano>(t3 - t2).count();
+		send_ns   += std::chrono::duration<double, std::nano>(t4 - t3).count();
+		++iters;
+	}
+
+	const double inv = (iters > 0) ? (1.0 / static_cast<double>(iters) / 1000.0) : 0.0; // ns→us 평균
+	state.counters["actors_us"]   = actors_ns * inv;
+	state.counters["movement_us"] = move_ns * inv;
+	state.counters["systems_us"]  = sys_ns * inv;
+	state.counters["send_us"]     = send_ns * inv;
+	state.counters["monsters"]    = spawned;
+	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
+}
+BENCHMARK_CAPTURE(BM_WorldTickPhases, crowd, "crowd")
+	->Arg(10000)
+	->Unit(benchmark::kMillisecond)
+	->MinTime(3.0);
+BENCHMARK_CAPTURE(BM_WorldTickPhases, waypoint, "waypoint")
+	->Arg(10000)
+	->Unit(benchmark::kMillisecond)
+	->MinTime(3.0);
+
+// actors 단계 안에서 적 탐지(ConditionDetectEnemy → DetectEnemy → 그리드 쿼리)만 격리 측정.
+//  Time 열 = 10000마리에 대해 DetectEnemy 1회씩 = 한 틱 분량의 적 탐지 비용.
+//  이 값이 BM_WorldTickPhases 의 actors_us 대부분을 차지하면 그리드 쿼리가 병목이다.
+static void BM_DetectEnemyOnly(benchmark::State& state, const char* movement)
+{
+	const int count = static_cast<int>(state.range(0));
+	ValidSpawns(movement);
+
+	World world;
+	world.Init(movement);
+	const int spawned = SpawnMonsters(world, count, movement);
+	Map* map = world.GetPrimaryMap();
+
+	long long found = 0;
+	for (auto _ : state)
+	{
+		found += map->ProfileDetectEnemyAll();
+		benchmark::DoNotOptimize(found);
+	}
+	state.counters["monsters"] = spawned;
+	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
+}
+BENCHMARK_CAPTURE(BM_DetectEnemyOnly, crowd, "crowd")
+	->Arg(10000)
+	->Unit(benchmark::kMillisecond)
+	->MinTime(3.0);

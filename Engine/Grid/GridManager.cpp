@@ -222,6 +222,35 @@ std::vector<IGridActor*> GridManager::getEntitiesInViewRange(IGridActor* viewer,
     return result;
 }
 
+void GridManager::getCharactersInViewRange(IGridActor* viewer, float range, std::vector<IGridActor*>& out) {
+    out.clear();
+
+    const float vx = viewer->GetVector2X();
+    const float vy = viewer->GetVector2Y();
+    auto [cx, cy] = getCellCoord(vx, vy);
+    const int cells = static_cast<int>(std::ceil(range / grid_->getCellSize()));
+    const float rangeSq = range * range;
+
+    for (int dx = -cells; dx <= cells; ++dx) {
+        for (int dy = -cells; dy <= cells; ++dy) {
+            const int x = cx + dx;
+            const int y = cy + dy;
+            if (x < 0 || y < 0 || x >= grid_->getWidth() || y >= grid_->getHeight()) continue;
+
+            auto& cell = grid_->get(x, y);
+            if (cell.characters.empty()) continue; // 캐릭터 없는 셀은 즉시 건너뜀(몬스터는 보지 않음).
+
+            for (auto* e : cell.characters) {
+                if (e == viewer) continue;
+                const float ex = e->GetVector2X() - vx;
+                const float ey = e->GetVector2Y() - vy;
+                if (ex * ex + ey * ey <= rangeSq) // 실제 거리로 컬링.
+                    out.push_back(e);
+            }
+        }
+    }
+}
+
 void GridManager::broadcastToNearby(float x, float y, float range, const std::string& msg) {
     auto entities = getEntitiesInAoEMask(x, y, range, 0);
     for (auto* e : entities) {

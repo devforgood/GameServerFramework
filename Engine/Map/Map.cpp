@@ -171,17 +171,45 @@ void Map::Init(const std::string& movementType)
 
 void Map::update(float deltaTime)
 {
-
 	//LOG.info("World update begin");
-	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
-		(*itr)->Update(deltaTime);
-
-	movement_->Update(deltaTime);
-
-	systemManager_->Update(deltaTime);
-
+	// 4단계로 분리해 호출한다. 단계별 메서드는 프로파일링/벤치마크에서 개별 측정할 수 있도록
+	// public 으로 노출돼 있다. 호출 순서/동작은 기존과 동일하다.
+	UpdateActors(deltaTime);
+	UpdateMovement(deltaTime);
+	UpdateSystems(deltaTime);
 	SendWorldState();
 	//LOG.info("World update end");
+}
+
+// 단계 1: 살아있는 액터의 BehaviorTree tick(몬스터 AI: 적 탐지/추격/배회 등).
+void Map::UpdateActors(float deltaTime)
+{
+	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
+		(*itr)->Update(deltaTime);
+}
+
+// 단계 2: 네비게이션 이동 전략(Detour crowd / waypoint) 시뮬레이션.
+void Map::UpdateMovement(float deltaTime)
+{
+	movement_->Update(deltaTime);
+}
+
+// 단계 3: ECS 시스템(위치 변경 감지 → ActorInfo 누적, 제거 대상 수집 등).
+void Map::UpdateSystems(float deltaTime)
+{
+	systemManager_->Update(deltaTime);
+}
+
+// 프로파일링용: 모든 액터에 대해 DetectEnemy 만 1회씩 호출(적 탐지 비용 격리 측정).
+int Map::ProfileDetectEnemyAll()
+{
+	int found = 0;
+	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
+	{
+		if (DetectEnemy((Actor*)itr->get()) >= 0)
+			++found;
+	}
+	return found;
 }
 
 void Map::SendWorldState()
@@ -385,18 +413,16 @@ int Map::DetectEnemy(Actor* actor)
 {
 	float hitPoint[3];
 
-	auto targets = gridManager_->getEntitiesInViewRange(actor, g_fDistance);
+	// 캐릭터만, 실제 거리로 컬링해서 가져온다. detectScratch_ 버퍼를 재사용해 호출당 힙 할당이 없다.
+	gridManager_->getCharactersInViewRange(actor, g_fDistance, detectScratch_);
 
-	for (auto itr = targets.begin(); itr != targets.end(); ++itr)
+	for (auto* target : detectScratch_)
 	{
-		if (!(*itr)->IsCharacter())
-			continue;
-
-		const float* targetPos = this->GetNavMap()->GetPos((*itr)->GetActorId());
+		const float* targetPos = this->GetNavMap()->GetPos(target->GetActorId());
 
 		if (this->GetNavMap()->Raycast(actor->GetActorId(), targetPos, hitPoint) == false)
 		{
-			return (*itr)->GetActorId();
+			return target->GetActorId();
 		}
 	}
 	return -1;

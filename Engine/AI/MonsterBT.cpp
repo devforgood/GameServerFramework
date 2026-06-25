@@ -19,6 +19,8 @@ class ConditionDetectEnemy : public BT::ConditionNode
 {
 private:
 	Monster* monster_;
+	unsigned int detectTick_ = 0;                  // 스태거링용 틱 카운터.
+	static constexpr unsigned int kDetectInterval = 10; // 배회 중에는 N틱마다 1회만 전수 스캔.
 
 public:
 	ConditionDetectEnemy(const std::string& name, const BT::NodeConfig& config, Monster* monster) :
@@ -28,6 +30,22 @@ public:
 
 	BT::NodeStatus tick() override
 	{
+		// 스태거링: 적 탐지 그리드 스캔은 비싸다(월드 업데이트 병목). 이미 교전 중(타겟 보유)이면
+		// 반응성을 위해 매 틱 재확인하지만, 배회 중(타겟 없음)에는 N틱마다 1회만 실제 스캔한다.
+		// actorId 로 위상을 분산해 같은 틱에 모든 몬스터가 몰리지 않게 한다.
+		const bool engaged = (monster_->targetAgentId_ >= 0);
+		if (!engaged)
+		{
+			const unsigned int phase = static_cast<unsigned int>(monster_->GetActorId());
+			if (((phase + detectTick_++) % kDetectInterval) != 0)
+			{
+				// 이번 틱은 스캔 생략 → 배회 유지.
+				monster_->SetState(syncnet::AIState_Patrol);
+				BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionDetectEnemy, "ConditionDetectEnemy", BT::NodeStatus::FAILURE, "detect skipped (staggered)");
+				return BT::NodeStatus::FAILURE;
+			}
+		}
+
 		monster_->targetAgentId_ = monster_->GetMap()->DetectEnemy(monster_);
 		if (monster_->targetAgentId_ >= 0)
 		{

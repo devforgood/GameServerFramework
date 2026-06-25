@@ -39,6 +39,9 @@ private:
 	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agentInfoVector_;
 	std::vector<int> removedAgents_;
 
+	// DetectEnemy 의 시야 쿼리 결과 재사용 버퍼(호출당 힙 할당 방지).
+	std::vector<IGridActor*> detectScratch_;
+
 
 	GridManager* gridManager_;
 
@@ -54,6 +57,16 @@ public:
 
 	void Init(const std::string& movementType);
 	void update(float deltaTime);
+
+	// update(deltaTime) 를 구성하는 단계들. 단계별 프로파일링을 위해 분리해 노출한다.
+	// update() 는 이들을 순서대로 호출할 뿐이라 직접 호출해도 동작은 동일하다.
+	void UpdateActors(float deltaTime);
+	void UpdateMovement(float deltaTime);
+	void UpdateSystems(float deltaTime);
+
+	// 프로파일링용: 모든 액터에 대해 DetectEnemy 를 1회씩 호출하고 탐지 성공 수를 반환한다.
+	// BehaviorTree tick 안에서 적 탐지(그리드 쿼리)가 차지하는 비용을 격리 측정하기 위한 훅.
+	int ProfileDetectEnemyAll();
 
 	World* world() { return world_; }
 	INavMovement* GetNavMap() { return movement_; }

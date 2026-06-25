@@ -29,6 +29,13 @@ public:
     void remove(IGridActor* actor);
 
     std::vector<IGridActor*> getEntitiesInViewRange(IGridActor* viewer, float range);
+
+    // 시야 범위(원형) 안의 '캐릭터'만 out 에 채운다.
+    //  - 몬스터 셀은 순회하지 않는다(적 탐지는 캐릭터만 대상이므로 몬스터 밀집 시 비용이 사라진다).
+    //  - 셀 단위가 아닌 실제 거리(range)로 컬링한다.
+    //  - out 의 기존 용량을 재사용하므로(호출 측이 버퍼를 보관) 호출당 힙 할당이 없다.
+    void getCharactersInViewRange(IGridActor* viewer, float range, std::vector<IGridActor*>& out);
+
     void broadcastToNearby(float x, float y, float range, const std::string& msg);
     std::vector<IGridActor*> getEntitiesInAoEMask(float x, float y, float range, float dirDeg);
     std::vector<IGridActor*> getEntitiesInAoEMask(float x, float y, float range, float dirDeg, float angle);

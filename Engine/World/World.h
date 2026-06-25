@@ -46,6 +46,9 @@ public:
 	void Init(const std::string& movementOverride = "");
 	void update(float deltaTime);
 
+	// 프로파일링/벤치마크용: 첫 번째(기본) 맵 접근자. 맵이 없으면 nullptr.
+	Map* GetPrimaryMap() { return mapList_.empty() ? nullptr : mapList_.front().get(); }
+
 	RandomUtil* random_util() { return randomUtil_; }
 
 	void SendWorldState();
