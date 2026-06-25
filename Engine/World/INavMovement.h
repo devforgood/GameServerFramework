@@ -25,7 +25,9 @@ public:
 	virtual void SetMoveTarget(int id, const float* pos, bool adjustVelocity) = 0;
 	virtual void Stop(int id) = 0;   // 정지(공격 등). 기준 속도는 유지한다.
 	virtual void Resume(int id) = 0; // 기준 속도로 이동을 재개한다.
-	virtual bool Patrol(int id, const float* originPos) = 0; // origin 주변 임의 지점으로 이동.
+	// origin 주변 임의 지점으로 이동.
+	// radius<=0 이면 구현 기본 반경을 사용한다. outDest 가 주어지면 선택된 목적지를 채운다.
+	virtual bool Patrol(int id, const float* originPos, float radius = 0.0f, float* outDest = nullptr) = 0;
 
 	// 상태 조회.
 	virtual const float* GetPos(int id) const = 0;

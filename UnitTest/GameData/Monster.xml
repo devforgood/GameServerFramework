@@ -16,7 +16,7 @@
               <ActionChase/>
             </Fallback>
           </Sequence>
-          <ActionPatrol/>
+          <ActionPatrol radius="40.0" rest_min_msec="100" rest_max_msec="1000"/>
         </Fallback>
       </Sequence>
       <Sequence>

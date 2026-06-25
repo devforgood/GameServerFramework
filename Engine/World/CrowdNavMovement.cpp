@@ -211,7 +211,7 @@ void CrowdNavMovement::Resume(int id)
 		ag->desiredSpeed = ag->params.maxSpeed; // AddAgent 시 설정한 기준 속도.
 }
 
-bool CrowdNavMovement::Patrol(int id, const float* originPos)
+bool CrowdNavMovement::Patrol(int id, const float* originPos, float radius, float* outDest)
 {
 	dtNavMeshQuery* navquery = nav_->query();
 	const dtQueryFilter* filter = nav_->filter();
@@ -224,12 +224,16 @@ bool CrowdNavMovement::Patrol(int id, const float* originPos)
 	if (!originRef)
 		return false;
 
+	const float searchRadius = (radius > 0.0f) ? radius : randomRadius_;
+
 	float epos[3];
 	dtPolyRef endRef;
-	dtStatus status = navquery->findRandomPointAroundCircle(originRef, originSnap, randomRadius_, filter, frand, &endRef, epos);
+	dtStatus status = navquery->findRandomPointAroundCircle(originRef, originSnap, searchRadius, filter, frand, &endRef, epos);
 	if (dtStatusSucceed(status))
 	{
 		SetMoveTarget(id, epos, false);
+		if (outDest)
+			dtVcopy(outDest, epos);
 		return true;
 	}
 	return false;

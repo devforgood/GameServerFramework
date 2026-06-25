@@ -7,6 +7,8 @@
 #include <sstream> // std::stringstream
 #include <memory> // std::unique_ptr
 #include <iostream> // std::cerr
+#include <chrono>  // steady_clock
+#include <random>  // mt19937, uniform_int_distribution
 #include "Map.h"
 #include "INavMovement.h"
 #include "BTDebugManager.h"
@@ -44,10 +46,47 @@ public:
 };
 
 
+// 배회(patrol) 노드.
+// spawn 주변 임의 지점으로 이동하다가 목적지에 도달하면 잠시 휴식한 뒤 다음 지점을 고른다.
+// 적 탐지 반응성을 유지하기 위해 매 틱 SUCCESS 를 반환하고(트리는 매 틱 루트부터 재평가),
+// 이동/휴식 진행 상태는 노드 내부에서 관리한다.
+//
+// 튜닝 값은 아래 상수로 둔다. (BT XML 포트로 노출하면 PortsList 의 문자열이
+//  BehaviorTree 라이브러리 매니페스트로 전달되며 힙 손상이 발생하므로 사용하지 않는다.)
 class ActionPatrol : public BT::SyncActionNode
 {
 private:
 	Monster* monster_;
+
+	enum class Phase { Idle, Moving, Resting };
+	Phase phase_ = Phase::Idle;
+	float dest_[3] = { 0, 0, 0 };                    // 현재 목적지.
+	std::chrono::steady_clock::time_point restUntil_; // 휴식 종료 시각.
+	std::chrono::steady_clock::time_point moveUntil_; // 이동 타임아웃(도달 못해도 강제 종료).
+
+	static constexpr float kPatrolRadius = 40.0f;       // 배회 반경(기본값 ~18 보다 크게).
+	static constexpr int   kRestMinMs = 100;            // 목적지 도달 후 최소 휴식(ms).
+	static constexpr int   kRestMaxMs = 1000;           // 목적지 도달 후 최대 휴식(ms).
+	static constexpr float kArriveDistSq = 1.5f * 1.5f; // 도달 판정 수평 거리^2.
+	static constexpr int   kMoveTimeoutMs = 8000;       // 이동 최대 허용 시간.
+
+	// 목적지까지의 수평(x,z) 거리^2.
+	float HorizontalDistSq(const float* a, const float* b) const
+	{
+		const float dx = a[0] - b[0];
+		const float dz = a[2] - b[2];
+		return dx * dx + dz * dz;
+	}
+
+	// 새 배회 목적지를 발급한다.
+	void IssueTarget(INavMovement* nav, int id)
+	{
+		if (nav->Patrol(id, monster_->spawnPos_, kPatrolRadius, dest_))
+		{
+			phase_ = Phase::Moving;
+			moveUntil_ = std::chrono::steady_clock::now() + std::chrono::milliseconds(kMoveTimeoutMs);
+		}
+	}
 
 public:
 	ActionPatrol(const std::string& name, const BT::NodeConfig& config, Monster* monster) :
@@ -57,8 +96,52 @@ public:
 
 	BT::NodeStatus tick() override
 	{
-		monster_->GetMap()->GetNavMap()->Patrol(monster_->GetActorId(), monster_->spawnPos_);
-		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionPatrol, "ActionPatrol", BT::NodeStatus::SUCCESS, "patrol command issued");
+		INavMovement* nav = monster_->GetMap()->GetNavMap();
+		const int id = monster_->GetActorId();
+		const auto now = std::chrono::steady_clock::now();
+
+		switch (phase_)
+		{
+		case Phase::Moving:
+		{
+			const float* pos = nav->GetPos(id);
+			if (HorizontalDistSq(pos, dest_) <= kArriveDistSq || now >= moveUntil_)
+			{
+				// 도달(또는 타임아웃) → 랜덤 휴식 시작.
+				static thread_local std::mt19937 rng{ std::random_device{}() };
+				const int restMs = std::uniform_int_distribution<int>(kRestMinMs, kRestMaxMs)(rng);
+				nav->Stop(id);
+				phase_ = Phase::Resting;
+				restUntil_ = now + std::chrono::milliseconds(restMs);
+				BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionPatrol, "ActionPatrol", BT::NodeStatus::SUCCESS, "arrived, resting");
+			}
+			else
+			{
+				BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionPatrol, "ActionPatrol", BT::NodeStatus::SUCCESS, "moving to patrol point");
+			}
+			break;
+		}
+		case Phase::Resting:
+		{
+			if (now >= restUntil_)
+			{
+				nav->Resume(id);
+				IssueTarget(nav, id);
+				BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionPatrol, "ActionPatrol", BT::NodeStatus::SUCCESS, "rest done, new patrol point");
+			}
+			else
+			{
+				BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionPatrol, "ActionPatrol", BT::NodeStatus::SUCCESS, "resting");
+			}
+			break;
+		}
+		case Phase::Idle:
+		default:
+			IssueTarget(nav, id);
+			BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionPatrol, "ActionPatrol", BT::NodeStatus::SUCCESS, "patrol command issued");
+			break;
+		}
+
 		return BT::NodeStatus::SUCCESS;
 	}
 };

@@ -208,7 +208,7 @@ void WaypointNavMovement::Resume(int id)
 	agents_[id].paused = false;
 }
 
-bool WaypointNavMovement::Patrol(int id, const float* originPos)
+bool WaypointNavMovement::Patrol(int id, const float* originPos, float radius, float* outDest)
 {
 	if (id < 0 || id >= (int)agents_.size() || !agents_[id].active)
 		return false;
@@ -222,11 +222,17 @@ bool WaypointNavMovement::Patrol(int id, const float* originPos)
 	if (!originRef)
 		return false;
 
+	const float searchRadius = (radius > 0.0f) ? radius : randomRadius_;
+
 	float epos[3];
 	dtPolyRef endRef;
-	dtStatus status = q->findRandomPointAroundCircle(originRef, originSnap, randomRadius_, filter, frand, &endRef, epos);
+	dtStatus status = q->findRandomPointAroundCircle(originRef, originSnap, searchRadius, filter, frand, &endRef, epos);
 	if (dtStatusSucceed(status))
+	{
+		if (outDest)
+			dtVcopy(outDest, epos);
 		return computePath(agents_[id], epos);
+	}
 
 	return false;
 }

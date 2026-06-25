@@ -50,7 +50,7 @@ public:
 	void SetMoveTarget(int id, const float* pos, bool adjustVelocity) override;
 	void Stop(int id) override;
 	void Resume(int id) override;
-	bool Patrol(int id, const float* originPos) override;
+	bool Patrol(int id, const float* originPos, float radius = 0.0f, float* outDest = nullptr) override;
 
 	const float* GetPos(int id) const override;
 	bool IsActive(int id) const override;
