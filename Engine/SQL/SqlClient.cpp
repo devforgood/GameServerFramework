@@ -43,21 +43,15 @@ void SqlClient::test() {
 }
 
 SqlClient::SqlClient()
+    : url_("jdbc:mariadb://localhost:3306/testdb")
+    , user_("root")
+    , password_("1234")
 {
     try {
-        // MariaDB 연결 설정
-        sql::SQLString url("jdbc:mariadb://localhost:3306/testdb");
-        sql::Properties properties({
-            {"user", "root"},
-            {"password", "1234"}
-            });
-
-        // 드라이버 및 연결 생성
-        sql::Driver* driver = sql::mariadb::get_driver_instance();
-		conn_ = std::unique_ptr<sql::Connection>(driver->connect(url, properties));
+        connect();
 
         // 연결 확인
-        if (conn_->isValid()) {
+        if (conn_ && conn_->isValid()) {
             std::cout << "MariaDB에 성공적으로 연결되었습니다!" << std::endl;
         }
     }
@@ -71,6 +65,37 @@ SqlClient::SqlClient()
 
 SqlClient::~SqlClient()
 {
+}
+
+void SqlClient::connect()
+{
+    sql::SQLString url(url_);
+    sql::Properties properties({
+        {"user", user_},
+        {"password", password_}
+        });
+
+    sql::Driver* driver = sql::mariadb::get_driver_instance();
+    conn_ = std::unique_ptr<sql::Connection>(driver->connect(url, properties));
+}
+
+bool SqlClient::isConnectionValid()
+{
+    // isValid() 는 서버로 ping 을 보내는 동기 호출이므로 오류 경로에서만 쓴다.
+    try {
+        return conn_ && conn_->isValid();
+    }
+    catch (const std::exception&) {
+        return false;
+    }
+}
+
+sql::Connection* SqlClient::reconnect()
+{
+    // 죽은 커넥션을 버리고 새로 맺는다. 실패하면 예외가 그대로 전파된다.
+    conn_.reset();
+    connect();
+    return conn_.get();
 }
 
 void SqlClient::select(const std::string& query, const std::vector<std::string>& params, IResultParser& parser)

@@ -1,4 +1,4 @@
-CREATE TABLE `{{ table.name }}`
+CREATE TABLE IF NOT EXISTS `{{ table.name }}`
 (
 {% for col in table.columns %}
     {{ "%-20s" | format("`" ~ col.name ~ "`") }} {{ "%-15s" | format(col.type) }}{% if not col.nullable %} NOT NULL{% endif %}{% if col.default is not none %} DEFAULT {{ col.default }}{% endif %}{% if col.auto_increment %} AUTO_INCREMENT{% endif %}{% if not loop.last or table.primary_key or table.unique_keys or table.indexes %},{% endif %}

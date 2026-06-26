@@ -1,4 +1,4 @@
-CREATE TABLE `player`
+CREATE TABLE IF NOT EXISTS `player`
 (
     `id`                 BIGINT          NOT NULL AUTO_INCREMENT,
     `name`               VARCHAR(50)     NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE `player`
     UNIQUE KEY (`name`)
 );
 
-CREATE TABLE `item`
+CREATE TABLE IF NOT EXISTS `item`
 (
     `id`                 BIGINT          NOT NULL AUTO_INCREMENT,
     `player_id`          BIGINT          NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE `item`
     INDEX (`player_id`)
 );
 
-CREATE TABLE `skill`
+CREATE TABLE IF NOT EXISTS `skill`
 (
     `id`                 BIGINT          NOT NULL AUTO_INCREMENT,
     `player_id`          BIGINT          NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE `skill`
     INDEX (`player_id`)
 );
 
-CREATE TABLE `quest_active`
+CREATE TABLE IF NOT EXISTS `quest_active`
 (
     `character_id`       BIGINT          NOT NULL,
     `quest_id`           INT             NOT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE `quest_active`
     INDEX (`character_id`)
 );
 
-CREATE TABLE `quest_state`
+CREATE TABLE IF NOT EXISTS `quest_state`
 (
     `character_id`       BIGINT          NOT NULL,
     `flags`              BLOB            NOT NULL,

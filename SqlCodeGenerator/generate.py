@@ -116,8 +116,15 @@ def render_templates(tables):
         is_first_file = False 
 
 
-    with open(f"{pathname}/create_tables.sql", "w") as f:
-        f.write("\n\n".join(create_sqls))
+    create_sql_text = "\n\n".join(create_sqls)
+
+    # create_tables.sql 은 런타임에 작업 디렉터리 기준 SQL/generated/ 에서 읽으므로
+    # Engine(빌드 산출물)과 Game(실행 작업 디렉터리) 양쪽에 동일하게 써준다.
+    sql_out_dirs = [pathname, "../Game/SQL/generated"]
+    for out_dir in sql_out_dirs:
+        os.makedirs(out_dir, exist_ok=True)
+        with open(f"{out_dir}/create_tables.sql", "w") as f:
+            f.write(create_sql_text)
 
 if __name__ == "__main__":
     tables = parse_schema("schema.xml")

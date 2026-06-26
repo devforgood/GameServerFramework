@@ -12,6 +12,7 @@
 #include "SqlClient.h"
 #include "SqlClientManager.h"
 #include "DbThreadMonitor.h"
+#include "LogHelper.h"
 
 //
 // PlayerDbDispatcher
@@ -28,6 +29,30 @@
 //
 class PlayerDbDispatcher
 {
+private:
+    // 스레드 로컬 커넥션으로 DB 작업을 실행한다.
+    // 정상 경로는 ping 없이 바로 실행하고(비용 0), 예외가 났을 때만
+    // isConnectionValid() 로 "커넥션 끊김"과 "실제 쿼리 오류"를 구분한다.
+    // 끊긴 경우에만 재연결 후 단 한 번 재시도한다.
+    template <typename Fn>
+    static auto RunWithReconnect(Fn&& fn) -> decltype(fn(static_cast<sql::Connection*>(nullptr)))
+    {
+        SqlClient* client = SqlClientManager::getInstance().sqlClientPtr.get();
+        try {
+            return fn(client->getConnection());
+        }
+        catch (const std::exception& e) {
+            // 커넥션이 살아있으면 진짜 쿼리/데이터 오류 → 그대로 전파.
+            if (client->isConnectionValid())
+                throw;
+
+            // 커넥션이 끊겼다 → 재연결 후 1회 재시도.
+            LOG.warn("DB connection lost, reconnecting and retrying once: {}", e.what());
+            sql::Connection* conn = client->reconnect();
+            return fn(conn);
+        }
+    }
+
 public:
     // 결과를 게임 스레드로 되돌려 후처리하는 작업(예: 로드).
     //   db_work     : DB 스레드에서 실행. 후처리로 넘길 결과(보통 shared_ptr)를 반환.
@@ -56,8 +81,8 @@ public:
             {
                 DbTaskScope mon_scope(monToken);
 
-                sql::Connection* conn = SqlClientManager::getInstance().sqlClientPtr->getConnection();
-                auto result = dbWork(conn, playerId);
+                auto result = RunWithReconnect(
+                    [&](sql::Connection* conn) { return dbWork(conn, playerId); });
 
                 boost::asio::post(*ioContext,
                     [weakPlayer, result = std::move(result),
@@ -87,8 +112,8 @@ public:
             {
                 DbTaskScope monScope(monToken);
 
-                sql::Connection* conn = SqlClientManager::getInstance().sqlClientPtr->getConnection();
-                dbWork(conn, playerId);
+                RunWithReconnect(
+                    [&](sql::Connection* conn) { dbWork(conn, playerId); return 0; });
             });
     }
 };
