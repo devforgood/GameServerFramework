@@ -52,7 +52,13 @@ int main(int argc, char* argv[])
 			endpoints.push_back(endpoint);
 		}
 
+		// IO 스레드(=io_context) 개수 설정값.
+		// 1이면 단일 스레드(기존 동작), 2 이상이면 서버(포트)들을 스레드에
+		// 분산해 멀티스레드로 구동한다. 실제 스레드 수는 포트 개수 이하로 보정된다.
+		const int IO_THREAD_COUNT = 1;
+
 		ServerManager serverManager;
+		serverManager.SetThreadCount(IO_THREAD_COUNT);
 		serverManager.Initialize(endpoints);
 
 		serverManager.Run();

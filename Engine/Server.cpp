@@ -321,6 +321,33 @@ void GameServer::UpdateGameLogic(float delta)
 	}
 }
 
+int ServerManager::ResolveWorkerCount(int serverCount, int requestedThreadCount)
+{
+	// 각 io_context(=스레드)는 자신에게 할당된 서버만 처리하므로,
+	// 서버가 없는 스레드는 의미가 없다. 따라서 워커 수는 서버(포트)
+	// 개수를 넘지 않으며 최소 1개는 유지한다.
+	int workerCount = requestedThreadCount;
+	if (workerCount < 1) workerCount = 1;
+	if (serverCount > 0 && workerCount > serverCount) workerCount = serverCount;
+	return workerCount;
+}
+
+std::vector<int> ServerManager::BuildShardingPlan(int serverCount, int workerCount)
+{
+	std::vector<int> plan;
+	if (serverCount <= 0 || workerCount <= 0) return plan;
+
+	// 서버(포트)를 워커들에 라운드로빈으로 분배한다. 한 서버는 정확히
+	// 하나의 io_context/스레드에 묶이므로 그 서버의 World/세션 상태는
+	// 항상 같은 스레드에서만 접근되어 락 없이 안전하다.
+	plan.reserve(serverCount);
+	for (int i = 0; i < serverCount; ++i)
+	{
+		plan.push_back(i % workerCount);
+	}
+	return plan;
+}
+
 bool ServerManager::Initialize(std::list<tcp::endpoint>& endpoints)
 {
 	try
@@ -328,14 +355,29 @@ bool ServerManager::Initialize(std::list<tcp::endpoint>& endpoints)
 
 		ResourceLoader::Instance().LoadResources();
 
-		ioContext_ = std::make_shared<boost::asio::io_context>();
+		// 설정된 스레드 수를 서버 개수에 맞춰 보정하고, 서버→워커 배정 계획을 세운다.
+		int serverCount = static_cast<int>(endpoints.size());
+		int workerCount = ResolveWorkerCount(serverCount, threadCount_);
+		std::vector<int> plan = BuildShardingPlan(serverCount, workerCount);
 
-		for (std::list<tcp::endpoint>::iterator it = endpoints.begin();
-			it != endpoints.end(); ++it)
+		workers_.resize(workerCount);
+		for (auto& worker : workers_)
 		{
-			auto server = std::make_shared<GameServer>(ioContext_, *it);
-			servers_.push_back(server);
+			worker.ioContext = std::make_shared<boost::asio::io_context>();
 		}
+
+		// 배정 계획에 따라 서버를 해당 워커의 io_context에 묶는다.
+		int idx = 0;
+		for (std::list<tcp::endpoint>::iterator it = endpoints.begin();
+			it != endpoints.end(); ++it, ++idx)
+		{
+			auto& worker = workers_[plan[idx]];
+			auto server = std::make_shared<GameServer>(worker.ioContext, *it);
+			worker.servers.push_back(server);
+		}
+
+		LOG.info("ServerManager initialized: {} server(s) over {} IO thread(s)",
+			serverCount, workerCount);
 
 		return true;
 	}
@@ -346,15 +388,37 @@ bool ServerManager::Initialize(std::list<tcp::endpoint>& endpoints)
 	}
 }
 
-void ServerManager::Tick(float delta)
+void ServerManager::Run()
 {
-	for (auto& server : servers_)
+	if (workers_.empty())
 	{
-		server->UpdateGameLogic(delta);
+		return;
+	}
+
+	// 워커가 1개면 추가 스레드 없이 현재 스레드에서 단일 실행한다(기존 동작).
+	// 워커가 N개면 추가로 N-1개의 스레드를 띄우고, 첫 워커는 현재 스레드에서 돈다.
+	std::vector<std::thread> threads;
+	threads.reserve(workers_.size() - 1);
+	for (size_t i = 1; i < workers_.size(); ++i)
+	{
+		threads.emplace_back([this, i]()
+			{
+				RunWorker(workers_[i], /*primary=*/false);
+			});
+	}
+
+	RunWorker(workers_[0], /*primary=*/true);
+
+	for (auto& t : threads)
+	{
+		if (t.joinable())
+		{
+			t.join();
+		}
 	}
 }
 
-void ServerManager::Run()
+void ServerManager::RunWorker(IoWorker& worker, bool primary)
 {
 	bool running = true;
 	const std::chrono::milliseconds targetInterval(16);
@@ -367,27 +431,37 @@ void ServerManager::Run()
 	auto lastDbReport = lastDbCheck;
 	const std::chrono::milliseconds dbReportInterval(10000);
 
+	boost::asio::io_context& ioContext = *worker.ioContext;
+
 	while (running)
 	{
 		auto frameStart = std::chrono::steady_clock::now();
 
-		ioContext_->poll();
+		ioContext.poll();
 
 		TimeVal curTime = getPerfTime();
 		float delta = getPerfTimeUsec(curTime - lastTime) / 1000000.0f;
 		lastTime = curTime;
-		Tick(delta);
 
-		if (frameStart - lastDbCheck >= dbCheckInterval)
+		for (auto& server : worker.servers)
 		{
-			DbThreadMonitor::Instance().CheckStuckTasks();
-			lastDbCheck = frameStart;
+			server->UpdateGameLogic(delta);
 		}
 
-		if (frameStart - lastDbReport >= dbReportInterval)
+		// DB 스레드 풀 감시/리포트는 전역 공유 자원이므로 primary 워커에서만 수행한다.
+		if (primary)
 		{
-			DbThreadMonitor::Instance().ReportThreadUsage();
-			lastDbReport = frameStart;
+			if (frameStart - lastDbCheck >= dbCheckInterval)
+			{
+				DbThreadMonitor::Instance().CheckStuckTasks();
+				lastDbCheck = frameStart;
+			}
+
+			if (frameStart - lastDbReport >= dbReportInterval)
+			{
+				DbThreadMonitor::Instance().ReportThreadUsage();
+				lastDbReport = frameStart;
+			}
 		}
 
 		auto frameEnd = std::chrono::steady_clock::now();

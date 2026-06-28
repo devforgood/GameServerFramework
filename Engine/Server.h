@@ -11,6 +11,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <span>
+#include <vector>
+#include <thread>
 
 #ifndef _WIN32_WINNT         
 #define _WIN32_WINNT 0x0A00   // Windows 10
@@ -145,13 +147,43 @@ private:
 
 class ServerManager
 {
+	// 기본 IO 스레드 수. 1이면 기존과 동일하게 단일 스레드로 동작한다.
+	static const int DEFAULT_IO_THREAD_COUNT = 1;
+
 public:
 
 	bool Initialize(std::list<tcp::endpoint>& endpoints);
-	void Tick(float delta);
 	void Run();
 
+	// 멀티스레드 구동 시 사용할 IO 스레드(=io_context) 개수를 설정한다.
+	// 실제 스레드 수는 서버(포트) 개수를 넘지 않도록 Initialize에서 보정된다.
+	void SetThreadCount(int count) { threadCount_ = count; }
+
+	// --- 멀티스레드 샤딩 로직 (부수효과 없는 순수 함수, 단위 테스트 대상) ---
+
+	// 서버(포트) 개수와 요청된 스레드 수로부터 실제 워커(io_context/스레드) 수를
+	// 계산한다. 최소 1개를 보장하고, 서버 수보다 많은 워커는 의미가 없으므로
+	// 서버 개수로 상한을 둔다. (서버가 0개면 1을 돌려준다.)
+	static int ResolveWorkerCount(int serverCount, int requestedThreadCount);
+
+	// serverCount개의 서버를 workerCount개 워커에 라운드로빈으로 배정한 결과.
+	// 반환 벡터의 i번째 원소는 i번째 서버가 배정된 워커 인덱스이다.
+	static std::vector<int> BuildShardingPlan(int serverCount, int workerCount);
+
 private:
-	std::list<std::shared_ptr<GameServer>> servers_;
-	std::shared_ptr<boost::asio::io_context> ioContext_;
+	// 하나의 io_context와 그 io_context에 할당된 서버 묶음.
+	// io_context마다 정확히 하나의 스레드만 돌리므로, 해당 io_context에
+	// 속한 서버/세션의 핸들러와 게임 로직은 서로 동시에 실행되지 않는다.
+	// (스레드 간 게임 상태 공유가 없어 락 없이 안전하다.)
+	struct IoWorker
+	{
+		std::shared_ptr<boost::asio::io_context> ioContext;
+		std::vector<std::shared_ptr<GameServer>> servers;
+	};
+
+	// 단일 워커(스레드)의 메인 루프. primary 워커만 DB 스레드 풀 감시를 수행한다.
+	void RunWorker(IoWorker& worker, bool primary);
+
+	std::vector<IoWorker> workers_;
+	int threadCount_ = DEFAULT_IO_THREAD_COUNT;
 };

@@ -35,7 +35,7 @@
   <ItemDefinitionGroup />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <Optimization>Disabled</Optimization>
@@ -51,7 +51,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <Optimization>Disabled</Optimization>
@@ -73,7 +73,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -90,7 +90,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PreprocessorDefinitions>X64;NDEBUG;_CONSOLE;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -124,6 +124,7 @@
     <ClCompile Include="GridManagerTest.cpp" />
     <ClCompile Include="RingBufferTest.cpp" />
     <ClCompile Include="DbThreadMonitorTest.cpp" />
+    <ClCompile Include="ServerManagerTest.cpp" />
     <ClCompile Include="PlayerRepositoryTest.cpp" />
     <ClCompile Include="ResourceTest.cpp" />
     <ClCompile Include="GameModeTest.cpp" />
