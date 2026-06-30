@@ -1,6 +1,8 @@
 #include "World.h"
 #include "syncnet_generated.h"
 #include "DetourCrowd.h"
+#include <algorithm>
+#include <vector>
 #include <iostream>
 #include "Server.h"
 #include "Monster.h"
@@ -63,14 +65,37 @@ void World::Init(const std::string& movementOverride)
 	if (!movementOverride.empty())
 		movementType = movementOverride;
 
-	// Initialize maps
-	std::shared_ptr<Map> map = std::make_shared<Map>(this);
-	map->Init(movementType);
-	mapList_.push_back(map);
-
-	if (gameMode_)
+	// 로드된 맵 데이터 중 field 타입(소속 게임 모드 type == "field") 맵을 모두 로드한다.
+	auto& resource = ResourceLoader::Instance();
+	std::vector<const gamedata::Map*> fieldMaps;
+	for (const auto& pair : resource.GetMaps())
 	{
-		gameMode_->SetMap(map.get());
+		const gamedata::Map* mapData = pair.second;
+		if (mapData == nullptr)
+			continue;
+
+		const gamedata::GameMode* gm = resource.GetGameMode(mapData->game_mode_id);
+		if (gm == nullptr || gm->type != "field")
+			continue;
+
+		fieldMaps.push_back(mapData);
+	}
+
+	// GetMaps() 는 unordered_map 이라 순회 순서가 비결정적이므로, primary 맵(front)이
+	// 항상 동일하도록 맵 id 오름차순으로 정렬한다.
+	std::sort(fieldMaps.begin(), fieldMaps.end(),
+		[](const gamedata::Map* a, const gamedata::Map* b) { return a->id < b->id; });
+
+	for (const gamedata::Map* mapData : fieldMaps)
+	{
+		std::shared_ptr<Map> map = std::make_shared<Map>(this);
+		map->Init(movementType);
+		mapList_.push_back(map);
+	}
+
+	if (gameMode_ && !mapList_.empty())
+	{
+		gameMode_->SetMap(mapList_.front().get());
 		gameMode_->LoadScript();
 		gameMode_->Start();
 	}
