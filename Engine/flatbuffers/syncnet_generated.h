@@ -62,6 +62,9 @@ struct TreeDebugRuntimeFrameBuilder;
 struct TreeDebugSync;
 struct TreeDebugSyncBuilder;
 
+struct EnterGate;
+struct EnterGateBuilder;
+
 enum GameMessages {
   GameMessages_NONE = 0,
   GameMessages_AddAgent = 1,
@@ -74,11 +77,12 @@ enum GameMessages {
   GameMessages_Login = 8,
   GameMessages_UseSkill = 9,
   GameMessages_TreeDebugSync = 10,
+  GameMessages_EnterGate = 11,
   GameMessages_MIN = GameMessages_NONE,
-  GameMessages_MAX = GameMessages_TreeDebugSync
+  GameMessages_MAX = GameMessages_EnterGate
 };
 
-inline const GameMessages (&EnumValuesGameMessages())[11] {
+inline const GameMessages (&EnumValuesGameMessages())[12] {
   static const GameMessages values[] = {
     GameMessages_NONE,
     GameMessages_AddAgent,
@@ -90,13 +94,14 @@ inline const GameMessages (&EnumValuesGameMessages())[11] {
     GameMessages_SetRaycast,
     GameMessages_Login,
     GameMessages_UseSkill,
-    GameMessages_TreeDebugSync
+    GameMessages_TreeDebugSync,
+    GameMessages_EnterGate
   };
   return values;
 }
 
 inline const char * const *EnumNamesGameMessages() {
-  static const char * const names[12] = {
+  static const char * const names[13] = {
     "NONE",
     "AddAgent",
     "RemoveAgent",
@@ -108,13 +113,14 @@ inline const char * const *EnumNamesGameMessages() {
     "Login",
     "UseSkill",
     "TreeDebugSync",
+    "EnterGate",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameGameMessages(GameMessages e) {
-  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_TreeDebugSync)) return "";
+  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_EnterGate)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesGameMessages()[index];
 }
@@ -161,6 +167,10 @@ template<> struct GameMessagesTraits<syncnet::UseSkill> {
 
 template<> struct GameMessagesTraits<syncnet::TreeDebugSync> {
   static const GameMessages enum_value = GameMessages_TreeDebugSync;
+};
+
+template<> struct GameMessagesTraits<syncnet::EnterGate> {
+  static const GameMessages enum_value = GameMessages_EnterGate;
 };
 
 bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type);
@@ -452,6 +462,9 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::TreeDebugSync *msg_as_TreeDebugSync() const {
     return msg_type() == syncnet::GameMessages_TreeDebugSync ? static_cast<const syncnet::TreeDebugSync *>(msg()) : nullptr;
   }
+  const syncnet::EnterGate *msg_as_EnterGate() const {
+    return msg_type() == syncnet::GameMessages_EnterGate ? static_cast<const syncnet::EnterGate *>(msg()) : nullptr;
+  }
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
@@ -507,6 +520,10 @@ template<> inline const syncnet::UseSkill *GameMessage::msg_as<syncnet::UseSkill
 
 template<> inline const syncnet::TreeDebugSync *GameMessage::msg_as<syncnet::TreeDebugSync>() const {
   return msg_as_TreeDebugSync();
+}
+
+template<> inline const syncnet::EnterGate *GameMessage::msg_as<syncnet::EnterGate>() const {
+  return msg_as_EnterGate();
 }
 
 struct GameMessageBuilder {
@@ -1017,7 +1034,9 @@ struct Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef LoginBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_USERID = 4,
-    VT_PASSWORD = 6
+    VT_PASSWORD = 6,
+    VT_MAPID = 8,
+    VT_POS = 10
   };
   const flatbuffers::String *userId() const {
     return GetPointer<const flatbuffers::String *>(VT_USERID);
@@ -1025,12 +1044,20 @@ struct Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *password() const {
     return GetPointer<const flatbuffers::String *>(VT_PASSWORD);
   }
+  int32_t mapId() const {
+    return GetField<int32_t>(VT_MAPID, 0);
+  }
+  const syncnet::Vec3 *pos() const {
+    return GetStruct<const syncnet::Vec3 *>(VT_POS);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_USERID) &&
            verifier.VerifyString(userId()) &&
            VerifyOffset(verifier, VT_PASSWORD) &&
            verifier.VerifyString(password()) &&
+           VerifyField<int32_t>(verifier, VT_MAPID) &&
+           VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
            verifier.EndTable();
   }
 };
@@ -1044,6 +1071,12 @@ struct LoginBuilder {
   }
   void add_password(flatbuffers::Offset<flatbuffers::String> password) {
     fbb_.AddOffset(Login::VT_PASSWORD, password);
+  }
+  void add_mapId(int32_t mapId) {
+    fbb_.AddElement<int32_t>(Login::VT_MAPID, mapId, 0);
+  }
+  void add_pos(const syncnet::Vec3 *pos) {
+    fbb_.AddStruct(Login::VT_POS, pos);
   }
   explicit LoginBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -1060,8 +1093,12 @@ struct LoginBuilder {
 inline flatbuffers::Offset<Login> CreateLogin(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> userId = 0,
-    flatbuffers::Offset<flatbuffers::String> password = 0) {
+    flatbuffers::Offset<flatbuffers::String> password = 0,
+    int32_t mapId = 0,
+    const syncnet::Vec3 *pos = 0) {
   LoginBuilder builder_(_fbb);
+  builder_.add_pos(pos);
+  builder_.add_mapId(mapId);
   builder_.add_password(password);
   builder_.add_userId(userId);
   return builder_.Finish();
@@ -1070,13 +1107,17 @@ inline flatbuffers::Offset<Login> CreateLogin(
 inline flatbuffers::Offset<Login> CreateLoginDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *userId = nullptr,
-    const char *password = nullptr) {
+    const char *password = nullptr,
+    int32_t mapId = 0,
+    const syncnet::Vec3 *pos = 0) {
   auto userId__ = userId ? _fbb.CreateString(userId) : 0;
   auto password__ = password ? _fbb.CreateString(password) : 0;
   return syncnet::CreateLogin(
       _fbb,
       userId__,
-      password__);
+      password__,
+      mapId,
+      pos);
 }
 
 struct UseSkill FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -1671,6 +1712,78 @@ inline flatbuffers::Offset<TreeDebugSync> CreateTreeDebugSyncDirect(
       frames__);
 }
 
+struct EnterGate FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef EnterGateBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_MAPID = 4,
+    VT_GATEID = 6,
+    VT_POS = 8,
+    VT_AGENTID = 10
+  };
+  int32_t mapId() const {
+    return GetField<int32_t>(VT_MAPID, 0);
+  }
+  int32_t gateId() const {
+    return GetField<int32_t>(VT_GATEID, 0);
+  }
+  const syncnet::Vec3 *pos() const {
+    return GetStruct<const syncnet::Vec3 *>(VT_POS);
+  }
+  int32_t agentId() const {
+    return GetField<int32_t>(VT_AGENTID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_MAPID) &&
+           VerifyField<int32_t>(verifier, VT_GATEID) &&
+           VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
+           VerifyField<int32_t>(verifier, VT_AGENTID) &&
+           verifier.EndTable();
+  }
+};
+
+struct EnterGateBuilder {
+  typedef EnterGate Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_mapId(int32_t mapId) {
+    fbb_.AddElement<int32_t>(EnterGate::VT_MAPID, mapId, 0);
+  }
+  void add_gateId(int32_t gateId) {
+    fbb_.AddElement<int32_t>(EnterGate::VT_GATEID, gateId, 0);
+  }
+  void add_pos(const syncnet::Vec3 *pos) {
+    fbb_.AddStruct(EnterGate::VT_POS, pos);
+  }
+  void add_agentId(int32_t agentId) {
+    fbb_.AddElement<int32_t>(EnterGate::VT_AGENTID, agentId, 0);
+  }
+  explicit EnterGateBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  EnterGateBuilder &operator=(const EnterGateBuilder &);
+  flatbuffers::Offset<EnterGate> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<EnterGate>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<EnterGate> CreateEnterGate(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t mapId = 0,
+    int32_t gateId = 0,
+    const syncnet::Vec3 *pos = 0,
+    int32_t agentId = 0) {
+  EnterGateBuilder builder_(_fbb);
+  builder_.add_agentId(agentId);
+  builder_.add_pos(pos);
+  builder_.add_gateId(gateId);
+  builder_.add_mapId(mapId);
+  return builder_.Finish();
+}
+
 inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type) {
   switch (type) {
     case GameMessages_NONE: {
@@ -1714,6 +1827,10 @@ inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj,
     }
     case GameMessages_TreeDebugSync: {
       auto ptr = reinterpret_cast<const syncnet::TreeDebugSync *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_EnterGate: {
+      auto ptr = reinterpret_cast<const syncnet::EnterGate *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;

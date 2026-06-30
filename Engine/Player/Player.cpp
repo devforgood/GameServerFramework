@@ -61,6 +61,13 @@ void Player::Possess(std::shared_ptr<Character> character)
 	proxy->SetBrokerOwner(weak_from_this());
 }
 
+void Player::UnPossess()
+{
+	// 게이트 이동 등으로 캐릭터를 다른 맵에 재생성하기 전, 기존 빙의를 해제한다.
+	// character_ 의 마지막 참조가 사라지면 이전 맵에서 제거된 Character 가 파괴된다.
+	character_ = nullptr;
+}
+
 void Player::Send(std::shared_ptr<send_message>& msg)
 {
 	auto session = session_.lock();

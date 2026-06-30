@@ -192,6 +192,12 @@ public:
 	}
 	virtual int GetHealth() { return health_; }
 
+	virtual void SetHealth(int health)
+	{
+		health_ = health;
+		AddChangedFlag(static_cast<long>(GameObjectChangeType::Health));
+	}
+
 	// 마지막으로 데미지를 입힌 액터(킬러) ID
 	int GetLastAttackerActorId() const { return lastAttackerActorId_; }
 

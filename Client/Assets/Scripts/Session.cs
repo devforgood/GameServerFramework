@@ -8,9 +8,17 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Session : MonoBehaviour
 {
+	// 게이트(Gate) 등에서 접근할 수 있도록 노출하는 인스턴스.
+	// 씬 전환(게이트 이동) 중에도 네트워크 연결을 유지하기 위해 DontDestroyOnLoad 로 유지된다.
+	public static Session Instance { get; private set; }
+
+	private bool isChangingMap = false;   // 게이트 이동 요청 진행 중(중복 요청 방지)
+	private bool isLoadingScene = false;  // 씬 로드 대기 중 — 이 동안 네트워크 동기화 처리를 멈춘다
+
 	int seq = 1;
 	TcpConnection session;
 	int message_count = 0;
@@ -23,6 +31,9 @@ public class Session : MonoBehaviour
 	public long unixTimestampMs => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
     public int player_agnet_id = 0;
+	// 최초 로그인 시 서버가 반환한 현재 맵 id 와 스폰 위치(캐릭터 생성/배치에 사용).
+	public int loginMapId = 0;
+	public Vector3 loginSpawnPos = Vector3.zero;
 	private int last_message_id = 0;
 	private bool isConnected = false;  // 연결 상태 추적
 
@@ -53,6 +64,18 @@ public class Session : MonoBehaviour
 			last_message_id = 1;
 		}
 		return last_message_id;
+	}
+
+    void Awake()
+	{
+		// 씬 전환에도 연결을 유지하기 위한 영속 싱글톤. 새 씬에 중복 Session 이 있으면 자가 파괴한다.
+		if (Instance != null && Instance != this)
+		{
+			Destroy(gameObject);
+			return;
+		}
+		Instance = this;
+		DontDestroyOnLoad(gameObject);
 	}
 
     void Start()
@@ -464,7 +487,8 @@ public class Session : MonoBehaviour
 		}
 		
 		// 통합 큐 처리 (네트워크 데이터 + 이벤트)
-		if (session != null)
+		// 씬 로드 대기 중(isLoadingScene)에는 처리하지 않고 큐에 남겨, 씬 로드 완료 후 새 씬에서 처리한다.
+		if (session != null && !isLoadingScene)
 		{
 			object item;
 			while (session.queue.TryDequeue(out item))
@@ -473,6 +497,11 @@ public class Session : MonoBehaviour
 				{
 					// 네트워크 데이터 처리
 					OnReceive((byte[])item);
+
+					// EnterGate 응답 처리로 씬 로드가 시작되면, 남은 메시지(새 맵 동기화 등)는
+					// 씬 로드 완료 후 처리하도록 이번 프레임 처리를 중단한다.
+					if (isLoadingScene)
+						break;
 				}
 				else if (item is string)
 				{
@@ -569,6 +598,86 @@ public class Session : MonoBehaviour
         SendMessage(PacketFactory.CreateSetRaycastMessage(pos));
     }
 
+    /// <summary>
+    /// 게이트 이동을 서버에 요청한다. 성공 응답 시 목적지 맵 씬을 로드한다.
+    /// (씬 단위 이동. 프리팹 단위 로드는 추후 최적화로 진행 예정.)
+    /// </summary>
+    public void EnterGate(int mapId, int gateId, string sceneName)
+    {
+        if (isChangingMap)
+        {
+            Debug.Log("EnterGate ignored: already changing map.");
+            return;
+        }
+        isChangingMap = true;
+
+        int messageId = nextMesssagetId();
+        Debug.Log($"EnterGate request mapId:{mapId}, gateId:{gateId}, scene:{sceneName}");
+        SendMessage(PacketFactory.CreateEnterGateMessage(messageId, mapId, gateId), response =>
+        {
+            if (response.MsgType == GameMessages.EnterGate && response.Result == StatusCode.Success)
+            {
+                EnterGate enterGate = response.Msg<EnterGate>().Value;
+
+                // 서버가 목적지 맵에 캐릭터를 재생성하면서 부여한 새 agent id 로 갱신한다.
+                player_agnet_id = enterGate.AgentId;
+
+                Vector3 destPos = Vector3.zero;
+                if (enterGate.Pos.HasValue)
+                    destPos = new Vector3(enterGate.Pos.Value.X, enterGate.Pos.Value.Y, enterGate.Pos.Value.Z);
+
+                Debug.Log($"EnterGate Success. new agentId:{player_agnet_id}, pos({destPos.x},{destPos.y},{destPos.z})");
+
+                // 씬 로드 동안 네트워크 동기화 처리를 멈춘다. 서버는 응답 직후 새 맵 상태(SendStateTo)를
+                // 보내는데, 씬 로드 전에 처리하면 새로 만든 액터가 씬 전환으로 파괴되기 때문이다.
+                // 큐에 남겨 두었다가 씬 로드 완료(OnGateSceneLoaded) 후 처리한다.
+                LoadMapScene(sceneName);
+            }
+            else
+            {
+                Debug.Log("EnterGate Fail");
+                isChangingMap = false;
+            }
+        });
+    }
+
+    /// <summary>
+    /// 맵 씬을 로드한다. 로드가 끝날 때까지 네트워크 동기화 처리를 멈춰(OnGateSceneLoaded 에서 재개),
+    /// 로드 전에 도착한 새 맵 상태가 씬 전환으로 파괴되지 않게 한다.
+    /// </summary>
+    private void LoadMapScene(string sceneName)
+    {
+        // Build Settings 에 등록되지 않은 씬은 로드할 수 없다. 강제로 LoadScene 하면 예외가 나므로
+        // 방어적으로 확인하고, 불가능하면 현재 씬을 유지한 채 네트워크 처리를 계속한다.
+        if (!Application.CanStreamedLevelBeLoaded(sceneName))
+        {
+            Debug.LogWarning($"Scene '{sceneName}' is not in Build Settings (File > Build Settings 에 추가 필요). 씬 로드를 건너뜁니다.");
+            isLoadingScene = false;
+            isChangingMap = false;
+            return;
+        }
+
+        isLoadingScene = true;
+        SceneManager.sceneLoaded += OnGateSceneLoaded;
+        SceneManager.LoadScene(sceneName);
+    }
+
+    /// <summary>
+    /// 게이트 이동으로 인한 씬 로드 완료 콜백. 씬 전환으로 파괴된 이전 액터 참조를 정리하고
+    /// 네트워크 동기화 처리를 재개한다. 대기 중이던 새 맵 상태(UpdateActorNotify)가 새 씬에서 액터를 생성한다.
+    /// </summary>
+    private void OnGateSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        SceneManager.sceneLoaded -= OnGateSceneLoaded;
+
+        // 씬 로드로 파괴된 이전 맵의 액터 GameObject 참조 정리(딕셔너리에는 파괴된 참조가 남아 있다).
+        game_objects.Clear();
+
+        isLoadingScene = false;
+        isChangingMap = false;
+        Debug.Log($"Gate scene loaded: {scene.name}");
+    }
+
     public void UseSkill(int skillId, Vector3 pos, int type)
     {
         var timestamp = unixTimestampMs;
@@ -617,7 +726,21 @@ public class Session : MonoBehaviour
                 Login login = response.Msg<Login>().Value;
                 if (response.Result == StatusCode.Success)
                 {
-                    Debug.Log("Login Success");
+                    // 서버가 반환한 현재 맵 id 와 스폰 위치를 저장한다.
+                    loginMapId = login.MapId;
+                    if (login.Pos.HasValue)
+                        loginSpawnPos = new Vector3(login.Pos.Value.X, login.Pos.Value.Y, login.Pos.Value.Z);
+
+                    Debug.Log($"Login Success. mapId:{loginMapId}, pos({loginSpawnPos.x},{loginSpawnPos.y},{loginSpawnPos.z})");
+
+                    // 맵 데이터에 연동된 씬 정보로 해당 맵 씬을 로드한다(현재 씬과 다를 때만).
+                    Gamedata.Map map;
+                    if (GameManager.Instance.resource.Maps.TryGetValue(loginMapId, out map)
+                        && !string.IsNullOrEmpty(map.scene)
+                        && SceneManager.GetActiveScene().name != map.scene)
+                    {
+                        LoadMapScene(map.scene);
+                    }
                 }
                 else
                 {

@@ -98,11 +98,24 @@ Map::~Map()
 	}
 }
 
-void Map::Init(const std::string& movementType)
+void Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 {
-	// 공유 네비메시 로드 후, 게임 모드가 지정한 이동 전략을 생성한다.
+	mapData_ = mapData;
+
+	// 맵 데이터에 navmesh_path 가 지정돼 있으면 맵별 네비메시를 로드하고,
+	// 지정이 없거나 로드에 실패하면 기존 공유 네비메시(solo_navmesh.bin)로 폴백한다.
 	navMesh_ = new NavMesh();
-	navMesh_->Load("GameData/solo_navmesh.bin");
+	bool navLoaded = false;
+	if (mapData_ != nullptr && !mapData_->navmesh_path.empty())
+	{
+		navLoaded = navMesh_->Load(("GameData/" + mapData_->navmesh_path).c_str());
+		if (!navLoaded)
+			LOG.warn("Map {} navmesh '{}' load failed; falling back to solo_navmesh.bin",
+				mapData_->id, mapData_->navmesh_path);
+	}
+	if (!navLoaded)
+		navMesh_->Load("GameData/solo_navmesh.bin");
+
 	movement_ = NavMovementFactory::Create(movementType, navMesh_);
 	movement_->Init();
 	gridManager_ = new GridManager(100, 100, 2);
@@ -167,6 +180,21 @@ void Map::Init(const std::string& movementType)
 			actor->ResetChangedFlag();
 		});
 
+}
+
+int Map::GetMapId() const
+{
+	return mapData_ != nullptr ? mapData_->id : 0;
+}
+
+syncnet::Vec3 Map::GetPlayerSpawnPos() const
+{
+	if (mapData_ != nullptr && !mapData_->spawn_points.player_spawn.empty())
+	{
+		const auto& p = mapData_->spawn_points.player_spawn[0].position;
+		return syncnet::Vec3(static_cast<float>(p.x), static_cast<float>(p.y), static_cast<float>(p.z));
+	}
+	return syncnet::Vec3(0, 0, 0);
 }
 
 void Map::update(float deltaTime)
@@ -433,22 +461,31 @@ std::vector<IGridActor*> Map::get_actors_in_range(Actor* actor, float range, flo
 	return gridManager_->getEntitiesInAoEMask(actor->GetVecter2X(), actor->GetVecter2Y(), range, dirDeg, angle);
 }
 
-void Map::join(std::shared_ptr<Player> player)
+void Map::Enter(std::shared_ptr<Player> player)
 {
 	if (player == nullptr)
 	{
-		LOG.error("Map::join error player is nullptr");
+		LOG.error("Map::Enter error player is nullptr");
 		return;
 	}
 	auto itr = players_.find(player->GetPlayerId());
 	if (itr != players_.end())
 	{
-		LOG.error("Map::join error player already exists");
+		LOG.error("Map::Enter error player already exists");
 		return;
 	}
 	players_.insert(std::make_pair(player->GetPlayerId(), player));
+}
 
-	// 유닛 상태 동기화
+void Map::SendStateTo(std::shared_ptr<Player> player)
+{
+	if (player == nullptr)
+	{
+		LOG.error("Map::SendStateTo error player is nullptr");
+		return;
+	}
+
+	// 현재 맵의 모든 액터 상태를 해당 플레이어에게 전송한다.
 	auto builder_ptr = std::make_shared<send_message>();
 	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agents;
 	GetAgentsInfo(builder_ptr, agents);
@@ -456,6 +493,12 @@ void Map::join(std::shared_ptr<Player> player)
 	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
 	builder_ptr->Finish(send_msg);
 	player->Send(builder_ptr);
+}
+
+void Map::join(std::shared_ptr<Player> player)
+{
+	Enter(player);
+	SendStateTo(player);
 }
 
 void Map::leave(std::shared_ptr<Player> player)

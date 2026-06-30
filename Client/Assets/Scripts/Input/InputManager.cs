@@ -78,6 +78,13 @@ public class InputManager : MonoBehaviour
 
     private bool GetHitPoint(string tag)
     {
+        // InputManager 는 DontDestroyOnLoad 싱글톤이라 씬 전환 시 캐시한 카메라가 파괴된다.
+        // 캐시가 무효(null/파괴됨)이면 현재 씬의 메인 카메라를 다시 가져온다.
+        if (MainCamera == null)
+            MainCamera = Camera.main;
+        if (MainCamera == null)
+            return false; // 아직 메인 카메라가 없음(씬 로드 중 등)
+
         Vector3 mousePos = Input.mousePosition;
         mousePos.z = MainCamera.farClipPlane;
 

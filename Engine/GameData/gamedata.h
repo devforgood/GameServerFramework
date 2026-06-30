@@ -270,6 +270,7 @@ namespace gamedata
         std::string name_id;
         std::string navmesh_path;
         MapObjects objects;
+        std::string scene;
         MapSize size;
         MapSpawnPoints spawn_points;
     };
@@ -560,6 +561,7 @@ namespace gamedata
         if (j.contains("name_id") && !j.at("name_id").is_null()) j.at("name_id").get_to(o.name_id);
         if (j.contains("navmesh_path") && !j.at("navmesh_path").is_null()) j.at("navmesh_path").get_to(o.navmesh_path);
         if (j.contains("objects") && !j.at("objects").is_null()) j.at("objects").get_to(o.objects);
+        if (j.contains("scene") && !j.at("scene").is_null()) j.at("scene").get_to(o.scene);
         if (j.contains("size") && !j.at("size").is_null()) j.at("size").get_to(o.size);
         if (j.contains("spawn_points") && !j.at("spawn_points").is_null()) j.at("spawn_points").get_to(o.spawn_points);
     }

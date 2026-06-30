@@ -65,6 +65,7 @@ namespace Assets.Scripts.GameData
             var questReq = Resources.LoadAsync<TextAsset>("GameData/quest");
             var levelReq = Resources.LoadAsync<TextAsset>("GameData/level");
             var monsterReq = Resources.LoadAsync<TextAsset>("GameData/monster");
+            var mapReq = Resources.LoadAsync<TextAsset>("GameData/Map");
 
             // 모든 요청이 끝날 때까지 대기. (요청은 이미 동시에 진행 중)
             yield return skillReq;
@@ -72,12 +73,14 @@ namespace Assets.Scripts.GameData
             yield return questReq;
             yield return levelReq;
             yield return monsterReq;
+            yield return mapReq;
 
             ParseTable<Gamedata.SkillList, Gamedata.Skill>((TextAsset)skillReq.asset, "GameData/skill", l => l.items, s => s.id, Skills);
             ParseTable<Gamedata.ItemList, Gamedata.Item>((TextAsset)itemReq.asset, "GameData/item", l => l.items, i => i.id, Items);
             ParseTable<Gamedata.QuestList, Gamedata.Quest>((TextAsset)questReq.asset, "GameData/quest", l => l.items, q => q.id, Quests);
             ParseTable<Gamedata.LevelList, Gamedata.Level>((TextAsset)levelReq.asset, "GameData/level", l => l.items, lv => lv.id, Levels);
             ParseTable<Gamedata.MonsterDataList, Gamedata.MonsterData>((TextAsset)monsterReq.asset, "GameData/monster", l => l.items, m => m.id, MonsterDatas);
+            ParseTable<Gamedata.MapList, Gamedata.Map>((TextAsset)mapReq.asset, "GameData/Map", l => l.items, m => m.id, Maps);
 
             // 게임 데이터 로드가 완료되었음을 로그로 남김
             Debug.Log("ResourceLoader: Game data loaded successfully.");
@@ -88,5 +91,17 @@ namespace Assets.Scripts.GameData
         public Dictionary<int, Gamedata.Quest> Quests = new Dictionary<int, Gamedata.Quest>();
         public Dictionary<int, Gamedata.Level> Levels = new Dictionary<int, Gamedata.Level>();
         public Dictionary<int, Gamedata.MonsterData> MonsterDatas = new Dictionary<int, Gamedata.MonsterData>();
+        public Dictionary<int, Gamedata.Map> Maps = new Dictionary<int, Gamedata.Map>();
+
+        /// <summary>맵 이름으로 맵 데이터를 찾는다(게이트의 destinationMapName 해석용). 없으면 null.</summary>
+        public Gamedata.Map GetMapByName(string name)
+        {
+            foreach (var map in Maps.Values)
+            {
+                if (string.Equals(map.name, name, StringComparison.OrdinalIgnoreCase))
+                    return map;
+            }
+            return null;
+        }
     }
 }

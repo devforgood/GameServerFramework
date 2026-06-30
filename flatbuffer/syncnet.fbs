@@ -13,6 +13,7 @@ union GameMessages
   Login,
   UseSkill,
   TreeDebugSync,
+  EnterGate,
 } // Optionally add more tables.
 
 enum StatusCode:short
@@ -104,6 +105,8 @@ table SetRaycast {
 table Login {
   userId:string;
   password:string;
+  mapId:int = 0;
+  pos:Vec3;
 }
 
 table UseSkill {
@@ -169,6 +172,13 @@ table TreeDebugRuntimeFrame {
 table TreeDebugSync {
   definitions:[TreeDebugDefinition];
   frames:[TreeDebugRuntimeFrame];
+}
+
+table EnterGate {
+  mapId:int;
+  gateId:int;
+  pos:Vec3;
+  agentId:int = 0;
 }
 
 root_type GameMessage;

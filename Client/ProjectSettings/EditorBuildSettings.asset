@@ -4,5 +4,17 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/GameField/Starting Village.unity
+    guid: 2b559168e47944d4c8bda3c2a787d051
+  - enabled: 1
+    path: Assets/Scenes/GameField/Dark Forest.unity
+    guid: 0690ba09504c063408c1785a8d81d002
+  - enabled: 1
+    path: Assets/Scenes/GameField/Field1.unity
+    guid: cae11da813fff50459ee0e3a22cabbae
+  - enabled: 1
+    path: Assets/Scenes/GameField/Field2.unity
+    guid: 1f7baeb5347dbe14b8dab69b4bbe5296
   m_configObjects: {}

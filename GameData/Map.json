@@ -2,6 +2,7 @@
   {
     "id": 1,
     "name": "Starting Village",
+    "scene": "Starting Village",
     "name_id": "map_starting_village_name",
     "desc_id": "map_starting_village_desc",
     "game_mode_id": 1,
@@ -147,11 +148,12 @@
         }
       ]
     },
-    "navmesh_path": null
+    "navmesh_path": "Field1_navmesh.bin"
   },
   {
     "id": 2,
     "name": "Dark Forest",
+    "scene": "Dark Forest",
     "name_id": "map_dark_forest_name",
     "desc_id": "map_dark_forest_desc",
     "game_mode_id": 1,
@@ -281,11 +283,12 @@
         }
       ]
     },
-    "navmesh_path": null
+    "navmesh_path": "Field2_navmesh.bin"
   },
   {
     "id": 6,
     "name": "Dragon's Lair",
+    "scene": "Dragon's Lair",
     "name_id": "map_dragon_lair_name",
     "desc_id": "map_dragon_lair_desc",
     "game_mode_id": 2,
@@ -389,6 +392,7 @@
   {
     "id": 9,
     "name": "Ancient Dungeon",
+    "scene": "Ancient Dungeon",
     "name_id": "map_ancient_dungeon_name",
     "desc_id": "map_ancient_dungeon_desc",
     "game_mode_id": 3,
@@ -562,6 +566,7 @@
   {
     "id": 12,
     "name": "Battle Arena",
+    "scene": "Battle Arena",
     "name_id": "map_battle_arena_name",
     "desc_id": "map_battle_arena_desc",
     "game_mode_id": 4,
@@ -675,6 +680,7 @@
   {
     "id": 13,
     "name": "Field1",
+    "scene": "Field1",
     "name_id": "map_field1_name",
     "desc_id": "map_field1_desc",
     "game_mode_id": 1,
@@ -722,6 +728,7 @@
   {
     "id": 14,
     "name": "Field2",
+    "scene": "Field2",
     "name_id": "map_field2_name",
     "desc_id": "map_field2_desc",
     "game_mode_id": 1,

@@ -24,11 +24,15 @@ namespace engine {
 class World;
 class NavMesh;
 class INavMovement;
+namespace gamedata {
+	struct Map;
+}
 
 class Map
 {
 private:
 	World* world_;
+	const gamedata::Map* mapData_ = nullptr;
 	NavMesh* navMesh_;
 	INavMovement* movement_;
 	std::list<std::shared_ptr<Actor>> actorList_;
@@ -55,8 +59,14 @@ public:
 	Map(World* world);
 	virtual ~Map();
 
-	void Init(const std::string& movementType);
+	void Init(const std::string& movementType, const gamedata::Map* mapData = nullptr);
 	void update(float deltaTime);
+
+	const gamedata::Map* GetMapData() const { return mapData_; }
+	int GetMapId() const;
+
+	// 맵 데이터의 첫 번째 player_spawn 위치(클라 좌표계). 없으면 (0,0,0).
+	syncnet::Vec3 GetPlayerSpawnPos() const;
 
 	// update(deltaTime) 를 구성하는 단계들. 단계별 프로파일링을 위해 분리해 노출한다.
 	// update() 는 이들을 순서대로 호출할 뿐이라 직접 호출해도 동작은 동일하다.
@@ -85,6 +95,11 @@ public:
 
 	void join(std::shared_ptr<Player> player);
 	void leave(std::shared_ptr<Player> player);
+
+	// join 을 두 단계로 분리한 것. 게이트 이동 시 클라가 먼저 응답을 받아 맵을 교체한 뒤
+	// 동기화를 받도록, players_ 등록(Enter)과 상태 전송(SendStateTo)을 별도로 호출한다.
+	void Enter(std::shared_ptr<Player> player);
+	void SendStateTo(std::shared_ptr<Player> player);
 
 	std::shared_ptr<Player> FindPlayer(long player_id);
 	std::shared_ptr<Actor> FindActor(int actor_id);

@@ -75,6 +75,18 @@ public static class PacketFactory
         return builder.SizedByteArray();
     }
 
+    public static byte[] CreateEnterGateMessage(int messageId, int mapId, int gateId)
+    {
+        var builder = new FlatBufferBuilder(1024);
+        syncnet.EnterGate.StartEnterGate(builder);
+        syncnet.EnterGate.AddMapId(builder, mapId);
+        syncnet.EnterGate.AddGateId(builder, gateId);
+        var offset = syncnet.EnterGate.EndEnterGate(builder);
+        var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.EnterGate, offset.Value, messageId);
+        builder.Finish(msg.Value);
+        return builder.SizedByteArray();
+    }
+
     public static byte[] CreateUseSkillMessage(int skillId, int agentId, Vector3 pos, int type, long timestamp)
     {
         var builder = new FlatBufferBuilder(1024);

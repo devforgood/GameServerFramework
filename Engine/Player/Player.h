@@ -49,6 +49,7 @@ public:
 	std::string GetName() { return name_; }
 
 	void Possess(std::shared_ptr<Character> character);
+	void UnPossess();
 
 	void Send(std::shared_ptr<send_message>& msg);
 	void Close();

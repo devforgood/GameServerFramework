@@ -22,5 +22,6 @@ public:
 	void handle(const syncnet::SetRaycast* msg);
 	void handle(const syncnet::Login* msg);
 	void handle(const syncnet::UseSkill* msg);
+	void handle(const syncnet::EnterGate* msg);
 };
 

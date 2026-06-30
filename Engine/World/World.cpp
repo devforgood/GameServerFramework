@@ -89,8 +89,9 @@ void World::Init(const std::string& movementOverride)
 	for (const gamedata::Map* mapData : fieldMaps)
 	{
 		std::shared_ptr<Map> map = std::make_shared<Map>(this);
-		map->Init(movementType);
+		map->Init(movementType, mapData);
 		mapList_.push_back(map);
+		mapById_[mapData->id] = map;
 	}
 
 	if (gameMode_ && !mapList_.empty())
@@ -151,6 +152,94 @@ void World::leave(std::shared_ptr<Player> player)
 }
 
 
+
+Map* World::FindMap(int mapId)
+{
+	auto itr = mapById_.find(mapId);
+	return itr != mapById_.end() ? itr->second.get() : nullptr;
+}
+
+bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syncnet::Vec3& outPos, int& outAgentId)
+{
+	if (player == nullptr)
+	{
+		LOG.error("World::ChangeMap error player is nullptr");
+		return false;
+	}
+
+	auto character = player->GetCharacter();
+	if (character == nullptr)
+	{
+		LOG.error("World::ChangeMap error character is nullptr");
+		return false;
+	}
+
+	Map* destMap = FindMap(mapId);
+	if (destMap == nullptr)
+	{
+		LOG.error("World::ChangeMap error map {} not found", mapId);
+		return false;
+	}
+
+	const gamedata::Map* destData = destMap->GetMapData();
+	if (destData == nullptr)
+	{
+		LOG.error("World::ChangeMap error map {} has no data", mapId);
+		return false;
+	}
+
+	// 목적지 맵에서 gateId 게이트를 찾아 도착 위치를 얻는다.
+	const gamedata::MapGate* gate = nullptr;
+	for (const auto& g : destData->gates)
+	{
+		if (g.id == gateId)
+		{
+			gate = &g;
+			break;
+		}
+	}
+	if (gate == nullptr)
+	{
+		LOG.error("World::ChangeMap error gate {} not found in map {}", gateId, mapId);
+		return false;
+	}
+
+	Map* oldMap = character->GetMap();
+	int oldHealth = character->GetHealth();
+
+	// 이전 맵에서 기존 캐릭터를 제거한다(이전 맵의 players_/actorList_/grid/movement 정리).
+	if (oldMap != nullptr)
+		oldMap->OnRemoveAgent(character->GetActorId());
+
+	// 새 맵에서 캐릭터를 재생성하려면 기존 빙의를 해제해야 한다(Character::PreCreate 검사 통과).
+	player->UnPossess();
+
+	// 게이트 위치(Map.json = 클라 좌표계)에 캐릭터를 새로 배치한다.
+	// OnAddAgent 내부에서 클라 AddAgent 와 동일하게 서버 좌표계로 변환된다.
+	syncnet::Vec3 gatePos(
+		static_cast<float>(gate->position.x),
+		static_cast<float>(gate->position.y),
+		static_cast<float>(gate->position.z));
+
+	auto newActor = destMap->OnAddAgent(player, syncnet::GameObjectType::GameObjectType_Character, &gatePos);
+	if (newActor == nullptr)
+	{
+		LOG.error("World::ChangeMap error failed to add character to map {}", mapId);
+		return false;
+	}
+
+	// 이전 캐릭터의 체력을 이어받는다.
+	newActor->SetHealth(oldHealth);
+
+	// 새 맵의 players_ 에 플레이어를 등록한다. 상태 동기화(SendStateTo)는 클라가
+	// EnterGate 응답을 먼저 받아 맵 프리팹을 교체한 뒤 처리하도록, 호출 측(핸들러)에서
+	// 응답 전송 이후에 별도로 수행한다.
+	destMap->Enter(player);
+
+	outPos = gatePos;
+	outAgentId = newActor->GetActorId();
+	return true;
+}
 
 std::shared_ptr<Actor> World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {

@@ -23,6 +23,7 @@ void PlayerController::handle(const syncnet::GameMessage* msg)
 	case syncnet::GameMessages::GameMessages_SetRaycast:		handle(msg->msg_as_SetRaycast()); break;
 	case syncnet::GameMessages::GameMessages_Login:				handle(msg->msg_as_Login()); break;
 	case syncnet::GameMessages::GameMessages_UseSkill:			handle(msg->msg_as_UseSkill()); break;
+	case syncnet::GameMessages::GameMessages_EnterGate:			handle(msg->msg_as_EnterGate()); break;
 	}
 }
 
@@ -81,7 +82,8 @@ void PlayerController::handle(const syncnet::SetMoveTarget* msg)
 	}
 
 	LOG.debug("move target agent id :{}, pos:({},{},{})", player_->GetCharacter()->GetActorId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
-	world_->OnSetMoveTarget(player_->GetCharacter()->GetActorId(), msg->pos());
+	// 캐릭터가 현재 속한 맵으로 라우팅한다(게이트 이동 후 비기본 맵에 있을 수 있음).
+	player_->GetCharacter()->GetMap()->OnSetMoveTarget(player_->GetCharacter()->GetActorId(), msg->pos());
 }
 
 void PlayerController::handle(const syncnet::Ping* msg)
@@ -109,6 +111,17 @@ void PlayerController::handle(const syncnet::Login* msg)
 
 	PlayerRepository::AsyncLoad(player_);
 
+	// 최초 로그인 시 클라가 어느 맵(씬)을 로드하고 어디에 스폰할지 알 수 있도록
+	// 현재(기본) 맵 id 와 스폰 위치를 함께 반환한다.
+	int mapId = 0;
+	syncnet::Vec3 spawnPos(0, 0, 0);
+	Map* primaryMap = world_->GetPrimaryMap();
+	if (primaryMap != nullptr)
+	{
+		mapId = primaryMap->GetMapId();
+		spawnPos = primaryMap->GetPlayerSpawnPos();
+	}
+
 	player_->Send(
 		syncnet::CreateLoginDirect
 		, syncnet::GameMessages::GameMessages_Login
@@ -116,6 +129,8 @@ void PlayerController::handle(const syncnet::Login* msg)
 		, syncnet::StatusCode::StatusCode_Success
 		, msg->userId()->c_str()
 		, msg->password()->c_str()
+		, mapId
+		, &spawnPos
 	);
 }
 
@@ -155,4 +170,48 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 	);
 	builder_ptr->Finish(send_msg);
 	character->GetMap()->SendBroadcast(builder_ptr, player_);
+}
+
+void PlayerController::handle(const syncnet::EnterGate* msg)
+{
+	LOG.info("EnterGate mapId :{}, gateId :{}", msg->mapId(), msg->gateId());
+
+	syncnet::Vec3 outPos(0, 0, 0);
+	int outAgentId = 0;
+	auto status = syncnet::StatusCode::StatusCode_Success;
+
+	if (!player_ || !player_->GetCharacter())
+	{
+		LOG.error("EnterGate error: player or character is null");
+		status = syncnet::StatusCode::StatusCode_Failed;
+	}
+	else if (player_->GetCharacter()->IsInputLocked())
+	{
+		LOG.debug("EnterGate ignored: character is input locked");
+		status = syncnet::StatusCode::StatusCode_Failed;
+	}
+	else if (!world_->ChangeMap(player_, msg->mapId(), msg->gateId(), outPos, outAgentId))
+	{
+		status = syncnet::StatusCode::StatusCode_Failed;
+	}
+
+	// 응답을 먼저 보낸다. 클라는 이 응답으로 맵 프리팹을 교체하고 기존 액터를 정리한다.
+	player_->Send(
+		syncnet::CreateEnterGate
+		, syncnet::GameMessages::GameMessages_EnterGate
+		, lastMessageId_
+		, status
+		, msg->mapId()
+		, msg->gateId()
+		, &outPos
+		, outAgentId
+	);
+
+	// 응답 이후에 새 맵의 액터 상태를 동기화한다(클라가 맵 교체를 마친 뒤 받도록).
+	if (status == syncnet::StatusCode::StatusCode_Success)
+	{
+		Map* destMap = world_->FindMap(msg->mapId());
+		if (destMap != nullptr)
+			destMap->SendStateTo(player_);
+	}
 }

@@ -294,6 +294,7 @@ namespace Gamedata
         public string name_id;
         public string navmesh_path;
         public MapObjects objects;
+        public string scene;
         public MapSize size;
         public MapSpawnPoints spawn_points;
     }
