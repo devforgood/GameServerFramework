@@ -26,7 +26,9 @@ void GameChannel::Join(GameParticipantPtr participant)
 
 void GameChannel::Leave(GameParticipantPtr participant)
 {
-	world_->leave(participant->GetPlayer());
+	// 세션이 끊겨도 캐릭터를 즉시 제거하지 않는다. 로그인한 플레이어면 유예 시간 동안
+	// 캐릭터를 유지해 같은 userId 로 재접속 시 넘겨받을 수 있게 한다(핸드오버).
+	world_->BeginDisconnect(participant->GetPlayer());
 	participants_.erase(participant);
 }
 
@@ -110,12 +112,19 @@ void GameSession::DoRead() {
 	char* write_ptr = ringBuf_->write_ptr(space);
 	if (!write_ptr || space == 0) return;
 
+	auto self(shared_from_this());
 	socket_.async_read_some(boost::asio::buffer(write_ptr, space),
-		[this](boost::system::error_code ec, std::size_t bytes_transferred) {
+		[this, self](boost::system::error_code ec, std::size_t bytes_transferred) {
 			if (!ec) {
 				ringBuf_->commit_write(bytes_transferred);
 				ProcessPackets();
 				DoRead();
+			}
+			else {
+				// 클라 종료/연결 끊김. 세션과 플레이어(현재 맵의 액터/브로드캐스트 목록)를
+				// 즉시 정리한다. 이 분기가 없으면 read 는 멈추지만 정리가 안 돼, 다음 브로드
+				// 캐스트 write 실패 시점까지 세션이 남아 있게 된다.
+				room_.Leave(shared_from_this());
 			}
 		});
 }

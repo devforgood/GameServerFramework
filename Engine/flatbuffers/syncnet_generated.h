@@ -1036,7 +1036,9 @@ struct Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_USERID = 4,
     VT_PASSWORD = 6,
     VT_MAPID = 8,
-    VT_POS = 10
+    VT_POS = 10,
+    VT_AGENTID = 12,
+    VT_UUID = 14
   };
   const flatbuffers::String *userId() const {
     return GetPointer<const flatbuffers::String *>(VT_USERID);
@@ -1050,6 +1052,12 @@ struct Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::Vec3 *pos() const {
     return GetStruct<const syncnet::Vec3 *>(VT_POS);
   }
+  int32_t agentId() const {
+    return GetField<int32_t>(VT_AGENTID, 0);
+  }
+  const flatbuffers::String *uuid() const {
+    return GetPointer<const flatbuffers::String *>(VT_UUID);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_USERID) &&
@@ -1058,6 +1066,9 @@ struct Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyString(password()) &&
            VerifyField<int32_t>(verifier, VT_MAPID) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
+           VerifyField<int32_t>(verifier, VT_AGENTID) &&
+           VerifyOffset(verifier, VT_UUID) &&
+           verifier.VerifyString(uuid()) &&
            verifier.EndTable();
   }
 };
@@ -1078,6 +1089,12 @@ struct LoginBuilder {
   void add_pos(const syncnet::Vec3 *pos) {
     fbb_.AddStruct(Login::VT_POS, pos);
   }
+  void add_agentId(int32_t agentId) {
+    fbb_.AddElement<int32_t>(Login::VT_AGENTID, agentId, 0);
+  }
+  void add_uuid(flatbuffers::Offset<flatbuffers::String> uuid) {
+    fbb_.AddOffset(Login::VT_UUID, uuid);
+  }
   explicit LoginBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -1095,8 +1112,12 @@ inline flatbuffers::Offset<Login> CreateLogin(
     flatbuffers::Offset<flatbuffers::String> userId = 0,
     flatbuffers::Offset<flatbuffers::String> password = 0,
     int32_t mapId = 0,
-    const syncnet::Vec3 *pos = 0) {
+    const syncnet::Vec3 *pos = 0,
+    int32_t agentId = 0,
+    flatbuffers::Offset<flatbuffers::String> uuid = 0) {
   LoginBuilder builder_(_fbb);
+  builder_.add_uuid(uuid);
+  builder_.add_agentId(agentId);
   builder_.add_pos(pos);
   builder_.add_mapId(mapId);
   builder_.add_password(password);
@@ -1109,15 +1130,20 @@ inline flatbuffers::Offset<Login> CreateLoginDirect(
     const char *userId = nullptr,
     const char *password = nullptr,
     int32_t mapId = 0,
-    const syncnet::Vec3 *pos = 0) {
+    const syncnet::Vec3 *pos = 0,
+    int32_t agentId = 0,
+    const char *uuid = nullptr) {
   auto userId__ = userId ? _fbb.CreateString(userId) : 0;
   auto password__ = password ? _fbb.CreateString(password) : 0;
+  auto uuid__ = uuid ? _fbb.CreateString(uuid) : 0;
   return syncnet::CreateLogin(
       _fbb,
       userId__,
       password__,
       mapId,
-      pos);
+      pos,
+      agentId,
+      uuid__);
 }
 
 struct UseSkill FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

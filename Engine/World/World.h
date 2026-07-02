@@ -36,6 +36,16 @@ private:
 	// gamedata 맵 id -> Map. 게이트 이동 등 id 기반 라우팅에 사용.
 	std::unordered_map<int, std::shared_ptr<Map>> mapById_;
 
+	// 재접속 핸드오버 대기: 세션이 끊긴 플레이어를 즉시 제거하지 않고 유예 시간 동안
+	// 캐릭터를 월드에 유지한다. 키는 플레이어 고유 uuid(재접속 토큰).
+	// uuid -> (플레이어, 남은 유예 시간(초)).
+	struct PendingReconnect
+	{
+		std::shared_ptr<Player> player;
+		float remainingSec;
+	};
+	std::unordered_map<std::string, PendingReconnect> pendingReconnects_;
+
 	std::unique_ptr<GameMode> gameMode_;
 
 
@@ -71,6 +81,18 @@ public:
 
 	void join(std::shared_ptr<Player> player);
 	void leave(std::shared_ptr<Player> player);
+
+	// 세션 끊김 처리. 캐릭터가 맵에 있으면 즉시 제거하지 않고 유예 시간 동안 캐릭터를
+	// 유지(핸드오버 대기, 키=플레이어 uuid)한다. 그 외에는 즉시 정리한다.
+	void BeginDisconnect(std::shared_ptr<Player> player);
+
+	// 유예 시간 경과한 대기 플레이어를 정리한다. World::update 에서 매 틱 호출.
+	void TickReconnectGrace(float deltaTime);
+
+	// uuid(재접속 토큰)로 유예 대기 중인 플레이어를 찾아 반환하고 대기 목록에서 제거한다
+	// (재바인딩은 호출 측에서 수행). 없으면 nullptr. 반환 시 월드/맵 브로드캐스트 목록에
+	// 다시 등록한다.
+	std::shared_ptr<Player> TryReconnect(const std::string& uuid);
 
 	friend class Actor;
 	friend class ActorFactory;

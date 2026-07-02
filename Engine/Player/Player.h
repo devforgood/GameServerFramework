@@ -4,6 +4,7 @@
 #include <memory>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include "syncnet_generated.h"
 #include "SendMessage.h"
 #include "GameObject.h"
@@ -19,6 +20,10 @@ private:
 	std::string name_;
 	int level_;
 	boost::uuids::uuid uuid_;
+
+	// 로그인 시 클라가 보낸 계정 식별자. 재접속 핸드오버(끊긴 세션의 캐릭터를
+	// 같은 userId 로 재접속했을 때 넘겨받기)의 키로 사용한다.
+	std::string userId_;
 
 
 	std::shared_ptr<Character> character_;
@@ -52,6 +57,13 @@ public:
 
 	long GetPlayerId() { return playerId_; }
 	std::string GetName() { return name_; }
+
+	void SetUserId(const std::string& userId) { userId_ = userId; }
+	const std::string& GetUserId() const { return userId_; }
+
+	// 재접속 토큰으로 쓰는 플레이어 고유 식별자(생성자에서 1회 생성). 최초 로그인 응답으로
+	// 클라에 내려주고, 클라가 재접속 시 되돌려 보내면 유예 대기 플레이어를 이 값으로 찾는다.
+	std::string GetUuid() const { return boost::uuids::to_string(uuid_); }
 
 	// 게이트 이동 쿨타임 검사/갱신. nowMs/cooldownMs 는 ms 단위.
 	bool IsGateOnCooldown(uint64_t nowMs, uint64_t cooldownMs) const

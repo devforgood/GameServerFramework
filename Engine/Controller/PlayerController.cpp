@@ -10,6 +10,7 @@
 #include "SendMessage.h"
 #include "Map.h"
 #include "PlayerRepository.h"
+#include "Server.h"
 
 namespace
 {
@@ -120,8 +121,70 @@ void PlayerController::handle(const syncnet::SetRaycast* msg)
 
 void PlayerController::handle(const syncnet::Login* msg)
 {
-	LOG.info("Login id :{}, lastMessageId:{}", msg->userId()->c_str(), lastMessageId_);
+	const std::string userId = msg->userId() != nullptr ? msg->userId()->c_str() : "";
+	const char* password = msg->password() != nullptr ? msg->password()->c_str() : "";
+	const std::string reconnectToken = msg->uuid() != nullptr ? msg->uuid()->c_str() : "";
+	LOG.info("Login id :{}, uuid:'{}', lastMessageId:{}", userId, reconnectToken, lastMessageId_);
 
+	// 재접속 핸드오버: 클라가 되돌려 보낸 uuid(재접속 토큰)로 유예 대기 중인 기존 플레이어를
+	// 찾으면, 이 세션을 그 플레이어에 재바인딩하고 기존 캐릭터(맵/위치/agentId)를 넘겨받는다.
+	// uuid 는 플레이어 고유값이라 다른 클라가 같은 userId 로 접속해도 가로챌 수 없다.
+	auto oldPlayer = world_->TryReconnect(reconnectToken);
+	if (oldPlayer != nullptr)
+	{
+		auto provisional = player_;                  // 이번 접속에서 새로 만든 임시 플레이어
+		auto session = provisional->GetSession();
+		if (session != nullptr)
+		{
+			// 세션의 player_/컨트롤러 player_ 를 기존 플레이어로 교체(this->player_ 도 갱신됨).
+			session->SetPlayer(oldPlayer);
+		}
+		else
+		{
+			LOG.error("Login reconnect error: provisional session expired");
+		}
+
+		// 임시 플레이어를 월드에서 제거(캐릭터 없음 → 기본 맵/월드 브로드캐스트 목록에서 제거).
+		world_->leave(provisional);
+
+		oldPlayer->SetUserId(userId);
+
+		auto character = oldPlayer->GetCharacter();
+		int mapId = 0;
+		syncnet::Vec3 pos(0, 0, 0);
+		int agentId = 0;
+		if (character != nullptr && character->GetMap() != nullptr)
+		{
+			mapId = character->GetMap()->GetMapId();
+			const Vector3& p = character->GetPosition();
+			pos = syncnet::Vec3(p.convert_x(), p.convert_y(), p.convert_z());
+			agentId = character->GetActorId();
+		}
+
+		// 응답의 agentId 가 0 이 아니면 클라는 재접속으로 인식해 AddAgent 를 생략하고
+		// 이 agentId 를 채택한다. 이어지는 SendStateTo 로 기존 캐릭터가 재생성된다.
+		// uuid 는 기존 값 그대로(클라가 이미 보유) 다시 실어 보낸다.
+		const std::string uuid = oldPlayer->GetUuid();
+		oldPlayer->Send(
+			syncnet::CreateLoginDirect
+			, syncnet::GameMessages::GameMessages_Login
+			, lastMessageId_
+			, syncnet::StatusCode::StatusCode_Success
+			, userId.c_str()
+			, password
+			, mapId
+			, &pos
+			, agentId
+			, uuid.c_str()
+		);
+
+		if (character != nullptr && character->GetMap() != nullptr)
+			character->GetMap()->SendStateTo(oldPlayer);
+		return;
+	}
+
+	// 신규 로그인.
+	player_->SetUserId(userId);
 	PlayerRepository::AsyncLoad(player_);
 
 	// 최초 로그인 시 클라가 어느 맵(씬)을 로드하고 어디에 스폰할지 알 수 있도록
@@ -135,15 +198,20 @@ void PlayerController::handle(const syncnet::Login* msg)
 		spawnPos = primaryMap->GetPlayerSpawnPos();
 	}
 
+	// 최초 로그인 응답에 플레이어 uuid(재접속 토큰)를 실어 보낸다. 클라는 이를 저장했다가
+	// 재접속 시 되돌려 보낸다.
+	const std::string uuid = player_->GetUuid();
 	player_->Send(
 		syncnet::CreateLoginDirect
 		, syncnet::GameMessages::GameMessages_Login
 		, lastMessageId_
 		, syncnet::StatusCode::StatusCode_Success
-		, msg->userId()->c_str()
-		, msg->password()->c_str()
+		, userId.c_str()
+		, password
 		, mapId
 		, &spawnPos
+		, 0 /* agentId: 신규 로그인은 0 */
+		, uuid.c_str()
 	);
 }
 

@@ -19,7 +19,12 @@
 #include "GameMode.h"
 #include "GameModeFactory.h"
 
-
+namespace
+{
+	// 세션 끊김 후 캐릭터를 월드에 유지하는 유예 시간(초). 이 시간 내 같은 userId 로
+	// 재접속하면 기존 캐릭터를 그대로 넘겨받는다(핸드오버).
+	constexpr float kReconnectGraceSec = 60.0f;
+}
 
 World::World()
 {
@@ -119,6 +124,8 @@ void World::update(float deltaTime)
 
 	if (gameMode_)
 		gameMode_->Update(deltaTime);
+
+	TickReconnectGrace(deltaTime);
 }
 
 void World::join(std::shared_ptr<Player> player)
@@ -154,8 +161,109 @@ void World::leave(std::shared_ptr<Player> player)
 		return;
 	}
 	players_.erase(itr);
-	// todo : map 선택 로직 추가
-	mapList_.begin()->get()->leave(player);
+
+	// 플레이어가 실제로 속한 맵에서 정리한다. 게이트 이동 후에는 기본 맵이 아닌
+	// 다른 맵에 있을 수 있으므로 캐릭터의 현재 맵을 사용해야 한다. 과거엔 항상 첫
+	// 맵만 정리해서, 이동한 플레이어가 목적지 맵의 players_/actorList_ 에 남아 세션이
+	// 사라진 뒤에도 매 틱 브로드캐스트되며 "Session expired! in send" 가 반복됐다.
+	// OnRemoveAgent 는 캐릭터 액터(grid/movement/actorList)와 해당 맵의 players_ 를
+	// 함께 제거한다.
+	auto character = player->GetCharacter();
+	if (character != nullptr && character->GetMap() != nullptr)
+	{
+		character->GetMap()->OnRemoveAgent(character->GetActorId());
+	}
+	else if (!mapList_.empty())
+	{
+		// 빙의된 캐릭터/맵이 없으면(로그인 직후 등) 기본 맵의 브로드캐스트 목록에서만 제거.
+		mapList_.begin()->get()->leave(player);
+	}
+}
+
+void World::BeginDisconnect(std::shared_ptr<Player> player)
+{
+	if (player == nullptr)
+	{
+		LOG.error("World::BeginDisconnect error player is nullptr");
+		return;
+	}
+
+	// 이미 처리된(월드 목록에 없는) 플레이어면 재진입하지 않는다. 세션 종료는 read/write
+	// 에러 등 여러 경로에서 중복 호출될 수 있으므로 멱등하게 만든다.
+	auto itr = players_.find(player->GetPlayerId());
+	if (itr == players_.end())
+		return;
+	players_.erase(itr);
+
+	auto character = player->GetCharacter();
+
+	// 캐릭터가 맵에 있으면(=로그인+스폰 완료), 캐릭터 액터는 맵에 유지한 채 브로드캐스트
+	// 목록에서만 빼고 유예 대기열에 올린다. 유예 시간 내 같은 uuid(재접속 토큰)로 재접속하면
+	// 그대로 넘겨받는다. 대기열 키는 플레이어 고유 uuid 라, 다른 클라가 같은 userId 로
+	// 접속해도 남의 캐릭터를 가로챌 수 없다.
+	if (character != nullptr && character->GetMap() != nullptr)
+	{
+		const std::string uuid = player->GetUuid();
+		character->GetMap()->leave(player); // 맵 players_(브로드캐스트)에서만 제거, 액터는 유지
+		pendingReconnects_[uuid] = PendingReconnect{ player, kReconnectGraceSec };
+		LOG.info("player {}(uuid '{}') disconnected. holding character {}s for reconnect.",
+			player->GetPlayerId(), uuid, kReconnectGraceSec);
+		return;
+	}
+
+	// 로그인 전/캐릭터 없음 → 즉시 정리.
+	if (character != nullptr && character->GetMap() != nullptr)
+		character->GetMap()->OnRemoveAgent(character->GetActorId());
+	else if (!mapList_.empty())
+		mapList_.begin()->get()->leave(player);
+}
+
+void World::TickReconnectGrace(float deltaTime)
+{
+	for (auto it = pendingReconnects_.begin(); it != pendingReconnects_.end(); )
+	{
+		it->second.remainingSec -= deltaTime;
+		if (it->second.remainingSec > 0.0f)
+		{
+			++it;
+			continue;
+		}
+
+		// 유예 종료 → 캐릭터를 월드에서 제거하고 데이터를 저장한 뒤 대기열에서 뺀다.
+		auto player = it->second.player;
+		LOG.info("reconnect grace expired for uuid '{}'. removing character.", it->first);
+
+		auto character = player->GetCharacter();
+		if (character != nullptr && character->GetMap() != nullptr)
+			character->GetMap()->OnRemoveAgent(character->GetActorId());
+
+		player->SavePlayerData(); // 드롭 전에 영속화(비동기 저장이 shared_ptr 로 수명 유지)
+
+		it = pendingReconnects_.erase(it);
+	}
+}
+
+std::shared_ptr<Player> World::TryReconnect(const std::string& uuid)
+{
+	if (uuid.empty())
+		return nullptr;
+
+	auto it = pendingReconnects_.find(uuid);
+	if (it == pendingReconnects_.end())
+		return nullptr;
+
+	auto player = it->second.player;
+	pendingReconnects_.erase(it);
+
+	// 월드/맵 브로드캐스트 목록에 다시 등록한다(캐릭터 액터는 유예 동안 유지돼 있었다).
+	players_.insert(std::make_pair(player->GetPlayerId(), player));
+	auto character = player->GetCharacter();
+	if (character != nullptr && character->GetMap() != nullptr)
+		character->GetMap()->Enter(player);
+
+	LOG.info("player {}(uuid '{}') reconnected. handing over existing character.",
+		player->GetPlayerId(), uuid);
+	return player;
 }
 
 

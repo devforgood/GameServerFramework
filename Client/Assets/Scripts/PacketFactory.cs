@@ -61,14 +61,20 @@ public static class PacketFactory
         return builder.SizedByteArray();
     }
 
-    public static byte[] CreateLoginMessage(int messageId)
+    public static byte[] CreateLoginMessage(int messageId, string reconnectToken = "")
     {
         var builder = new FlatBufferBuilder(1024);
+        // 문자열은 StartLogin(테이블 시작) 전에 만들어야 한다(flatbuffers 제약).
         var nameOffSet = builder.CreateString("test");
         var passwordOffSet = builder.CreateString("1234");
+        // 재접속 토큰(uuid). 없으면(최초 로그인) 필드를 넣지 않아 서버에서 빈 값으로 처리된다.
+        bool hasUuid = !string.IsNullOrEmpty(reconnectToken);
+        StringOffset uuidOffSet = hasUuid ? builder.CreateString(reconnectToken) : default(StringOffset);
         syncnet.Login.StartLogin(builder);
         syncnet.Login.AddUserId(builder, nameOffSet);
         syncnet.Login.AddPassword(builder, passwordOffSet);
+        if (hasUuid)
+            syncnet.Login.AddUuid(builder, uuidOffSet);
         var offset = syncnet.Login.EndLogin(builder);
         var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.Login, offset.Value, messageId);
         builder.Finish(msg.Value);

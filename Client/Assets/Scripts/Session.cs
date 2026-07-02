@@ -39,6 +39,12 @@ public class Session : MonoBehaviour
 	// 최초 로그인 시 서버가 반환한 현재 맵 id 와 스폰 위치(캐릭터 생성/배치에 사용).
 	public int loginMapId = 0;
 	public Vector3 loginSpawnPos = Vector3.zero;
+
+	// 재접속 토큰(서버가 로그인 응답으로 내려준 플레이어 uuid). 재접속(세션 재연결 또는
+	// 앱 재시작) 시 로그인 요청에 되돌려 보내면 서버가 유예 중이던 기존 캐릭터를 넘겨준다.
+	// PlayerPrefs 에 영속 저장해 앱/플레이 재시작에도 유지한다.
+	private string reconnectToken = "";
+	private const string ReconnectTokenKey = "reconnectToken";
 	private int last_message_id = 0;
 	private bool isConnected = false;  // 연결 상태 추적
 
@@ -81,6 +87,10 @@ public class Session : MonoBehaviour
 		}
 		Instance = this;
 		DontDestroyOnLoad(gameObject);
+
+		// 재접속 토큰(uuid)을 영속 저장소에서 복원한다. 앱/플레이 재시작으로 Session 이 새로
+		// 생성돼도, 유예 시간(서버 60초) 내라면 이 토큰으로 기존 캐릭터를 넘겨받을 수 있다.
+		reconnectToken = PlayerPrefs.GetString(ReconnectTokenKey, "");
 	}
 
     void Start()
@@ -729,8 +739,10 @@ public class Session : MonoBehaviour
     public void Login()
     {
         int messageId = nextMesssagetId();
-        SendMessage(PacketFactory.CreateLoginMessage(messageId), response => 
-        { 
+        // 보유한 재접속 토큰(uuid)을 함께 보낸다. 최초 로그인이면 빈 문자열이라 신규 로그인으로
+        // 처리되고, 재접속이면 서버가 이 토큰으로 유예 중이던 기존 캐릭터를 넘겨준다.
+        SendMessage(PacketFactory.CreateLoginMessage(messageId, reconnectToken), response =>
+        {
             if (response.MsgType == GameMessages.Login)
             {
                 Login login = response.Msg<Login>().Value;
@@ -740,6 +752,34 @@ public class Session : MonoBehaviour
                     loginMapId = login.MapId;
                     if (login.Pos.HasValue)
                         loginSpawnPos = new Vector3(login.Pos.Value.X, login.Pos.Value.Y, login.Pos.Value.Z);
+
+                    // 재접속 토큰(플레이어 uuid) 저장. 이후 재접속 로그인 요청에 되돌려 보낸다.
+                    // PlayerPrefs 에도 저장해 앱/플레이 재시작에도 유지되게 한다.
+                    if (!string.IsNullOrEmpty(login.Uuid))
+                    {
+                        reconnectToken = login.Uuid;
+                        PlayerPrefs.SetString(ReconnectTokenKey, reconnectToken);
+                        PlayerPrefs.Save();
+                    }
+
+                    // AgentId 가 0 이 아니면 재접속: 서버가 유지하던 기존 캐릭터를 넘겨받는다.
+                    // AddAgent(신규 스폰)를 하지 않고, 그 agentId 를 채택한 뒤 대상 맵 씬을
+                    // (재)로드한다. 로드 완료 후 서버가 보낸 상태 동기화(SendStateTo)가 큐에서
+                    // 처리되며 기존 캐릭터가 재생성된다. (게이트 이동과 동일한 씬 로드 파이프라인)
+                    if (login.AgentId != 0)
+                    {
+                        player_agnet_id = login.AgentId;
+                        Debug.Log($"Reconnect handover. agentId:{player_agnet_id}, mapId:{loginMapId}, pos({loginSpawnPos.x},{loginSpawnPos.y},{loginSpawnPos.z})");
+
+                        Gamedata.Map rmap;
+                        if (GameManager.Instance.resource.Maps.TryGetValue(loginMapId, out rmap)
+                            && !string.IsNullOrEmpty(rmap.scene))
+                        {
+                            // 같은 씬이어도 재로드해 이전(정지된) 액터/참조를 초기화한다.
+                            LoadMapScene(rmap.scene);
+                        }
+                        return;
+                    }
 
                     Debug.Log($"Login Success. mapId:{loginMapId}, pos({loginSpawnPos.x},{loginSpawnPos.y},{loginSpawnPos.z})");
 
