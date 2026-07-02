@@ -148,7 +148,7 @@
         }
       ]
     },
-    "navmesh_path": "Field1_navmesh.bin"
+    "navmesh_path": "Starting Village_navmesh.bin"
   },
   {
     "id": 2,
@@ -283,7 +283,7 @@
         }
       ]
     },
-    "navmesh_path": "Field2_navmesh.bin"
+    "navmesh_path": "Dark Forest_navmesh.bin"
   },
   {
     "id": 6,

@@ -69,6 +69,22 @@ def load_table_data(json_path):
         return None
 
 
+def collect_map_navmeshes():
+    """Map.json의 navmesh_path에 지정된 navmesh 바이너리 경로 목록을 수집한다."""
+    maps = load_table_data("Map.json")
+    if maps is None:
+        return []
+
+    paths = []
+    for m in maps:
+        navmesh = m.get("navmesh_path")
+        if navmesh:
+            asset_path = os.path.join(GAMEDATA_DIR, navmesh)
+            if asset_path not in paths:
+                paths.append(asset_path)
+    return paths
+
+
 def main():
     meta = load_table_meta()
     if not meta:
@@ -142,9 +158,14 @@ def main():
                 print(f"{RED}[ERROR] {lua_path} copy to {target_dir} failed: {e}{RESET}")
 
     # 정적 에셋 복사 (Monster.xml, solo_navmesh.bin 등)
+    # + Map.json의 navmesh_path에 지정된 navmesh 바이너리도 함께 배포
+    static_assets = STATIC_ASSETS + collect_map_navmeshes()
     for target_dir in STATIC_ASSET_COPY_DIRS:
         os.makedirs(target_dir, exist_ok=True)
-        for asset_path in STATIC_ASSETS:
+        for asset_path in static_assets:
+            if not os.path.exists(asset_path):
+                print(f"{RED}[WARN] {asset_path} not found, skipping{RESET}")
+                continue
             try:
                 shutil.copy2(asset_path, os.path.join(target_dir, os.path.basename(asset_path)))
                 print(f"{GREEN}[OK] {os.path.basename(asset_path)} copied to {target_dir}{RESET}")
