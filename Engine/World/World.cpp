@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
+#include <stdexcept>
 #include "Server.h"
 #include "Monster.h"
 #include "Character.h"
@@ -89,7 +90,13 @@ void World::Init(const std::string& movementOverride)
 	for (const gamedata::Map* mapData : fieldMaps)
 	{
 		std::shared_ptr<Map> map = std::make_shared<Map>(this);
-		map->Init(movementType, mapData);
+		if (!map->Init(movementType, mapData))
+		{
+			// navmesh 로드 실패 등 맵 초기화 실패는 치명적 설정 오류로 보고 서버 기동을 중단한다.
+			// (Map::Init 이 원인을 로그로 남긴다.)
+			LOG.error("World::Init map {} 초기화 실패로 서버 기동을 중단합니다.", mapData->id);
+			throw std::runtime_error("맵 초기화 실패(navmesh 없음): map id " + std::to_string(mapData->id));
+		}
 		mapList_.push_back(map);
 		mapById_[mapData->id] = map;
 	}
@@ -238,6 +245,8 @@ bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syn
 
 	outPos = gatePos;
 	outAgentId = newActor->GetActorId();
+	LOG.info("World::ChangeMap success: player {} -> map {} gate {}, newAgentId {}, pos({},{},{})",
+		player->GetPlayerId(), mapId, gateId, outAgentId, outPos.x(), outPos.y(), outPos.z());
 	return true;
 }
 

@@ -98,23 +98,26 @@ Map::~Map()
 	}
 }
 
-void Map::Init(const std::string& movementType, const gamedata::Map* mapData)
+bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 {
 	mapData_ = mapData;
 
-	// 맵 데이터에 navmesh_path 가 지정돼 있으면 맵별 네비메시를 로드하고,
-	// 지정이 없거나 로드에 실패하면 기존 공유 네비메시(solo_navmesh.bin)로 폴백한다.
+	// 맵별 네비메시를 반드시 로드한다. 경로가 지정되지 않았거나 로드에 실패하면
+	// 과거처럼 solo_navmesh.bin 으로 폴백하면 씬 지오메트리와 형상이 어긋나므로,
+	// 폴백하지 않고 에러로 처리한다(호출자가 해당 맵 로드를 중단하도록 false 반환).
 	navMesh_ = new NavMesh();
-	bool navLoaded = false;
-	if (mapData_ != nullptr && !mapData_->navmesh_path.empty())
+	if (mapData_ == nullptr || mapData_->navmesh_path.empty())
 	{
-		navLoaded = navMesh_->Load(("GameData/" + mapData_->navmesh_path).c_str());
-		if (!navLoaded)
-			LOG.warn("Map {} navmesh '{}' load failed; falling back to solo_navmesh.bin",
-				mapData_->id, mapData_->navmesh_path);
+		LOG.error("Map {} navmesh 경로가 지정되지 않았습니다. 맵 로드를 중단합니다.",
+			mapData_ != nullptr ? mapData_->id : 0);
+		return false;
 	}
-	if (!navLoaded)
-		navMesh_->Load("GameData/solo_navmesh.bin");
+	if (!navMesh_->Load(("GameData/" + mapData_->navmesh_path).c_str()))
+	{
+		LOG.error("Map {} navmesh '{}' 로드에 실패했습니다. 맵 로드를 중단합니다.",
+			mapData_->id, mapData_->navmesh_path);
+		return false;
+	}
 
 	movement_ = NavMovementFactory::Create(movementType, navMesh_);
 	movement_->Init();
@@ -180,6 +183,7 @@ void Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 			actor->ResetChangedFlag();
 		});
 
+	return true;
 }
 
 int Map::GetMapId() const

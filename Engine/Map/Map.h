@@ -59,7 +59,9 @@ public:
 	Map(World* world);
 	virtual ~Map();
 
-	void Init(const std::string& movementType, const gamedata::Map* mapData = nullptr);
+	// 맵을 초기화한다. 맵별 네비메시 로드에 실패하면(경로 미지정/파일 없음 등)
+	// false 를 반환한다 — 호출자는 해당 맵을 등록하지 말아야 한다.
+	bool Init(const std::string& movementType, const gamedata::Map* mapData = nullptr);
 	void update(float deltaTime);
 
 	const gamedata::Map* GetMapData() const { return mapData_; }
