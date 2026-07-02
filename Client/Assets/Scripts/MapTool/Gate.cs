@@ -33,6 +33,15 @@ public class Gate : MonoBehaviour
             return;
         }
 
+        // 게이트 이동으로 막 도착하면 목적지 게이트 위치에 스폰되어 도착 즉시 여기로 들어온다.
+        // "밖에서 안으로 들어온 경우"만 이동시키기 위해, 도착 직후 진입은 무시한다.
+        // 플레이어가 게이트 밖으로 나가면(OnTriggerExit) 억제가 해제되어 다시 이동할 수 있다.
+        if (Session.Instance.SuppressGateWarpUntilExit)
+        {
+            Debug.Log($"[Gate] '{gateName}': spawned on gate after warp. ignore until player exits.");
+            return;
+        }
+
         if (string.IsNullOrEmpty(destinationMapName))
         {
             Debug.LogWarning($"Gate '{gateName}' has no destinationMapName.");
@@ -62,5 +71,23 @@ public class Gate : MonoBehaviour
         string destScene = !string.IsNullOrEmpty(destMap.scene) ? destMap.scene : destinationMapName;
         Debug.Log($"[Gate] '{gateName}': resolved dest mapId:{destMap.id}, gateId:{gateId}, scene:'{destScene}'. requesting EnterGate.");
         Session.Instance.EnterGate(destMap.id, gateId, destScene);
+    }
+
+    // 로컬 플레이어가 게이트 밖으로 나가면 재이동 억제를 해제한다.
+    // (도착 시 게이트 위 스폰 → 밖으로 걸어 나감 → 이후 다시 진입하면 정상 이동)
+    private void OnTriggerExit(Collider other)
+    {
+        if (Session.Instance == null)
+            return;
+
+        var actor = other.GetComponentInParent<Actor>();
+        if (actor == null || actor.agnet_id != Session.Instance.player_agnet_id)
+            return;
+
+        if (Session.Instance.SuppressGateWarpUntilExit)
+        {
+            Debug.Log($"[Gate] '{gateName}': local player exited gate. gate warp re-armed.");
+            Session.Instance.SuppressGateWarpUntilExit = false;
+        }
     }
 }

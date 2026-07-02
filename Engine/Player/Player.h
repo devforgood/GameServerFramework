@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <string>
 #include <memory>
 #include <boost/uuid/uuid.hpp>
@@ -26,6 +27,10 @@ private:
 
 	float playerLazySaveAcc_;
 
+	// 게이트 이동 쿨타임: 마지막으로 게이트 이동에 성공한 시각(ms, epoch). 0 = 이동 이력 없음.
+	// Character 는 맵 이동 때마다 재생성되므로, 이동에도 유지되는 Player 에 보관한다.
+	uint64_t lastGateMoveMs_ = 0;
+
 public:
 	Player();
 	~Player();
@@ -47,6 +52,13 @@ public:
 
 	long GetPlayerId() { return playerId_; }
 	std::string GetName() { return name_; }
+
+	// 게이트 이동 쿨타임 검사/갱신. nowMs/cooldownMs 는 ms 단위.
+	bool IsGateOnCooldown(uint64_t nowMs, uint64_t cooldownMs) const
+	{
+		return lastGateMoveMs_ != 0 && (nowMs - lastGateMoveMs_) < cooldownMs;
+	}
+	void MarkGateMoved(uint64_t nowMs) { lastGateMoveMs_ = nowMs; }
 
 	void Possess(std::shared_ptr<Character> character);
 	void UnPossess();

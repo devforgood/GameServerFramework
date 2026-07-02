@@ -1,5 +1,6 @@
 #include "PlayerController.h"
 #include <iostream>
+#include <chrono>
 #include "World.h"
 #include "Vector3.h"
 #include "DetourNavMeshQuery.h"
@@ -9,6 +10,18 @@
 #include "SendMessage.h"
 #include "Map.h"
 #include "PlayerRepository.h"
+
+namespace
+{
+	// 게이트 연속 이동 방지 쿨타임(ms). 도착 직후 재진입/도배 요청을 서버에서 차단한다.
+	constexpr uint64_t kGateCooldownMs = 1000;
+
+	uint64_t NowMs()
+	{
+		return std::chrono::duration_cast<std::chrono::milliseconds>(
+			std::chrono::system_clock::now().time_since_epoch()).count();
+	}
+}
 
 void PlayerController::handle(const syncnet::GameMessage* msg)
 {
@@ -179,6 +192,7 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 	syncnet::Vec3 outPos(0, 0, 0);
 	int outAgentId = 0;
 	auto status = syncnet::StatusCode::StatusCode_Success;
+	const uint64_t nowMs = NowMs();
 
 	if (!player_ || !player_->GetCharacter())
 	{
@@ -190,9 +204,19 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 		LOG.debug("EnterGate ignored: character is input locked");
 		status = syncnet::StatusCode::StatusCode_Failed;
 	}
+	else if (player_->IsGateOnCooldown(nowMs, kGateCooldownMs))
+	{
+		LOG.debug("EnterGate ignored: gate cooldown active (player {})", player_->GetPlayerId());
+		status = syncnet::StatusCode::StatusCode_Failed;
+	}
 	else if (!world_->ChangeMap(player_, msg->mapId(), msg->gateId(), outPos, outAgentId))
 	{
 		status = syncnet::StatusCode::StatusCode_Failed;
+	}
+	else
+	{
+		// 이동에 성공한 경우에만 쿨타임을 갱신한다(실패한 요청은 쿨타임을 소모하지 않음).
+		player_->MarkGateMoved(nowMs);
 	}
 
 	// 응답을 먼저 보낸다. 클라는 이 응답으로 맵 프리팹을 교체하고 기존 액터를 정리한다.

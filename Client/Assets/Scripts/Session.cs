@@ -19,6 +19,11 @@ public class Session : MonoBehaviour
 	private bool isChangingMap = false;   // 게이트 이동 요청 진행 중(중복 요청 방지)
 	private bool isLoadingScene = false;  // 씬 로드 대기 중 — 이 동안 네트워크 동기화 처리를 멈춘다
 
+	// 게이트 이동으로 막 도착하면 목적지 게이트 위치에 스폰되어 도착 즉시 트리거가 재발동한다.
+	// "밖에서 안으로 들어온 경우"만 이동시키기 위해, 도착 직후에는 재이동을 억제하고
+	// 플레이어가 게이트 밖으로 나가면(OnTriggerExit) 해제한다. Gate.cs 에서 참조/해제한다.
+	public bool SuppressGateWarpUntilExit { get; set; } = false;
+
 	int seq = 1;
 	TcpConnection session;
 	int message_count = 0;
@@ -675,6 +680,11 @@ public class Session : MonoBehaviour
 
         isLoadingScene = false;
         isChangingMap = false;
+
+        // 도착 캐릭터는 목적지 게이트 위치에 스폰되어 도착 즉시 트리거가 재발동한다.
+        // 밖으로 걸어 나가기 전까지는 재이동을 억제한다(무한 왕복 방지).
+        SuppressGateWarpUntilExit = true;
+
         Debug.Log($"Gate scene loaded: {scene.name}");
     }
 
