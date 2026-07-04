@@ -15,12 +15,16 @@ using Newtonsoft.Json.Linq;
 public class MapJsonUpdater : EditorWindow
 {
     private const string MarkerRootName = "MapDesign";
-    private const string GateGroupName = "Gates";
-    private const string SpawnGroupName = "SpawnPoints";
-    private const string ObjectGroupName = "Objects";
+    public const string GateGroupName = "Gates";
+    public const string SpawnGroupName = "SpawnPoints";
+    public const string ObjectGroupName = "Objects";
 
     private string mapJsonPath = "";
     private List<MapData> mapDataList = new List<MapData>();
+
+    // AutoSync가 열려 있는 창의 미저장 편집(맵 메타데이터 등)을 덮어쓰지 않도록 상태를 공유한다.
+    public string SharedJsonPath => mapJsonPath;
+    public List<MapData> SharedMapList => mapDataList;
     private Vector2 scrollPosition;
     private bool showAllMaps = false;
     private readonly HashSet<int> expandedMaps = new HashSet<int>();
@@ -176,7 +180,22 @@ public class MapJsonUpdater : EditorWindow
 
     private void LoadMapJson()
     {
-        // GameData 디렉토리에서 Map.json 찾기 (여러 경로 시도)
+        string found = FindMapJsonPath();
+        if (found == null)
+        {
+            mapJsonPath = "";
+            Debug.LogError("Map.json not found. 프로젝트 루트의 GameData/Map.json 경로를 확인하세요.");
+            return;
+        }
+
+        mapJsonPath = found;
+        mapDataList = LoadMapList(mapJsonPath);
+        Debug.Log($"Map.json loaded from: {mapJsonPath} (maps: {mapDataList.Count})");
+    }
+
+    // GameData 디렉토리에서 Map.json 찾기 (에디터 실행 위치에 따라 여러 경로 시도). 없으면 null.
+    public static string FindMapJsonPath()
+    {
         string[] possiblePaths = {
             Path.Combine(Application.dataPath, "..", "..", "..", "GameData", "Map.json"), // Client/Assets -> GameData
             Path.Combine(Application.dataPath, "..", "..", "GameData", "Map.json"),      // Assets -> GameData
@@ -187,22 +206,18 @@ public class MapJsonUpdater : EditorWindow
         foreach (string path in possiblePaths)
         {
             if (File.Exists(path))
-            {
-                mapJsonPath = Path.GetFullPath(path);
-                string jsonContent = File.ReadAllText(path);
-                mapDataList = JsonConvert.DeserializeObject<List<MapData>>(jsonContent) ?? new List<MapData>();
-                foreach (var map in mapDataList)
-                    EnsureDefaults(map);
-                Debug.Log($"Map.json loaded from: {mapJsonPath} (maps: {mapDataList.Count})");
-                return;
-            }
+                return Path.GetFullPath(path);
         }
+        return null;
+    }
 
-        Debug.LogError("Map.json not found in any of these paths:");
-        foreach (string path in possiblePaths)
-        {
-            Debug.LogError($"  - {path}");
-        }
+    public static List<MapData> LoadMapList(string path)
+    {
+        string jsonContent = File.ReadAllText(path);
+        var list = JsonConvert.DeserializeObject<List<MapData>>(jsonContent) ?? new List<MapData>();
+        foreach (var map in list)
+            EnsureDefaults(map);
+        return list;
     }
 
     // JSON에 필드가 null/누락으로 들어있어도 툴이 NRE 없이 동작하도록 기본값을 채운다.
@@ -229,8 +244,7 @@ public class MapJsonUpdater : EditorWindow
 
         try
         {
-            string jsonContent = JsonConvert.SerializeObject(mapDataList, Formatting.Indented);
-            File.WriteAllText(mapJsonPath, jsonContent);
+            SaveMapList(mapJsonPath, mapDataList);
             Debug.Log($"Map JSON saved successfully to: {mapJsonPath}\n" +
                       "배포하려면 GameDataFlow/GameDataFlow.py 를 실행하세요 (Client/Game/UnitTest로 복사).");
             AssetDatabase.Refresh();
@@ -239,6 +253,12 @@ public class MapJsonUpdater : EditorWindow
         {
             Debug.LogError($"Failed to save Map JSON: {e.Message}");
         }
+    }
+
+    public static void SaveMapList(string path, List<MapData> list)
+    {
+        string jsonContent = JsonConvert.SerializeObject(list, Formatting.Indented);
+        File.WriteAllText(path, jsonContent);
     }
 
     // ---------------------------------------------------------------------
@@ -265,6 +285,13 @@ public class MapJsonUpdater : EditorWindow
         if (GUILayout.Button("Save Map JSON"))
             SaveMapJson();
         EditorGUILayout.EndHorizontal();
+
+        // 자동 동기화 토글 (씬 열 때 JSON→씬 배치, 마커 변경 시 Map.json 자동 저장)
+        bool auto = MapJsonAutoSync.Enabled;
+        bool newAuto = EditorGUILayout.ToggleLeft(
+            "Auto Sync — 씬을 열면 Map.json 기준으로 마커 배치, 마커 변경 시 Map.json 자동 저장", auto);
+        if (newAuto != auto)
+            MapJsonAutoSync.Enabled = newAuto;
 
         EditorGUILayout.HelpBox("저장 후 GameDataFlow.py를 실행해야 Client/Game/UnitTest에 배포됩니다.", MessageType.Info);
 
@@ -479,16 +506,21 @@ public class MapJsonUpdater : EditorWindow
     // 씬 ⇔ 맵 매칭
     // ---------------------------------------------------------------------
 
-    private static bool IsMapForScene(MapData map, string sceneName)
+    public static bool IsMapForScene(MapData map, string sceneName)
     {
         if (!string.IsNullOrEmpty(map.scene))
             return map.scene.Equals(sceneName, System.StringComparison.OrdinalIgnoreCase);
         return map.name != null && map.name.Equals(sceneName, System.StringComparison.OrdinalIgnoreCase);
     }
 
+    public static MapData FindMapForScene(List<MapData> maps, string sceneName)
+    {
+        return maps.FirstOrDefault(m => IsMapForScene(m, sceneName));
+    }
+
     private MapData FindMapForScene(string sceneName)
     {
-        return mapDataList.FirstOrDefault(m => IsMapForScene(m, sceneName));
+        return FindMapForScene(mapDataList, sceneName);
     }
 
     private MapData CreateMapForScene(string sceneName)
@@ -541,24 +573,28 @@ public class MapJsonUpdater : EditorWindow
         if (map == null)
             map = CreateMapForScene(sceneName);
 
+        ScanSceneIntoMap(map, mapDataList, sceneName);
+        Debug.Log($"Scan complete for '{sceneName}': {map.gates.Count} gates. (Save Map JSON 필요)");
+    }
+
+    // 씬의 마커를 스캔하여 map에 기록한다 (MapJsonAutoSync에서도 사용).
+    public static void ScanSceneIntoMap(MapData map, List<MapData> allMaps, string sceneName)
+    {
         // 컴포넌트 기반 스캔 (태그 불필요). 이름순 정렬로 저장 결과를 결정적으로 만든다.
-        var gates = FindObjectsOfType<Gate>(true)
+        var gates = Object.FindObjectsOfType<Gate>(true)
             .OrderBy(g => g.name, System.StringComparer.OrdinalIgnoreCase).ToArray();
-        var spawns = FindObjectsOfType<SpawnPoint>(true)
+        var spawns = Object.FindObjectsOfType<SpawnPoint>(true)
             .OrderBy(s => s.name, System.StringComparer.OrdinalIgnoreCase).ToArray();
-        var objects = FindObjectsOfType<MapObjectMarker>(true)
+        var objects = Object.FindObjectsOfType<MapObjectMarker>(true)
             .OrderBy(o => o.name, System.StringComparer.OrdinalIgnoreCase).ToArray();
 
         UpdateGates(map, gates);
         UpdateSpawns(map, spawns);
-        UpdateObjects(map, objects);
+        UpdateObjects(map, objects, allMaps);
         DetectNavMesh(map, sceneName);
-
-        Debug.Log($"Scan complete for '{sceneName}': {gates.Length} gates, {spawns.Length} spawns, " +
-                  $"{objects.Length} objects. (Save Map JSON 필요)");
     }
 
-    private void UpdateGates(MapData map, Gate[] gateComponents)
+    private static void UpdateGates(MapData map, Gate[] gateComponents)
     {
         var oldGates = map.gates;
         map.gates = new List<GateInfo>();
@@ -607,7 +643,7 @@ public class MapJsonUpdater : EditorWindow
         EditorUtility.SetDirty(gate);
     }
 
-    private void UpdateSpawns(MapData map, SpawnPoint[] spawnComponents)
+    private static void UpdateSpawns(MapData map, SpawnPoint[] spawnComponents)
     {
         map.spawn_points.player_spawn.Clear();
         map.spawn_points.monster_spawn.Clear();
@@ -643,14 +679,14 @@ public class MapJsonUpdater : EditorWindow
         }
     }
 
-    private void UpdateObjects(MapData map, MapObjectMarker[] markers)
+    private static void UpdateObjects(MapData map, MapObjectMarker[] markers, List<MapData> allMaps)
     {
         var oldStatics = map.objects.static_objects;
         var oldMovables = map.objects.movable_objects;
         map.objects = new MapObjects();
 
         // 오브젝트 id는 전체 맵에서 유일하게 유지한다.
-        int nextId = mapDataList
+        int nextId = allMaps
             .SelectMany(m => m.objects.static_objects.Select(o => o.id)
                 .Concat(m.objects.movable_objects.Select(o => o.id)))
             .DefaultIfEmpty(0).Max() + 1;
@@ -711,7 +747,7 @@ public class MapJsonUpdater : EditorWindow
         EditorUtility.SetDirty(marker);
     }
 
-    private void DetectNavMesh(MapData map, string sceneName)
+    private static void DetectNavMesh(MapData map, string sceneName)
     {
         string fileName = $"{sceneName}_navmesh.bin";
         string genPath = Path.Combine(Application.dataPath, "GeneratedNavMeshes", fileName);
@@ -918,7 +954,7 @@ public class MapJsonUpdater : EditorWindow
         return view != null ? view.pivot : Vector3.zero;
     }
 
-    private static Transform GetOrCreateGroup(string groupName)
+    public static Transform GetOrCreateGroup(string groupName)
     {
         var root = GameObject.Find(MarkerRootName);
         if (root == null)
@@ -938,7 +974,7 @@ public class MapJsonUpdater : EditorWindow
         return group;
     }
 
-    private static void TrySetTag(GameObject go, string tag)
+    public static void TrySetTag(GameObject go, string tag)
     {
         try
         {
