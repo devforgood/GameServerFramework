@@ -563,56 +563,48 @@ public class MapJsonUpdater : EditorWindow
         var oldGates = map.gates;
         map.gates = new List<GateInfo>();
 
-        // 기존 게이트는 이름으로 매칭하여 id를 유지한다.
-        // (다른 맵의 target_gate_id가 이 id를 참조하므로 순서 기반 재할당은 참조를 깨뜨린다)
-        int nextId = oldGates.Count > 0 ? oldGates.Max(g => g.id) + 1 : 1;
+        // 게이트 id는 컴포넌트가 직접 보유한다(MapObjectMarker.objectId와 동일 방식).
+        // id는 맵 내부에서 지역적으로 유일하면 된다(target_gate_id는 (target_map_id, gate.id) 쌍으로 해석됨).
+        // 0(또는 중복)이면 새 id를 발급하고 컴포넌트에 다시 써서 고정한다.
+        var claimed = new HashSet<int>();
+        int nextId = 1;
 
         foreach (var comp in gateComponents)
         {
             string gateName = string.IsNullOrEmpty(comp.gateName) ? comp.gameObject.name : comp.gateName;
 
-            if (map.gates.Any(g => g.name.Equals(gateName, System.StringComparison.OrdinalIgnoreCase)))
+            int id = comp.id;
+            if (id <= 0 || claimed.Contains(id))
             {
-                Debug.LogWarning($"Duplicate gate name '{gateName}' in scene. Skipping '{comp.gameObject.name}'.");
-                continue;
+                while (claimed.Contains(nextId)) nextId++;
+                id = nextId;
             }
+            claimed.Add(id);
+            AssignGateId(comp, id);
 
-            var old = oldGates.Find(g => g.name != null && g.name.Equals(gateName, System.StringComparison.OrdinalIgnoreCase));
-
-            // 목적지 맵/게이트 해석
-            MapData destMap = null;
-            GateInfo destGate = null;
-            if (!string.IsNullOrEmpty(comp.destinationMapName))
-            {
-                destMap = mapDataList.Find(m =>
-                    (m.name != null && m.name.Equals(comp.destinationMapName, System.StringComparison.OrdinalIgnoreCase)) ||
-                    (m.scene != null && m.scene.Equals(comp.destinationMapName, System.StringComparison.OrdinalIgnoreCase)));
-                if (destMap == null)
-                    Debug.LogWarning($"Gate '{gateName}': destination map '{comp.destinationMapName}' not found.");
-                else
-                {
-                    destGate = destMap.gates.Find(g => g.name != null && g.name.Equals(comp.destinationGateName, System.StringComparison.OrdinalIgnoreCase));
-                    if (destGate == null)
-                        Debug.LogWarning($"Gate '{gateName}': destination gate '{comp.destinationGateName}' not found in map '{destMap.name}'. " +
-                                         "목적지 맵을 먼저 스캔/저장한 뒤 다시 스캔하세요.");
-                }
-            }
-            else
-            {
-                Debug.LogWarning($"Gate '{gateName}': destinationMapName이 비어 있습니다.");
-            }
+            var old = oldGates.Find(g => g.id == id);
 
             map.gates.Add(new GateInfo
             {
-                id = old != null ? old.id : nextId++,
+                id = id,
                 name = gateName,
                 position = new Vec3(comp.transform.position),
-                target_map_id = destMap != null ? destMap.id : (old != null ? old.target_map_id : 1),
-                target_gate_id = destGate != null ? destGate.id : (old != null ? old.target_gate_id : 1),
+                target_map_id = comp.targetMapId,
+                target_gate_id = comp.targetGateId,
                 required_level = comp.requiredLevel,
                 extra = old?.extra
             });
         }
+    }
+
+    // 다음 스캔에서도 id가 유지되도록 컴포넌트에 id를 기록해 둔다.
+    private static void AssignGateId(Gate gate, int id)
+    {
+        if (gate.id == id)
+            return;
+        Undo.RecordObject(gate, "Assign Gate Id");
+        gate.id = id;
+        EditorUtility.SetDirty(gate);
     }
 
     private void UpdateSpawns(MapData map, SpawnPoint[] spawnComponents)
@@ -786,23 +778,11 @@ public class MapJsonUpdater : EditorWindow
             box.center = new Vector3(0f, 1.5f, 0f);
 
             var comp = go.AddComponent<Gate>();
+            comp.id = gate.id;
             comp.gateName = gate.name;
+            comp.targetMapId = gate.target_map_id;
+            comp.targetGateId = gate.target_gate_id;
             comp.requiredLevel = gate.required_level;
-
-            // target_map_id / target_gate_id 를 이름으로 역해석
-            var destMap = mapDataList.Find(m => m.id == gate.target_map_id);
-            if (destMap != null)
-            {
-                comp.destinationMapName = destMap.name;
-                var destGate = destMap.gates.Find(g => g.id == gate.target_gate_id);
-                comp.destinationGateName = destGate != null ? destGate.name : "";
-                if (destGate == null)
-                    Debug.LogWarning($"Gate '{gate.name}': target gate id {gate.target_gate_id} not found in map '{destMap.name}'.");
-            }
-            else
-            {
-                Debug.LogWarning($"Gate '{gate.name}': target map id {gate.target_map_id} not found.");
-            }
             created++;
         }
 
@@ -891,8 +871,8 @@ public class MapJsonUpdater : EditorWindow
         box.size = new Vector3(2f, 3f, 2f);
         box.center = new Vector3(0f, 1.5f, 0f);
 
-        // gateName은 비워 둔다. 스캔 시 GameObject 이름으로 폴백하므로
-        // 하이어라키에서 이름만 바꿔도 JSON에 반영된다.
+        // id/gateName은 비워 둔다. Scan 시 id가 자동 발급되고, 이름은 GameObject 이름으로 폴백한다.
+        // 목적지는 인스펙터에서 Target Map Id / Target Gate Id(Map.json 스키마)를 채운다.
         go.AddComponent<Gate>();
 
         FinishMarkerCreation(go);

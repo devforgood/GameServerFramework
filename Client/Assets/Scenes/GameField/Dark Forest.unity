@@ -15932,13 +15932,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4868245414168183788, guid: 3b800daeecf266347b1fee9a04190f94,
         type: 3}
-      propertyPath: destinationMapName
-      value: Field1
+      propertyPath: targetMapId
+      value: 13
       objectReference: {fileID: 0}
     - target: {fileID: 4868245414168183788, guid: 3b800daeecf266347b1fee9a04190f94,
         type: 3}
-      propertyPath: destinationGateName
-      value: Gate1
+      propertyPath: targetGateId
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4868245414168183789, guid: 3b800daeecf266347b1fee9a04190f94,
         type: 3}

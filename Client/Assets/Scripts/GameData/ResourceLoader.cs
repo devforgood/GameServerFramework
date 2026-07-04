@@ -93,7 +93,13 @@ namespace Assets.Scripts.GameData
         public Dictionary<int, Gamedata.MonsterData> MonsterDatas = new Dictionary<int, Gamedata.MonsterData>();
         public Dictionary<int, Gamedata.Map> Maps = new Dictionary<int, Gamedata.Map>();
 
-        /// <summary>맵 이름으로 맵 데이터를 찾는다(게이트의 destinationMapName 해석용). 없으면 null.</summary>
+        /// <summary>맵 id로 맵 데이터를 찾는다(게이트의 target_map_id 해석용). 없으면 null.</summary>
+        public Gamedata.Map GetMapById(int id)
+        {
+            return Maps.TryGetValue(id, out var map) ? map : null;
+        }
+
+        /// <summary>맵 이름으로 맵 데이터를 찾는다. 없으면 null.</summary>
         public Gamedata.Map GetMapByName(string name)
         {
             foreach (var map in Maps.Values)

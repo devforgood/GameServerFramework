@@ -109,10 +109,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b69dbdfb64a83b94c823d82f956a39ae, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
+  id: 0
   gateName:
-  destinationMapName:
-  destinationGateName:
+  targetMapId: 0
+  targetGateId: 0
+  requiredLevel: 1
 --- !u!54 &4868245414168183792
 Rigidbody:
   m_ObjectHideFlags: 0

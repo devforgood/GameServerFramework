@@ -14,7 +14,7 @@ Unity 에디터에서 `Tools > Map JSON Updater` 메뉴를 선택합니다.
 
 | 컴포넌트 | 기록 위치 | 주요 필드 |
 | --- | --- | --- |
-| `Gate` | `gates` | gateName, destinationMapName, destinationGateName, requiredLevel |
+| `Gate` | `gates` | id, gateName, targetMapId, targetGateId, requiredLevel |
 | `SpawnPoint` | `spawn_points.player/monster/boss_spawn` | spawnType, monsterId, spawnInterval, bossId, spawnDelay |
 | `MapObjectMarker` | `objects.static_objects` / `objects.movable_objects` | kind, objectType, collision, damage, lootTableId, movementRange, movementSpeed, patrolPath |
 
@@ -46,15 +46,21 @@ Unity 에디터에서 `Tools > Map JSON Updater` 메뉴를 선택합니다.
 - **Open Scene**: 해당 맵의 씬 에셋을 찾아 엽니다.
 - **Delete Map**: Map.json에서 맵 항목을 삭제합니다 (다른 맵 게이트가 참조 중이면 경고 로그).
 
-## 게이트 ID 안정성
+## 게이트 스키마 (Map.json 기준)
 
-스캔 시 기존 게이트는 **이름으로 매칭하여 id를 유지**합니다.
-다른 맵의 `target_gate_id`가 이 id를 참조하므로, 게이트 이름을 바꾸면 새 id가 발급되어
-참조가 깨질 수 있습니다. 이름 변경 후에는 이 게이트를 목적지로 쓰는 맵들을 다시 스캔하세요.
+`Gate` 컴포넌트는 Map.json의 `gates[]` 항목과 1:1로 대응합니다.
 
-새로 만든 두 맵을 서로 연결할 때는:
-1. 맵 A, B를 각각 스캔/저장 (게이트 id 발급)
-2. 게이트의 destinationMapName/GateName을 채우고 다시 스캔/저장 (참조 해석)
+- `id` — 게이트 고유 id(`gates[].id`). 0이면 Scan 시 자동 발급되어 컴포넌트에 기록됩니다(맵 내부에서 유일).
+- `gateName` — `gates[].name`. 비우면 GameObject 이름을 사용합니다.
+- `targetMapId` / `targetGateId` — 목적지 맵/게이트의 **id**(`target_map_id` / `target_gate_id`).
+  이름이 아니라 id를 직접 지정하므로 스캔 순서·이름 변경과 무관하게 참조가 안정적입니다.
+- `requiredLevel` — `required_level`.
+
+두 맵을 서로 연결할 때는:
+
+1. 맵 A, B를 각각 스캔/저장 → 각 게이트에 id가 발급됩니다.
+2. 연결하려는 게이트의 인스펙터에 상대 맵/게이트의 **id**를 `Target Map Id` / `Target Gate Id`로 입력합니다.
+   (id는 **All Maps** 섹션 또는 Map.json에서 확인)
 
 ## 저장과 배포
 

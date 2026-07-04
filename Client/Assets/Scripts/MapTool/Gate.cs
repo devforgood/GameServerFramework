@@ -4,11 +4,18 @@ using UnityEngine;
 
 public class Gate : MonoBehaviour
 {
-    [Header("Gate Settings")]
+    // Map.json의 gates[] 항목과 1:1로 대응한다.
+    // (이전에는 이름 기반(destinationMapName/GateName)이라 JSON(id 기반)과 스키마가 어긋났다.)
+    [Header("Gate (Map.json 스키마)")]
+    [Tooltip("게이트 고유 id. Map.json의 gates[].id. 0이면 Scan 시 자동 발급되어 컴포넌트에 기록된다.")]
+    public int id;
+    [Tooltip("게이트 이름. Map.json의 gates[].name. 비우면 GameObject 이름을 사용한다.")]
     public string gateName;
-    public string destinationMapName;
-    public string destinationGateName;
-    [Tooltip("게이트 이용에 필요한 레벨. Map.json의 required_level로 기록된다.")]
+    [Tooltip("목적지 맵 id. Map.json의 target_map_id.")]
+    public int targetMapId;
+    [Tooltip("목적지 게이트 id. Map.json의 target_gate_id.")]
+    public int targetGateId;
+    [Tooltip("게이트 이용에 필요한 레벨. Map.json의 required_level.")]
     public int requiredLevel = 1;
 
     // 게이트는 isTrigger 콜라이더여야 하며, 로컬 플레이어가 진입하면 맵 이동을 요청한다.
@@ -44,35 +51,25 @@ public class Gate : MonoBehaviour
             return;
         }
 
-        if (string.IsNullOrEmpty(destinationMapName))
+        if (targetMapId <= 0)
         {
-            Debug.LogWarning($"Gate '{gateName}' has no destinationMapName.");
+            Debug.LogWarning($"Gate '{gateName}' has no targetMapId.");
             return;
         }
 
-        // 로드된 맵 데이터에서 목적지 맵과 도착 게이트를 찾아 맵ID/게이트ID 를 해석한다.
+        // Map.json에 기록된 target_map_id 로 목적지 맵을 직접 조회한다(이름 해석 불필요).
         var resource = GameManager.Instance.resource;
-        var destMap = resource.GetMapByName(destinationMapName);
+        var destMap = resource.GetMapById(targetMapId);
         if (destMap == null)
         {
-            Debug.LogError($"Gate '{gateName}': destination map '{destinationMapName}' not found in loaded map data.");
+            Debug.LogError($"Gate '{gateName}': destination map id {targetMapId} not found in loaded map data.");
             return;
-        }
-
-        int gateId = 1;
-        if (destMap.gates != null)
-        {
-            var destGate = destMap.gates.Find(g => string.Equals(g.name, destinationGateName, System.StringComparison.OrdinalIgnoreCase));
-            if (destGate != null)
-                gateId = destGate.id;
-            else
-                Debug.LogWarning($"Gate '{gateName}': destination gate '{destinationGateName}' not found in map '{destinationMapName}'. Using gateId={gateId}.");
         }
 
         // 맵 데이터에 연동된 씬 이름을 사용한다(없으면 맵 이름으로 폴백).
-        string destScene = !string.IsNullOrEmpty(destMap.scene) ? destMap.scene : destinationMapName;
-        Debug.Log($"[Gate] '{gateName}': resolved dest mapId:{destMap.id}, gateId:{gateId}, scene:'{destScene}'. requesting EnterGate.");
-        Session.Instance.EnterGate(destMap.id, gateId, destScene);
+        string destScene = !string.IsNullOrEmpty(destMap.scene) ? destMap.scene : destMap.name;
+        Debug.Log($"[Gate] '{gateName}': dest mapId:{targetMapId}, gateId:{targetGateId}, scene:'{destScene}'. requesting EnterGate.");
+        Session.Instance.EnterGate(targetMapId, targetGateId, destScene);
     }
 
     // 로컬 플레이어가 게이트 밖으로 나가면 재이동 억제를 해제한다.
