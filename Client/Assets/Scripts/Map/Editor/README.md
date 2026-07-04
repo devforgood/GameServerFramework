@@ -1,119 +1,123 @@
 # Map JSON Updater
 
-Unity 에디터에서 씬의 spawn 태그와 gate 태그를 찾아 Map.json을 자동으로 업데이트하는 툴입니다.
+Unity 씬과 `GameData/Map.json`을 양방향으로 연동하는 맵 디자인 툴입니다.
+씬에 배치한 마커(게이트, 스폰 포인트, 맵 오브젝트)를 JSON으로 기록하고,
+반대로 JSON 데이터를 씬에 마커 오브젝트로 생성할 수 있습니다.
 
-## 사용법
+## 실행
 
-### 1. 툴 실행
-- Unity 에디터에서 `Tools > Map JSON Updater` 메뉴를 선택합니다.
+Unity 에디터에서 `Tools > Map JSON Updater` 메뉴를 선택합니다.
 
-### 2. 씬에서 태그 설정
+## 마커 컴포넌트
 
-#### Gate 태그 설정
-1. 씬에서 게이트 오브젝트를 생성합니다.
-2. 오브젝트의 Tag를 "Gate"로 설정합니다.
-3. `GateComponent` 스크립트를 추가합니다.
-4. 다음 설정을 입력합니다:
-   - **Target Map ID**: 연결할 맵의 ID
-   - **Target Gate ID**: 연결할 게이트의 ID
-   - **Required Level**: 필요한 레벨
+스캔은 **컴포넌트 기반**으로 동작합니다 (태그는 필수가 아닙니다).
 
-#### Spawn 태그 설정
-1. 씬에서 스폰 포인트 오브젝트를 생성합니다.
-2. 오브젝트의 Tag를 "Spawn"으로 설정합니다.
-3. `SpawnComponent` 스크립트를 추가합니다.
-4. 다음 설정을 입력합니다:
-   - **Spawn Type**: Player, Monster, Boss 중 선택
-   - **Monster ID**: 몬스터 ID (Monster 타입인 경우)
-   - **Spawn Interval**: 스폰 간격 (초)
-   - **Boss ID**: 보스 ID (Boss 타입인 경우)
-   - **Spawn Delay**: 스폰 지연 시간 (초)
+| 컴포넌트 | 기록 위치 | 주요 필드 |
+| --- | --- | --- |
+| `Gate` | `gates` | gateName, destinationMapName, destinationGateName, requiredLevel |
+| `SpawnPoint` | `spawn_points.player/monster/boss_spawn` | spawnType, monsterId, spawnInterval, bossId, spawnDelay |
+| `MapObjectMarker` | `objects.static_objects` / `objects.movable_objects` | kind, objectType, collision, damage, lootTableId, movementRange, movementSpeed, patrolPath |
 
-### 3. 씬 스캔
-1. "Scan Scene for Tags" 버튼을 클릭합니다.
-2. 씬 이름과 맵 이름이 일치하면 해당 맵에 업데이트됩니다.
-3. 일치하지 않으면 새로운 맵 ID가 생성됩니다.
+- Static 오브젝트의 **크기는 transform.localScale**, 위치는 transform.position으로 기록됩니다.
+- `MapObjectMarker.objectId`가 0이면 저장 시 전체 맵에서 유일한 id가 자동 할당되고 마커에 다시 기록됩니다.
+- `damage`, `lootTableId`가 0이면 JSON에 기록하지 않습니다.
 
-### 4. 저장
-1. "Save Map JSON" 버튼을 클릭하여 변경사항을 저장합니다.
+## 창 구성
 
-## 시각적 표시
+### Current Scene 섹션
 
-### Gizmos
-- **Gate**: 파란색 와이어프레임 큐브
-- **Player Spawn**: 초록색 와이어프레임 구
-- **Monster Spawn**: 빨간색 와이어프레임 구
-- **Boss Spawn**: 노란색 와이어프레임 구
+현재 열린 씬과 연결된 맵(`scene` 필드 기준, 없으면 `name` 기준)을 찾아 표시합니다.
+연결된 맵이 없으면 **Create Map Entry for This Scene** 버튼으로 새 맵 항목을 만들 수 있습니다.
 
-### 에디터 창
-- 현재 씬과 일치하는 맵은 녹색으로 표시됩니다.
-- 각 맵의 게이트, 스폰 포인트 개수가 표시됩니다.
-- 디버그 정보 토글로 추가 정보를 확인할 수 있습니다.
+- **맵 메타데이터 편집**: name, scene, name_id, desc_id, game_mode_id, size
+  - **From Scene Bounds**: 씬의 Renderer 경계로 맵 크기를 자동 계산
+- **Scan Scene → JSON**: 씬의 마커를 스캔하여 맵 데이터 갱신
+- **Build Scene ← JSON**: JSON 데이터로 씬에 마커 오브젝트 생성
+  (기존 마커가 있으면 교체 여부를 물어봅니다. 생성물은 `MapDesign/Gates|SpawnPoints|Objects` 아래에 정리됩니다)
+- **Place Markers**: 게이트/스폰/오브젝트 마커를 씬 뷰 중심 위치에 바로 생성
+- **NavMesh**: `Assets/GeneratedNavMeshes/{씬이름}_navmesh.bin`과 `GameData/` 복사본의 존재/최신 여부를 표시하고,
+  **Copy NavMesh → GameData** 버튼으로 복사와 함께 `navmesh_path`를 갱신합니다.
+  (GameData에 navmesh가 없으면 서버가 solo_navmesh로 폴백하여 씬과 어긋납니다)
 
-## 예시
+### All Maps 섹션
 
-### Gate 오브젝트 설정
-```
-GameObject: "VillageToForestGate"
-Tag: "Gate"
-GateComponent:
-  - Target Map ID: 2
-  - Target Gate ID: 1
-  - Required Level: 1
-```
+모든 맵의 요약(게이트/스폰/오브젝트 수, NavMesh, 게이트 연결 정보)을 표시합니다.
 
-### Spawn 오브젝트 설정
-```
-GameObject: "PlayerSpawn1"
-Tag: "Spawn"
-SpawnComponent:
-  - Spawn Type: Player
-  - Monster ID: 0
-  - Spawn Interval: 0
-  - Boss ID: 0
-  - Spawn Delay: 0
-```
+- **Open Scene**: 해당 맵의 씬 에셋을 찾아 엽니다.
+- **Delete Map**: Map.json에서 맵 항목을 삭제합니다 (다른 맵 게이트가 참조 중이면 경고 로그).
 
-## 주의사항
+## 게이트 ID 안정성
 
-1. **태그 설정**: 반드시 "Gate" 또는 "Spawn" 태그를 설정해야 합니다.
-2. **컴포넌트 추가**: `GateComponent`와 `SpawnComponent`를 추가해야 설정이 적용됩니다.
-3. **씬 이름**: 씬 이름과 맵 이름이 일치해야 자동으로 매핑됩니다.
-4. **백업**: 중요한 데이터는 반드시 백업 후 사용하세요.
+스캔 시 기존 게이트는 **이름으로 매칭하여 id를 유지**합니다.
+다른 맵의 `target_gate_id`가 이 id를 참조하므로, 게이트 이름을 바꾸면 새 id가 발급되어
+참조가 깨질 수 있습니다. 이름 변경 후에는 이 게이트를 목적지로 쓰는 맵들을 다시 스캔하세요.
 
-## 자동 생성되는 Map.json 구조
+새로 만든 두 맵을 서로 연결할 때는:
+1. 맵 A, B를 각각 스캔/저장 (게이트 id 발급)
+2. 게이트의 destinationMapName/GateName을 채우고 다시 스캔/저장 (참조 해석)
+
+## 저장과 배포
+
+**Save Map JSON**은 `GameData/Map.json`에만 기록합니다.
+Client(Resources)/Game/UnitTest로 배포하려면 `GameDataFlow/GameDataFlow.py`를 실행하세요.
+(navmesh 바이너리도 함께 배포됩니다)
+
+## 시각적 표시 (Gizmos)
+
+- **Gate**: 파란색 와이어 큐브 (BoxCollider 크기)
+- **Player Spawn**: 초록색 와이어 구
+- **Monster Spawn**: 빨간색 와이어 구
+- **Boss Spawn**: 노란색 와이어 구
+- **Static Object**: 주황(충돌) / 청록(비충돌) 와이어 큐브 (localScale 크기)
+- **Movable Object**: 자홍색 와이어 구 + 이동 범위 + 순찰 경로 라인
+
+## Map.json 구조
 
 ```json
 {
   "id": 1,
-  "name": "SceneName",
-  "name_id": "map_scenename_name",
-  "desc_id": "map_scenename_desc",
+  "name": "Starting Village",
+  "scene": "Starting Village",
+  "name_id": "map_starting_village_name",
+  "desc_id": "map_starting_village_desc",
   "game_mode_id": 1,
-  "size": {
-    "width": 1000,
-    "height": 1000
-  },
+  "size": { "width": 1000.0, "height": 1000.0 },
   "gates": [
     {
       "id": 1,
-      "name": "GateName",
-      "position": {"x": 100, "y": 0, "z": 100},
+      "name": "Village to Forest Gate",
+      "position": { "x": 950.0, "y": 0.0, "z": 500.0 },
       "target_map_id": 2,
       "target_gate_id": 1,
       "required_level": 1
     }
   ],
   "spawn_points": {
-    "player_spawn": [
-      {"position": {"x": 0, "y": 0, "z": 0}}
+    "player_spawn": [ { "position": { "x": 100.0, "y": 0.0, "z": 100.0 }, "monster_id": 0, "spawn_interval": 0, "boss_id": 0, "spawn_delay": 0 } ],
+    "monster_spawn": [ { "position": { "x": 300.0, "y": 0.0, "z": 300.0 }, "monster_id": 1, "spawn_interval": 30, "boss_id": 0, "spawn_delay": 0 } ],
+    "boss_spawn": []
+  },
+  "objects": {
+    "static_objects": [
+      { "id": 1, "type": "building", "name": "Village Hall",
+        "position": { "x": 500.0, "y": 0.0, "z": 500.0 },
+        "size": { "x": 50.0, "y": 30.0, "z": 50.0 },
+        "collision": true }
     ],
-    "monster_spawn": [
-      {"position": {"x": 50, "y": 0, "z": 50}, "monster_id": 1, "spawn_interval": 30}
-    ],
-    "boss_spawn": [
-      {"position": {"x": 100, "y": 0, "z": 100}, "boss_id": 1, "spawn_delay": 10}
+    "movable_objects": [
+      { "id": 3, "type": "npc", "name": "Village Elder",
+        "position": { "x": 520.0, "y": 0.0, "z": 520.0 },
+        "movement_range": 20.0, "movement_speed": 1.0 }
     ]
-  }
+  },
+  "navmesh_path": "Starting Village_navmesh.bin"
 }
-``` 
+```
+
+## 주의사항
+
+1. **알 수 없는 필드 보존**: 툴이 모르는 JSON 필드는 로드/저장 시 그대로 보존됩니다 (JsonExtensionData).
+2. **씬 매칭**: 맵의 `scene` 필드와 씬 이름이 일치해야 합니다 (없으면 `name`으로 폴백).
+3. **숫자 표기**: 저장 시 좌표가 double로 기록되므로(예: `500` → `500.0`),
+   이후 GameDataFlow 코드 생성 시 정수 필드가 double로 바뀔 수 있습니다. GameDataFlow 실행 후 빌드로 확인하세요.
+4. **백업**: 중요한 데이터는 git 커밋 후 사용하세요.

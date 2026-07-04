@@ -8,6 +8,8 @@ public class Gate : MonoBehaviour
     public string gateName;
     public string destinationMapName;
     public string destinationGateName;
+    [Tooltip("게이트 이용에 필요한 레벨. Map.json의 required_level로 기록된다.")]
+    public int requiredLevel = 1;
 
     // 게이트는 isTrigger 콜라이더여야 하며, 로컬 플레이어가 진입하면 맵 이동을 요청한다.
     private void OnTriggerEnter(Collider other)
@@ -89,5 +91,23 @@ public class Gate : MonoBehaviour
             Debug.Log($"[Gate] '{gateName}': local player exited gate. gate warp re-armed.");
             Session.Instance.SuppressGateWarpUntilExit = false;
         }
+    }
+
+    // 씬 뷰에서 게이트 영역을 파란색 와이어 큐브로 표시한다.
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.blue;
+        var box = GetComponent<BoxCollider>();
+        if (box != null)
+        {
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.DrawWireCube(box.center, box.size);
+            Gizmos.matrix = Matrix4x4.identity;
+        }
+        else
+        {
+            Gizmos.DrawWireCube(transform.position, Vector3.one * 2f);
+        }
+        Gizmos.color = Color.white;
     }
 }
