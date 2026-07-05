@@ -21,16 +21,17 @@
 
 ## B. 툴 개선
 
-- [ ] **B1. 참조 검증 기능** — 저장/스캔 시 dangling `target_map_id`/`target_gate_id`, 맵 내 게이트 id 중복을 자동 경고.
+- [x] **B1. 참조 검증 기능** — `MapJsonUpdater.ValidateMapReferences()` 추가. 수동 저장/스캔/자동 저장 시 dangling `target_map_id`/`target_gate_id`, 맵 id 중복, 맵 내 게이트 id 중복을 경고 로그로 알림(저장은 막지 않음).
 - [ ] **B2. "Sync Scene ← JSON" 수동 reconcile 버튼** — 씬을 연 채 JSON을 외부 편집했을 때 재오픈 없이 반영 (기존 Build 버튼은 전체 삭제 후 재생성이라 파괴적).
 - [ ] **B3. 스폰 포인트 안정 id 도입** — 현재 이름순 인덱스 매칭이라 이름 변경 시 페어링이 밀림. 게이트/오브젝트처럼 id 보유 방식 검토.
-- [ ] **B4. 자동 저장 백업** — 자동 저장은 undo 결과도 즉시 JSON에 기록하므로 저장 전 `.bak` 1벌 유지 같은 안전장치.
+- [x] **B4. 자동 저장 백업** — 수동/자동 저장 모두 쓰기 직전 기존 파일을 `GameData/Map.json.bak` 1벌로 보존 (`BackupBeforeWrite`). `.bak`은 gitignore 처리.
 - [ ] **B5. int→double 표기 정규화 커밋** — 첫 자동 저장 시 Map.json 전체가 `500`→`500.0`으로 재포맷되어 큰 diff 발생. 미리 한 번 저장→커밋으로 정규화하고 GameDataFlow 코드젠 타입 영향 확인.
 
 ## C. 런타임 / 서버
 
-- [ ] **C1. `required_level` 검증 구현** — 클라 `Gate.OnTriggerEnter`와 서버 `PlayerController::handle(EnterGate)` 모두 레벨 체크 없음. 서버 검증이 본질(데이터만 있고 기능 없음).
-- [ ] **C2. 서버 EnterGate 요청 검증 강화** — 현재 null/입력잠금/쿨타임만 확인. "현재 맵에 그 목적지로 가는 게이트가 실제 존재하는가", "캐릭터가 게이트 근처인가"를 검증해 임의 맵 순간이동 차단.
+- [x] **C1. `required_level` 검증 구현(서버)** — `handle(EnterGate)`에서 출발 게이트의 `required_level`을 `PlayerLevel` 컴포넌트 레벨과 비교해 미달 시 거부.
+  - [ ] 클라 `Gate.OnTriggerEnter` 선제 체크는 보류 — 클라에 레벨 동기화가 아직 없음(레벨/경험치를 클라로 내려주는 프로토콜 추가 필요). 서버 거부 시 UX 피드백도 이때 함께.
+- [x] **C2. 서버 EnterGate 요청 검증 강화** — 현재 맵 게이트 중 (target_map_id, target_gate_id)가 요청과 일치하는 출발 게이트를 역추적(`FindGateTo`), 없으면 거부. 캐릭터-게이트 xz 거리 5m 초과 시 거부(좌표계 x반전 변환 적용). 임의 맵 순간이동 차단.
 - [ ] **C3. 씬-navmesh 정합 런타임 검증** — 클라 씬 지형과 서버 navmesh 좌표/스케일 일치 확인 (기존 TODO).
 
 ## D. 확인 작업
@@ -38,3 +39,4 @@
 - [ ] **D1. Unity 컴파일 + Auto Sync 실동작 확인** — Field1/Field2를 열었을 때 변경 0건으로 지나가는지, 게이트 이동 시 1초 뒤 자동 저장되는지.
 - [ ] **D2. 게이트 id 오버라이드 확인** — 4개 씬 게이트 인스펙터에서 `Id: 1` 표시 확인.
 - [ ] **D3. 로그인 스폰 확인** — map 1 player_spawn 수정 후 접속 시 (-13.7,0,0) 부근에 정상 스폰되는지.
+- [ ] **D4. EnterGate 서버 검증 실동작 확인** — 정상 게이트 이동이 여전히 되는지(거리 5m 허용치가 충분한지), 조작 요청(존재하지 않는 목적지/원거리 요청)이 거부 로그와 함께 막히는지.

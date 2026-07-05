@@ -258,8 +258,73 @@ public class MapJsonUpdater : EditorWindow
 
     public static void SaveMapList(string path, List<MapData> list)
     {
+        ValidateMapReferences(list);
         string jsonContent = JsonConvert.SerializeObject(list, Formatting.Indented);
+        BackupBeforeWrite(path);
         File.WriteAllText(path, jsonContent);
+    }
+
+    // 저장 직전 기존 Map.json을 .bak 1벌로 보존한다.
+    // 자동 저장은 undo 결과도 즉시 기록하므로, 실수로 덮어써도 직전 상태로 되돌릴 수 있게 한다.
+    public static void BackupBeforeWrite(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Copy(path, path + ".bak", true);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"Map.json 백업(.bak) 실패: {e.Message}");
+        }
+    }
+
+    // 게이트 참조 무결성 검사: dangling target_map_id/target_gate_id, 맵 내 게이트 id 중복을 경고한다.
+    // 저장을 막지는 않는다(작업 중간 상태 저장 허용). 발견한 문제 수를 반환한다.
+    public static int ValidateMapReferences(List<MapData> maps)
+    {
+        int problems = 0;
+        var mapById = new Dictionary<int, MapData>();
+        foreach (var map in maps)
+        {
+            if (mapById.ContainsKey(map.id))
+            {
+                Debug.LogWarning($"[MapValidate] 맵 id {map.id} 중복: '{mapById[map.id].name}' / '{map.name}'");
+                problems++;
+            }
+            else
+            {
+                mapById[map.id] = map;
+            }
+        }
+
+        foreach (var map in maps)
+        {
+            var seenGateIds = new HashSet<int>();
+            foreach (var gate in map.gates)
+            {
+                if (!seenGateIds.Add(gate.id))
+                {
+                    Debug.LogWarning($"[MapValidate] 맵 '{map.name}'({map.id}) 안에 게이트 id {gate.id} 중복 (게이트 '{gate.name}')");
+                    problems++;
+                }
+
+                if (!mapById.TryGetValue(gate.target_map_id, out var targetMap))
+                {
+                    Debug.LogWarning($"[MapValidate] 맵 '{map.name}'({map.id}) 게이트 '{gate.name}'(id:{gate.id}) → 존재하지 않는 맵 {gate.target_map_id} 참조");
+                    problems++;
+                }
+                else if (!targetMap.gates.Any(g => g.id == gate.target_gate_id))
+                {
+                    Debug.LogWarning($"[MapValidate] 맵 '{map.name}'({map.id}) 게이트 '{gate.name}'(id:{gate.id}) → 맵 '{targetMap.name}'({targetMap.id})에 없는 게이트 {gate.target_gate_id} 참조");
+                    problems++;
+                }
+            }
+        }
+
+        if (problems > 0)
+            Debug.LogWarning($"[MapValidate] 게이트 참조 문제 {problems}건 발견 (위 경고 참조). 저장은 진행됩니다.");
+        return problems;
     }
 
     // Map.json을 소비처 런타임 GameData 폴더로 그대로 복사한다.
@@ -322,7 +387,8 @@ public class MapJsonUpdater : EditorWindow
         if (newAuto != auto)
             MapJsonAutoSync.Enabled = newAuto;
 
-        EditorGUILayout.HelpBox("저장 후 GameDataFlow.py를 실행해야 Client/Game/UnitTest에 배포됩니다.", MessageType.Info);
+        EditorGUILayout.HelpBox("저장 시 Map.json 사본은 Client/Game/UnitTest에 자동 복사됩니다.\n" +
+                                "코드젠(Gamedata.cs/gamedata.h)과 navmesh 배포는 스키마 변경 시 GameDataFlow.py를 실행하세요.", MessageType.Info);
 
         scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
@@ -603,6 +669,7 @@ public class MapJsonUpdater : EditorWindow
             map = CreateMapForScene(sceneName);
 
         ScanSceneIntoMap(map, mapDataList, sceneName);
+        ValidateMapReferences(mapDataList);
         Debug.Log($"Scan complete for '{sceneName}': {map.gates.Count} gates. (Save Map JSON 필요)");
     }
 

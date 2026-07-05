@@ -549,6 +549,8 @@ public static class MapJsonAutoSync
             if (json == current)
                 return;
 
+            MapJsonUpdater.ValidateMapReferences(maps);
+            MapJsonUpdater.BackupBeforeWrite(path);
             File.WriteAllText(path, json);
             MapJsonUpdater.DeployMapJsonCopies(path);
             Debug.Log($"[MapAutoSync] '{scene.name}' 마커 변경 감지 → Map.json 자동 저장 (+ Client/Game/UnitTest 사본 복사)");

@@ -11,16 +11,36 @@
 #include "Map.h"
 #include "PlayerRepository.h"
 #include "Server.h"
+#include "Common.h" // gamedata::Map/MapGate 전체 정의
+#include "PlayerLevel.h"
 
 namespace
 {
 	// 게이트 연속 이동 방지 쿨타임(ms). 도착 직후 재진입/도배 요청을 서버에서 차단한다.
 	constexpr uint64_t kGateCooldownMs = 1000;
 
+	// 게이트 이용 허용 최대 거리(서버 좌표, xz 평면). 클라 트리거 박스 크기 + 이동 동기화 지연을 감안한 여유값.
+	constexpr float kGateEnterMaxDistance = 5.0f;
+
 	uint64_t NowMs()
 	{
 		return std::chrono::duration_cast<std::chrono::milliseconds>(
 			std::chrono::system_clock::now().time_since_epoch()).count();
+	}
+
+	// 현재 맵의 게이트 중 (targetMapId, targetGateId) 목적지로 향하는 게이트를 찾는다.
+	// 클라는 목적지만 보내므로, 출발 게이트가 실제 존재하는지는 서버가 역추적으로 검증한다.
+	const gamedata::MapGate* FindGateTo(Map* map, int targetMapId, int targetGateId)
+	{
+		if (map == nullptr || map->GetMapData() == nullptr)
+			return nullptr;
+
+		for (const auto& gate : map->GetMapData()->gates)
+		{
+			if (gate.target_map_id == targetMapId && gate.target_gate_id == targetGateId)
+				return &gate;
+		}
+		return nullptr;
 	}
 }
 
@@ -277,14 +297,53 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 		LOG.debug("EnterGate ignored: gate cooldown active (player {})", player_->GetPlayerId());
 		status = syncnet::StatusCode::StatusCode_Failed;
 	}
-	else if (!world_->ChangeMap(player_, msg->mapId(), msg->gateId(), outPos, outAgentId))
-	{
-		status = syncnet::StatusCode::StatusCode_Failed;
-	}
 	else
 	{
-		// 이동에 성공한 경우에만 쿨타임을 갱신한다(실패한 요청은 쿨타임을 소모하지 않음).
-		player_->MarkGateMoved(nowMs);
+		auto& character = player_->GetCharacter();
+
+		// 현재 맵에 해당 목적지로 가는 게이트가 실제로 있어야 한다(임의 맵 순간이동 차단).
+		const gamedata::MapGate* srcGate = FindGateTo(character->GetMap(), msg->mapId(), msg->gateId());
+
+		// 게이트 위치는 Map.json(클라 좌표계) 기준이므로 서버 좌표계로 변환해 거리 비교한다.
+		float distSq = 0.0f;
+		if (srcGate != nullptr)
+		{
+			const Vector3& pos = character->GetPosition();
+			const float dx = pos.x - Vector3::convert_x(static_cast<float>(srcGate->position.x));
+			const float dz = pos.z - static_cast<float>(srcGate->position.z);
+			distSq = dx * dx + dz * dz;
+		}
+
+		const PlayerLevel* levelComp = player_->GetComponent<PlayerLevel>();
+		const int playerLevel = levelComp != nullptr ? levelComp->GetLevel() : 1;
+
+		if (srcGate == nullptr)
+		{
+			LOG.error("EnterGate rejected: no gate to map {} gate {} in current map (player {})",
+				msg->mapId(), msg->gateId(), player_->GetPlayerId());
+			status = syncnet::StatusCode::StatusCode_Failed;
+		}
+		else if (distSq > kGateEnterMaxDistance * kGateEnterMaxDistance)
+		{
+			LOG.error("EnterGate rejected: player {} too far from gate {} (dist {:.1f})",
+				player_->GetPlayerId(), srcGate->id, std::sqrt(distSq));
+			status = syncnet::StatusCode::StatusCode_Failed;
+		}
+		else if (playerLevel < srcGate->required_level)
+		{
+			LOG.info("EnterGate rejected: player {} level {} < required {} (gate {})",
+				player_->GetPlayerId(), playerLevel, srcGate->required_level, srcGate->id);
+			status = syncnet::StatusCode::StatusCode_Failed;
+		}
+		else if (!world_->ChangeMap(player_, msg->mapId(), msg->gateId(), outPos, outAgentId))
+		{
+			status = syncnet::StatusCode::StatusCode_Failed;
+		}
+		else
+		{
+			// 이동에 성공한 경우에만 쿨타임을 갱신한다(실패한 요청은 쿨타임을 소모하지 않음).
+			player_->MarkGateMoved(nowMs);
+		}
 	}
 
 	// 응답을 먼저 보낸다. 클라는 이 응답으로 맵 프리팹을 교체하고 기존 액터를 정리한다.
