@@ -88,16 +88,17 @@ public static class MapJsonAutoSync
         ApplyJsonToScene(scene.name);
     }
 
-    public static void ApplyJsonToScene(string sceneName)
+    // JSON 기준으로 씬 마커를 맞추고 변경 건수를 반환한다. 대상 씬/맵이 없으면 -1.
+    public static int ApplyJsonToScene(string sceneName)
     {
         if (string.IsNullOrEmpty(sceneName))
-            return;
+            return -1;
         if (!TryGetMapList(out _, out var maps, out _))
-            return;
+            return -1;
 
         var map = MapJsonUpdater.FindMapForScene(maps, sceneName);
         if (map == null)
-            return; // 연결된 맵이 없는 씬은 건드리지 않는다
+            return -1; // 연결된 맵이 없는 씬은 건드리지 않는다
 
         applying = true;
         try
@@ -112,6 +113,7 @@ public static class MapJsonAutoSync
                 EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
                 Debug.Log($"[MapAutoSync] '{sceneName}' 씬을 Map.json 기준으로 동기화: {changes}건 변경 (씬 저장 필요)");
             }
+            return changes;
         }
         finally
         {
@@ -207,7 +209,7 @@ public static class MapJsonAutoSync
         return changed;
     }
 
-    // --- 스폰: 타입별로 이름순 정렬 후 JSON 순서와 인덱스 매칭 (스캔 저장 순서와 동일 규칙) ---
+    // --- 스폰: SpawnPoint.id 로 매칭. id가 없는(0) 항목은 종전처럼 이름순 인덱스 매칭(마이그레이션 경로) ---
 
     private static int ReconcileSpawns(MapJsonUpdater.MapData map)
     {
@@ -228,16 +230,40 @@ public static class MapJsonAutoSync
         string baseName, List<SpawnPoint> comps)
     {
         int changes = 0;
-        for (int i = 0; i < infos.Count; i++)
+        var used = new HashSet<SpawnPoint>();
+
+        // 1차: id 매칭 (이름 변경에 안전)
+        var pending = new List<MapJsonUpdater.SpawnPointInfo>();
+        foreach (var info in infos)
         {
-            SpawnPoint comp;
-            if (i < comps.Count)
+            SpawnPoint comp = info.id > 0
+                ? comps.FirstOrDefault(c => c.id == info.id && !used.Contains(c))
+                : null;
+            if (comp != null)
             {
-                comp = comps[i];
+                used.Add(comp);
+                changes += ApplySpawn(comp, info);
             }
             else
             {
-                var go = new GameObject($"{baseName}_{i + 1}");
+                pending.Add(info);
+            }
+        }
+
+        // 2차: id로 짝을 찾지 못한 항목은 남은 컴포넌트와 이름순으로 짝짓는다.
+        // (id 도입 전 데이터/씬의 마이그레이션 경로. 짝지어지면 ApplySpawn이 id를 컴포넌트에 기록한다)
+        var freeComps = comps.Where(c => !used.Contains(c)).ToList();
+        int next = 0;
+        foreach (var info in pending)
+        {
+            SpawnPoint comp;
+            if (next < freeComps.Count)
+            {
+                comp = freeComps[next++];
+            }
+            else
+            {
+                var go = new GameObject(info.id > 0 ? $"{baseName}_{info.id}" : $"{baseName}_{next + 1}");
                 Undo.RegisterCreatedObjectUndo(go, "Map Auto Sync");
                 go.transform.SetParent(MapJsonUpdater.GetOrCreateGroup(MapJsonUpdater.SpawnGroupName), true);
                 MapJsonUpdater.TrySetTag(go, "Spawn");
@@ -245,13 +271,14 @@ public static class MapJsonAutoSync
                 comp.spawnType = type;
                 changes++;
             }
-            changes += ApplySpawn(comp, infos[i]);
+            used.Add(comp);
+            changes += ApplySpawn(comp, info);
         }
 
-        for (int i = infos.Count; i < comps.Count; i++)
+        foreach (var extra in comps.Where(c => !used.Contains(c)).ToList())
         {
-            Debug.LogWarning($"[MapAutoSync] Map.json에 없는 스폰 '{comps[i].gameObject.name}' ({type}) 를 씬에서 제거합니다.");
-            Undo.DestroyObjectImmediate(comps[i].gameObject);
+            Debug.LogWarning($"[MapAutoSync] Map.json에 없는 스폰 '{extra.gameObject.name}' ({type}) 를 씬에서 제거합니다.");
+            Undo.DestroyObjectImmediate(extra.gameObject);
             changes++;
         }
         return changes;
@@ -262,12 +289,15 @@ public static class MapJsonAutoSync
         Vector3 pos = info.position != null ? info.position.ToVector3() : Vector3.zero;
 
         int changed = 0;
-        if (comp.monsterId != info.monster_id
+        if ((info.id > 0 && comp.id != info.id) // id 0(미발급)인 JSON이 컴포넌트의 id를 지우지 않도록 info.id > 0 일 때만 동기화
+            || comp.monsterId != info.monster_id
             || comp.spawnInterval != info.spawn_interval
             || comp.bossId != info.boss_id
             || comp.spawnDelay != info.spawn_delay)
         {
             Undo.RecordObject(comp, "Map Auto Sync");
+            if (info.id > 0)
+                comp.id = info.id;
             comp.monsterId = info.monster_id;
             comp.spawnInterval = info.spawn_interval;
             comp.bossId = info.boss_id;

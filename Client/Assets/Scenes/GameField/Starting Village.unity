@@ -1397,6 +1397,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player_agnet_id: 0
+  loginMapId: 0
+  loginSpawnPos: {x: 0, y: 0, z: 0}
 --- !u!21 &61632200
 Material:
   serializedVersion: 6
@@ -46171,7 +46173,7 @@ PrefabInstance:
     - target: {fileID: 4868245414168183784, guid: 3b800daeecf266347b1fee9a04190f94,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 6.86
       objectReference: {fileID: 0}
     - target: {fileID: 4868245414168183784, guid: 3b800daeecf266347b1fee9a04190f94,
         type: 3}

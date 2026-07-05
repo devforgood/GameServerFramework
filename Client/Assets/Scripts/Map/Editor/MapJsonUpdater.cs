@@ -73,6 +73,7 @@ public class MapJsonUpdater : EditorWindow
     [System.Serializable]
     public class SpawnPointInfo
     {
+        public int id;
         public Vec3 position;
         public int monster_id;
         public int spawn_interval;
@@ -320,6 +321,20 @@ public class MapJsonUpdater : EditorWindow
                     problems++;
                 }
             }
+
+            // 스폰 id는 맵 내에서 타입 구분 없이 유일해야 한다 (0은 미발급 상태라 검사 제외).
+            var seenSpawnIds = new HashSet<int>();
+            var allSpawns = map.spawn_points.player_spawn
+                .Concat(map.spawn_points.monster_spawn)
+                .Concat(map.spawn_points.boss_spawn);
+            foreach (var spawn in allSpawns)
+            {
+                if (spawn.id > 0 && !seenSpawnIds.Add(spawn.id))
+                {
+                    Debug.LogWarning($"[MapValidate] 맵 '{map.name}'({map.id}) 안에 스폰 id {spawn.id} 중복");
+                    problems++;
+                }
+            }
         }
 
         if (problems > 0)
@@ -445,7 +460,9 @@ public class MapJsonUpdater : EditorWindow
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Scan Scene → JSON"))
             ScanScene(sceneName, map);
-        if (GUILayout.Button("Build Scene ← JSON"))
+        if (GUILayout.Button("Sync Scene ← JSON"))
+            SyncSceneFromJson(sceneName);
+        if (GUILayout.Button("Build Scene ← JSON (전체 재생성)"))
             BuildSceneFromJson(map);
         EditorGUILayout.EndHorizontal();
 
@@ -741,19 +758,41 @@ public class MapJsonUpdater : EditorWindow
 
     private static void UpdateSpawns(MapData map, SpawnPoint[] spawnComponents)
     {
+        // 스폰 id는 게이트와 동일하게 컴포넌트가 보유한다(이름 변경 시 페어링이 밀리지 않도록).
+        // id는 맵 내에서 스폰 타입 구분 없이 유일하다. 0(또는 중복)이면 새 id를 발급해 컴포넌트에 기록한다.
+        var oldAll = map.spawn_points.player_spawn
+            .Concat(map.spawn_points.monster_spawn)
+            .Concat(map.spawn_points.boss_spawn).ToList();
+
         map.spawn_points.player_spawn.Clear();
         map.spawn_points.monster_spawn.Clear();
         map.spawn_points.boss_spawn.Clear();
 
+        var claimed = new HashSet<int>();
+        int nextId = 1;
+
         foreach (var comp in spawnComponents)
         {
+            int id = comp.id;
+            if (id <= 0 || claimed.Contains(id))
+            {
+                while (claimed.Contains(nextId)) nextId++;
+                id = nextId;
+            }
+            claimed.Add(id);
+            AssignSpawnId(comp, id);
+
+            var old = oldAll.Find(s => s.id == id);
+
             var info = new SpawnPointInfo
             {
+                id = id,
                 position = new Vec3(comp.transform.position),
                 monster_id = comp.monsterId,
                 spawn_interval = comp.spawnInterval,
                 boss_id = comp.bossId,
-                spawn_delay = comp.spawnDelay
+                spawn_delay = comp.spawnDelay,
+                extra = old?.extra
             };
 
             switch (comp.spawnType)
@@ -833,6 +872,16 @@ public class MapJsonUpdater : EditorWindow
         }
     }
 
+    // 다음 스캔에서도 id가 유지되도록 스폰 컴포넌트에 id를 기록해 둔다.
+    private static void AssignSpawnId(SpawnPoint spawn, int id)
+    {
+        if (spawn.id == id)
+            return;
+        Undo.RecordObject(spawn, "Assign Spawn Id");
+        spawn.id = id;
+        EditorUtility.SetDirty(spawn);
+    }
+
     // 다음 스캔에서 이름이 바뀌어도 id가 유지되도록 마커에 id를 기록해 둔다.
     private static void AssignMarkerId(MapObjectMarker marker, int id)
     {
@@ -870,8 +919,25 @@ public class MapJsonUpdater : EditorWindow
     }
 
     // ---------------------------------------------------------------------
-    // JSON → 씬 빌드
+    // JSON → 씬 동기화 / 빌드
     // ---------------------------------------------------------------------
+
+    // 씬을 연 채 Map.json을 외부에서 편집했을 때 재오픈 없이 반영한다.
+    // Build와 달리 id 매칭 기반 reconcile이라 기존 오브젝트(프리팹 인스턴스 포함)를 보존한다.
+    private void SyncSceneFromJson(string sceneName)
+    {
+        if (!EditorUtility.DisplayDialog("Sync Scene ← JSON",
+                "Map.json을 디스크에서 다시 읽어 씬 마커를 JSON 기준으로 맞춥니다.\n" +
+                "(id 매칭으로 값만 갱신, JSON에 없는 마커는 삭제)\n\n" +
+                "이 창에서 저장하지 않은 맵 메타데이터 편집은 사라집니다. 계속할까요?",
+                "Sync", "Cancel"))
+            return;
+
+        LoadMapJson(); // 외부 편집을 반영하기 위해 디스크에서 재로드 (AutoSync는 이 창의 리스트를 공유한다)
+        int changes = MapJsonAutoSync.ApplyJsonToScene(sceneName);
+        if (changes == 0)
+            Debug.Log($"[MapJsonUpdater] '{sceneName}' 씬은 이미 Map.json과 일치합니다 (변경 0건).");
+    }
 
     private void BuildSceneFromJson(MapData map)
     {
@@ -977,6 +1043,7 @@ public class MapJsonUpdater : EditorWindow
             TrySetTag(go, "Spawn");
 
             var comp = go.AddComponent<SpawnPoint>();
+            comp.id = info.id;
             comp.spawnType = type;
             comp.monsterId = info.monster_id;
             comp.spawnInterval = info.spawn_interval;

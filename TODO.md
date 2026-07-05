@@ -22,21 +22,23 @@
 ## B. 툴 개선
 
 - [x] **B1. 참조 검증 기능** — `MapJsonUpdater.ValidateMapReferences()` 추가. 수동 저장/스캔/자동 저장 시 dangling `target_map_id`/`target_gate_id`, 맵 id 중복, 맵 내 게이트 id 중복을 경고 로그로 알림(저장은 막지 않음).
-- [ ] **B2. "Sync Scene ← JSON" 수동 reconcile 버튼** — 씬을 연 채 JSON을 외부 편집했을 때 재오픈 없이 반영 (기존 Build 버튼은 전체 삭제 후 재생성이라 파괴적).
-- [ ] **B3. 스폰 포인트 안정 id 도입** — 현재 이름순 인덱스 매칭이라 이름 변경 시 페어링이 밀림. 게이트/오브젝트처럼 id 보유 방식 검토.
+- [x] **B2. "Sync Scene ← JSON" 수동 reconcile 버튼** — 툴 창에 버튼 추가. 디스크에서 Map.json을 재로드한 뒤 AutoSync의 id 매칭 reconcile(`ApplyJsonToScene`)을 실행 — 비파괴, 기존 오브젝트 보존.
+- [x] **B3. 스폰 포인트 안정 id 도입** — `SpawnPoint.id` 필드 + `Map.json` spawn `id` 추가(맵 내 유일, 타입 공통 네임스페이스). Scan 시 0이면 자동 발급, AutoSync는 id 매칭(id 없는 항목은 종전 이름순 인덱스 매칭으로 폴백 → 기존 씬 무파괴 마이그레이션). 정규화 시 기존 스폰에 id 일괄 부여함.
 - [x] **B4. 자동 저장 백업** — 수동/자동 저장 모두 쓰기 직전 기존 파일을 `GameData/Map.json.bak` 1벌로 보존 (`BackupBeforeWrite`). `.bak`은 gitignore 처리.
-- [ ] **B5. int→double 표기 정규화 커밋** — 첫 자동 저장 시 Map.json 전체가 `500`→`500.0`으로 재포맷되어 큰 diff 발생. 미리 한 번 저장→커밋으로 정규화하고 GameDataFlow 코드젠 타입 영향 확인.
+- [x] **B5. int→double 표기 정규화 커밋** — Map.json 4벌(원본+사본 3)을 툴 직렬화 형태로 정규화(int→double, 스폰 id 부여, CRLF). GameDataFlow 재실행으로 코드젠 갱신 — 오브젝트 position/size/patrol/movement_range가 int→double로 바뀌었으나 해당 필드를 쓰는 서버/클라 코드가 아직 없어 영향 없음(빌드로 확인).
 
 ## C. 런타임 / 서버
 
 - [x] **C1. `required_level` 검증 구현(서버)** — `handle(EnterGate)`에서 출발 게이트의 `required_level`을 `PlayerLevel` 컴포넌트 레벨과 비교해 미달 시 거부.
   - [ ] 클라 `Gate.OnTriggerEnter` 선제 체크는 보류 — 클라에 레벨 동기화가 아직 없음(레벨/경험치를 클라로 내려주는 프로토콜 추가 필요). 서버 거부 시 UX 피드백도 이때 함께.
 - [x] **C2. 서버 EnterGate 요청 검증 강화** — 현재 맵 게이트 중 (target_map_id, target_gate_id)가 요청과 일치하는 출발 게이트를 역추적(`FindGateTo`), 없으면 거부. 캐릭터-게이트 xz 거리 5m 초과 시 거부(좌표계 x반전 변환 적용). 임의 맵 순간이동 차단.
-- [ ] **C3. 씬-navmesh 정합 런타임 검증** — 클라 씬 지형과 서버 navmesh 좌표/스케일 일치 확인 (기존 TODO).
+- [x] **C3. 씬-navmesh 정합 검증** — `Map::ValidateMapDataOnNavMesh()` 추가: 맵 로드 시 Map.json 게이트/스폰 좌표(클라 좌표계 → x반전)가 navmesh 위에 있는지 findNearestPoly로 검사(수평 허용 2m), 어긋나면 경고 로그. `MapNavMeshTest` 단위 테스트로도 상시 검증 — 현재 맵 1/2/13/14 모두 정합 확인됨.
+  - 씬 지형 전체와 navmesh의 일치까지 보장하지는 않음(마커 지점 표본 검증). 씬 수정 후 navmesh 재생성을 잊으면 테스트/로드 로그에서 잡힌다.
 
-## D. 확인 작업
+## D. 확인 작업 (Unity/실행 필요)
 
 - [ ] **D1. Unity 컴파일 + Auto Sync 실동작 확인** — Field1/Field2를 열었을 때 변경 0건으로 지나가는지, 게이트 이동 시 1초 뒤 자동 저장되는지.
+  - 스폰 id 도입으로 첫 씬 오픈 시 스폰 컴포넌트에 id가 스탬프되어 "n건 변경"이 뜨는 것은 정상(1회성 마이그레이션). 이후 재오픈부터 0건이어야 함.
 - [ ] **D2. 게이트 id 오버라이드 확인** — 4개 씬 게이트 인스펙터에서 `Id: 1` 표시 확인.
 - [ ] **D3. 로그인 스폰 확인** — map 1 player_spawn 수정 후 접속 시 (-13.7,0,0) 부근에 정상 스폰되는지.
 - [ ] **D4. EnterGate 서버 검증 실동작 확인** — 정상 게이트 이동이 여전히 되는지(거리 5m 허용치가 충분한지), 조작 요청(존재하지 않는 목적지/원거리 요청)이 거부 로그와 함께 막히는지.

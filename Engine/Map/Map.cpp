@@ -119,6 +119,9 @@ bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 		return false;
 	}
 
+	// 씬(Map.json) 좌표와 navmesh 정합 검증. 어긋나면 경고만 남긴다(로드는 계속).
+	ValidateMapDataOnNavMesh();
+
 	movement_ = NavMovementFactory::Create(movementType, navMesh_);
 	movement_->Init();
 	gridManager_ = new GridManager(100, 100, 2);
@@ -199,6 +202,55 @@ syncnet::Vec3 Map::GetPlayerSpawnPos() const
 		return syncnet::Vec3(static_cast<float>(p.x), static_cast<float>(p.y), static_cast<float>(p.z));
 	}
 	return syncnet::Vec3(0, 0, 0);
+}
+
+int Map::ValidateMapDataOnNavMesh(const gamedata::Map* mapData, const NavMesh* navMesh)
+{
+	if (mapData == nullptr || navMesh == nullptr || !navMesh->IsLoaded())
+		return 0;
+
+	// 수평 허용 오차(m). 마커가 메시 가장자리에서 이 이상 벗어나 있으면 정합 이상으로 본다.
+	// 수직은 지형 높이 차이를 감안해 넉넉히 잡는다.
+	constexpr float kHorizontalTolerance = 2.0f;
+	const float halfExtents[3] = { kHorizontalTolerance, 10.0f, kHorizontalTolerance };
+
+	int mismatches = 0;
+	auto check = [&](double cx, double cy, double cz, const char* kind, int id)
+	{
+		// Map.json은 클라 좌표계 — navmesh(서버 좌표계)로 x 반전 변환 후 질의한다.
+		const float pos[3] = {
+			Vector3::convert_x(static_cast<float>(cx)),
+			static_cast<float>(cy),
+			static_cast<float>(cz) };
+
+		dtPolyRef ref = 0;
+		float nearest[3] = { 0, 0, 0 };
+		dtStatus status = navMesh->query()->findNearestPoly(pos, halfExtents, navMesh->filter(), &ref, nearest);
+		if (dtStatusFailed(status) || ref == 0)
+		{
+			LOG.warn("Map {} navmesh 정합 이상: {} {} 위치 클라({}, {}, {}) 주변 {}m 내에 navmesh 폴리곤이 없습니다. "
+				"씬과 navmesh('{}')가 어긋났는지 확인하세요.",
+				mapData->id, kind, id, cx, cy, cz, kHorizontalTolerance, mapData->navmesh_path);
+			++mismatches;
+		}
+	};
+
+	for (const auto& gate : mapData->gates)
+		check(gate.position.x, gate.position.y, gate.position.z, "gate", gate.id);
+
+	for (const auto& s : mapData->spawn_points.player_spawn)
+		check(s.position.x, s.position.y, s.position.z, "player_spawn", s.id);
+	for (const auto& s : mapData->spawn_points.monster_spawn)
+		check(s.position.x, s.position.y, s.position.z, "monster_spawn", s.id);
+	for (const auto& s : mapData->spawn_points.boss_spawn)
+		check(s.position.x, s.position.y, s.position.z, "boss_spawn", s.id);
+
+	if (mismatches == 0)
+		LOG.info("Map {} navmesh 정합 확인: 게이트/스폰 마커 모두 navmesh 위에 있습니다.", mapData->id);
+	else
+		LOG.warn("Map {} navmesh 정합 이상 {}건 — 클라 씬과 서버 navmesh가 어긋났을 수 있습니다.", mapData->id, mismatches);
+
+	return mismatches;
 }
 
 void Map::update(float deltaTime)

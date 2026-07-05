@@ -70,6 +70,13 @@ public:
 	// 맵 데이터의 첫 번째 player_spawn 위치(클라 좌표계). 없으면 (0,0,0).
 	syncnet::Vec3 GetPlayerSpawnPos() const;
 
+	// Map.json(클라 씬 좌표)의 게이트/스폰 위치가 서버 navmesh 위에 있는지 검증한다.
+	// 씬과 navmesh가 어긋나면 마커가 메시 밖에 놓이므로 정합 이상을 로드 시점에 잡아낸다.
+	// 어긋난 마커 수를 반환한다(경고 로그만 남기고 로드는 막지 않는다).
+	// static 버전은 맵 인스턴스 없이도(예: 단위 테스트) 데이터+navmesh 만으로 검증할 때 사용한다.
+	static int ValidateMapDataOnNavMesh(const gamedata::Map* mapData, const NavMesh* navMesh);
+	int ValidateMapDataOnNavMesh() const { return ValidateMapDataOnNavMesh(mapData_, navMesh_); }
+
 	// update(deltaTime) 를 구성하는 단계들. 단계별 프로파일링을 위해 분리해 노출한다.
 	// update() 는 이들을 순서대로 호출할 뿐이라 직접 호출해도 동작은 동일하다.
 	void UpdateActors(float deltaTime);

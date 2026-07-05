@@ -129,24 +129,24 @@ namespace gamedata
 
     struct MapObjectsMovableObjectPatrolPath
     {
-        int x = 0;
-        int y = 0;
-        int z = 0;
+        double x = 0.0;
+        double y = 0.0;
+        double z = 0.0;
     };
 
 
     struct MapObjectsMovableObjectPosition
     {
-        int x = 0;
-        int y = 0;
-        int z = 0;
+        double x = 0.0;
+        double y = 0.0;
+        double z = 0.0;
     };
 
 
     struct MapObjectsMovableObject
     {
         int id = 0;
-        int movement_range = 0;
+        double movement_range = 0.0;
         double movement_speed = 0.0;
         std::string name;
         std::vector<MapObjectsMovableObjectPatrolPath> patrol_path;
@@ -157,17 +157,17 @@ namespace gamedata
 
     struct MapObjectsStaticObjectPosition
     {
-        int x = 0;
-        int y = 0;
-        int z = 0;
+        double x = 0.0;
+        double y = 0.0;
+        double z = 0.0;
     };
 
 
     struct MapObjectsStaticObjectSize
     {
-        int x = 0;
-        int y = 0;
-        int z = 0;
+        double x = 0.0;
+        double y = 0.0;
+        double z = 0.0;
     };
 
 
@@ -209,6 +209,7 @@ namespace gamedata
     struct MapSpawnPointsBossSpawn
     {
         int boss_id = 0;
+        int id = 0;
         int monster_id = 0;
         MapSpawnPointsBossSpawnPosition position;
         int spawn_delay = 0;
@@ -227,6 +228,7 @@ namespace gamedata
     struct MapSpawnPointsMonsterSpawn
     {
         int boss_id = 0;
+        int id = 0;
         int monster_id = 0;
         MapSpawnPointsMonsterSpawnPosition position;
         int spawn_delay = 0;
@@ -245,6 +247,7 @@ namespace gamedata
     struct MapSpawnPointsPlayerSpawn
     {
         int boss_id = 0;
+        int id = 0;
         int monster_id = 0;
         MapSpawnPointsPlayerSpawnPosition position;
         int spawn_delay = 0;
@@ -500,6 +503,7 @@ namespace gamedata
     inline void from_json(const nlohmann::json& j, MapSpawnPointsBossSpawn& o)
     {
         if (j.contains("boss_id") && !j.at("boss_id").is_null()) j.at("boss_id").get_to(o.boss_id);
+        if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("monster_id") && !j.at("monster_id").is_null()) j.at("monster_id").get_to(o.monster_id);
         if (j.contains("position") && !j.at("position").is_null()) j.at("position").get_to(o.position);
         if (j.contains("spawn_delay") && !j.at("spawn_delay").is_null()) j.at("spawn_delay").get_to(o.spawn_delay);
@@ -518,6 +522,7 @@ namespace gamedata
     inline void from_json(const nlohmann::json& j, MapSpawnPointsMonsterSpawn& o)
     {
         if (j.contains("boss_id") && !j.at("boss_id").is_null()) j.at("boss_id").get_to(o.boss_id);
+        if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("monster_id") && !j.at("monster_id").is_null()) j.at("monster_id").get_to(o.monster_id);
         if (j.contains("position") && !j.at("position").is_null()) j.at("position").get_to(o.position);
         if (j.contains("spawn_delay") && !j.at("spawn_delay").is_null()) j.at("spawn_delay").get_to(o.spawn_delay);
@@ -536,6 +541,7 @@ namespace gamedata
     inline void from_json(const nlohmann::json& j, MapSpawnPointsPlayerSpawn& o)
     {
         if (j.contains("boss_id") && !j.at("boss_id").is_null()) j.at("boss_id").get_to(o.boss_id);
+        if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("monster_id") && !j.at("monster_id").is_null()) j.at("monster_id").get_to(o.monster_id);
         if (j.contains("position") && !j.at("position").is_null()) j.at("position").get_to(o.position);
         if (j.contains("spawn_delay") && !j.at("spawn_delay").is_null()) j.at("spawn_delay").get_to(o.spawn_delay);

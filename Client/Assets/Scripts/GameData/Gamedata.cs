@@ -138,18 +138,18 @@ namespace Gamedata
     [Serializable]
     public class MapObjectsMovableObjectPatrolPath
     {
-        public int x;
-        public int y;
-        public int z;
+        public double x;
+        public double y;
+        public double z;
     }
 
 
     [Serializable]
     public class MapObjectsMovableObjectPosition
     {
-        public int x;
-        public int y;
-        public int z;
+        public double x;
+        public double y;
+        public double z;
     }
 
 
@@ -157,7 +157,7 @@ namespace Gamedata
     public class MapObjectsMovableObject
     {
         public int id;
-        public int movement_range;
+        public double movement_range;
         public double movement_speed;
         public string name;
         public System.Collections.Generic.List<MapObjectsMovableObjectPatrolPath> patrol_path;
@@ -169,18 +169,18 @@ namespace Gamedata
     [Serializable]
     public class MapObjectsStaticObjectPosition
     {
-        public int x;
-        public int y;
-        public int z;
+        public double x;
+        public double y;
+        public double z;
     }
 
 
     [Serializable]
     public class MapObjectsStaticObjectSize
     {
-        public int x;
-        public int y;
-        public int z;
+        public double x;
+        public double y;
+        public double z;
     }
 
 
@@ -227,6 +227,7 @@ namespace Gamedata
     public class MapSpawnPointsBossSpawn
     {
         public int boss_id;
+        public int id;
         public int monster_id;
         public MapSpawnPointsBossSpawnPosition position;
         public int spawn_delay;
@@ -247,6 +248,7 @@ namespace Gamedata
     public class MapSpawnPointsMonsterSpawn
     {
         public int boss_id;
+        public int id;
         public int monster_id;
         public MapSpawnPointsMonsterSpawnPosition position;
         public int spawn_delay;
@@ -267,6 +269,7 @@ namespace Gamedata
     public class MapSpawnPointsPlayerSpawn
     {
         public int boss_id;
+        public int id;
         public int monster_id;
         public MapSpawnPointsPlayerSpawnPosition position;
         public int spawn_delay;
