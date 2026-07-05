@@ -27,6 +27,7 @@
     "spawn_points": {
       "player_spawn": [
         {
+          "id": 1,
           "position": {
             "x": -13.7,
             "y": 0.0,
@@ -111,6 +112,7 @@
     "spawn_points": {
       "player_spawn": [
         {
+          "id": 1,
           "position": {
             "x": 100.0,
             "y": 0.0,
@@ -122,6 +124,7 @@
           "spawn_delay": 0
         },
         {
+          "id": 2,
           "position": {
             "x": 150.0,
             "y": 0.0,
@@ -136,6 +139,7 @@
       "monster_spawn": [],
       "boss_spawn": [
         {
+          "id": 3,
           "position": {
             "x": 700.0,
             "y": 0.0,
@@ -155,14 +159,14 @@
           "type": "boss_platform",
           "name": "Dragon Platform",
           "position": {
-            "x": 700,
-            "y": 0,
-            "z": 400
+            "x": 700.0,
+            "y": 0.0,
+            "z": 400.0
           },
           "size": {
-            "x": 100,
-            "y": 10,
-            "z": 100
+            "x": 100.0,
+            "y": 10.0,
+            "z": 100.0
           },
           "collision": true
         },
@@ -171,14 +175,14 @@
           "type": "decoration",
           "name": "Dragon Bones",
           "position": {
-            "x": 300,
-            "y": 0,
-            "z": 300
+            "x": 300.0,
+            "y": 0.0,
+            "z": 300.0
           },
           "size": {
-            "x": 30,
-            "y": 5,
-            "z": 30
+            "x": 30.0,
+            "y": 5.0,
+            "z": 30.0
           },
           "collision": false
         }
@@ -215,6 +219,7 @@
     "spawn_points": {
       "player_spawn": [
         {
+          "id": 1,
           "position": {
             "x": 100.0,
             "y": 0.0,
@@ -226,6 +231,7 @@
           "spawn_delay": 0
         },
         {
+          "id": 2,
           "position": {
             "x": 150.0,
             "y": 0.0,
@@ -239,6 +245,7 @@
       ],
       "monster_spawn": [
         {
+          "id": 3,
           "position": {
             "x": 300.0,
             "y": 0.0,
@@ -250,6 +257,7 @@
           "spawn_delay": 0
         },
         {
+          "id": 4,
           "position": {
             "x": 600.0,
             "y": 0.0,
@@ -261,6 +269,7 @@
           "spawn_delay": 0
         },
         {
+          "id": 5,
           "position": {
             "x": 900.0,
             "y": 0.0,
@@ -272,6 +281,7 @@
           "spawn_delay": 0
         },
         {
+          "id": 6,
           "position": {
             "x": 900.0,
             "y": 0.0,
@@ -292,14 +302,14 @@
           "type": "trap",
           "name": "Spike Trap",
           "position": {
-            "x": 400,
-            "y": 0,
-            "z": 400
+            "x": 400.0,
+            "y": 0.0,
+            "z": 400.0
           },
           "size": {
-            "x": 10,
-            "y": 2,
-            "z": 10
+            "x": 10.0,
+            "y": 2.0,
+            "z": 10.0
           },
           "collision": true,
           "damage": 50
@@ -309,14 +319,14 @@
           "type": "treasure_chest",
           "name": "Ancient Chest",
           "position": {
-            "x": 1000,
-            "y": 0,
-            "z": 1000
+            "x": 1000.0,
+            "y": 0.0,
+            "z": 1000.0
           },
           "size": {
-            "x": 5,
-            "y": 3,
-            "z": 5
+            "x": 5.0,
+            "y": 3.0,
+            "z": 5.0
           },
           "collision": true,
           "loot_table_id": 1
@@ -328,32 +338,32 @@
           "type": "patrol_guard",
           "name": "Dungeon Guard",
           "position": {
-            "x": 500,
-            "y": 0,
-            "z": 500
+            "x": 500.0,
+            "y": 0.0,
+            "z": 500.0
           },
-          "movement_range": 100,
+          "movement_range": 100.0,
           "movement_speed": 2.0,
           "patrol_path": [
             {
-              "x": 500,
-              "y": 0,
-              "z": 500
+              "x": 500.0,
+              "y": 0.0,
+              "z": 500.0
             },
             {
-              "x": 700,
-              "y": 0,
-              "z": 500
+              "x": 700.0,
+              "y": 0.0,
+              "z": 500.0
             },
             {
-              "x": 700,
-              "y": 0,
-              "z": 700
+              "x": 700.0,
+              "y": 0.0,
+              "z": 700.0
             },
             {
-              "x": 500,
-              "y": 0,
-              "z": 700
+              "x": 500.0,
+              "y": 0.0,
+              "z": 700.0
             }
           ]
         }
@@ -389,6 +399,7 @@
     "spawn_points": {
       "player_spawn": [
         {
+          "id": 1,
           "position": {
             "x": 100.0,
             "y": 0.0,
@@ -400,6 +411,7 @@
           "spawn_delay": 0
         },
         {
+          "id": 2,
           "position": {
             "x": 100.0,
             "y": 0.0,
@@ -411,6 +423,7 @@
           "spawn_delay": 0
         },
         {
+          "id": 3,
           "position": {
             "x": 500.0,
             "y": 0.0,
@@ -422,6 +435,7 @@
           "spawn_delay": 0
         },
         {
+          "id": 4,
           "position": {
             "x": 500.0,
             "y": 0.0,
@@ -443,14 +457,14 @@
           "type": "arena_wall",
           "name": "Arena Boundary",
           "position": {
-            "x": 300,
-            "y": 0,
-            "z": 300
+            "x": 300.0,
+            "y": 0.0,
+            "z": 300.0
           },
           "size": {
-            "x": 600,
-            "y": 20,
-            "z": 600
+            "x": 600.0,
+            "y": 20.0,
+            "z": 600.0
           },
           "collision": true
         },
@@ -459,14 +473,14 @@
           "type": "cover",
           "name": "Stone Pillar",
           "position": {
-            "x": 200,
-            "y": 0,
-            "z": 200
+            "x": 200.0,
+            "y": 0.0,
+            "z": 200.0
           },
           "size": {
-            "x": 10,
-            "y": 30,
-            "z": 10
+            "x": 10.0,
+            "y": 30.0,
+            "z": 10.0
           },
           "collision": true
         }
@@ -503,6 +517,7 @@
     "spawn_points": {
       "player_spawn": [
         {
+          "id": 1,
           "position": {
             "x": -13.7,
             "y": 0.0,
