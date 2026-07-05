@@ -550,7 +550,8 @@ public static class MapJsonAutoSync
                 return;
 
             File.WriteAllText(path, json);
-            Debug.Log($"[MapAutoSync] '{scene.name}' 마커 변경 감지 → Map.json 자동 저장");
+            MapJsonUpdater.DeployMapJsonCopies(path);
+            Debug.Log($"[MapAutoSync] '{scene.name}' 마커 변경 감지 → Map.json 자동 저장 (+ Client/Game/UnitTest 사본 복사)");
             if (window != null)
                 window.Repaint();
         }

@@ -245,8 +245,9 @@ public class MapJsonUpdater : EditorWindow
         try
         {
             SaveMapList(mapJsonPath, mapDataList);
-            Debug.Log($"Map JSON saved successfully to: {mapJsonPath}\n" +
-                      "배포하려면 GameDataFlow/GameDataFlow.py 를 실행하세요 (Client/Game/UnitTest로 복사).");
+            DeployMapJsonCopies(mapJsonPath);
+            Debug.Log($"Map JSON saved to: {mapJsonPath} (+ Client/Game/UnitTest 사본 복사)\n" +
+                      "스키마(필드 구조)가 바뀐 경우에는 GameDataFlow/GameDataFlow.py 로 코드젠도 갱신하세요.");
             AssetDatabase.Refresh();
         }
         catch (System.Exception e)
@@ -259,6 +260,34 @@ public class MapJsonUpdater : EditorWindow
     {
         string jsonContent = JsonConvert.SerializeObject(list, Formatting.Indented);
         File.WriteAllText(path, jsonContent);
+    }
+
+    // Map.json을 소비처 런타임 GameData 폴더로 그대로 복사한다.
+    // (GameDataFlow.py의 JSON verbatim 복사와 동일 대상. 코드젠/navmesh 배포는 GameDataFlow 몫)
+    public static void DeployMapJsonCopies(string sourcePath)
+    {
+        string gameDataDir = Path.GetDirectoryName(sourcePath);
+        string root = Path.GetDirectoryName(gameDataDir); // 리포지토리 루트
+        string[] targetDirs = {
+            Path.Combine(root, "Client", "Assets", "Resources", "GameData"),
+            Path.Combine(root, "Game", "GameData"),
+            Path.Combine(root, "UnitTest", "GameData"),
+        };
+
+        foreach (string dir in targetDirs)
+        {
+            if (!Directory.Exists(dir))
+                continue; // 대상 폴더가 없으면 배포 대상이 아니다
+
+            try
+            {
+                File.Copy(sourcePath, Path.Combine(dir, Path.GetFileName(sourcePath)), true);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Map.json 사본 복사 실패 ({dir}): {e.Message}");
+            }
+        }
     }
 
     // ---------------------------------------------------------------------
