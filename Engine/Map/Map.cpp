@@ -181,7 +181,7 @@ bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 				map->gridManager_->move(actor, npos[0], npos[2]);
 			}
 
-			map->agentInfoVector_.push_back(actor->GetActorInfo(*map->builderPtr_, actor->GetChangedFlag()));
+			map->actorPendingUpdates_.push_back(actor->GetActorInfo(*map->builderPtr_, actor->GetChangedFlag()));
 
 			actor->ResetChangedFlag();
 		});
@@ -298,7 +298,7 @@ int Map::ProfileDetectEnemyAll()
 
 void Map::SendWorldState()
 {
-	auto agents = builderPtr_->CreateVector(agentInfoVector_);
+	auto agents = builderPtr_->CreateVector(actorPendingUpdates_);
 
 	// ----------------------------
 	flatbuffers::Offset<syncnet::DebugRaycast> debug_raycast;
@@ -327,7 +327,7 @@ void Map::SendWorldState()
 	}
 
 	builderPtr_ = std::make_shared<send_message>();
-	agentInfoVector_.clear();
+	actorPendingUpdates_.clear();
 	removedAgents_.clear();
 }
 

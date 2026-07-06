@@ -40,7 +40,7 @@ private:
 
 	std::vector<syncnet::Vec3> raycasts_;
 	std::shared_ptr<send_message> builderPtr_;
-	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agentInfoVector_;
+	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> actorPendingUpdates_;
 	std::vector<int> removedAgents_;
 
 	// DetectEnemy 의 시야 쿼리 결과 재사용 버퍼(호출당 힙 할당 방지).
