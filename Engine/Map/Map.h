@@ -39,7 +39,7 @@ private:
 	std::unordered_map<int, std::list<std::shared_ptr<Actor>>::iterator> actorMap_;
 
 	std::vector<syncnet::Vec3> raycasts_;
-	std::shared_ptr<send_message> builderPtr_;
+	std::shared_ptr<send_message> sendMessageBuilder_;
 	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> actorPendingUpdates_;
 	std::vector<int> removedAgents_;
 

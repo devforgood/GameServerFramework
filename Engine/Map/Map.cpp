@@ -126,7 +126,7 @@ bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 	movement_->Init();
 	gridManager_ = new GridManager(100, 100, 2);
 
-	builderPtr_ = std::make_shared<send_message>();
+	sendMessageBuilder_ = std::make_shared<send_message>();
 
 	systemManager_ = new engine::SystemManager();
 
@@ -181,7 +181,7 @@ bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 				map->gridManager_->move(actor, npos[0], npos[2]);
 			}
 
-			map->actorPendingUpdates_.push_back(actor->GetActorInfo(*map->builderPtr_, actor->GetChangedFlag()));
+			map->actorPendingUpdates_.push_back(actor->GetActorInfo(*map->sendMessageBuilder_, actor->GetChangedFlag()));
 
 			actor->ResetChangedFlag();
 		});
@@ -298,26 +298,26 @@ int Map::ProfileDetectEnemyAll()
 
 void Map::SendWorldState()
 {
-	auto agents = builderPtr_->CreateVector(actorPendingUpdates_);
+	auto agents = sendMessageBuilder_->CreateVector(actorPendingUpdates_);
 
 	// ----------------------------
 	flatbuffers::Offset<syncnet::DebugRaycast> debug_raycast;
 	std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> debug_raycast_vector;
 	for (int i = 0; i < this->raycasts_.size(); ++i)
 	{
-		debug_raycast = syncnet::CreateDebugRaycast(*builderPtr_, 0, &this->raycasts_[i]);
+		debug_raycast = syncnet::CreateDebugRaycast(*sendMessageBuilder_, 0, &this->raycasts_[i]);
 		debug_raycast_vector.push_back(debug_raycast);
 	}
 	this->raycasts_.clear();
-	auto debug_raycasts = builderPtr_->CreateVector(debug_raycast_vector);
+	auto debug_raycasts = sendMessageBuilder_->CreateVector(debug_raycast_vector);
 	// ----------------------------
 
-	auto updateActorNotify = syncnet::CreateUpdateActorNotify(*builderPtr_, agents, debug_raycasts);
+	auto updateActorNotify = syncnet::CreateUpdateActorNotify(*sendMessageBuilder_, agents, debug_raycasts);
 
-	auto send_msg = syncnet::CreateGameMessage(*builderPtr_, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
-	builderPtr_->Finish(send_msg);
+	auto send_msg = syncnet::CreateGameMessage(*sendMessageBuilder_, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
+	sendMessageBuilder_->Finish(send_msg);
 
-	SendBroadcast(builderPtr_);
+	SendBroadcast(sendMessageBuilder_);
 
 	SendTreeDebugSync();
 
@@ -326,7 +326,7 @@ void Map::SendWorldState()
 		OnRemoveAgent(agent_id);
 	}
 
-	builderPtr_ = std::make_shared<send_message>();
+	sendMessageBuilder_ = std::make_shared<send_message>();
 	actorPendingUpdates_.clear();
 	removedAgents_.clear();
 }
