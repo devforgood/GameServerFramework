@@ -172,6 +172,35 @@ void BTDebugManager::PublishTreeDefinition(Monster* monster)
 	g_definitions.push_back(BuildMonsterTreeDefinition(monster->GetActorId()));
 }
 
+void BTDebugManager::PublishMonsterSnapshot(int64_t monster_id)
+{
+	std::lock_guard<std::mutex> lock(g_mutex);
+	g_definitions.push_back(BuildMonsterTreeDefinition(monster_id));
+
+	// BT 가 한 번이라도 돈 몬스터라면 알고 있는 모든 노드 상태를 풀 프레임으로 실어
+	// 클라이언트가 즉시 현재 상태를 그릴 수 있게 한다.
+	auto it = g_contexts.find(monster_id);
+	if (it == g_contexts.end())
+		return;
+
+	const auto& context = it->second;
+	BTDebugRuntimeFrame frame;
+	frame.tree_id = "monster_ai";
+	frame.monster_id = context.monster_id;
+	frame.tick = context.bt_tick;
+	frame.ai_state = context.ai_state;
+	frame.target_agent_id = context.target_agent_id;
+	frame.executed_path = context.executed_nodes_this_tick;
+	frame.changes.reserve(context.nodes.size());
+
+	for (const auto& pair : context.nodes)
+	{
+		frame.changes.push_back(ToNodeChange(pair.second));
+	}
+
+	g_frames.push_back(std::move(frame));
+}
+
 BTDebugSyncSnapshot BTDebugManager::ConsumeSnapshot()
 {
 	std::lock_guard<std::mutex> lock(g_mutex);

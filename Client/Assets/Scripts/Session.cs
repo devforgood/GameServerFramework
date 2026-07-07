@@ -96,7 +96,21 @@ public class Session : MonoBehaviour
     void Start()
 	{
 		Application.runInBackground = true;
+		// BT 디버그 뷰(Tools/BT Debug Viewer)가 트리 정의를 요청할 때 사용할 송신 경로 등록
+		TreeDebugRepository.DefinitionRequestSender = RequestTreeDebug;
 		startServer();
+	}
+
+	void OnDestroy()
+	{
+		if (TreeDebugRepository.DefinitionRequestSender == (System.Action<long>)RequestTreeDebug)
+			TreeDebugRepository.DefinitionRequestSender = null;
+	}
+
+	/// <summary>특정 몬스터의 BT 정의(+현재 상태)를 서버에 요청한다.</summary>
+	public void RequestTreeDebug(long monsterId)
+	{
+		SendMessage(PacketFactory.CreateTreeDebugRequestMessage(monsterId));
 	}
 
 	public void startServer()
@@ -362,7 +376,7 @@ public class Session : MonoBehaviour
 	private void HandleTreeDebugSync(syncnet.GameMessage recv_msg)
 	{
 		syncnet.TreeDebugSync treeDebugSync = recv_msg.Msg<syncnet.TreeDebugSync>().Value;
-		TreeDebugView.Instance.Apply(treeDebugSync);
+		TreeDebugRepository.Apply(treeDebugSync);
 	}
 
 	private GameObject CreateGameObject(GameObjectType type, Vector3 pos, int agentId)

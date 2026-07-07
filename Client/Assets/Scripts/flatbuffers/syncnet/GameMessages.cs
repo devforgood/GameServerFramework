@@ -19,6 +19,7 @@ public enum GameMessages : byte
   UseSkill = 9,
   TreeDebugSync = 10,
   EnterGate = 11,
+  TreeDebugRequest = 12,
 };
 
 

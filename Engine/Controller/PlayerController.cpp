@@ -13,6 +13,7 @@
 #include "Server.h"
 #include "Common.h" // gamedata::Map/MapGate 전체 정의
 #include "PlayerLevel.h"
+#include "BTDebugManager.h"
 
 namespace
 {
@@ -58,6 +59,7 @@ void PlayerController::handle(const syncnet::GameMessage* msg)
 	case syncnet::GameMessages::GameMessages_Login:				handle(msg->msg_as_Login()); break;
 	case syncnet::GameMessages::GameMessages_UseSkill:			handle(msg->msg_as_UseSkill()); break;
 	case syncnet::GameMessages::GameMessages_EnterGate:			handle(msg->msg_as_EnterGate()); break;
+	case syncnet::GameMessages::GameMessages_TreeDebugRequest:	handle(msg->msg_as_TreeDebugRequest()); break;
 	}
 }
 
@@ -365,4 +367,13 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 		if (destMap != nullptr)
 			destMap->SendStateTo(player_);
 	}
+}
+
+void PlayerController::handle(const syncnet::TreeDebugRequest* msg)
+{
+#if defined(ENABLE_BT_DEBUG)
+	LOG.debug("TreeDebugRequest monsterId:{}", msg->monsterId());
+	// 다음 맵 틱의 SendTreeDebugSync 브로드캐스트에 정의+현재 상태가 실려 나간다.
+	BTDebugManager::Instance().PublishMonsterSnapshot(msg->monsterId());
+#endif
 }

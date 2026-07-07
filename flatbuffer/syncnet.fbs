@@ -14,6 +14,7 @@ union GameMessages
   UseSkill,
   TreeDebugSync,
   EnterGate,
+  TreeDebugRequest,
 } // Optionally add more tables.
 
 enum StatusCode:short
@@ -178,6 +179,13 @@ table TreeDebugRuntimeFrame {
 table TreeDebugSync {
   definitions:[TreeDebugDefinition];
   frames:[TreeDebugRuntimeFrame];
+}
+
+// 클라이언트가 특정 몬스터의 BT 정의(+현재 상태 스냅샷)를 요청한다.
+// 몬스터는 플레이어 접속 전에 스폰되어 정의 브로드캐스트를 받지 못하므로,
+// 디버그 뷰에서 몬스터를 선택할 때 이 메시지로 정의를 다시 받아온다.
+table TreeDebugRequest {
+  monsterId:long = -1;
 }
 
 table EnterGate {

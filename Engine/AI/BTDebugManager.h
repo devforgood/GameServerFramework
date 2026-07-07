@@ -77,6 +77,9 @@ public:
 	void Record(Monster* monster, uint16_t node_id, std::string_view node_name, BT::NodeStatus status, std::string_view reason);
 	void EndTick(Monster* monster);
 	void PublishTreeDefinition(Monster* monster);
+	// 클라이언트 TreeDebugRequest 대응: 해당 몬스터의 트리 정의와 현재 노드 상태 전체를
+	// 다음 TreeDebugSync 브로드캐스트에 실어 보낸다. (접속 전에 소비된 정의를 다시 받기 위함)
+	void PublishMonsterSnapshot(int64_t monster_id);
 
 	BTDebugSyncSnapshot ConsumeSnapshot();
 	BTDebugDefinition BuildMonsterTreeDefinition(int64_t monster_id) const;

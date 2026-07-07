@@ -62,6 +62,9 @@ struct TreeDebugRuntimeFrameBuilder;
 struct TreeDebugSync;
 struct TreeDebugSyncBuilder;
 
+struct TreeDebugRequest;
+struct TreeDebugRequestBuilder;
+
 struct EnterGate;
 struct EnterGateBuilder;
 
@@ -78,11 +81,12 @@ enum GameMessages {
   GameMessages_UseSkill = 9,
   GameMessages_TreeDebugSync = 10,
   GameMessages_EnterGate = 11,
+  GameMessages_TreeDebugRequest = 12,
   GameMessages_MIN = GameMessages_NONE,
-  GameMessages_MAX = GameMessages_EnterGate
+  GameMessages_MAX = GameMessages_TreeDebugRequest
 };
 
-inline const GameMessages (&EnumValuesGameMessages())[12] {
+inline const GameMessages (&EnumValuesGameMessages())[13] {
   static const GameMessages values[] = {
     GameMessages_NONE,
     GameMessages_AddAgent,
@@ -95,13 +99,14 @@ inline const GameMessages (&EnumValuesGameMessages())[12] {
     GameMessages_Login,
     GameMessages_UseSkill,
     GameMessages_TreeDebugSync,
-    GameMessages_EnterGate
+    GameMessages_EnterGate,
+    GameMessages_TreeDebugRequest
   };
   return values;
 }
 
 inline const char * const *EnumNamesGameMessages() {
-  static const char * const names[13] = {
+  static const char * const names[14] = {
     "NONE",
     "AddAgent",
     "RemoveAgent",
@@ -114,13 +119,14 @@ inline const char * const *EnumNamesGameMessages() {
     "UseSkill",
     "TreeDebugSync",
     "EnterGate",
+    "TreeDebugRequest",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameGameMessages(GameMessages e) {
-  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_EnterGate)) return "";
+  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_TreeDebugRequest)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesGameMessages()[index];
 }
@@ -171,6 +177,10 @@ template<> struct GameMessagesTraits<syncnet::TreeDebugSync> {
 
 template<> struct GameMessagesTraits<syncnet::EnterGate> {
   static const GameMessages enum_value = GameMessages_EnterGate;
+};
+
+template<> struct GameMessagesTraits<syncnet::TreeDebugRequest> {
+  static const GameMessages enum_value = GameMessages_TreeDebugRequest;
 };
 
 bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type);
@@ -465,6 +475,9 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::EnterGate *msg_as_EnterGate() const {
     return msg_type() == syncnet::GameMessages_EnterGate ? static_cast<const syncnet::EnterGate *>(msg()) : nullptr;
   }
+  const syncnet::TreeDebugRequest *msg_as_TreeDebugRequest() const {
+    return msg_type() == syncnet::GameMessages_TreeDebugRequest ? static_cast<const syncnet::TreeDebugRequest *>(msg()) : nullptr;
+  }
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
@@ -524,6 +537,10 @@ template<> inline const syncnet::TreeDebugSync *GameMessage::msg_as<syncnet::Tre
 
 template<> inline const syncnet::EnterGate *GameMessage::msg_as<syncnet::EnterGate>() const {
   return msg_as_EnterGate();
+}
+
+template<> inline const syncnet::TreeDebugRequest *GameMessage::msg_as<syncnet::TreeDebugRequest>() const {
+  return msg_as_TreeDebugRequest();
 }
 
 struct GameMessageBuilder {
@@ -1738,6 +1755,48 @@ inline flatbuffers::Offset<TreeDebugSync> CreateTreeDebugSyncDirect(
       frames__);
 }
 
+struct TreeDebugRequest FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef TreeDebugRequestBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_MONSTERID = 4
+  };
+  int64_t monsterId() const {
+    return GetField<int64_t>(VT_MONSTERID, -1LL);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int64_t>(verifier, VT_MONSTERID) &&
+           verifier.EndTable();
+  }
+};
+
+struct TreeDebugRequestBuilder {
+  typedef TreeDebugRequest Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_monsterId(int64_t monsterId) {
+    fbb_.AddElement<int64_t>(TreeDebugRequest::VT_MONSTERID, monsterId, -1LL);
+  }
+  explicit TreeDebugRequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  TreeDebugRequestBuilder &operator=(const TreeDebugRequestBuilder &);
+  flatbuffers::Offset<TreeDebugRequest> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<TreeDebugRequest>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<TreeDebugRequest> CreateTreeDebugRequest(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int64_t monsterId = -1LL) {
+  TreeDebugRequestBuilder builder_(_fbb);
+  builder_.add_monsterId(monsterId);
+  return builder_.Finish();
+}
+
 struct EnterGate FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef EnterGateBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -1857,6 +1916,10 @@ inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj,
     }
     case GameMessages_EnterGate: {
       auto ptr = reinterpret_cast<const syncnet::EnterGate *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_TreeDebugRequest: {
+      auto ptr = reinterpret_cast<const syncnet::TreeDebugRequest *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;

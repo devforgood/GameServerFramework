@@ -93,6 +93,17 @@ public static class PacketFactory
         return builder.SizedByteArray();
     }
 
+    public static byte[] CreateTreeDebugRequestMessage(long monsterId)
+    {
+        var builder = new FlatBufferBuilder(64);
+        syncnet.TreeDebugRequest.StartTreeDebugRequest(builder);
+        syncnet.TreeDebugRequest.AddMonsterId(builder, monsterId);
+        var offset = syncnet.TreeDebugRequest.EndTreeDebugRequest(builder);
+        var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.TreeDebugRequest, offset.Value);
+        builder.Finish(msg.Value);
+        return builder.SizedByteArray();
+    }
+
     public static byte[] CreateUseSkillMessage(int skillId, int agentId, Vector3 pos, int type, long timestamp)
     {
         var builder = new FlatBufferBuilder(1024);
