@@ -7,7 +7,7 @@
 //   - BM_WorldTick          : N마리가 살아있는 상태에서 update(dt) 1회 소요 시간
 //
 // 실행 시 작업 디렉터리(또는 exe 디렉터리)에 GameData/ 자산이 있어야 한다
-// (solo_navmesh.bin, Monster.xml, *.lua, *.json). PostBuildEvent 가 exe 옆으로 복사한다.
+// (*_navmesh.bin, Monster.xml, Map.json, *.lua, *.json). PostBuildEvent 가 exe 옆으로 복사한다.
 //
 // 주의: 스폰 수는 네비메시 크라우드 정원 CrowdNavMovement::MAX_AGENTS 미만이어야 한다(현재 16384).
 // 의미 있는 수치를 위해 Release/x64 로 빌드/실행할 것.
@@ -27,9 +27,18 @@
 #include "World.h"
 #include "Map.h"
 #include "Actor.h"
+#include "ResourceLoader.h"
 #include "syncnet_generated.h"
 #include "LogHelper.h"
 #include "spdlog/spdlog.h"
+
+// BT 프레임워크 비교용. behaviortree_cpp 와 인하우스 BT(../BehaviorTree)는 둘 다
+// namespace BT 를 쓰지만 클래스 이름이 겹치지 않아 한 TU 에서 공존한다.
+#include "Monster.h"
+#include "MonsterBT.h"
+#include "MonsterCodeBaseBT.h"
+#include "../BehaviorTree/BehaviorTree.h"
+#include "behaviortree_cpp/bt_factory.h"
 
 namespace
 {
@@ -68,9 +77,11 @@ namespace
 			// 스폰/틱마다 LOG 출력이 쏟아져 측정을 왜곡하므로 끈다.
 			if (auto net = spdlog::get("net"))
 				net->set_level(spdlog::level::off);
-			// 주: 리소스(ResourceLoader)는 일부러 로드하지 않는다. 그러면 GameModeFactory 가
-			// 게임모드를 만들지 않아(=null) 벤치마크가 순수하게 월드/몬스터에 집중되고
-			// 게임모드 lua 의 print 출력도 사라진다. 몬스터 스폰/틱은 리소스가 없어도 동작한다.
+			// 멀티맵 전환 이후 World::Init 은 ResourceLoader 의 맵 데이터(Map.json)로만
+			// 맵을 만든다. 리소스를 안 읽으면 mapList_ 가 비어 OnAddAgent 가 크래시하므로
+			// 반드시 로드한다. (field 게임모드 lua 는 몬스터를 스폰하지 않아 측정에 영향 없음.
+			// primary 맵 = 최소 id 의 field 맵 = "Starting Village")
+			ResourceLoader::Instance().LoadResources();
 		}
 	};
 	GlobalSetup g_setup;
@@ -149,7 +160,9 @@ static void BM_WorldSpawnMonsters(benchmark::State& state)
 	{
 		state.PauseTiming();
 		World world;
-		world.Init();
+		// 게임모드 데이터의 movement(현재 waypoint)와 무관하게 crowd 로 고정한다.
+		// ValidSpawns("crowd") 좌표는 crowd 의 스냅 조건으로 탐색된 것이라 전략이 다르면 스폰이 실패한다.
+		world.Init("crowd");
 		state.ResumeTiming();
 
 		spawned = SpawnMonsters(world, count, "crowd");
@@ -168,7 +181,7 @@ static void BM_WorldTick(benchmark::State& state)
 	const int count = static_cast<int>(state.range(0));
 
 	World world;
-	world.Init();
+	world.Init("crowd"); // ValidSpawns("crowd") 좌표와 이동 전략을 일치시킨다.
 	const int spawned = SpawnMonsters(world, count, "crowd");
 
 	for (auto _ : state)
@@ -303,5 +316,300 @@ static void BM_DetectEnemyOnly(benchmark::State& state, const char* movement)
 }
 BENCHMARK_CAPTURE(BM_DetectEnemyOnly, crowd, "crowd")
 	->Arg(10000)
+	->Unit(benchmark::kMillisecond)
+	->MinTime(3.0);
+
+// ============================================================================
+// BT 프레임워크 비교: behaviortree_cpp vs ../BehaviorTree(인하우스)
+//
+// 몬스터 트리(GameData/Monster.xml)와 MonsterCodeBaseBT 는 노드 로직/구조가 1:1 로
+// 동일하므로, 게임 로직 비용은 상쇄되고 프레임워크 자체의 오버헤드 차이가 드러난다.
+//   - BM_BTFrameworkTick_* : 스텁 노드로 만든 동일 토폴로지 트리 1회 틱(순수 오버헤드)
+//   - BM_BTCreate/*        : 몬스터 1마리분 트리 생성 비용(프로덕션 경로 그대로)
+//   - BM_BTWorldTickActors/*: 몬스터 N마리 UpdateActors(BT 틱 포함) 1회 비용
+// ============================================================================
+
+namespace btbench
+{
+	// 시나리오: 0=배회(탐지 실패), 1=추격(탐지 성공/사거리 실패), 2=공격(둘 다 성공).
+	// 두 프레임워크의 스텁 트리가 같은 값을 읽어 같은 실행 경로를 밟는다.
+	int g_scenario = 0;
+	long long g_work = 0; // 액션 실행 횟수(최적화 방지 겸 경로 검증용).
+
+	// Monster.xml 과 동일한 토폴로지의 스텁 트리(behaviortree_cpp 용).
+	constexpr const char* kStubTreeXml = R"(
+<root BTCPP_format="4">
+  <BehaviorTree ID="BenchTree">
+    <Fallback>
+      <Sequence>
+        <StubCheckHealth/>
+        <Fallback>
+          <Sequence>
+            <StubDetectEnemy/>
+            <Fallback>
+              <Sequence>
+                <StubAttackRange/>
+                <StubAttack/>
+              </Sequence>
+              <StubChase/>
+            </Fallback>
+          </Sequence>
+          <StubPatrol/>
+        </Fallback>
+      </Sequence>
+      <Sequence>
+        <StubDead/>
+        <Delay delay_msec="2000">
+          <StubDestroyed/>
+        </Delay>
+      </Sequence>
+    </Fallback>
+  </BehaviorTree>
+</root>
+)";
+
+	// --- behaviortree_cpp 스텁 노드 ---
+	class StubCondition : public BT::ConditionNode
+	{
+	private:
+		int threshold_; // g_scenario >= threshold_ 이면 SUCCESS.
+	public:
+		StubCondition(const std::string& name, const BT::NodeConfig& config, int threshold)
+			: BT::ConditionNode(name, config), threshold_(threshold) {}
+		BT::NodeStatus tick() override
+		{
+			return g_scenario >= threshold_ ? BT::NodeStatus::SUCCESS : BT::NodeStatus::FAILURE;
+		}
+	};
+
+	class StubAction : public BT::SyncActionNode
+	{
+	public:
+		StubAction(const std::string& name, const BT::NodeConfig& config)
+			: BT::SyncActionNode(name, config) {}
+		BT::NodeStatus tick() override
+		{
+			++g_work;
+			return BT::NodeStatus::SUCCESS;
+		}
+	};
+
+	// --- 인하우스 BT 스텁 노드 ---
+	class StubConditionIB : public BT::Condition
+	{
+	private:
+		int threshold_;
+	public:
+		static BT::Behavior* Create(int threshold) { return new StubConditionIB(threshold); }
+		virtual std::string Name() override { return "StubCondition"; }
+	protected:
+		StubConditionIB(int threshold) : Condition(false), threshold_(threshold) {}
+		virtual ~StubConditionIB() {}
+		virtual BT::EStatus Update() override
+		{
+			return g_scenario >= threshold_ ? BT::EStatus::Success : BT::EStatus::Failure;
+		}
+	};
+
+	class StubActionIB : public BT::Action
+	{
+	public:
+		static BT::Behavior* Create() { return new StubActionIB(); }
+		virtual std::string Name() override { return "StubAction"; }
+	protected:
+		StubActionIB() {}
+		virtual ~StubActionIB() {}
+		virtual BT::EStatus Update() override
+		{
+			++g_work;
+			return BT::EStatus::Success;
+		}
+	};
+
+	// behaviortree_cpp 의 <Delay> 에 해당(사망 분기 토폴로지 맞춤용, 벤치 경로에선 실행 안 됨).
+	class StubDelayIB : public BT::Decorator
+	{
+	private:
+		std::chrono::milliseconds delay_;
+		std::chrono::steady_clock::time_point until_;
+	public:
+		static BT::Behavior* Create(int delayMs) { return new StubDelayIB(delayMs); }
+		virtual std::string Name() override { return "Delay"; }
+		virtual void Release() override
+		{
+			if (Child != nullptr)
+				Child->Release();
+			delete this;
+		}
+	protected:
+		StubDelayIB(int delayMs) : delay_(delayMs) {}
+		virtual ~StubDelayIB() {}
+		virtual void OnInitialize() override { until_ = std::chrono::steady_clock::now() + delay_; }
+		virtual BT::EStatus Update() override
+		{
+			if (std::chrono::steady_clock::now() < until_)
+				return BT::EStatus::Running;
+			return Child->Tick();
+		}
+	};
+
+	// Monster.xml 과 동일한 토폴로지의 스텁 트리(인하우스 BT 용). 호출자가 Release+delete.
+	BT::BehaviorTree* CreateStubTreeCodeBase()
+	{
+		BT::BehaviorTreeBuilder builder;
+		return builder
+			.Selector()                                                  // Fallback (root)
+				->Sequence()                                             // 생존 분기
+					->Condition(StubConditionIB::Create(0))->Back()      // CheckHealth: 항상 성공
+					->Selector()
+						->Sequence()
+							->Condition(StubConditionIB::Create(1))->Back() // DetectEnemy
+							->Selector()
+								->Sequence()
+									->Condition(StubConditionIB::Create(2))->Back() // AttackRange
+									->Action(StubActionIB::Create())->Back()        // Attack
+								->Back()
+								->Action(StubActionIB::Create())->Back()            // Chase
+							->Back()
+						->Back()
+						->Action(StubActionIB::Create())->Back()                    // Patrol
+					->Back()
+				->Back()
+				->Sequence()                                             // 사망 분기(실행 안 됨)
+					->Action(StubActionIB::Create())->Back()             // Dead
+					->Action(StubDelayIB::Create(2000))
+						->Action(StubActionIB::Create())->Back()         // Destroyed
+					->Back()
+				->Back()
+			->End();
+	}
+} // namespace btbench
+
+// 스텁 트리 1회 틱: behaviortree_cpp. 시나리오를 순환시켜 세 실행 경로를 고르게 밟는다.
+static void BM_BTFrameworkTick_BTCpp(benchmark::State& state)
+{
+	BT::BehaviorTreeFactory factory;
+	factory.registerBuilder<btbench::StubCondition>("StubCheckHealth",
+		[](const std::string& name, const BT::NodeConfig& config) {
+			return std::make_unique<btbench::StubCondition>(name, config, 0);
+		});
+	factory.registerBuilder<btbench::StubCondition>("StubDetectEnemy",
+		[](const std::string& name, const BT::NodeConfig& config) {
+			return std::make_unique<btbench::StubCondition>(name, config, 1);
+		});
+	factory.registerBuilder<btbench::StubCondition>("StubAttackRange",
+		[](const std::string& name, const BT::NodeConfig& config) {
+			return std::make_unique<btbench::StubCondition>(name, config, 2);
+		});
+	for (const char* id : { "StubAttack", "StubChase", "StubPatrol", "StubDead", "StubDestroyed" })
+	{
+		factory.registerBuilder<btbench::StubAction>(id,
+			[](const std::string& name, const BT::NodeConfig& config) {
+				return std::make_unique<btbench::StubAction>(name, config);
+			});
+	}
+
+	auto tree = factory.createTreeFromText(btbench::kStubTreeXml);
+
+	int i = 0;
+	for (auto _ : state)
+	{
+		btbench::g_scenario = i++ % 3;
+		tree.tickOnce();
+	}
+	benchmark::DoNotOptimize(btbench::g_work);
+}
+BENCHMARK(BM_BTFrameworkTick_BTCpp);
+
+// 스텁 트리 1회 틱: 인하우스 BT. 위와 동일 토폴로지/시나리오.
+static void BM_BTFrameworkTick_CodeBase(benchmark::State& state)
+{
+	BT::BehaviorTree* tree = btbench::CreateStubTreeCodeBase();
+
+	int i = 0;
+	for (auto _ : state)
+	{
+		btbench::g_scenario = i++ % 3;
+		tree->Tick();
+	}
+	benchmark::DoNotOptimize(btbench::g_work);
+
+	tree->Release();
+	delete tree;
+}
+BENCHMARK(BM_BTFrameworkTick_CodeBase);
+
+// 몬스터 1마리분 트리 생성+해제 비용(프로덕션 경로 그대로).
+// behaviortree_cpp 는 매 호출 팩토리 등록 + GameData/Monster.xml 파일 로드/파싱을 포함한다
+// (Monster::Init 이 실제로 지불하는 비용). 인하우스는 빌더로 노드를 직접 생성한다.
+static void BM_BTCreate(benchmark::State& state, Monster::BTBackend backend)
+{
+	const auto& spawns = ValidSpawns("crowd");
+	if (spawns.empty())
+	{
+		state.SkipWithError("no valid spawn position");
+		return;
+	}
+
+	World world;
+	world.Init("crowd");
+	syncnet::Vec3 v(spawns[0][0], spawns[0][1], spawns[0][2]);
+	auto actor = world.OnAddAgent(nullptr, syncnet::GameObjectType_Monster, &v);
+	Monster* monster = static_cast<Monster*>(actor.get());
+
+	if (backend == Monster::BTBackend::BTCpp)
+	{
+		for (auto _ : state)
+		{
+			BT::Tree* tree = MonsterBT::createTree(monster);
+			benchmark::DoNotOptimize(tree);
+			delete tree;
+		}
+	}
+	else
+	{
+		for (auto _ : state)
+		{
+			BT::BehaviorTree* tree = MonsterCodeBaseBT::createTree(monster);
+			benchmark::DoNotOptimize(tree);
+			tree->Release();
+			delete tree;
+		}
+	}
+}
+BENCHMARK_CAPTURE(BM_BTCreate, btcpp, Monster::BTBackend::BTCpp)
+	->Unit(benchmark::kMicrosecond);
+BENCHMARK_CAPTURE(BM_BTCreate, codebase, Monster::BTBackend::CodeBase)
+	->Unit(benchmark::kMicrosecond);
+
+// 몬스터 N마리 UpdateActors 1회(=한 틱 분량의 BT 실행 포함) 비용을 백엔드별로 비교.
+// 두 트리는 동일한 게임 로직(탐지/배회/추격)을 수행하므로 차이 = 프레임워크 오버헤드.
+// movement 는 갱신하지 않아(UpdateActors 만 호출) 이동 비용이 섞이지 않는다.
+static void BM_BTWorldTickActors(benchmark::State& state, Monster::BTBackend backend)
+{
+	const int count = static_cast<int>(state.range(0));
+	ValidSpawns("crowd"); // 1회성 좌표 탐색을 셋업에서 먼저 끝낸다.
+
+	World world;
+	world.Init("crowd");
+	const int spawned = SpawnMonsters(world, count, "crowd");
+	Map* map = world.GetPrimaryMap();
+
+	Monster::btBackend_ = backend;
+	for (auto _ : state)
+	{
+		map->UpdateActors(kTickDt);
+	}
+	Monster::btBackend_ = Monster::BTBackend::BTCpp; // 기본값 복원.
+
+	state.counters["monsters"] = spawned;
+	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
+}
+BENCHMARK_CAPTURE(BM_BTWorldTickActors, btcpp, Monster::BTBackend::BTCpp)
+	->Arg(1000)->Arg(10000)
+	->Unit(benchmark::kMillisecond)
+	->MinTime(3.0);
+BENCHMARK_CAPTURE(BM_BTWorldTickActors, codebase, Monster::BTBackend::CodeBase)
+	->Arg(1000)->Arg(10000)
 	->Unit(benchmark::kMillisecond)
 	->MinTime(3.0);

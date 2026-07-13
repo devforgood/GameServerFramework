@@ -9,6 +9,7 @@
 #include "LogHelper.h"
 #include "MonsterBT.h"
 #include "MonsterCodeBaseBT.h"
+#include "../BehaviorTree/BehaviorTree.h" // bt_ 의 Tick/Release 호출에 완전한 타입 필요
 #include "Common.h"
 #include "Map.h"
 #include "INavMovement.h"
@@ -20,6 +21,8 @@
 
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
+
+Monster::BTBackend Monster::btBackend_ = Monster::BTBackend::BTCpp;
 
 
 Monster::Monster(Map* map)
@@ -33,6 +36,7 @@ Monster::~Monster()
 {
 	if (bt_ != nullptr)
 	{
+		bt_->Release(); // 노드들을 해제한다(트리 객체는 delete 로).
 		delete bt_;
 		bt_ = nullptr;
 	}
@@ -89,11 +93,18 @@ bool Monster::Init(Vector3& pos)
 void Monster::Update(float dt)
 {
 	Actor::Update(dt);
-	//bt_->Tick();
 	//runBehaviorTree(this);
-	BT_DEBUG_BEGIN_TICK(this);
-	tree_->tickOnce();
-	BT_DEBUG_END_TICK(this);
+	if (btBackend_ == BTBackend::CodeBase)
+	{
+		// 인하우스 BT(BT 디버그 뷰어 미지원). 벤치마크 비교용 경로.
+		bt_->Tick();
+	}
+	else
+	{
+		BT_DEBUG_BEGIN_TICK(this);
+		tree_->tickOnce();
+		BT_DEBUG_END_TICK(this);
+	}
 }
 
 int Monster::AttackRange()

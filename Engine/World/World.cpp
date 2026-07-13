@@ -361,12 +361,19 @@ bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syn
 std::shared_ptr<Actor> World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
 	// todo : map 선택 로직 추가
+	if (mapList_.empty())
+	{
+		LOG.error("World::OnAddAgent error: no map loaded (ResourceLoader 미로드?)");
+		return nullptr;
+	}
 	return mapList_.begin()->get()->OnAddAgent(player, type, pos);
 }
 
 void World::OnRemoveAgent(int agent_id)
 {
 	// todo : map 선택 로직 추가
+	if (mapList_.empty())
+		return;
 	mapList_.begin()->get()->OnRemoveAgent(agent_id);
 }
 
