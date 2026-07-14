@@ -6,24 +6,41 @@ using UnityEngine;
 // 서버 BTDebugManager 의 TreeDebugSync 를 언리얼 비헤이비어 트리 에디터 스타일로 보여주는 창.
 // Tools > BT Debug Viewer 로 연다. 플레이 모드에서 서버에 접속하면 데이터가 들어온다.
 // - 툴바 드롭다운 또는 씬/하이어라키에서 Monster 선택 시 해당 몬스터의 트리 표시
-// - 마우스 휠: 줌, 드래그: 패닝, Fit: 전체 트리 맞춤
-// - 상태 변경 프레임이 도착할 때만 다시 그려진다 (TreeDebugRepository.Changed)
+// - 마우스 휠: 줌, 드래그: 패닝, F 키/Fit 버튼: 전체 트리 맞춤
+// - 노드 클릭: 선택 → 하단 상세 패널에 카운트/사유 표시
+// - 실행 경로는 오렌지 와이어 + 흐름 점 애니메이션, Running 노드는 펄스 글로우로 강조
 public class TreeDebugWindow : EditorWindow
 {
-    private const float NodeWidth = 180f;
-    private const float NodeHeight = 74f;
-    private const float NodeHeaderHeight = 20f;
-    private const float HGap = 26f;
-    private const float VGap = 48f;
-    private const float GraphMargin = 30f;
+    private const float NodeWidth = 190f;
+    private const float NodeHeight = 78f;
+    private const float NodeHeaderHeight = 24f;
+    private const float StatusStripHeight = 4f;
+    private const float HGap = 28f;
+    private const float VGap = 56f;
+    private const float GraphMargin = 40f;
+    private const float DetailsPanelHeight = 56f;
+    private const float MinorGridSpacing = 16f;
+    private const float MajorGridSpacing = 128f;
 
-    private static readonly Color BackgroundColor = new Color(0.13f, 0.14f, 0.15f, 1f);
-    private static readonly Color ExecutedColor = new Color(1f, 0.55f, 0.10f, 1f);
-    private static readonly Color IdleBorderColor = new Color(0.05f, 0.06f, 0.07f, 1f);
-    private static readonly Color IdleEdgeColor = new Color(0.40f, 0.42f, 0.46f, 1f);
+    private static readonly Color BackgroundColor = new Color(0.115f, 0.12f, 0.13f, 1f);
+    private static readonly Color MinorGridColor = new Color(0f, 0f, 0f, 0.18f);
+    private static readonly Color MajorGridColor = new Color(0f, 0f, 0f, 0.38f);
+    private static readonly Color NodeBodyColor = new Color(0.145f, 0.15f, 0.165f, 1f);
+    private static readonly Color NodeBodyExecutedColor = new Color(0.185f, 0.19f, 0.21f, 1f);
+    private static readonly Color NodeOutlineColor = new Color(0f, 0f, 0f, 0.65f);
+    private static readonly Color NodeShadowColor = new Color(0f, 0f, 0f, 0.35f);
+    private static readonly Color ExecutedColor = new Color(1f, 0.58f, 0.10f, 1f);
+    private static readonly Color ExecutedGlowColor = new Color(1f, 0.58f, 0.10f, 0.28f);
+    private static readonly Color SelectedColor = new Color(1f, 0.8f, 0.25f, 1f);
+    private static readonly Color HoverColor = new Color(1f, 1f, 1f, 0.30f);
+    private static readonly Color IdleWireColor = new Color(0.46f, 0.48f, 0.53f, 0.85f);
+    private static readonly Color FlowDotColor = new Color(1f, 0.78f, 0.35f, 1f);
+    private static readonly Color PanelColor = new Color(0.155f, 0.16f, 0.175f, 1f);
 
     private long selectedMonsterId = -1;
     private bool followSceneSelection = true;
+    private int selectedNodeId = -1;
+    private int hoveredNodeId = -1;
 
     // 레이아웃을 마지막으로 계산했을 때의 대상/구조 버전. 달라졌을 때만 다시 계산한다.
     private long builtMonsterId = -1;
@@ -34,10 +51,26 @@ public class TreeDebugWindow : EditorWindow
     private float zoom = 1f;
     private Vector2 pan = Vector2.zero;
     private bool fitRequested = true;
+    private double lastAnimationRepaintTime;
+
+    private struct WireInfo
+    {
+        public Vector2 From;
+        public Vector2 To;
+    }
+
+    private readonly List<WireInfo> executedWires = new List<WireInfo>();
 
     private GUIStyle nameStyle;
     private GUIStyle infoStyle;
+    private GUIStyle statusStyle;
     private GUIStyle badgeStyle;
+    private GUIStyle glyphStyle;
+    private GUIStyle nodeIdStyle;
+    private GUIStyle watermarkStyle;
+    private GUIStyle watermarkSubStyle;
+    private GUIStyle panelTitleStyle;
+    private GUIStyle panelReasonStyle;
 
     [MenuItem("Tools/BT Debug Viewer")]
     public static void Open()
@@ -49,6 +82,7 @@ public class TreeDebugWindow : EditorWindow
 
     private void OnEnable()
     {
+        wantsMouseMove = true;
         TreeDebugRepository.Changed += OnRepositoryChanged;
         Selection.selectionChanged += OnSelectionChanged;
     }
@@ -61,6 +95,19 @@ public class TreeDebugWindow : EditorWindow
 
     private void OnRepositoryChanged()
     {
+        Repaint();
+    }
+
+    // 실행 경로 흐름 점/Running 펄스 애니메이션용. 플레이 중에만 약 20fps 로 다시 그린다.
+    private void Update()
+    {
+        if (!Application.isPlaying || selectedMonsterId < 0)
+            return;
+
+        if (EditorApplication.timeSinceStartup - lastAnimationRepaintTime < 0.05)
+            return;
+
+        lastAnimationRepaintTime = EditorApplication.timeSinceStartup;
         Repaint();
     }
 
@@ -82,7 +129,6 @@ public class TreeDebugWindow : EditorWindow
     private void OnGUI()
     {
         EnsureStyles();
-        DrawToolbar();
 
         var monsterIds = TreeDebugRepository.MonsterIds;
         if (selectedMonsterId < 0 && monsterIds.Count > 0)
@@ -90,23 +136,30 @@ public class TreeDebugWindow : EditorWindow
 
         var tree = TreeDebugRepository.GetTree(selectedMonsterId);
 
-        DrawMetaLine(tree);
+        DrawToolbar(tree);
 
         var graphArea = GUILayoutUtility.GetRect(0f, 0f, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+        var panelRect = GUILayoutUtility.GetRect(0f, DetailsPanelHeight, GUILayout.ExpandWidth(true));
+
         EditorGUI.DrawRect(graphArea, BackgroundColor);
 
         if (tree == null)
         {
+            GUI.BeginClip(graphArea);
+            DrawGrid(new Rect(0f, 0f, graphArea.width, graphArea.height));
+            GUI.EndClip();
+
             var message = Application.isPlaying
                 ? "트리 데이터를 기다리는 중입니다. 서버에 접속하면 몬스터의 BT가 표시됩니다."
                 : "플레이 모드에서 서버에 접속하면 몬스터의 BT가 표시됩니다.";
             var messageRect = new Rect(graphArea.x + 12f, graphArea.y + 12f, graphArea.width - 24f, 40f);
             EditorGUI.HelpBox(messageRect, message, MessageType.Info);
+            DrawDetailsPanel(panelRect, null);
             return;
         }
 
         EnsureLayout(tree);
-        HandleGraphInput(graphArea);
+        HandleGraphInput(graphArea, tree);
 
         if (fitRequested)
         {
@@ -116,16 +169,19 @@ public class TreeDebugWindow : EditorWindow
 
         GUI.BeginClip(graphArea);
         var clipRect = new Rect(0f, 0f, graphArea.width, graphArea.height);
+        DrawGrid(clipRect);
+        DrawWatermark(clipRect, tree);
         DrawEdges(tree);
         DrawNodes(tree, clipRect);
+        DrawLegend(clipRect);
         GUI.EndClip();
 
-        DrawLegend(graphArea);
+        DrawDetailsPanel(panelRect, tree);
     }
 
     #region 툴바/헤더
 
-    private void DrawToolbar()
+    private void DrawToolbar(TreeDebugRepository.TreeState tree)
     {
         GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
@@ -145,6 +201,7 @@ public class TreeDebugWindow : EditorWindow
             if (newIndex != selectedIndex || selectedMonsterId < 0)
             {
                 selectedMonsterId = monsterIds[newIndex];
+                selectedNodeId = -1;
                 TreeDebugRepository.RequestDefinition(selectedMonsterId);
             }
         }
@@ -161,27 +218,20 @@ public class TreeDebugWindow : EditorWindow
             fitRequested = true;
 
         GUILayout.FlexibleSpace();
-        GUILayout.Label("zoom " + zoom.ToString("0.00") + "x", EditorStyles.miniLabel);
-        GUILayout.EndHorizontal();
-    }
 
-    private void DrawMetaLine(TreeDebugRepository.TreeState tree)
-    {
-        var meta = new StringBuilder();
         if (tree != null)
         {
-            meta.Append(string.IsNullOrEmpty(tree.TreeId) ? "behavior tree" : tree.TreeId);
-            meta.Append("   monster=").Append(tree.MonsterId);
-            meta.Append("   tick=").Append(tree.Tick);
-            meta.Append("   state=").Append(tree.AiState);
-            meta.Append("   target=").Append(tree.TargetAgentId);
-        }
-        else
-        {
-            meta.Append("no tree selected");
+            var meta = new StringBuilder();
+            meta.Append("tick ").Append(tree.Tick);
+            meta.Append("  ·  ").Append(tree.AiState);
+            if (tree.TargetAgentId >= 0)
+                meta.Append("  ·  target ").Append(tree.TargetAgentId);
+            GUILayout.Label(meta.ToString(), EditorStyles.miniLabel);
+            GUILayout.Space(10f);
         }
 
-        GUILayout.Label(meta.ToString(), EditorStyles.miniLabel);
+        GUILayout.Label("zoom " + zoom.ToString("0.00") + "x", EditorStyles.miniLabel);
+        GUILayout.EndHorizontal();
     }
 
     #endregion
@@ -211,7 +261,10 @@ public class TreeDebugWindow : EditorWindow
         builtStructureVersion = tree.StructureVersion;
 
         if (monsterChanged)
+        {
+            selectedNodeId = -1;
             fitRequested = true;
+        }
     }
 
     /// <summary>서브트리 폭 기반으로 노드 좌표(그래프 공간: x→오른쪽, y→아래)를 계산한다.</summary>
@@ -259,9 +312,40 @@ public class TreeDebugWindow : EditorWindow
             NodeHeight * zoom);
     }
 
+    private void DrawGrid(Rect clipRect)
+    {
+        DrawGridLines(clipRect, MinorGridSpacing * zoom, MinorGridColor);
+        DrawGridLines(clipRect, MajorGridSpacing * zoom, MajorGridColor);
+    }
+
+    private void DrawGridLines(Rect clipRect, float spacing, Color color)
+    {
+        // 너무 촘촘해지면(줌 아웃) 소격자는 생략한다
+        if (spacing < 7f)
+            return;
+
+        for (float x = Mathf.Repeat(pan.x, spacing); x < clipRect.width; x += spacing)
+            EditorGUI.DrawRect(new Rect(x, 0f, 1f, clipRect.height), color);
+        for (float y = Mathf.Repeat(pan.y, spacing); y < clipRect.height; y += spacing)
+            EditorGUI.DrawRect(new Rect(0f, y, clipRect.width, 1f), color);
+    }
+
+    // 언리얼 그래프 에디터처럼 우상단에 큰 반투명 타이틀 워터마크를 깔아준다
+    private void DrawWatermark(Rect clipRect, TreeDebugRepository.TreeState tree)
+    {
+        var titleRect = new Rect(clipRect.width - 420f, 6f, 408f, 34f);
+        GUI.Label(titleRect, "BEHAVIOR TREE", watermarkStyle);
+
+        var sub = string.IsNullOrEmpty(tree.TreeId) ? ("monster " + tree.MonsterId) : tree.TreeId;
+        var subRect = new Rect(clipRect.width - 420f, 38f, 408f, 18f);
+        GUI.Label(subRect, sub, watermarkSubStyle);
+    }
+
     private void DrawEdges(TreeDebugRepository.TreeState tree)
     {
-        float thickness = Mathf.Max(1.5f, 2f * zoom);
+        float idleWidth = Mathf.Max(1.75f, 2.2f * zoom);
+        float executedWidth = Mathf.Max(2.5f, 4f * zoom);
+        executedWires.Clear();
 
         foreach (var pair in tree.Nodes)
         {
@@ -276,26 +360,84 @@ public class TreeDebugWindow : EditorWindow
                     continue;
 
                 var childRect = NodeRect(child.NodeId);
-                bool executed = tree.ExecutedPath.Contains(child.NodeId);
-                var color = executed ? ExecutedColor : IdleEdgeColor;
+                var wire = new WireInfo
+                {
+                    From = new Vector2(parentRect.x + parentRect.width * 0.5f, parentRect.yMax),
+                    To = new Vector2(childRect.x + childRect.width * 0.5f, childRect.y),
+                };
 
-                // 부모 하단 중앙 → 자식 상단 중앙을 ㄱ자(엘보) 선 3개로 잇는다
-                float px = parentRect.x + parentRect.width * 0.5f;
-                float py = parentRect.yMax;
-                float cx = childRect.x + childRect.width * 0.5f;
-                float cy = childRect.y;
-                float midY = (py + cy) * 0.5f;
-
-                EditorGUI.DrawRect(new Rect(px - thickness * 0.5f, py, thickness, midY - py), color);
-                EditorGUI.DrawRect(new Rect(Mathf.Min(px, cx) - thickness * 0.5f, midY - thickness * 0.5f,
-                    Mathf.Abs(cx - px) + thickness, thickness), color);
-                EditorGUI.DrawRect(new Rect(cx - thickness * 0.5f, midY, thickness, cy - midY), color);
+                if (tree.ExecutedPath.Contains(child.NodeId))
+                {
+                    // 실행 와이어는 유휴 와이어를 모두 그린 뒤 위에 얹는다
+                    executedWires.Add(wire);
+                }
+                else
+                {
+                    DrawWire(wire, IdleWireColor, idleWidth);
+                    DrawPortDots(wire, IdleWireColor);
+                }
             }
         }
+
+        for (int i = 0; i < executedWires.Count; ++i)
+        {
+            DrawWire(executedWires[i], ExecutedColor, executedWidth);
+            DrawPortDots(executedWires[i], ExecutedColor);
+        }
+
+        if (Application.isPlaying)
+        {
+            for (int i = 0; i < executedWires.Count; ++i)
+                DrawFlowDot(executedWires[i], i);
+        }
+    }
+
+    private void DrawWire(WireInfo wire, Color color, float width)
+    {
+        float tangent = Mathf.Clamp((wire.To.y - wire.From.y) * 0.5f, 12f * zoom, 80f * zoom);
+        Handles.DrawBezier(
+            wire.From, wire.To,
+            wire.From + new Vector2(0f, tangent),
+            wire.To - new Vector2(0f, tangent),
+            color, null, width);
+    }
+
+    private void DrawPortDots(WireInfo wire, Color color)
+    {
+        float radius = Mathf.Max(2f, 3f * zoom);
+        DrawCircle(wire.From, radius, color);
+        DrawCircle(wire.To, radius, color);
+    }
+
+    // 실행 와이어를 따라 흐르는 점: 부모→자식 방향으로 틱 실행 흐름을 보여준다
+    private void DrawFlowDot(WireInfo wire, int index)
+    {
+        float tangent = Mathf.Clamp((wire.To.y - wire.From.y) * 0.5f, 12f * zoom, 80f * zoom);
+        var p1 = wire.From + new Vector2(0f, tangent);
+        var p2 = wire.To - new Vector2(0f, tangent);
+        float t = Mathf.Repeat((float)EditorApplication.timeSinceStartup * 0.6f + index * 0.17f, 1f);
+        var point = CubicBezier(wire.From, p1, p2, wire.To, t);
+        DrawCircle(point, Mathf.Max(2.5f, 3.5f * zoom), FlowDotColor);
+    }
+
+    private static Vector2 CubicBezier(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t)
+    {
+        float u = 1f - t;
+        return u * u * u * p0 + 3f * u * u * t * p1 + 3f * u * t * t * p2 + t * t * t * p3;
     }
 
     private void DrawNodes(TreeDebugRepository.TreeState tree, Rect clipRect)
     {
+        float radius = Mathf.Max(3f, 6f * zoom);
+        float pulse = 0.5f + 0.5f * Mathf.Sin((float)EditorApplication.timeSinceStartup * 5f);
+
+        nameStyle.fontSize = Mathf.RoundToInt(12f * zoom);
+        infoStyle.fontSize = Mathf.RoundToInt(10f * zoom);
+        statusStyle.fontSize = Mathf.RoundToInt(10f * zoom);
+        glyphStyle.fontSize = Mathf.RoundToInt(10f * zoom);
+        nodeIdStyle.fontSize = Mathf.RoundToInt(9f * zoom);
+        badgeStyle.fontSize = Mathf.RoundToInt(10f * zoom);
+
         foreach (var pair in tree.Nodes)
         {
             var node = pair.Value;
@@ -308,32 +450,74 @@ public class TreeDebugWindow : EditorWindow
 
             int executedIndex = tree.ExecutedPath.IndexOf(node.NodeId);
             bool executed = executedIndex >= 0;
-            float border = Mathf.Max(1f, 2f * zoom);
+            bool running = executed && node.Status == syncnet.TreeNodeStatus.Running;
 
-            EditorGUI.DrawRect(rect, executed ? ExecutedColor : IdleBorderColor);
+            // 그림자 → 본체 → 헤더 → 상태 스트립 → 외곽선 순으로 겹쳐 그린다
+            var shadowRect = new Rect(rect.x + 2f * zoom, rect.y + 3f * zoom, rect.width, rect.height);
+            DrawRoundedRect(shadowRect, NodeShadowColor, radius + 1f);
+            DrawRoundedRect(rect, executed ? NodeBodyExecutedColor : NodeBodyColor, radius);
 
-            var bodyRect = new Rect(rect.x + border, rect.y + border,
-                rect.width - border * 2f, rect.height - border * 2f);
-            EditorGUI.DrawRect(bodyRect, GetStatusColor(node.Status, executed));
+            var headerRect = new Rect(rect.x, rect.y, rect.width, NodeHeaderHeight * zoom);
+            var headerColor = GetTypeColor(node.NodeType);
+            if (!executed)
+                headerColor = Dim(headerColor, 0.55f);
+            DrawRoundedRectPerCorner(headerRect, headerColor, new Vector4(radius, radius, 0f, 0f));
 
-            var headerRect = new Rect(bodyRect.x, bodyRect.y, bodyRect.width, NodeHeaderHeight * zoom);
-            EditorGUI.DrawRect(headerRect, GetTypeColor(node.NodeType));
+            float stripHeight = Mathf.Max(2f, StatusStripHeight * zoom);
+            var stripRect = new Rect(rect.x, rect.yMax - stripHeight, rect.width, stripHeight);
+            var stripColor = GetStatusColor(node.Status);
+            if (!executed)
+                stripColor = Dim(stripColor, 0.45f);
+            DrawRoundedRectPerCorner(stripRect, stripColor, new Vector4(0f, 0f, radius, radius));
+
+            if (executed)
+            {
+                // 부드러운 글로우 + 본 외곽선. Running 이면 펄스로 숨쉬게 한다
+                var glow = ExecutedGlowColor;
+                var outline = ExecutedColor;
+                if (running)
+                {
+                    glow.a = Mathf.Lerp(0.15f, 0.45f, pulse);
+                    outline.a = Mathf.Lerp(0.6f, 1f, pulse);
+                }
+                DrawRoundedOutline(Expand(rect, 3f * zoom), glow, Mathf.Max(2f, 3f * zoom), radius + 3f * zoom);
+                DrawRoundedOutline(rect, outline, Mathf.Max(1.5f, 2f * zoom), radius);
+            }
+            else
+            {
+                DrawRoundedOutline(rect, NodeOutlineColor, 1f, radius);
+            }
+
+            if (node.NodeId == hoveredNodeId && node.NodeId != selectedNodeId)
+                DrawRoundedOutline(Expand(rect, 1.5f * zoom), HoverColor, 1.5f, radius + 1.5f * zoom);
+
+            if (node.NodeId == selectedNodeId)
+                DrawRoundedOutline(Expand(rect, 2.5f * zoom), SelectedColor, Mathf.Max(1.5f, 2f * zoom), radius + 2.5f * zoom);
 
             // 너무 축소되면 글자는 생략하고 색 블록만 보여준다
             if (zoom > 0.45f)
             {
-                nameStyle.fontSize = Mathf.RoundToInt(12f * zoom);
-                infoStyle.fontSize = Mathf.RoundToInt(10f * zoom);
+                float chipSize = 15f * zoom;
+                var chipRect = new Rect(headerRect.x + 5f * zoom, headerRect.y + (headerRect.height - chipSize) * 0.5f, chipSize, chipSize);
+                DrawRoundedRect(chipRect, new Color(0f, 0f, 0f, 0.35f), 3f * zoom);
+                GUI.Label(chipRect, GetTypeGlyph(node.NodeType), glyphStyle);
 
-                GUI.Label(Inset(headerRect, 5f * zoom, 0f), node.Name, nameStyle);
+                var idRect = new Rect(headerRect.xMax - 42f * zoom, headerRect.y, 38f * zoom, headerRect.height);
+                GUI.Label(idRect, "#" + node.NodeId, nodeIdStyle);
+
+                var nameRect = new Rect(chipRect.xMax + 4f * zoom, headerRect.y,
+                    idRect.x - chipRect.xMax - 8f * zoom, headerRect.height);
+                GUI.Label(nameRect, node.Name, nameStyle);
 
                 float lineHeight = 15f * zoom;
-                var lineRect = new Rect(bodyRect.x + 5f * zoom, headerRect.yMax + 1f * zoom,
-                    bodyRect.width - 10f * zoom, lineHeight);
-                GUI.Label(lineRect, "#" + node.NodeId + "  " + node.NodeType + "  ·  " + node.Status, infoStyle);
+                var lineRect = new Rect(rect.x + 7f * zoom, headerRect.yMax + 2f * zoom,
+                    rect.width - 14f * zoom, lineHeight);
+
+                statusStyle.normal.textColor = executed ? GetStatusColor(node.Status) : Dim(GetStatusColor(node.Status), 0.6f);
+                GUI.Label(lineRect, node.Status.ToString(), statusStyle);
 
                 lineRect.y += lineHeight;
-                GUI.Label(lineRect, "S:" + node.SuccessCount + "  F:" + node.FailureCount + "  R:" + node.RunningCount, infoStyle);
+                GUI.Label(lineRect, "S " + node.SuccessCount + "   F " + node.FailureCount + "   R " + node.RunningCount, infoStyle);
 
                 if (!string.IsNullOrEmpty(node.Reason))
                 {
@@ -342,39 +526,47 @@ public class TreeDebugWindow : EditorWindow
                 }
             }
 
-            // 언리얼처럼 이번 틱의 실행 순서를 우상단 배지로 표시
+            // 언리얼처럼 이번 틱의 실행 순서를 우상단 원형 배지로 표시
             if (executed)
             {
-                float badgeSize = 18f * zoom;
-                var badgeRect = new Rect(rect.xMax - badgeSize * 0.6f, rect.y - badgeSize * 0.4f, badgeSize, badgeSize);
-                EditorGUI.DrawRect(badgeRect, ExecutedColor);
+                float badgeSize = 19f * zoom;
+                var badgeRect = new Rect(rect.xMax - badgeSize * 0.55f, rect.y - badgeSize * 0.45f, badgeSize, badgeSize);
+                DrawCircle(badgeRect.center, badgeSize * 0.5f, new Color(0.10f, 0.10f, 0.11f, 1f));
+                DrawRoundedOutline(badgeRect, ExecutedColor, Mathf.Max(1f, 1.5f * zoom), badgeSize * 0.5f);
                 if (zoom > 0.45f)
-                {
-                    badgeStyle.fontSize = Mathf.RoundToInt(11f * zoom);
                     GUI.Label(badgeRect, (executedIndex + 1).ToString(), badgeStyle);
-                }
             }
         }
     }
 
-    private void DrawLegend(Rect graphArea)
+    private void DrawLegend(Rect clipRect)
     {
-        float y = graphArea.yMax - 22f;
-        float x = graphArea.x + 8f;
+        float y = clipRect.height - 26f;
 
-        DrawLegendItem(ref x, y, GetStatusColor(syncnet.TreeNodeStatus.Running, true), "Running");
-        DrawLegendItem(ref x, y, GetStatusColor(syncnet.TreeNodeStatus.Success, true), "Success");
-        DrawLegendItem(ref x, y, GetStatusColor(syncnet.TreeNodeStatus.Failure, true), "Failure");
+        // 항목 폭을 먼저 재서 반투명 필(pill) 배경을 깔아준다
+        float width = 10f;
+        width += LegendItemWidth("Running") + LegendItemWidth("Success") + LegendItemWidth("Failure") + LegendItemWidth("Executed path");
+        DrawRoundedRect(new Rect(6f, y - 3f, width, 22f), new Color(0f, 0f, 0f, 0.45f), 11f);
+
+        float x = 14f;
+        DrawLegendItem(ref x, y, GetStatusColor(syncnet.TreeNodeStatus.Running), "Running");
+        DrawLegendItem(ref x, y, GetStatusColor(syncnet.TreeNodeStatus.Success), "Success");
+        DrawLegendItem(ref x, y, GetStatusColor(syncnet.TreeNodeStatus.Failure), "Failure");
         DrawLegendItem(ref x, y, ExecutedColor, "Executed path");
 
-        var hint = new GUIContent("wheel: zoom   drag: pan");
+        var hint = new GUIContent("wheel: zoom   drag: pan   F: fit");
         var hintSize = EditorStyles.miniLabel.CalcSize(hint);
-        GUI.Label(new Rect(graphArea.xMax - hintSize.x - 8f, y, hintSize.x, 16f), hint, EditorStyles.miniLabel);
+        GUI.Label(new Rect(clipRect.width - hintSize.x - 10f, y, hintSize.x, 16f), hint, EditorStyles.miniLabel);
+    }
+
+    private float LegendItemWidth(string label)
+    {
+        return 16f + EditorStyles.miniLabel.CalcSize(new GUIContent(label)).x + 12f;
     }
 
     private void DrawLegendItem(ref float x, float y, Color color, string label)
     {
-        EditorGUI.DrawRect(new Rect(x, y + 2f, 12f, 12f), color);
+        DrawCircle(new Vector2(x + 5f, y + 8f), 5f, color);
         x += 16f;
         var content = new GUIContent(label);
         var size = EditorStyles.miniLabel.CalcSize(content);
@@ -382,22 +574,64 @@ public class TreeDebugWindow : EditorWindow
         x += size.x + 12f;
     }
 
+    private void DrawDetailsPanel(Rect rect, TreeDebugRepository.TreeState tree)
+    {
+        EditorGUI.DrawRect(rect, PanelColor);
+        EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 1f), new Color(0f, 0f, 0f, 0.6f));
+
+        TreeDebugRepository.NodeState node = null;
+        if (tree != null && selectedNodeId >= 0)
+            tree.Nodes.TryGetValue((ushort)selectedNodeId, out node);
+
+        if (node == null)
+        {
+            var hintRect = new Rect(rect.x + 10f, rect.y, rect.width - 20f, rect.height);
+            GUI.Label(hintRect, "노드를 클릭하면 상세 정보가 표시됩니다", EditorStyles.centeredGreyMiniLabel);
+            return;
+        }
+
+        var titleRect = new Rect(rect.x + 12f, rect.y + 7f, 300f, 18f);
+        GUI.Label(titleRect, node.Name, panelTitleStyle);
+
+        var info = new StringBuilder();
+        info.Append(node.NodeType).Append("  ·  #").Append(node.NodeId);
+        info.Append("  ·  ").Append(node.Status);
+        info.Append("  ·  S ").Append(node.SuccessCount)
+            .Append("  F ").Append(node.FailureCount)
+            .Append("  R ").Append(node.RunningCount);
+        info.Append("  ·  last tick ").Append(node.LastSeenTick);
+        var infoRect = new Rect(rect.x + 12f, rect.y + 28f, 460f, 16f);
+        GUI.Label(infoRect, info.ToString(), EditorStyles.miniLabel);
+
+        var reasonRect = new Rect(rect.x + 480f, rect.y + 6f, rect.width - 492f, rect.height - 12f);
+        if (reasonRect.width > 60f && !string.IsNullOrEmpty(node.Reason))
+            GUI.Label(reasonRect, node.Reason, panelReasonStyle);
+    }
+
     #endregion
 
-    #region 입력(줌/패닝)
+    #region 입력(줌/패닝/선택)
 
-    private void HandleGraphInput(Rect area)
+    private void HandleGraphInput(Rect area, TreeDebugRepository.TreeState tree)
     {
         var e = Event.current;
+
         if (!area.Contains(e.mousePosition))
+        {
+            if (hoveredNodeId != -1 && e.type == EventType.MouseMove)
+            {
+                hoveredNodeId = -1;
+                Repaint();
+            }
             return;
+        }
 
         if (e.type == EventType.ScrollWheel)
         {
             // 마우스 위치를 기준으로 줌 (그래프 좌표 고정점 유지)
             var local = e.mousePosition - area.position;
             var graphPoint = (local - pan) / zoom;
-            zoom = Mathf.Clamp(zoom * (1f - e.delta.y * 0.04f), 0.25f, 2f);
+            zoom = Mathf.Clamp(zoom * (1f - e.delta.y * 0.04f), 0.25f, 2.5f);
             pan = local - graphPoint * zoom;
             e.Use();
             Repaint();
@@ -408,6 +642,40 @@ public class TreeDebugWindow : EditorWindow
             e.Use();
             Repaint();
         }
+        else if (e.type == EventType.MouseDown && e.button == 0)
+        {
+            int hit = HitTest(tree, e.mousePosition - area.position);
+            if (hit != selectedNodeId)
+            {
+                selectedNodeId = hit;
+                Repaint();
+            }
+        }
+        else if (e.type == EventType.MouseMove)
+        {
+            int hit = HitTest(tree, e.mousePosition - area.position);
+            if (hit != hoveredNodeId)
+            {
+                hoveredNodeId = hit;
+                Repaint();
+            }
+        }
+        else if (e.type == EventType.KeyDown && e.keyCode == KeyCode.F)
+        {
+            fitRequested = true;
+            e.Use();
+            Repaint();
+        }
+    }
+
+    private int HitTest(TreeDebugRepository.TreeState tree, Vector2 localPosition)
+    {
+        foreach (var pair in tree.Nodes)
+        {
+            if (nodePositions.ContainsKey(pair.Key) && NodeRect(pair.Key).Contains(localPosition))
+                return pair.Key;
+        }
+        return -1;
     }
 
     private void FitToArea(Rect area)
@@ -421,7 +689,7 @@ public class TreeDebugWindow : EditorWindow
 
     #endregion
 
-    #region 스타일/색상
+    #region 스타일/색상/도형
 
     private void EnsureStyles()
     {
@@ -434,52 +702,97 @@ public class TreeDebugWindow : EditorWindow
         nameStyle.clipping = TextClipping.Clip;
 
         infoStyle = new GUIStyle(EditorStyles.label);
-        infoStyle.normal.textColor = new Color(0.85f, 0.88f, 0.91f, 1f);
+        infoStyle.normal.textColor = new Color(0.72f, 0.75f, 0.79f, 1f);
         infoStyle.alignment = TextAnchor.MiddleLeft;
         infoStyle.clipping = TextClipping.Clip;
 
+        statusStyle = new GUIStyle(EditorStyles.boldLabel);
+        statusStyle.alignment = TextAnchor.MiddleLeft;
+        statusStyle.clipping = TextClipping.Clip;
+
         badgeStyle = new GUIStyle(EditorStyles.boldLabel);
-        badgeStyle.normal.textColor = Color.black;
+        badgeStyle.normal.textColor = Color.white;
         badgeStyle.alignment = TextAnchor.MiddleCenter;
         badgeStyle.clipping = TextClipping.Clip;
+
+        glyphStyle = new GUIStyle(EditorStyles.boldLabel);
+        glyphStyle.normal.textColor = new Color(1f, 1f, 1f, 0.9f);
+        glyphStyle.alignment = TextAnchor.MiddleCenter;
+        glyphStyle.clipping = TextClipping.Clip;
+
+        nodeIdStyle = new GUIStyle(EditorStyles.miniLabel);
+        nodeIdStyle.normal.textColor = new Color(1f, 1f, 1f, 0.45f);
+        nodeIdStyle.alignment = TextAnchor.MiddleRight;
+        nodeIdStyle.clipping = TextClipping.Clip;
+
+        watermarkStyle = new GUIStyle(EditorStyles.boldLabel);
+        watermarkStyle.fontSize = 26;
+        watermarkStyle.normal.textColor = new Color(1f, 1f, 1f, 0.05f);
+        watermarkStyle.alignment = TextAnchor.UpperRight;
+
+        watermarkSubStyle = new GUIStyle(EditorStyles.boldLabel);
+        watermarkSubStyle.fontSize = 12;
+        watermarkSubStyle.normal.textColor = new Color(1f, 1f, 1f, 0.16f);
+        watermarkSubStyle.alignment = TextAnchor.UpperRight;
+
+        panelTitleStyle = new GUIStyle(EditorStyles.boldLabel);
+        panelTitleStyle.fontSize = 13;
+        panelTitleStyle.normal.textColor = Color.white;
+        panelTitleStyle.clipping = TextClipping.Clip;
+
+        panelReasonStyle = new GUIStyle(EditorStyles.miniLabel);
+        panelReasonStyle.wordWrap = true;
+        panelReasonStyle.normal.textColor = new Color(0.80f, 0.82f, 0.85f, 1f);
+        panelReasonStyle.alignment = TextAnchor.MiddleLeft;
     }
 
-    private Rect Inset(Rect rect, float horizontal, float vertical)
+    private static void DrawRoundedRect(Rect rect, Color color, float radius)
     {
-        return new Rect(rect.x + horizontal, rect.y + vertical,
-            rect.width - horizontal * 2f, rect.height - vertical * 2f);
+        GUI.DrawTexture(rect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, color, 0f, radius);
     }
 
-    private Color GetStatusColor(syncnet.TreeNodeStatus status, bool executed)
+    private static void DrawRoundedRectPerCorner(Rect rect, Color color, Vector4 radiuses)
     {
-        Color color;
+        GUI.DrawTexture(rect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, color, Vector4.zero, radiuses);
+    }
+
+    private static void DrawRoundedOutline(Rect rect, Color color, float width, float radius)
+    {
+        GUI.DrawTexture(rect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, color,
+            new Vector4(width, width, width, width), radius);
+    }
+
+    private static void DrawCircle(Vector2 center, float radius, Color color)
+    {
+        var rect = new Rect(center.x - radius, center.y - radius, radius * 2f, radius * 2f);
+        GUI.DrawTexture(rect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, color, 0f, radius);
+    }
+
+    private static Rect Expand(Rect rect, float amount)
+    {
+        return new Rect(rect.x - amount, rect.y - amount, rect.width + amount * 2f, rect.height + amount * 2f);
+    }
+
+    private static Color Dim(Color color, float factor)
+    {
+        return new Color(color.r * factor, color.g * factor, color.b * factor, color.a);
+    }
+
+    private Color GetStatusColor(syncnet.TreeNodeStatus status)
+    {
         switch (status)
         {
             case syncnet.TreeNodeStatus.Success:
-                color = new Color(0.12f, 0.38f, 0.20f, 1f);
-                break;
+                return new Color(0.24f, 0.72f, 0.36f, 1f);
             case syncnet.TreeNodeStatus.Failure:
-                color = new Color(0.45f, 0.13f, 0.13f, 1f);
-                break;
+                return new Color(0.90f, 0.30f, 0.28f, 1f);
             case syncnet.TreeNodeStatus.Running:
-                color = new Color(0.15f, 0.32f, 0.55f, 1f);
-                break;
+                return new Color(0.26f, 0.60f, 1.0f, 1f);
             case syncnet.TreeNodeStatus.Skipped:
-                color = new Color(0.28f, 0.28f, 0.30f, 1f);
-                break;
+                return new Color(0.55f, 0.55f, 0.58f, 1f);
             default:
-                color = new Color(0.17f, 0.18f, 0.20f, 1f);
-                break;
+                return new Color(0.35f, 0.36f, 0.40f, 1f);
         }
-
-        if (!executed)
-        {
-            color.r *= 0.62f;
-            color.g *= 0.62f;
-            color.b *= 0.62f;
-        }
-
-        return color;
     }
 
     private Color GetTypeColor(syncnet.TreeNodeType type)
@@ -487,11 +800,24 @@ public class TreeDebugWindow : EditorWindow
         switch (type)
         {
             case syncnet.TreeNodeType.Control:
-                return new Color(0.30f, 0.33f, 0.38f, 1f);
+                return new Color(0.34f, 0.38f, 0.46f, 1f);
             case syncnet.TreeNodeType.Condition:
-                return new Color(0.13f, 0.40f, 0.50f, 1f);
+                return new Color(0.10f, 0.46f, 0.55f, 1f);
             default:
-                return new Color(0.42f, 0.26f, 0.55f, 1f);
+                return new Color(0.46f, 0.30f, 0.64f, 1f);
+        }
+    }
+
+    private string GetTypeGlyph(syncnet.TreeNodeType type)
+    {
+        switch (type)
+        {
+            case syncnet.TreeNodeType.Control:
+                return "≡";
+            case syncnet.TreeNodeType.Condition:
+                return "?";
+            default:
+                return "▶";
         }
     }
 
