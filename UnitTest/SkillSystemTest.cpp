@@ -8,6 +8,9 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_sinks.h"
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
 #include "GameData/ResourceLoader.h"
 #include "gamedata.h"
 #include "World.h"
@@ -23,15 +26,26 @@
 
 namespace
 {
-	// 테스트 실행 위치에 따라 GameData 경로가 달라지므로 후보들을 순회한다.
-	// Map::Init 이 "GameData/..." 상대 경로로 navmesh 를 읽으므로, GameData 를 포함한
-	// 디렉터리를 찾아 작업 디렉터리로 고정한다.
+	// 테스트 실행 위치(VS 테스트 탐색기/콘솔)에 따라 작업 디렉터리가 달라지므로,
+	// PostBuild 가 GameData 를 복사해 두는 exe 디렉터리를 최우선으로 찾는다.
+	// (다른 위치의 배포용 GameData 사본은 낡았을 수 있어 exe 옆 사본이 항상 기준이다)
+	// Map::Init 이 "GameData/..." 상대 경로로 navmesh 를 읽으므로, 찾은 디렉터리를
+	// 작업 디렉터리로 고정한다.
+	std::string ExeDir()
+	{
+		wchar_t path[MAX_PATH];
+		DWORD len = GetModuleFileNameW(nullptr, path, MAX_PATH);
+		if (len == 0 || len == MAX_PATH)
+			return "";
+		return std::filesystem::path(path).parent_path().string();
+	}
+
 	std::string ResolveGameDataRoot()
 	{
-		const std::vector<std::string> candidates = { ".", "../UnitTest", "../../UnitTest" };
+		std::vector<std::string> candidates = { ExeDir(), ".", "../UnitTest", "../../UnitTest" };
 		for (const auto& p : candidates)
 		{
-			if (std::filesystem::exists(p + "/GameData/skill.json"))
+			if (!p.empty() && std::filesystem::exists(p + "/GameData/skill.json"))
 				return p;
 		}
 		return "";

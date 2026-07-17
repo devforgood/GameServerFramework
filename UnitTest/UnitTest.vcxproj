@@ -68,7 +68,8 @@
       <AdditionalDependencies>mariadbcpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"</Command>
+      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"
+xcopy /D /Y /I "$(ProjectDir)GameData\*" "$(OutDir)GameData\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -108,7 +109,8 @@
       <AdditionalDependencies>mariadbcpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"</Command>
+      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"
+xcopy /D /Y /I "$(ProjectDir)GameData\*" "$(OutDir)GameData\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

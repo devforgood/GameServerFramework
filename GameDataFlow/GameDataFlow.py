@@ -30,10 +30,14 @@ CLIENT_SRC_DIR = "../Client/Assets/Scripts/"
 CLIENT_MODEL_PATH = "../Client/Assets/Scripts/GameData/Gamedata.cs"
 
 # JSON data is copied verbatim into each consumer's runtime GameData folder
+# x64/* 는 솔루션 출력(배포) 폴더 — Game.exe/테스트가 실행 위치에 따라 여기서 읽으므로
+# 함께 갱신하지 않으면 낡은 데이터를 읽는 함정이 된다.
 DATA_COPY_DIRS = [
     "../Client/Assets/Resources/GameData/",
     "../Game/GameData/",
     "../UnitTest/GameData/",
+    "../x64/Debug/GameData/",
+    "../x64/Release/GameData/",
 ]
 
 # GameData에서 관리되는 lua 스크립트
@@ -43,14 +47,24 @@ LUA_SCRIPTS = [
     "../GameData/gamemode_field.lua",
     "../GameData/gamemode_raid.lua",
 ]
-LUA_COPY_DIRS = ["../Game/GameData/", "../UnitTest/GameData/"]
+LUA_COPY_DIRS = [
+    "../Game/GameData/",
+    "../UnitTest/GameData/",
+    "../x64/Debug/GameData/",
+    "../x64/Release/GameData/",
+]
 
 # GameData에서 관리되는 정적 에셋 (behavior tree XML, navmesh 바이너리 등)
 STATIC_ASSETS = [
     "../GameData/Monster.xml",
     "../GameData/solo_navmesh.bin",
 ]
-STATIC_ASSET_COPY_DIRS = ["../Game/GameData/", "../UnitTest/GameData/"]
+STATIC_ASSET_COPY_DIRS = [
+    "../Game/GameData/",
+    "../UnitTest/GameData/",
+    "../x64/Debug/GameData/",
+    "../x64/Release/GameData/",
+]
 
 
 def load_table_meta():
