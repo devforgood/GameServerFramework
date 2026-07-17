@@ -28,4 +28,20 @@
       { "type": "teleport", "phase": "end" }
     ]
   }
+  ,
+  {
+    "id": 3,
+    "type": "active",
+    "monster_only": true,
+    "min_damage": 3,
+    "max_damage": 8,
+    "range": 3,
+    "angle": 120,
+    "cooldown": 1.5,
+    "name_id": "monster_melee_name",
+    "desc_id": "monster_melee_desc",
+    "effects": [
+      { "type": "damage" }
+    ]
+  }
 ]

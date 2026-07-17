@@ -13,6 +13,7 @@
 #include "Common.h"
 #include "Map.h"
 #include "INavMovement.h"
+#include "SkillRegistry.h"
 #include "BTDebugManager.h"
 #include "Player.h"
 #include "Character.h"
@@ -30,6 +31,9 @@ Monster::Monster(Map* map)
 {
 	gameObjectType_ = syncnet::GameObjectType::GameObjectType_Monster;
 	targetAgentId_ = -1;
+
+	// 근접 공격 스킬 등록. 데이터가 없으면 nullptr 등록이라 TryCast 가 SkillNotFound 로 거부한다.
+	skillSet_.AddSkill(kMeleeSkillId, SkillRegistry::Instance().Get(kMeleeSkillId));
 }
 
 Monster::~Monster()
@@ -93,6 +97,7 @@ bool Monster::Init(Vector3& pos)
 void Monster::Update(float dt)
 {
 	Actor::Update(dt);
+	skillSet_.Update(this, dt); // 스킬 쿨다운/페이즈 진행
 	//runBehaviorTree(this);
 	if (btBackend_ == BTBackend::CodeBase)
 	{
@@ -127,6 +132,18 @@ int Monster::AttackRange()
 int Monster::Attack()
 {
 	map_->GetNavMap()->Stop(GetActorId());
+
+	// 추격 대상 방향으로 근접 스킬을 시전한다 — 플레이어와 동일한 스킬 파이프라인.
+	// 쿨다운 등으로 거부되면 이번 틱은 공격하지 않는다(BT 가 다음 틱에 재시도).
+	auto target = map_->FindActor(targetAgentId_);
+	if (target != nullptr)
+	{
+		CastContext ctx;
+		ctx.skillId = kMeleeSkillId;
+		ctx.targetActorId = targetAgentId_;
+		ctx.targetPos = target->GetPosition();
+		skillSet_.TryCast(this, ctx);
+	}
 	return 0;
 }
 int Monster::Resume()

@@ -27,6 +27,15 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <!-- vcpkg 통합은 UseDebugLibraries 로 debug/release 라이브러리 디렉터리를 선택한다.
+       이 선언이 없으면 Debug 빌드에 릴리스 behaviortree_cpp.lib 가 링크되어
+       _ITERATOR_DEBUG_LEVEL 불일치로 BT 팩토리 생성 시 크래시가 난다. -->
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
   <ImportGroup Label="Shared" />

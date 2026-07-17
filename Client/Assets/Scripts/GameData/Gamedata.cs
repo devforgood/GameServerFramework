@@ -26,6 +26,7 @@ namespace Gamedata
         public int id;
         public int max_damage;
         public int min_damage;
+        public bool monster_only;
         public string name_id;
         public int range;
         public string type;

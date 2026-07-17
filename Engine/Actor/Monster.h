@@ -1,6 +1,7 @@
 #pragma once
 #include "Actor.h"
 #include "LuaObject.h"
+#include "SkillSet.h"
 
 #include <string>
 
@@ -26,11 +27,16 @@ public:
 	};
 	static BTBackend btBackend_;
 
+	// 몬스터 근접 공격 스킬 id(skill.json, monster_only 데이터 전용 스킬).
+	// 사거리/각도/데미지/쿨다운 튜닝은 전부 데이터에서 한다.
+	static constexpr int kMeleeSkillId = 3;
+
 private:
 	BT::BehaviorTree * bt_;
 	float spawnPos_[3];
 	BT::Tree* tree_;
 	bool deadNotified_ = false; // 사망 이벤트 중복 발행 방지
+	SkillSet skillSet_;         // 플레이어와 동일한 스킬 파이프라인(TryCast)을 사용한다
 
 public:
 	int targetAgentId_;
@@ -47,6 +53,8 @@ public:
 	int AttackRange();
 	int Attack();
 	int Resume();
+
+	SkillSet& GetSkillSet() { return skillSet_; }
 
 	// 사망 시 킬한 플레이어에게 EventActorDead 이벤트를 발행한다(최초 1회).
 	void NotifyKilledBy();

@@ -17,6 +17,7 @@
 #include "Map.h"
 #include "INavMovement.h"
 #include "Character.h"
+#include "Monster.h"
 #include "Player.h"
 #include "Skill.h"
 #include "SkillSet.h"
@@ -128,6 +129,16 @@ protected:
 			static_cast<float>(spawnZ_) + offsetZ);
 		auto actor = map_->OnAddAgent(player, syncnet::GameObjectType_Character, &pos);
 		return std::dynamic_pointer_cast<Character>(actor);
+	}
+
+	std::shared_ptr<Monster> SpawnMonster(float offsetX = 0.0f, float offsetZ = 0.0f)
+	{
+		syncnet::Vec3 pos(
+			static_cast<float>(spawnX_) + offsetX,
+			static_cast<float>(spawnY_),
+			static_cast<float>(spawnZ_) + offsetZ);
+		auto actor = map_->OnAddAgent(nullptr, syncnet::GameObjectType_Monster, &pos);
+		return std::dynamic_pointer_cast<Monster>(actor);
 	}
 };
 
@@ -286,6 +297,58 @@ TEST_F(SkillSystemTest, DataOnlySkillNeedsNoNewClass)
 	ctx.targetPos = victim->GetPosition();
 	EXPECT_EQ(skills.TryCast(attacker.get(), ctx), CastResult::Success);
 	EXPECT_EQ(victim->GetHealth(), healthBefore - 7);
+}
+
+// skill.json 의 code_name 없는 엔트리(몬스터 근접, id 3)는 팩토리가 기본 Skill 로 생성한다
+// — 새 스킬 = 데이터 한 줄이라는 것을 실데이터로 검증.
+TEST_F(SkillSystemTest, FactoryCreatesDataOnlySkillFromJson)
+{
+	Skill* melee = SkillRegistry::Instance().Get(Monster::kMeleeSkillId);
+	ASSERT_NE(melee, nullptr);
+	ASSERT_NE(melee->gamedata, nullptr);
+	EXPECT_TRUE(melee->gamedata->code_name.empty()); // 파생 클래스 없음
+	EXPECT_TRUE(melee->gamedata->monster_only);
+	ASSERT_FALSE(melee->gamedata->effects.empty());
+	EXPECT_EQ(melee->gamedata->effects[0].type, "damage");
+}
+
+// 몬스터 공격이 플레이어와 동일한 스킬 파이프라인(TryCast→DamageEffect→combat)을 탄다.
+// 쿨다운도 스킬 데이터로 제어된다.
+TEST_F(SkillSystemTest, MonsterAttackGoesThroughSkillPipeline)
+{
+	auto victim = SpawnCharacter();
+	auto monster = SpawnMonster(1.0f, 0.0f);
+	ASSERT_NE(victim, nullptr);
+	ASSERT_NE(monster, nullptr);
+
+	monster->targetAgentId_ = victim->GetActorId(); // BT DetectEnemy 가 세팅하는 값
+
+	int healthBefore = victim->GetHealth();
+	monster->Attack(); // BT Action_Attack 이 호출하는 그 경로
+	EXPECT_LT(victim->GetHealth(), healthBefore);
+	EXPECT_EQ(victim->GetLastAttackerActorId(), monster->GetActorId()); // 킬 크레딧
+
+	// 쿨다운(1.5초) 동안 연타해도 추가 데미지 없음.
+	int healthAfterFirstHit = victim->GetHealth();
+	monster->Attack();
+	EXPECT_EQ(victim->GetHealth(), healthAfterFirstHit);
+
+	// 쿨다운 경과 후 다시 공격 가능.
+	monster->GetSkillSet().Update(monster.get(), 1.6f);
+	monster->Attack();
+	EXPECT_LT(victim->GetHealth(), healthAfterFirstHit);
+}
+
+// monster_only 스킬은 플레이어 스킬 목록에 등록되지 않는다(클라 UseSkill 치팅 차단).
+TEST_F(SkillSystemTest, PlayerCannotUseMonsterOnlySkill)
+{
+	auto character = SpawnCharacter();
+	ASSERT_NE(character, nullptr);
+
+	CastContext ctx;
+	ctx.skillId = Monster::kMeleeSkillId;
+	ctx.targetPos = character->GetPosition();
+	EXPECT_EQ(character->GetSkillSet().TryCast(character.get(), ctx), CastResult::SkillNotFound);
 }
 
 // 알 수 없는 효과 type 은 시전을 거부하고 쿨다운도 소모하지 않는다.

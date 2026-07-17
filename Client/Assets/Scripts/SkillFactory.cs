@@ -25,7 +25,8 @@ public static class SkillFactory
             
             default:
                 
-                return null;
+                obj = new Skill();
+                break;
                 
         }
         

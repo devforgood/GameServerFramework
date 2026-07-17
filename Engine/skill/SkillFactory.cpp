@@ -29,7 +29,7 @@ Skill* SkillFactory::Create(int32_t id) {
 
     else {
 
-        return nullptr;
+        obj = new Skill();
 
     }
 

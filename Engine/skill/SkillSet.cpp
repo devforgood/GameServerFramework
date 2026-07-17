@@ -12,6 +12,11 @@ void SkillSet::InitFromResources()
 {
 	for (const auto& pair : ResourceLoader::Instance().GetSkills())
 	{
+		// 몬스터 전용 스킬은 플레이어(캐릭터) 스킬 목록에서 제외한다.
+		// 클라가 UseSkill 로 몬스터 스킬 id 를 보내도 SkillNotFound 로 거부된다.
+		if (pair.second != nullptr && pair.second->monster_only)
+			continue;
+
 		int skillId = static_cast<int>(pair.first);
 		Skill* skill = SkillRegistry::Instance().Get(skillId);
 		if (skill != nullptr)
