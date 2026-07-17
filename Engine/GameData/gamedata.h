@@ -7,14 +7,22 @@
 namespace gamedata
 {
 
+    struct SkillEffect
+    {
+        std::string phase;
+        std::string type;
+    };
+
+
     struct Skill
     {
         int angle = 0;
         std::string code_name;
+        double cooldown = 0.0;
         std::string desc_id;
         int duration = 0;
-        std::string effect;
-        int hieght = 0;
+        std::vector<SkillEffect> effects;
+        int height = 0;
         int id = 0;
         int max_damage = 0;
         int min_damage = 0;
@@ -301,14 +309,22 @@ namespace gamedata
 
 
 
+    inline void from_json(const nlohmann::json& j, SkillEffect& o)
+    {
+        if (j.contains("phase") && !j.at("phase").is_null()) j.at("phase").get_to(o.phase);
+        if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
+    }
+
+
     inline void from_json(const nlohmann::json& j, Skill& o)
     {
         if (j.contains("angle") && !j.at("angle").is_null()) j.at("angle").get_to(o.angle);
         if (j.contains("code_name") && !j.at("code_name").is_null()) j.at("code_name").get_to(o.code_name);
+        if (j.contains("cooldown") && !j.at("cooldown").is_null()) j.at("cooldown").get_to(o.cooldown);
         if (j.contains("desc_id") && !j.at("desc_id").is_null()) j.at("desc_id").get_to(o.desc_id);
         if (j.contains("duration") && !j.at("duration").is_null()) j.at("duration").get_to(o.duration);
-        if (j.contains("effect") && !j.at("effect").is_null()) j.at("effect").get_to(o.effect);
-        if (j.contains("hieght") && !j.at("hieght").is_null()) j.at("hieght").get_to(o.hieght);
+        if (j.contains("effects") && !j.at("effects").is_null()) j.at("effects").get_to(o.effects);
+        if (j.contains("height") && !j.at("height").is_null()) j.at("height").get_to(o.height);
         if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("max_damage") && !j.at("max_damage").is_null()) j.at("max_damage").get_to(o.max_damage);
         if (j.contains("min_damage") && !j.at("min_damage").is_null()) j.at("min_damage").get_to(o.min_damage);

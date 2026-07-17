@@ -5,20 +5,27 @@
     "min_damage": 5,
     "max_damage": 20,
     "range": 2,
+    "angle": 90,
+    "cooldown": 0.5,
     "name_id": "normal_attack_name",
     "desc_id": "normal_attack_desc",
     "code_name": "NormalAttackSkill",
-    "angle": 90
-  }
-  ,
+    "effects": [
+      { "type": "damage" }
+    ]
+  },
   {
     "id": 2,
     "type": "active",
-    "effect": "jump",
-    "hieght": 3,
+    "height": 3,
     "duration": 1,
+    "cooldown": 3.0,
     "name_id": "jump_name",
     "desc_id": "jump_desc",
-    "code_name": "JumpSkill"
+    "code_name": "JumpSkill",
+    "effects": [
+      { "type": "input_lock", "phase": "active" },
+      { "type": "teleport", "phase": "end" }
+    ]
   }
 ]

@@ -6,14 +6,23 @@ namespace Gamedata
 {
 
     [Serializable]
+    public class SkillEffect
+    {
+        public string phase;
+        public string type;
+    }
+
+
+    [Serializable]
     public class Skill
     {
         public int angle;
         public string code_name;
+        public double cooldown;
         public string desc_id;
         public int duration;
-        public string effect;
-        public int hieght;
+        public System.Collections.Generic.List<SkillEffect> effects;
+        public int height;
         public int id;
         public int max_damage;
         public int min_damage;

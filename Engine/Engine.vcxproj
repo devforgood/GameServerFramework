@@ -200,7 +200,10 @@
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="skill\Skill.cpp" />
     <ClCompile Include="skill\SkillFactory.cpp" />
-    <ClCompile Include="skill\SkillManager.cpp" />
+    <ClCompile Include="skill\SkillEffects.cpp" />
+    <ClCompile Include="skill\SkillRegistry.cpp" />
+    <ClCompile Include="skill\SkillSet.cpp" />
+    <ClCompile Include="Actor\CombatSystem.cpp" />
     <ClCompile Include="SQL\SqlClient.cpp" />
     <ClCompile Include="SQL\SqlClientManager.cpp" />
     <ClCompile Include="SQL\generated\dao.cpp" />
@@ -238,7 +241,12 @@
     <ClInclude Include="Actor\Actor.h" />
     <ClInclude Include="Actor\ActorFactory.h" />
     <ClInclude Include="Item\BaseItem.h" />
-    <ClInclude Include="skill\BaseSkill.h" />
+    <ClInclude Include="skill\CastContext.h" />
+    <ClInclude Include="skill\SkillState.h" />
+    <ClInclude Include="skill\SkillEffects.h" />
+    <ClInclude Include="skill\SkillRegistry.h" />
+    <ClInclude Include="skill\SkillSet.h" />
+    <ClInclude Include="Actor\CombatSystem.h" />
     <ClInclude Include="AI\BTDebugManager.h" />
     <ClInclude Include="AI\BTDebugNodeIds.h" />
     <ClInclude Include="AI\BehaviorTreeCPP.h" />
@@ -292,7 +300,6 @@
     <ClInclude Include="Server.h" />
     <ClInclude Include="skill\Skill.h" />
     <ClInclude Include="skill\SkillFactory.h" />
-    <ClInclude Include="skill\SkillManager.h" />
     <ClInclude Include="SQL\SqlClient.h" />
     <ClInclude Include="SQL\SqlClientManager.h" />
     <ClInclude Include="SQL\generated\dao.h" />

@@ -5,18 +5,13 @@
 #include "Skill.h"
 #include "Vector3.h"
 #include "Common.h"
-#include "SkillFactory.h"
 #include "Map.h"
 #include "INavMovement.h"
 
 Character::Character(Map* map) : Actor(map)
 {
-	// todo : load skills from DB table
-	auto skills = ResourceLoader::Instance().GetSkills();
-	for (const auto& skill : skills)
-	{
-		skills_[skill.first] = SkillFactory::Create(skill.first);
-	}
+	// todo : load skills from DB table (현재는 전체 스킬 테이블을 등록한다)
+	skillSet_.InitFromResources();
 
 	isInputLocked_ = false;
 	gameObjectType_ = syncnet::GameObjectType::GameObjectType_Character;
@@ -26,13 +21,8 @@ Character::Character(Map* map) : Actor(map)
 	entityManager.AddComponent(entityId_, engine::TimerComponent());
 }
 
-Character::~Character() 
+Character::~Character()
 {
-	for (auto& skill : skills_)
-	{
-		delete skill.second;
-	}
-	skills_.clear();
 	LOG.info("Character {} destroyed", playerId_);
 }
 
@@ -66,44 +56,41 @@ bool Character::PostCreate(std::shared_ptr<Player> player, std::shared_ptr<GameO
 	return true;
 }
 
-void Character::use_skill(const syncnet::UseSkill* msg)
+CastResult Character::use_skill(const syncnet::UseSkill* msg)
 {
+	if (msg == nullptr || msg->pos() == nullptr)
+		return CastResult::CasterInvalid;
+
 	float serverClientTimeOffset = map_->world_->timeStamp_->getServerClientTimeOffset(msg->timestamp());
 
-	// Implement skill usage logic here
 	LOG.info("Character {} using skill {} at position ({}, {}, {}) serverClientTimeOffset {} timestamp {}"
 		, playerId_, msg->skillId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z(), serverClientTimeOffset, msg->timestamp());
 
-	auto itr = skills_.find(msg->skillId());
+	CastContext ctx;
+	ctx.skillId = msg->skillId();
+	ctx.targetActorId = msg->targetId();
+	ctx.targetPos = Vector3(msg->pos());
+	ctx.clientDuration = static_cast<float>(msg->duration());
+	ctx.serverClientTimeOffset = serverClientTimeOffset;
 
-	if (itr != skills_.end())
+	CastResult result = skillSet_.TryCast(this, ctx);
+	if (result == CastResult::Success)
 	{
-		Skill* skill = itr->second;
-		int result = skill->cast_skill(this, msg, serverClientTimeOffset);
-		if (result == 0)
-		{
-			LOG.info("Skill {} cast successfully by character {}", msg->skillId(), playerId_);
-		}
-		else
-		{
-			LOG.error("Failed to cast skill {} by character {}. Error code: {}", msg->skillId(), playerId_, result);
-		}
-
+		LOG.info("Skill {} cast successfully by character {}", msg->skillId(), playerId_);
 	}
 	else
 	{
-		LOG.error("Skill {} not found for character {}", msg->skillId(), playerId_);
+		LOG.debug("Skill {} cast rejected for character {}. Reason code: {}",
+			msg->skillId(), playerId_, static_cast<int>(result));
 	}
+
+	return result;
 }
 
 void Character::Update(float dt)
 {
 	Actor::Update(dt);
-	for(auto itr = skills_.begin(); itr != skills_.end(); ++itr)
-	{
-		Skill* skill = itr->second;
-		skill->update(dt);
-	}
+	skillSet_.Update(this, dt);
 }
 
 bool Character::Init(Vector3& pos)

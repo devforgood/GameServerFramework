@@ -1,8 +1,10 @@
 import json
 import os
 import shutil
+import sys
 
 from schema_infer import build_structs
+from validate_data import validate_table
 from generate_factory import generate_factory
 from generate_resource_loader import (
     generate_gamedata_header,
@@ -96,10 +98,23 @@ def main():
     seen_struct_names = set()
     table_names = []          # top-level table class names (for C# list wrappers)
 
+    had_error = False
+
     for table in tables:
         table_name = table["name"]
         data = load_table_data(table["json_path"])
         if data is None:
+            had_error = True
+            continue
+
+        # 코드 생성 전에 데이터를 정적 검증한다(중복 id, 필드명 오타 등).
+        # 오타 필드는 스키마 추론을 그대로 통과해 모델까지 전파되므로 여기서 차단한다.
+        validation_errors = validate_table(table_name, data)
+        if validation_errors:
+            for err in validation_errors:
+                print(f"{RED}[ERROR] {err}{RESET}")
+            print(f"{RED}[ERROR] {table_name}: 데이터 검증 실패로 코드 생성을 건너뜁니다{RESET}")
+            had_error = True
             continue
 
         # Infer the data model from the JSON itself.
@@ -171,6 +186,10 @@ def main():
                 print(f"{GREEN}[OK] {os.path.basename(asset_path)} copied to {target_dir}{RESET}")
             except Exception as e:
                 print(f"{RED}[ERROR] {asset_path} copy to {target_dir} failed: {e}{RESET}")
+
+    # 검증/로드 실패가 있으면 빌드 파이프라인이 실패하도록 종료 코드로 알린다.
+    if had_error:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

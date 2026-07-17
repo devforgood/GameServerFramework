@@ -226,8 +226,17 @@
     <ClCompile Include="skill\SkillFactory.cpp">
       <Filter>skill</Filter>
     </ClCompile>
-    <ClCompile Include="skill\SkillManager.cpp">
+    <ClCompile Include="skill\SkillEffects.cpp">
       <Filter>skill</Filter>
+    </ClCompile>
+    <ClCompile Include="skill\SkillRegistry.cpp">
+      <Filter>skill</Filter>
+    </ClCompile>
+    <ClCompile Include="skill\SkillSet.cpp">
+      <Filter>skill</Filter>
+    </ClCompile>
+    <ClCompile Include="Actor\CombatSystem.cpp">
+      <Filter>Actor</Filter>
     </ClCompile>
     <ClCompile Include="SQL\SqlClient.cpp">
       <Filter>SQL</Filter>
@@ -320,8 +329,23 @@
     <ClInclude Include="Item\BaseItem.h">
       <Filter>Item</Filter>
     </ClInclude>
-    <ClInclude Include="skill\BaseSkill.h">
+    <ClInclude Include="skill\CastContext.h">
       <Filter>skill</Filter>
+    </ClInclude>
+    <ClInclude Include="skill\SkillState.h">
+      <Filter>skill</Filter>
+    </ClInclude>
+    <ClInclude Include="skill\SkillEffects.h">
+      <Filter>skill</Filter>
+    </ClInclude>
+    <ClInclude Include="skill\SkillRegistry.h">
+      <Filter>skill</Filter>
+    </ClInclude>
+    <ClInclude Include="skill\SkillSet.h">
+      <Filter>skill</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor\CombatSystem.h">
+      <Filter>Actor</Filter>
     </ClInclude>
     <ClInclude Include="AI\BTDebugManager.h">
       <Filter>AI</Filter>
@@ -469,9 +493,6 @@
       <Filter>skill</Filter>
     </ClInclude>
     <ClInclude Include="skill\SkillFactory.h">
-      <Filter>skill</Filter>
-    </ClInclude>
-    <ClInclude Include="skill\SkillManager.h">
       <Filter>skill</Filter>
     </ClInclude>
     <ClInclude Include="SQL\SqlClient.h">

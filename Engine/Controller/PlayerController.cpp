@@ -254,7 +254,14 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 		return;
 	}
 
-	character->use_skill(msg);
+	// 서버 권위: 검증(쿨다운/페이즈/입력잠금)을 통과해 실제로 시전된 경우에만
+	// 다른 클라이언트에 브로드캐스트한다.
+	CastResult result = character->use_skill(msg);
+	if (result != CastResult::Success)
+	{
+		LOG.debug("UseSkill rejected: skillId {}, reason code {}", msg->skillId(), static_cast<int>(result));
+		return;
+	}
 
 	auto builder_ptr = std::make_shared<send_message>();
 	auto send_msg = syncnet::CreateGameMessage(
