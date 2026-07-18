@@ -11,52 +11,15 @@
 #include "Player.h"
 #include "ActorFactory.h"
 #include "Common.h"
+#include "ComponentRegistry.h"
 #include "NavMesh.h"
 #include "INavMovement.h"
 #include "NavMovementFactory.h"
-#include "BTDebugManager.h"
+#include "BTDebugSync.h"
 
 
 //const float g_fDistance = std::powf(10.0f, 2);
 const float g_fDistance = 10.0f;
-
-namespace
-{
-	syncnet::TreeNodeStatus ToTreeNodeStatus(BT::NodeStatus status)
-	{
-		switch (status)
-		{
-		case BT::NodeStatus::IDLE:
-			return syncnet::TreeNodeStatus_Idle;
-		case BT::NodeStatus::RUNNING:
-			return syncnet::TreeNodeStatus_Running;
-		case BT::NodeStatus::SUCCESS:
-			return syncnet::TreeNodeStatus_Success;
-		case BT::NodeStatus::FAILURE:
-			return syncnet::TreeNodeStatus_Failure;
-		case BT::NodeStatus::SKIPPED:
-			return syncnet::TreeNodeStatus_Skipped;
-		default:
-			return syncnet::TreeNodeStatus_Unknown;
-		}
-	}
-
-#if defined(ENABLE_BT_DEBUG)
-	syncnet::TreeNodeType ToTreeNodeType(BTDebugNodeType node_type)
-	{
-		switch (node_type)
-		{
-		case BTDebugNodeType::Control:
-			return syncnet::TreeNodeType_Control;
-		case BTDebugNodeType::Condition:
-			return syncnet::TreeNodeType_Condition;
-		case BTDebugNodeType::Action:
-		default:
-			return syncnet::TreeNodeType_Action;
-		}
-	}
-#endif
-}
 
 Map::Map(World* world)
 {
@@ -102,6 +65,18 @@ bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 {
 	mapData_ = mapData;
 
+	if (!InitNavigation(movementType))
+		return false;
+
+	gridManager_ = new GridManager(100, 100, 2);
+	sendMessageBuilder_ = std::make_shared<send_message>();
+
+	InitEcs();
+	return true;
+}
+
+bool Map::InitNavigation(const std::string& movementType)
+{
 	// 맵별 네비메시를 반드시 로드한다. 경로가 지정되지 않았거나 로드에 실패하면
 	// 과거처럼 solo_navmesh.bin 으로 폴백하면 씬 지오메트리와 형상이 어긋나므로,
 	// 폴백하지 않고 에러로 처리한다(호출자가 해당 맵 로드를 중단하도록 false 반환).
@@ -124,69 +99,58 @@ bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 
 	movement_ = NavMovementFactory::Create(movementType, navMesh_);
 	movement_->Init();
-	gridManager_ = new GridManager(100, 100, 2);
+	return true;
+}
 
-	sendMessageBuilder_ = std::make_shared<send_message>();
-
+void Map::InitEcs()
+{
 	systemManager_ = new engine::SystemManager();
 
-	auto& entityManager = systemManager_->GetEntityManager();
-
-	// 모든 컴포넌트 타입 등록
-	entityManager.RegisterComponent<engine::PositionComponent>();
-	entityManager.RegisterComponent<engine::VelocityComponent>();
-	entityManager.RegisterComponent<engine::HealthComponent>();
-	entityManager.RegisterComponent<engine::PhysicsComponent>();
-	entityManager.RegisterComponent<engine::AIComponent>();
-	entityManager.RegisterComponent<engine::CollisionComponent>();
-	entityManager.RegisterComponent<engine::InputComponent>();
-	entityManager.RegisterComponent<engine::AnimationComponent>();
-	entityManager.RegisterComponent<engine::TimerComponent>();
-	entityManager.RegisterComponent<engine::ParticleComponent>();
-	entityManager.RegisterComponent<engine::NetworkComponent>();
-	entityManager.RegisterComponent<engine::StateComponent>();
+	// 컴포넌트 타입 목록은 ECS 모듈이 소유한다(새 컴포넌트 추가 시 Map 은 수정 불필요).
+	engine::RegisterGameComponents(systemManager_->GetEntityManager());
 
 	systemManager_->RegisterSystem<engine::TimerComponent>(
 		[](float deltaTime, engine::TimerComponent& timer) {
 			engine::TimerSystem::Update(deltaTime, timer);
 		});
 
-	Map* map = this;
 	systemManager_->RegisterSystem<engine::StateComponent, engine::PositionComponent>(
-		[map](float deltaTime, engine::StateComponent& state, engine::PositionComponent& position) {
-			if (state.stateID == syncnet::AIState::AIState_Destroyed) {
-				map->removedAgents_.push_back(state.ActorID);
-			}
-
-			if (map->movement_->IsActive(state.ActorID) == false)
-				return;
-
-			const float* npos = map->movement_->GetPos(state.ActorID);
-			bool changed_position = !Vector3::equal(position.x, position.y, position.z, npos[0], npos[1], npos[2]);
-			if (state.changeFlag == 0 && !changed_position)
-				return;
-
-
-			auto itr = map->actorMap_.find(state.ActorID);
-			if (itr == map->actorMap_.end())
-			{
-				LOG.error("SendWorldState error agent not found in actorMap_");
-				return;
-			}
-			auto actor = (Actor*)itr->second->get();
-
-			if (changed_position)
-			{
-				actor->SetPosition(npos[0], npos[1], npos[2]);
-				map->gridManager_->move(actor, npos[0], npos[2]);
-			}
-
-			map->actorPendingUpdates_.push_back(actor->GetActorInfo(*map->sendMessageBuilder_, actor->GetChangedFlag()));
-
-			actor->ResetChangedFlag();
+		[this](float, engine::StateComponent& state, engine::PositionComponent& position) {
+			SyncActorState(state, position);
 		});
+}
 
-	return true;
+void Map::SyncActorState(engine::StateComponent& state, engine::PositionComponent& position)
+{
+	if (state.stateID == syncnet::AIState::AIState_Destroyed) {
+		removedAgents_.push_back(state.ActorID);
+	}
+
+	if (movement_->IsActive(state.ActorID) == false)
+		return;
+
+	const float* npos = movement_->GetPos(state.ActorID);
+	bool changed_position = !Vector3::equal(position.x, position.y, position.z, npos[0], npos[1], npos[2]);
+	if (state.changeFlag == 0 && !changed_position)
+		return;
+
+	auto itr = actorMap_.find(state.ActorID);
+	if (itr == actorMap_.end())
+	{
+		LOG.error("SendWorldState error agent not found in actorMap_");
+		return;
+	}
+	auto actor = (Actor*)itr->second->get();
+
+	if (changed_position)
+	{
+		actor->SetPosition(npos[0], npos[1], npos[2]);
+		gridManager_->move(actor, npos[0], npos[2]);
+	}
+
+	actorPendingUpdates_.push_back(actor->GetActorInfo(*sendMessageBuilder_, actor->GetChangedFlag()));
+
+	actor->ResetChangedFlag();
 }
 
 int Map::GetMapId() const
@@ -362,84 +326,11 @@ void Map::SendWorldState()
 
 void Map::SendTreeDebugSync()
 {
-#if defined(ENABLE_BT_DEBUG)
-	auto snapshot = BTDebugManager::Instance().ConsumeSnapshot();
-	if (snapshot.empty())
-		return;
-
-	auto builder_ptr = std::make_shared<send_message>();
-	std::vector<flatbuffers::Offset<syncnet::TreeDebugDefinition>> definition_vector;
-	definition_vector.reserve(snapshot.definitions.size());
-	for (const auto& definition : snapshot.definitions)
-	{
-		std::vector<flatbuffers::Offset<syncnet::TreeDebugNodeDefinition>> node_vector;
-		node_vector.reserve(definition.nodes.size());
-		for (const auto& node : definition.nodes)
-		{
-			auto name = builder_ptr->CreateString(node.name);
-			node_vector.push_back(syncnet::CreateTreeDebugNodeDefinition(
-				*builder_ptr,
-				node.node_id,
-				node.parent_node_id,
-				name,
-				ToTreeNodeType(node.node_type)));
-		}
-
-		auto tree_id = builder_ptr->CreateString(definition.tree_id);
-		auto nodes = builder_ptr->CreateVector(node_vector);
-		definition_vector.push_back(syncnet::CreateTreeDebugDefinition(
-			*builder_ptr,
-			tree_id,
-			definition.monster_id,
-			nodes));
-	}
-
-	std::vector<flatbuffers::Offset<syncnet::TreeDebugRuntimeFrame>> frame_vector;
-	frame_vector.reserve(snapshot.frames.size());
-	for (const auto& frame : snapshot.frames)
-	{
-		std::vector<flatbuffers::Offset<syncnet::TreeDebugNodeChange>> change_vector;
-		change_vector.reserve(frame.changes.size());
-		for (const auto& change : frame.changes)
-		{
-			auto name = builder_ptr->CreateString(change.node_name);
-			auto reason = builder_ptr->CreateString(change.reason);
-			change_vector.push_back(syncnet::CreateTreeDebugNodeChange(
-				*builder_ptr,
-				change.node_id,
-				name,
-				ToTreeNodeStatus(change.status),
-				reason,
-				change.success_count,
-				change.failure_count,
-				change.running_count));
-		}
-
-		auto tree_id = builder_ptr->CreateString(frame.tree_id);
-		auto executed_path = builder_ptr->CreateVector(frame.executed_path);
-		auto changes = builder_ptr->CreateVector(change_vector);
-		frame_vector.push_back(syncnet::CreateTreeDebugRuntimeFrame(
-			*builder_ptr,
-			tree_id,
-			frame.monster_id,
-			frame.tick,
-			frame.ai_state,
-			frame.target_agent_id,
-			executed_path,
-			changes));
-	}
-
-	auto definition_offsets = builder_ptr->CreateVector(definition_vector);
-	auto frame_offsets = builder_ptr->CreateVector(frame_vector);
-	auto tree_debug_sync = syncnet::CreateTreeDebugSync(*builder_ptr, definition_offsets, frame_offsets);
-	auto send_msg = syncnet::CreateGameMessage(
-		*builder_ptr,
-		syncnet::GameMessages::GameMessages_TreeDebugSync,
-		tree_debug_sync.Union());
-	builder_ptr->Finish(send_msg);
-
-	SendBroadcast(builder_ptr);
-#endif
+	// 직렬화는 BT 디버그 모듈(BTDebugSync)이 담당하고, 맵은 브로드캐스트만 한다.
+	// 보낼 스냅샷이 없거나 BT 디버그가 꺼진 빌드면 nullptr 라 아무것도 하지 않는다.
+	auto msg = BTDebugSync::BuildMessage();
+	if (msg != nullptr)
+		SendBroadcast(msg);
 }
 
 void Map::SendBroadcast(std::shared_ptr<send_message> msg)

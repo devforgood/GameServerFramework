@@ -20,6 +20,8 @@ class RandomUtil;
 class IGridActor;
 namespace engine {
 	class SystemManager;
+	struct StateComponent;
+	struct PositionComponent;
 }
 class World;
 class NavMesh;
@@ -45,6 +47,16 @@ private:
 
 	// DetectEnemy 의 시야 쿼리 결과 재사용 버퍼(호출당 힙 할당 방지).
 	std::vector<IGridActor*> detectScratch_;
+
+	// Init 을 구성하는 단계들. Init 은 이들을 순서대로 호출하는 오케스트레이터다.
+	// 내비게이션: 맵별 navmesh 로드/정합 검증 + 이동 전략 생성. 실패 시 false.
+	bool InitNavigation(const std::string& movementType);
+	// ECS: SystemManager 생성, 컴포넌트 등록(engine::RegisterGameComponents), 시스템 등록.
+	void InitEcs();
+
+	// 매 틱 ECS 시스템으로 실행: 이동 시뮬레이션 결과/상태 변경을 액터에 반영하고
+	// 브로드캐스트 대기열(actorPendingUpdates_)에 누적한다. Destroyed 상태는 제거 목록에 수집.
+	void SyncActorState(engine::StateComponent& state, engine::PositionComponent& position);
 
 
 	GridManager* gridManager_;

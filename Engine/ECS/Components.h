@@ -148,4 +148,4 @@ namespace engine
 		uint32_t changeFlag = 0;
 		uint32_t ActorID = 0;
 	};
-} 
+}

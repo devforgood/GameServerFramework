@@ -161,6 +161,7 @@
     <ClCompile Include="Actor\Actor.cpp" />
     <ClCompile Include="Actor\ActorFactory.cpp" />
     <ClCompile Include="AI\BTDebugManager.cpp" />
+    <ClCompile Include="AI\BTDebugSync.cpp" />
     <ClCompile Include="AI\BehaviorTreeCPP.cpp" />
     <ClCompile Include="Actor\Character.cpp" />
     <ClCompile Include="GameObject\Component.h" />
@@ -215,6 +216,7 @@
   <ItemGroup>
     <ClInclude Include="EventBroker\BoostConcurrentQueue.h" />
     <ClInclude Include="ECS\CacheOptimizedSystem.h" />
+    <ClInclude Include="ECS\ComponentRegistry.h" />
     <ClInclude Include="ECS\Components.h" />
     <ClInclude Include="ECS\ECS.h" />
     <ClInclude Include="EventBroker\EventBroker.h" />
@@ -248,6 +250,7 @@
     <ClInclude Include="skill\SkillSet.h" />
     <ClInclude Include="Actor\CombatSystem.h" />
     <ClInclude Include="AI\BTDebugManager.h" />
+    <ClInclude Include="AI\BTDebugSync.h" />
     <ClInclude Include="AI\BTDebugNodeIds.h" />
     <ClInclude Include="AI\BehaviorTreeCPP.h" />
     <ClInclude Include="Actor\Character.h" />

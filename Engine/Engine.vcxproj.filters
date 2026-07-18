@@ -111,6 +111,9 @@
     <ClCompile Include="AI\BTDebugManager.cpp">
       <Filter>AI</Filter>
     </ClCompile>
+    <ClCompile Include="AI\BTDebugSync.cpp">
+      <Filter>AI</Filter>
+    </ClCompile>
     <ClCompile Include="AI\BehaviorTreeCPP.cpp">
       <Filter>AI</Filter>
     </ClCompile>
@@ -268,6 +271,9 @@
     <ClInclude Include="ECS\CacheOptimizedSystem.h">
       <Filter>ECS</Filter>
     </ClInclude>
+    <ClInclude Include="ECS\ComponentRegistry.h">
+      <Filter>ECS</Filter>
+    </ClInclude>
     <ClInclude Include="ECS\Components.h">
       <Filter>ECS</Filter>
     </ClInclude>
@@ -348,6 +354,9 @@
       <Filter>Actor</Filter>
     </ClInclude>
     <ClInclude Include="AI\BTDebugManager.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\BTDebugSync.h">
       <Filter>AI</Filter>
     </ClInclude>
     <ClInclude Include="AI\BTDebugNodeIds.h">
