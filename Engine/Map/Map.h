@@ -70,6 +70,11 @@ public:
 	// 맵 데이터의 첫 번째 player_spawn 위치(클라 좌표계). 없으면 (0,0,0).
 	syncnet::Vec3 GetPlayerSpawnPos() const;
 
+	// 맵 데이터(Map.json)의 monster_spawn 지점마다 몬스터를 1마리씩 스폰한다.
+	// 스폰에 성공한 수를 반환한다. 서버 기동 시 World::SpawnMapMonsters 에서 호출된다
+	// (벤치마크/테스트는 World::Init 만 호출하므로 몬스터가 자동 스폰되지 않는다).
+	int SpawnMonstersFromData();
+
 	// Map.json(클라 씬 좌표)의 게이트/스폰 위치가 서버 navmesh 위에 있는지 검증한다.
 	// 씬과 navmesh가 어긋나면 마커가 메시 밖에 놓이므로 정합 이상을 로드 시점에 잡아낸다.
 	// 어긋난 마커 수를 반환한다(경고 로그만 남기고 로드는 막지 않는다).

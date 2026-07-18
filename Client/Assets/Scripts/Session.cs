@@ -40,6 +40,11 @@ public class Session : MonoBehaviour
 	public int loginMapId = 0;
 	public Vector3 loginSpawnPos = Vector3.zero;
 
+	// 신규 로그인 후 자동 스폰 대기 플래그. 씬 로드가 끝나면(또는 이미 대상 씬이면 즉시)
+	// 서버가 준 스폰 위치(loginSpawnPos: 기본 스폰 마커 또는 이전 로그아웃 위치)로
+	// AddAgent(Character) 를 1회 보낸다. 재접속 핸드오버는 서버가 기존 캐릭터를 넘겨주므로 제외.
+	private bool pendingLoginSpawn = false;
+
 	// 재접속 토큰(서버가 로그인 응답으로 내려준 플레이어 uuid). 재접속(세션 재연결 또는
 	// 앱 재시작) 시 로그인 요청에 되돌려 보내면 서버가 유예 중이던 기존 캐릭터를 넘겨준다.
 	// PlayerPrefs 에 영속 저장해 앱/플레이 재시작에도 유지한다.
@@ -683,6 +688,8 @@ public class Session : MonoBehaviour
             Debug.LogWarning($"Scene '{sceneName}' is not in Build Settings (File > Build Settings 에 추가 필요). 씬 로드를 건너뜁니다.");
             isLoadingScene = false;
             isChangingMap = false;
+            // 로그인 자동 스폰 대기 중이었다면 현재 씬에서라도 스폰한다(서버 위치가 권위).
+            TrySpawnLoginCharacter();
             return;
         }
 
@@ -710,6 +717,24 @@ public class Session : MonoBehaviour
         SuppressGateWarpUntilExit = true;
 
         Debug.Log($"Gate scene loaded: {scene.name}");
+
+        // 신규 로그인으로 인한 씬 로드였다면 서버가 준 스폰 위치로 캐릭터를 자동 생성한다.
+        // (게이트 이동/재접속 핸드오버는 서버가 캐릭터를 만들어 주므로 플래그가 꺼져 있다.)
+        TrySpawnLoginCharacter();
+    }
+
+    /// <summary>
+    /// 신규 로그인 자동 스폰: 서버가 Login 응답으로 준 위치(기본 스폰 마커 또는 이전 로그아웃
+    /// 위치)로 AddAgent(Character) 를 1회 보낸다. 대기 플래그가 없으면 아무것도 하지 않는다.
+    /// </summary>
+    private void TrySpawnLoginCharacter()
+    {
+        if (!pendingLoginSpawn)
+            return;
+        pendingLoginSpawn = false;
+
+        Debug.Log($"Auto spawn character at login pos({loginSpawnPos.x},{loginSpawnPos.y},{loginSpawnPos.z})");
+        AddAgent(0, loginSpawnPos, GameObjectType.Character);
     }
 
     public void UseSkill(int skillId, Vector3 pos, int type)
@@ -797,13 +822,21 @@ public class Session : MonoBehaviour
 
                     Debug.Log($"Login Success. mapId:{loginMapId}, pos({loginSpawnPos.x},{loginSpawnPos.y},{loginSpawnPos.z})");
 
+                    // 씬 준비가 끝나면 서버가 준 스폰 위치로 캐릭터를 자동 생성한다.
+                    pendingLoginSpawn = true;
+
                     // 맵 데이터에 연동된 씬 정보로 해당 맵 씬을 로드한다(현재 씬과 다를 때만).
                     Gamedata.Map map;
                     if (GameManager.Instance.resource.Maps.TryGetValue(loginMapId, out map)
                         && !string.IsNullOrEmpty(map.scene)
                         && SceneManager.GetActiveScene().name != map.scene)
                     {
-                        LoadMapScene(map.scene);
+                        LoadMapScene(map.scene); // 스폰은 OnGateSceneLoaded 에서 수행
+                    }
+                    else
+                    {
+                        // 이미 대상 씬에 있으면 즉시 스폰한다.
+                        TrySpawnLoginCharacter();
                     }
                 }
                 else

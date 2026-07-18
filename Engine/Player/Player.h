@@ -36,6 +36,10 @@ private:
 	// Character 는 맵 이동 때마다 재생성되므로, 이동에도 유지되는 Player 에 보관한다.
 	uint64_t lastGateMoveMs_ = 0;
 
+	// 로그인 시 결정된 스폰 맵 id(기본 맵 또는 마지막 로그아웃 위치의 맵).
+	// 클라가 보내는 AddAgent(Character) 를 이 맵으로 라우팅한다. 0 = 미정(기본 맵).
+	int spawnMapId_ = 0;
+
 public:
 	Player();
 	~Player();
@@ -71,6 +75,9 @@ public:
 		return lastGateMoveMs_ != 0 && (nowMs - lastGateMoveMs_) < cooldownMs;
 	}
 	void MarkGateMoved(uint64_t nowMs) { lastGateMoveMs_ = nowMs; }
+
+	void SetSpawnMapId(int mapId) { spawnMapId_ = mapId; }
+	int GetSpawnMapId() const { return spawnMapId_; }
 
 	void Possess(std::shared_ptr<Character> character);
 	void UnPossess();

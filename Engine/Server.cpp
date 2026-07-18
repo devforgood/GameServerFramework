@@ -16,6 +16,9 @@ GameChannel::GameChannel()
 {
 	world_ = new World();
 	world_->Init();
+	// 맵 데이터(Map.json monster_spawn)에 배치된 몬스터를 스폰한다.
+	// Init 과 분리해 벤치마크/테스트에서는 자동 스폰되지 않는다.
+	world_->SpawnMapMonsters();
 }
 
 void GameChannel::Join(GameParticipantPtr participant)

@@ -210,7 +210,8 @@ void PlayerController::handle(const syncnet::Login* msg)
 	PlayerRepository::AsyncLoad(player_);
 
 	// 최초 로그인 시 클라가 어느 맵(씬)을 로드하고 어디에 스폰할지 알 수 있도록
-	// 현재(기본) 맵 id 와 스폰 위치를 함께 반환한다.
+	// 맵 id 와 스폰 위치를 함께 반환한다. 기본은 기본 맵의 player_spawn 마커,
+	// 같은 userId 로 로그아웃한 이력이 있으면 그 마지막 위치(맵 포함)를 우선한다.
 	int mapId = 0;
 	syncnet::Vec3 spawnPos(0, 0, 0);
 	Map* primaryMap = world_->GetPrimaryMap();
@@ -219,6 +220,19 @@ void PlayerController::handle(const syncnet::Login* msg)
 		mapId = primaryMap->GetMapId();
 		spawnPos = primaryMap->GetPlayerSpawnPos();
 	}
+
+	int lastMapId = 0;
+	syncnet::Vec3 lastPos(0, 0, 0);
+	if (world_->GetLastLocation(userId, lastMapId, lastPos) && world_->FindMap(lastMapId) != nullptr)
+	{
+		mapId = lastMapId;
+		spawnPos = lastPos;
+		LOG.info("Login: userId '{}' 이전 위치로 스폰. mapId {}, pos({},{},{})",
+			userId, mapId, spawnPos.x(), spawnPos.y(), spawnPos.z());
+	}
+
+	// 클라의 AddAgent(Character) 를 이 맵으로 라우팅하기 위해 기억해 둔다.
+	player_->SetSpawnMapId(mapId);
 
 	// 최초 로그인 응답에 플레이어 uuid(재접속 토큰)를 실어 보낸다. 클라는 이를 저장했다가
 	// 재접속 시 되돌려 보낸다.

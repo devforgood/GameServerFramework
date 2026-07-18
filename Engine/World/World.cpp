@@ -114,6 +114,12 @@ void World::Init(const std::string& movementOverride)
 	}
 }
 
+void World::SpawnMapMonsters()
+{
+	for (auto& map : mapList_)
+		map->SpawnMonstersFromData();
+}
+
 void World::update(float deltaTime)
 {
 	timeStamp_->update();
@@ -233,6 +239,9 @@ void World::TickReconnectGrace(float deltaTime)
 		auto player = it->second.player;
 		LOG.info("reconnect grace expired for uuid '{}'. removing character.", it->first);
 
+		// 제거 전에 마지막 위치를 기록한다. 같은 userId 로 다시 로그인하면 이 위치로 스폰된다.
+		RememberLastLocation(player);
+
 		auto character = player->GetCharacter();
 		if (character != nullptr && character->GetMap() != nullptr)
 			character->GetMap()->OnRemoveAgent(character->GetActorId());
@@ -267,6 +276,36 @@ std::shared_ptr<Player> World::TryReconnect(const std::string& uuid)
 }
 
 
+
+void World::RememberLastLocation(const std::shared_ptr<Player>& player)
+{
+	if (player == nullptr || player->GetUserId().empty())
+		return;
+
+	auto character = player->GetCharacter();
+	if (character == nullptr || character->GetMap() == nullptr)
+		return;
+
+	// 캐릭터 위치는 서버 좌표계 → Login 응답/AddAgent 에 그대로 쓸 수 있게 클라 좌표계로 변환해 보관.
+	const Vector3& p = character->GetPosition();
+	lastLocations_[player->GetUserId()] = LastLocation{
+		character->GetMap()->GetMapId(),
+		syncnet::Vec3(p.convert_x(), p.convert_y(), p.convert_z()) };
+}
+
+bool World::GetLastLocation(const std::string& userId, int& outMapId, syncnet::Vec3& outPos) const
+{
+	if (userId.empty())
+		return false;
+
+	auto it = lastLocations_.find(userId);
+	if (it == lastLocations_.end())
+		return false;
+
+	outMapId = it->second.mapId;
+	outPos = it->second.pos;
+	return true;
+}
 
 Map* World::FindMap(int mapId)
 {
@@ -360,13 +399,38 @@ bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syn
 
 std::shared_ptr<Actor> World::OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos)
 {
-	// todo : map 선택 로직 추가
 	if (mapList_.empty())
 	{
 		LOG.error("World::OnAddAgent error: no map loaded (ResourceLoader 미로드?)");
 		return nullptr;
 	}
-	return mapList_.begin()->get()->OnAddAgent(player, type, pos);
+
+	Map* map = GetPrimaryMap();
+
+	// 캐릭터 스폰은 로그인 시 결정된 스폰 맵(기본 맵 또는 이전 위치의 맵)으로 라우팅한다.
+	// 몬스터(디버그 스폰 등)는 기존대로 기본 맵에 만든다.
+	if (type == syncnet::GameObjectType::GameObjectType_Character && player != nullptr)
+	{
+		Map* spawnMap = FindMap(player->GetSpawnMapId());
+		if (spawnMap != nullptr)
+			map = spawnMap;
+	}
+
+	auto actor = map->OnAddAgent(player, type, pos);
+
+	// 스폰 맵이 기본 맵과 다르면 브로드캐스트 등록을 스폰 맵으로 옮긴다.
+	// (접속 시 World::join 이 기본 맵의 players_ 에 등록해 두었기 때문.)
+	if (actor != nullptr
+		&& type == syncnet::GameObjectType::GameObjectType_Character
+		&& player != nullptr
+		&& map != GetPrimaryMap())
+	{
+		GetPrimaryMap()->leave(player);
+		map->Enter(player);
+		map->SendStateTo(player);
+	}
+
+	return actor;
 }
 
 void World::OnRemoveAgent(int agent_id)

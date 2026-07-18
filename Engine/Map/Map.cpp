@@ -204,6 +204,35 @@ syncnet::Vec3 Map::GetPlayerSpawnPos() const
 	return syncnet::Vec3(0, 0, 0);
 }
 
+int Map::SpawnMonstersFromData()
+{
+	if (mapData_ == nullptr)
+		return 0;
+
+	int spawned = 0;
+	for (const auto& s : mapData_->spawn_points.monster_spawn)
+	{
+		// 스폰 위치는 Map.json(클라 좌표계) 기준. OnAddAgent 내부(Vector3 변환)에서
+		// 클라 AddAgent 와 동일하게 서버 좌표계로 변환된다.
+		syncnet::Vec3 pos(
+			static_cast<float>(s.position.x),
+			static_cast<float>(s.position.y),
+			static_cast<float>(s.position.z));
+
+		if (OnAddAgent(nullptr, syncnet::GameObjectType::GameObjectType_Monster, &pos) == nullptr)
+		{
+			LOG.error("Map {} monster_spawn {} 위치({}, {}, {}) 몬스터 스폰 실패",
+				GetMapId(), s.id, s.position.x, s.position.y, s.position.z);
+			continue;
+		}
+		++spawned;
+	}
+
+	if (spawned > 0)
+		LOG.info("Map {} 몬스터 {}마리 스폰(monster_spawn 마커 기준)", GetMapId(), spawned);
+	return spawned;
+}
+
 int Map::ValidateMapDataOnNavMesh(const gamedata::Map* mapData, const NavMesh* navMesh)
 {
 	if (mapData == nullptr || navMesh == nullptr || !navMesh->IsLoaded())

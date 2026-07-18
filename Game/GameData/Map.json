@@ -17,7 +17,7 @@
         "position": {
           "x": 23.71,
           "y": 0.0,
-          "z": 0.0
+          "z": 6.86
         },
         "target_map_id": 14,
         "target_gate_id": 1,
@@ -39,7 +39,44 @@
           "spawn_delay": 0
         }
       ],
-      "monster_spawn": [],
+      "monster_spawn": [
+        {
+          "id": 1,
+          "position": {
+            "x": -4.0,
+            "y": 0.0,
+            "z": 3.0
+          },
+          "monster_id": 1,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "id": 2,
+          "position": {
+            "x": 6.0,
+            "y": 0.0,
+            "z": -3.0
+          },
+          "monster_id": 1,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "id": 3,
+          "position": {
+            "x": 14.0,
+            "y": 0.0,
+            "z": 4.0
+          },
+          "monster_id": 2,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
       "boss_spawn": []
     },
     "objects": {
@@ -75,7 +112,44 @@
     ],
     "spawn_points": {
       "player_spawn": [],
-      "monster_spawn": [],
+      "monster_spawn": [
+        {
+          "id": 1,
+          "position": {
+            "x": -14.0,
+            "y": 0.0,
+            "z": 3.0
+          },
+          "monster_id": 2,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "id": 2,
+          "position": {
+            "x": -6.0,
+            "y": 0.0,
+            "z": -4.0
+          },
+          "monster_id": 2,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "id": 3,
+          "position": {
+            "x": 2.0,
+            "y": 0.0,
+            "z": 3.0
+          },
+          "monster_id": 3,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
       "boss_spawn": []
     },
     "objects": {
@@ -529,7 +603,44 @@
           "spawn_delay": 0
         }
       ],
-      "monster_spawn": [],
+      "monster_spawn": [
+        {
+          "id": 1,
+          "position": {
+            "x": -4.0,
+            "y": 0.0,
+            "z": -3.0
+          },
+          "monster_id": 1,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "id": 2,
+          "position": {
+            "x": 8.0,
+            "y": 0.0,
+            "z": 3.0
+          },
+          "monster_id": 2,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "id": 3,
+          "position": {
+            "x": 16.0,
+            "y": 0.0,
+            "z": -4.0
+          },
+          "monster_id": 2,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
       "boss_spawn": []
     },
     "objects": {
@@ -565,7 +676,44 @@
     ],
     "spawn_points": {
       "player_spawn": [],
-      "monster_spawn": [],
+      "monster_spawn": [
+        {
+          "id": 1,
+          "position": {
+            "x": -14.0,
+            "y": 0.0,
+            "z": -3.0
+          },
+          "monster_id": 2,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "id": 2,
+          "position": {
+            "x": -5.0,
+            "y": 0.0,
+            "z": 4.0
+          },
+          "monster_id": 3,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        },
+        {
+          "id": 3,
+          "position": {
+            "x": 4.0,
+            "y": 0.0,
+            "z": -3.0
+          },
+          "monster_id": 3,
+          "spawn_interval": 30,
+          "boss_id": 0,
+          "spawn_delay": 0
+        }
+      ],
       "boss_spawn": []
     },
     "objects": {
