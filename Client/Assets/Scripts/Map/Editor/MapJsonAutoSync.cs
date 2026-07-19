@@ -210,10 +210,12 @@ public static class MapJsonAutoSync
     {
         Vector3 pos = info.position != null ? info.position.ToVector3() : Vector3.zero;
         string gateName = string.IsNullOrEmpty(info.name) ? comp.gateName : info.name;
+        GateType gateType = MapJsonUpdater.GateTypeFromJson(info.type);
 
         int changed = 0;
         if (comp.id != info.id
             || comp.gateName != gateName
+            || comp.gateType != gateType
             || comp.targetMapId != info.target_map_id
             || comp.targetGateId != info.target_gate_id
             || comp.requiredLevel != info.required_level)
@@ -221,6 +223,7 @@ public static class MapJsonAutoSync
             Undo.RecordObject(comp, "Map Auto Sync");
             comp.id = info.id;
             comp.gateName = gateName;
+            comp.gateType = gateType;
             comp.targetMapId = info.target_map_id;
             comp.targetGateId = info.target_gate_id;
             comp.requiredLevel = info.required_level;

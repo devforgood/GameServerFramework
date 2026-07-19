@@ -342,20 +342,44 @@ bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syn
 		return false;
 	}
 
-	// 목적지 맵에서 gateId 게이트를 찾아 도착 위치를 얻는다.
-	const gamedata::MapGate* gate = nullptr;
-	for (const auto& g : destData->gates)
+	// 도착 위치를 결정한다(Map.json = 클라 좌표계).
+	// gateId 0 은 단방향(one_way) 게이트의 스폰 지점 도착이다: 레이드 같은 인스턴스
+	// 던전 입구는 목적지에 짝 게이트가 없으므로 player_spawn 첫 지점에 내려준다.
+	syncnet::Vec3 arrivalPos(0, 0, 0);
+	if (gateId == 0)
 	{
-		if (g.id == gateId)
+		if (destData->spawn_points.player_spawn.empty())
 		{
-			gate = &g;
-			break;
+			LOG.error("World::ChangeMap error map {} has no player_spawn (gate 0 arrival)", mapId);
+			return false;
 		}
+		const auto& spawnPos = destData->spawn_points.player_spawn.front().position;
+		arrivalPos = syncnet::Vec3(
+			static_cast<float>(spawnPos.x),
+			static_cast<float>(spawnPos.y),
+			static_cast<float>(spawnPos.z));
 	}
-	if (gate == nullptr)
+	else
 	{
-		LOG.error("World::ChangeMap error gate {} not found in map {}", gateId, mapId);
-		return false;
+		// 목적지 맵에서 gateId 게이트를 찾아 도착 위치를 얻는다.
+		const gamedata::MapGate* gate = nullptr;
+		for (const auto& g : destData->gates)
+		{
+			if (g.id == gateId)
+			{
+				gate = &g;
+				break;
+			}
+		}
+		if (gate == nullptr)
+		{
+			LOG.error("World::ChangeMap error gate {} not found in map {}", gateId, mapId);
+			return false;
+		}
+		arrivalPos = syncnet::Vec3(
+			static_cast<float>(gate->position.x),
+			static_cast<float>(gate->position.y),
+			static_cast<float>(gate->position.z));
 	}
 
 	Map* oldMap = character->GetMap();
@@ -368,14 +392,9 @@ bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syn
 	// 새 맵에서 캐릭터를 재생성하려면 기존 빙의를 해제해야 한다(Character::PreCreate 검사 통과).
 	player->UnPossess();
 
-	// 게이트 위치(Map.json = 클라 좌표계)에 캐릭터를 새로 배치한다.
+	// 도착 위치(클라 좌표계)에 캐릭터를 새로 배치한다.
 	// OnAddAgent 내부에서 클라 AddAgent 와 동일하게 서버 좌표계로 변환된다.
-	syncnet::Vec3 gatePos(
-		static_cast<float>(gate->position.x),
-		static_cast<float>(gate->position.y),
-		static_cast<float>(gate->position.z));
-
-	auto newActor = destMap->OnAddAgent(player, syncnet::GameObjectType::GameObjectType_Character, &gatePos);
+	auto newActor = destMap->OnAddAgent(player, syncnet::GameObjectType::GameObjectType_Character, &arrivalPos);
 	if (newActor == nullptr)
 	{
 		LOG.error("World::ChangeMap error failed to add character to map {}", mapId);
@@ -390,7 +409,7 @@ bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syn
 	// 응답 전송 이후에 별도로 수행한다.
 	destMap->Enter(player);
 
-	outPos = gatePos;
+	outPos = arrivalPos;
 	outAgentId = newActor->GetActorId();
 	LOG.info("World::ChangeMap success: player {} -> map {} gate {}, newAgentId {}, pos({},{},{})",
 		player->GetPlayerId(), mapId, gateId, outAgentId, outPos.x(), outPos.y(), outPos.z());

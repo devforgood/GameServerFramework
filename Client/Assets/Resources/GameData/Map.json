@@ -14,6 +14,7 @@
       {
         "id": 1,
         "name": "Gate1",
+        "type": "one_way",
         "position": {
           "x": 23.71,
           "y": 0.0,
@@ -100,6 +101,7 @@
       {
         "id": 1,
         "name": "Gate1",
+        "type": "one_way",
         "position": {
           "x": -23.39,
           "y": 0.0,
@@ -173,6 +175,7 @@
       {
         "id": 1,
         "name": "Lair Entrance",
+        "type": "one_way",
         "position": {
           "x": 50.0,
           "y": 0.0,
@@ -280,6 +283,7 @@
       {
         "id": 1,
         "name": "Dungeon Entrance",
+        "type": "one_way",
         "position": {
           "x": 50.0,
           "y": 0.0,
@@ -460,6 +464,7 @@
       {
         "id": 1,
         "name": "Arena Entrance",
+        "type": "one_way",
         "position": {
           "x": 50.0,
           "y": 0.0,
@@ -578,6 +583,7 @@
       {
         "id": 1,
         "name": "Gate1",
+        "type": "two_way",
         "position": {
           "x": 23.71,
           "y": 0.0,
@@ -664,6 +670,7 @@
       {
         "id": 1,
         "name": "Gate1",
+        "type": "two_way",
         "position": {
           "x": -23.39,
           "y": 0.0,

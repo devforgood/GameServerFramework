@@ -24,6 +24,10 @@ public class Session : MonoBehaviour
 	// 플레이어가 게이트 밖으로 나가면(OnTriggerExit) 해제한다. Gate.cs 에서 참조/해제한다.
 	public bool SuppressGateWarpUntilExit { get; set; } = false;
 
+	// 다음 씬 로드 완료 시 재이동 억제를 걸지 여부. 단방향(one_way) 게이트로 스폰 지점에
+	// 도착하는 경우(gateId 0)는 게이트 위가 아니므로 억제하면 다음 게이트 진입이 한 번 무시된다.
+	private bool suppressWarpOnNextSceneLoad = true;
+
 	int seq = 1;
 	TcpConnection session;
 	int message_count = 0;
@@ -662,6 +666,10 @@ public class Session : MonoBehaviour
 
                 Debug.Log($"EnterGate Success. new agentId:{player_agnet_id}, pos({destPos.x},{destPos.y},{destPos.z})");
 
+                // 게이트 위 도착(gateId != 0)일 때만 재이동 억제가 필요하다.
+                // 스폰 지점 도착(gateId 0, one_way 인스턴스 입구)은 게이트 위가 아니다.
+                suppressWarpOnNextSceneLoad = enterGate.GateId != 0;
+
                 // 씬 로드 동안 네트워크 동기화 처리를 멈춘다. 서버는 응답 직후 새 맵 상태(SendStateTo)를
                 // 보내는데, 씬 로드 전에 처리하면 새로 만든 액터가 씬 전환으로 파괴되기 때문이다.
                 // 큐에 남겨 두었다가 씬 로드 완료(OnGateSceneLoaded) 후 처리한다.
@@ -712,9 +720,10 @@ public class Session : MonoBehaviour
         isLoadingScene = false;
         isChangingMap = false;
 
-        // 도착 캐릭터는 목적지 게이트 위치에 스폰되어 도착 즉시 트리거가 재발동한다.
-        // 밖으로 걸어 나가기 전까지는 재이동을 억제한다(무한 왕복 방지).
-        SuppressGateWarpUntilExit = true;
+        // 게이트 위 도착이면 도착 즉시 트리거가 재발동하므로, 밖으로 걸어 나가기 전까지
+        // 재이동을 억제한다(무한 왕복 방지). 스폰 지점 도착(one_way, gateId 0)은 억제하지 않는다.
+        SuppressGateWarpUntilExit = suppressWarpOnNextSceneLoad;
+        suppressWarpOnNextSceneLoad = true;
 
         Debug.Log($"Gate scene loaded: {scene.name}");
 

@@ -61,6 +61,7 @@ public class MapJsonUpdater : EditorWindow
     {
         public int id;
         public string name;
+        public string type;   // "two_way"(짝 필수) | "one_way"(인스턴스 입구, target_gate_id 0 = player_spawn 도착)
         public Vec3 position;
         public int target_map_id;
         public int target_gate_id;
@@ -69,6 +70,16 @@ public class MapJsonUpdater : EditorWindow
         [JsonExtensionData]
         public IDictionary<string, JToken> extra;
     }
+
+    // Gate.gateType(enum) ↔ Map.json gates[].type(문자열) 변환.
+    public const string GateTypeTwoWay = "two_way";
+    public const string GateTypeOneWay = "one_way";
+
+    public static string GateTypeToJson(GateType t)
+        => t == GateType.OneWay ? GateTypeOneWay : GateTypeTwoWay;
+
+    public static GateType GateTypeFromJson(string s)
+        => s == GateTypeOneWay ? GateType.OneWay : GateType.TwoWay;
 
     [System.Serializable]
     public class SpawnPointInfo
@@ -218,6 +229,11 @@ public class MapJsonUpdater : EditorWindow
         if (map.navmesh_path == null) map.navmesh_path = "";
         if (map.size == null) map.size = new MapSize();
         if (map.gates == null) map.gates = new List<GateInfo>();
+        foreach (var gate in map.gates)
+        {
+            // 타입 미지정 게이트는 기본 양방향으로 저장한다(데이터 검증은 유효한 타입을 요구).
+            if (string.IsNullOrEmpty(gate.type)) gate.type = GateTypeTwoWay;
+        }
         if (map.spawn_points == null) map.spawn_points = new MapSpawnPoints();
         if (map.spawn_points.player_spawn == null) map.spawn_points.player_spawn = new List<SpawnPointInfo>();
         if (map.spawn_points.monster_spawn == null) map.spawn_points.monster_spawn = new List<SpawnPointInfo>();
@@ -301,15 +317,42 @@ public class MapJsonUpdater : EditorWindow
                     problems++;
                 }
 
+                string gateLabel = $"맵 '{map.name}'({map.id}) 게이트 '{gate.name}'(id:{gate.id})";
+
+                if (gate.type != GateTypeTwoWay && gate.type != GateTypeOneWay)
+                {
+                    Debug.LogWarning($"[MapValidate] {gateLabel} → type 은 '{GateTypeTwoWay}' 또는 '{GateTypeOneWay}' 여야 합니다 (현재: '{gate.type}')");
+                    problems++;
+                }
+
                 if (!mapById.TryGetValue(gate.target_map_id, out var targetMap))
                 {
-                    Debug.LogWarning($"[MapValidate] 맵 '{map.name}'({map.id}) 게이트 '{gate.name}'(id:{gate.id}) → 존재하지 않는 맵 {gate.target_map_id} 참조");
+                    Debug.LogWarning($"[MapValidate] {gateLabel} → 존재하지 않는 맵 {gate.target_map_id} 참조");
                     problems++;
+                }
+                else if (gate.type == GateTypeOneWay && gate.target_gate_id == 0)
+                {
+                    // one_way + target_gate_id 0 = 목적지 맵의 player_spawn 지점 도착(레이드 등 인스턴스 입구).
+                    if (targetMap.spawn_points.player_spawn.Count == 0)
+                    {
+                        Debug.LogWarning($"[MapValidate] {gateLabel} → target_gate_id 0(스폰 지점 도착)인데 맵 '{targetMap.name}'({targetMap.id})에 player_spawn 이 없습니다");
+                        problems++;
+                    }
                 }
                 else if (!targetMap.gates.Any(g => g.id == gate.target_gate_id))
                 {
-                    Debug.LogWarning($"[MapValidate] 맵 '{map.name}'({map.id}) 게이트 '{gate.name}'(id:{gate.id}) → 맵 '{targetMap.name}'({targetMap.id})에 없는 게이트 {gate.target_gate_id} 참조");
+                    Debug.LogWarning($"[MapValidate] {gateLabel} → 맵 '{targetMap.name}'({targetMap.id})에 없는 게이트 {gate.target_gate_id} 참조");
                     problems++;
+                }
+                else if (gate.type == GateTypeTwoWay)
+                {
+                    // 양방향 게이트는 짝이어야 한다: 상대도 two_way 이고 이 게이트를 되가리켜야 한다.
+                    var back = targetMap.gates.First(g => g.id == gate.target_gate_id);
+                    if (back.type != GateTypeTwoWay || back.target_map_id != map.id || back.target_gate_id != gate.id)
+                    {
+                        Debug.LogWarning($"[MapValidate] {gateLabel} → two_way 짝 불일치: 맵 '{targetMap.name}'({targetMap.id}) 게이트 {gate.target_gate_id} 가 two_way 로 이 게이트를 되가리켜야 합니다");
+                        problems++;
+                    }
                 }
             }
 
@@ -544,7 +587,7 @@ public class MapJsonUpdater : EditorWindow
 
                 foreach (var gate in map.gates)
                 {
-                    EditorGUILayout.LabelField($"  Gate {gate.id}: {gate.name} → map {gate.target_map_id}, gate {gate.target_gate_id} (Lv.{gate.required_level})");
+                    EditorGUILayout.LabelField($"  Gate {gate.id}: {gate.name} [{gate.type}] → map {gate.target_map_id}, gate {gate.target_gate_id} (Lv.{gate.required_level})");
                 }
 
                 EditorGUILayout.BeginHorizontal();
@@ -701,6 +744,7 @@ public class MapJsonUpdater : EditorWindow
             {
                 id = id,
                 name = gateName,
+                type = GateTypeToJson(comp.gateType),
                 position = new Vec3(comp.transform.position),
                 target_map_id = comp.targetMapId,
                 target_gate_id = comp.targetGateId,
@@ -942,6 +986,7 @@ public class MapJsonUpdater : EditorWindow
             var comp = go.AddComponent<Gate>();
             comp.id = gate.id;
             comp.gateName = gate.name;
+            comp.gateType = GateTypeFromJson(gate.type);
             comp.targetMapId = gate.target_map_id;
             comp.targetGateId = gate.target_gate_id;
             comp.requiredLevel = gate.required_level;

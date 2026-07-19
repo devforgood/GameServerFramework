@@ -2,6 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+// Map.json의 gates[].type 과 대응한다.
+// TwoWay: 입구/출구 겸용. 목적지 게이트와 짝을 이뤄야 한다(상대도 TwoWay + 상호 참조).
+// OneWay: 레이드 등 인스턴스 던전 입구용. 짝이 필요 없고,
+//         Target Gate Id 를 0 으로 두면 목적지 맵의 player_spawn 지점에 도착한다.
+public enum GateType
+{
+    TwoWay,
+    OneWay,
+}
+
 public class Gate : MonoBehaviour
 {
     // Map.json의 gates[] 항목과 1:1로 대응한다.
@@ -11,9 +21,11 @@ public class Gate : MonoBehaviour
     public int id;
     [Tooltip("게이트 이름. Map.json의 gates[].name. 비우면 GameObject 이름을 사용한다.")]
     public string gateName;
+    [Tooltip("게이트 타입. Map.json의 gates[].type. TwoWay는 목적지 게이트와 짝(상호 참조) 필수, OneWay는 인스턴스 던전 입구용(Target Gate Id 0이면 목적지 player_spawn 도착).")]
+    public GateType gateType = GateType.TwoWay;
     [Tooltip("목적지 맵 id. Map.json의 target_map_id.")]
     public int targetMapId;
-    [Tooltip("목적지 게이트 id. Map.json의 target_gate_id.")]
+    [Tooltip("목적지 게이트 id. Map.json의 target_gate_id. OneWay 게이트는 0이면 목적지 맵의 player_spawn 도착.")]
     public int targetGateId;
     [Tooltip("게이트 이용에 필요한 레벨. Map.json의 required_level.")]
     public int requiredLevel = 1;
@@ -90,10 +102,10 @@ public class Gate : MonoBehaviour
         }
     }
 
-    // 씬 뷰에서 게이트 영역을 파란색 와이어 큐브로 표시한다.
+    // 씬 뷰에서 게이트 영역을 와이어 큐브로 표시한다(양방향: 파란색, 단방향: 주황색).
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.blue;
+        Gizmos.color = gateType == GateType.OneWay ? new Color(1f, 0.6f, 0f) : Color.blue;
         var box = GetComponent<BoxCollider>();
         if (box != null)
         {

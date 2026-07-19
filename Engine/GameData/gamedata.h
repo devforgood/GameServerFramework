@@ -133,6 +133,7 @@ namespace gamedata
         int required_level = 0;
         int target_gate_id = 0;
         int target_map_id = 0;
+        std::string type;
     };
 
 
@@ -436,6 +437,7 @@ namespace gamedata
         if (j.contains("required_level") && !j.at("required_level").is_null()) j.at("required_level").get_to(o.required_level);
         if (j.contains("target_gate_id") && !j.at("target_gate_id").is_null()) j.at("target_gate_id").get_to(o.target_gate_id);
         if (j.contains("target_map_id") && !j.at("target_map_id").is_null()) j.at("target_map_id").get_to(o.target_map_id);
+        if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
     }
 
 

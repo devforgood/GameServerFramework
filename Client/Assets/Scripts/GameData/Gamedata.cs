@@ -142,6 +142,7 @@ namespace Gamedata
         public int required_level;
         public int target_gate_id;
         public int target_map_id;
+        public string type;
     }
 
 
