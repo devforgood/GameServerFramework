@@ -263,7 +263,7 @@
       ],
       "movable_objects": []
     },
-    "navmesh_path": null
+    "navmesh_path": ""
   },
   {
     "id": 9,
@@ -443,7 +443,7 @@
         }
       ]
     },
-    "navmesh_path": null
+    "navmesh_path": ""
   },
   {
     "id": 12,
@@ -561,7 +561,7 @@
       ],
       "movable_objects": []
     },
-    "navmesh_path": null
+    "navmesh_path": ""
   },
   {
     "id": 13,

@@ -212,8 +212,10 @@ public class MapJsonUpdater : EditorWindow
     }
 
     // JSON에 필드가 null/누락으로 들어있어도 툴이 NRE 없이 동작하도록 기본값을 채운다.
+    // 문자열은 null 대신 "" 로 저장한다 — 클라이언트 JsonUtility 는 null 값에서 파싱 전체가 실패한다.
     private static void EnsureDefaults(MapData map)
     {
+        if (map.navmesh_path == null) map.navmesh_path = "";
         if (map.size == null) map.size = new MapSize();
         if (map.gates == null) map.gates = new List<GateInfo>();
         if (map.spawn_points == null) map.spawn_points = new MapSpawnPoints();

@@ -11,6 +11,10 @@
      한 객체에 함께 등장한 적이 없으면 오타로 본다.
      - min_damage/max_damage 처럼 한 객체에 공존하는 쌍은 의도된 별개 필드로 허용.
      - progress1/progress2 처럼 숫자 접미사만 다른 쌍은 허용.
+  4) null 값 금지: Unity 클라이언트의 JsonUtility 는 null 값을 만나면
+     "JSON parse error: Invalid value" 로 파싱 전체가 실패한다(과거 Map.json 의
+     navmesh_path: null 이 맵 테이블 로드를 통째로 죽인 사례). 값이 없으면
+     빈 문자열/0 을 쓰거나 필드를 생략한다(생략은 양쪽 로더 모두 허용).
 """
 
 from collections import defaultdict
@@ -62,6 +66,22 @@ def validate_table(table_name, entries):
     duplicated = sorted({x for x in ids if ids.count(x) > 1})
     if duplicated:
         errors.append(f"{table_name}: 중복 id {duplicated}")
+
+    # 4) null 값 금지 (Unity JsonUtility 는 null 에서 파싱 전체가 실패한다)
+    def find_nulls(obj, path):
+        if obj is None:
+            errors.append(
+                f"{table_name}: null 값 금지 ({path}). "
+                f"클라이언트 JsonUtility 파싱이 실패합니다 — 빈 문자열/0 을 쓰거나 필드를 생략하세요.")
+        elif isinstance(obj, dict):
+            for key, value in obj.items():
+                find_nulls(value, f"{path}.{key}")
+        elif isinstance(obj, list):
+            for idx, item in enumerate(obj):
+                find_nulls(item, f"{path}[{idx}]")
+
+    for i, entry in enumerate(entries):
+        find_nulls(entry, f"{table_name}[{i}]")
 
     # 3) 필드명 오타 의심 검사 (중첩 객체 포함, 경로 단위로 비교)
     field_paths = defaultdict(set)  # (path, name) -> 등장한 객체 인스턴스 id 집합

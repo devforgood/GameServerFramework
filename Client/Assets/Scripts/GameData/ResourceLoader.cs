@@ -34,8 +34,21 @@ namespace Assets.Scripts.GameData
                 return false;
             }
 
-            string wrapped = "{\"items\":" + asset.text + "}";
-            TList listObj = JsonUtility.FromJson<TList>(wrapped);
+            // 한 테이블의 파싱 실패가 나머지 테이블 로드까지 죽이지 않도록 여기서 잡는다.
+            // (JsonUtility 는 null 값 등에서 ArgumentException 을 던진다 — 어떤 테이블이
+            //  왜 실패했는지 로그로 남겨야 원인 추적이 가능하다)
+            TList listObj;
+            try
+            {
+                string wrapped = "{\"items\":" + asset.text + "}";
+                listObj = JsonUtility.FromJson<TList>(wrapped);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"{typeof(TElement).Name} 데이터 파싱 실패 ({resourcePath}): {e.Message}\n" +
+                               "JSON 에 null 값이 있으면 JsonUtility 가 실패합니다. GameDataFlow 검증을 실행하세요.");
+                return false;
+            }
             List<TElement> list = getList(listObj);
             if (list == null)
             {
