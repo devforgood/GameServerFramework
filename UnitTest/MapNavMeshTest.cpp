@@ -12,19 +12,12 @@
 
 namespace
 {
-	// 테스트 실행 위치에 따라 GameData 경로가 달라지므로 후보들을 순회한다.
+	// 리소스는 통합 폴더(Client/Assets/Resources/GameData) 한 곳에서 읽는다.
 	std::string ResolveGameDataPath()
 	{
-		const std::vector<std::string> candidates = {
-			"GameData/",
-			"../UnitTest/GameData/",
-			"../../UnitTest/GameData/",
-		};
-		for (const auto& p : candidates)
-		{
-			if (std::filesystem::exists(p + "Map.json"))
-				return p;
-		}
+		const std::string& p = GameDataPath::Resolve();
+		if (std::filesystem::exists(p + "Map.json"))
+			return p;
 		return "";
 	}
 

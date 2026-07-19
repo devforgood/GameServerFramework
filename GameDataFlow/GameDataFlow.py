@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 import sys
 
 from schema_infer import build_structs
@@ -17,8 +16,10 @@ RED = '\033[91m'
 GREEN = '\033[92m'
 RESET = '\033[0m'
 
-# Source data
-GAMEDATA_DIR = "../GameData"
+# Source data — 단일 리소스 위치.
+# 모든 소비자(Unity 클라이언트, Game 서버, UnitTest, Benchmark)가 이 폴더 하나를 읽는다.
+# (C++ 쪽은 GameDataPath::Resolve() 가 리포 안에서 이 경로를 찾아낸다. 복사본 없음)
+GAMEDATA_DIR = "../Client/Assets/Resources/GameData"
 
 # Generated C++ data model + loader (built into the Engine static lib)
 ENGINE_GAMEDATA_DIR = "../Engine/GameData/"
@@ -28,43 +29,6 @@ SERVER_SRC_DIR = "../Engine/"
 CLIENT_SRC_DIR = "../Client/Assets/Scripts/"
 # Generated C# data model (Unity client)
 CLIENT_MODEL_PATH = "../Client/Assets/Scripts/GameData/Gamedata.cs"
-
-# JSON data is copied verbatim into each consumer's runtime GameData folder
-# x64/* 는 솔루션 출력(배포) 폴더 — Game.exe/테스트가 실행 위치에 따라 여기서 읽으므로
-# 함께 갱신하지 않으면 낡은 데이터를 읽는 함정이 된다.
-DATA_COPY_DIRS = [
-    "../Client/Assets/Resources/GameData/",
-    "../Game/GameData/",
-    "../UnitTest/GameData/",
-    "../x64/Debug/GameData/",
-    "../x64/Release/GameData/",
-]
-
-# GameData에서 관리되는 lua 스크립트
-LUA_SCRIPTS = [
-    "../GameData/behavior_tree.lua",
-    "../GameData/mob.lua",
-    "../GameData/gamemode_field.lua",
-    "../GameData/gamemode_raid.lua",
-]
-LUA_COPY_DIRS = [
-    "../Game/GameData/",
-    "../UnitTest/GameData/",
-    "../x64/Debug/GameData/",
-    "../x64/Release/GameData/",
-]
-
-# GameData에서 관리되는 정적 에셋 (behavior tree XML, navmesh 바이너리 등)
-STATIC_ASSETS = [
-    "../GameData/Monster.xml",
-    "../GameData/solo_navmesh.bin",
-]
-STATIC_ASSET_COPY_DIRS = [
-    "../Game/GameData/",
-    "../UnitTest/GameData/",
-    "../x64/Debug/GameData/",
-    "../x64/Release/GameData/",
-]
 
 
 def load_table_meta():
@@ -83,22 +47,6 @@ def load_table_data(json_path):
     except Exception as e:
         print(f"{RED}[ERROR] {json_path} read/parse error: {e}{RESET}")
         return None
-
-
-def collect_map_navmeshes():
-    """Map.json의 navmesh_path에 지정된 navmesh 바이너리 경로 목록을 수집한다."""
-    maps = load_table_data("Map.json")
-    if maps is None:
-        return []
-
-    paths = []
-    for m in maps:
-        navmesh = m.get("navmesh_path")
-        if navmesh:
-            asset_path = os.path.join(GAMEDATA_DIR, navmesh)
-            if asset_path not in paths:
-                paths.append(asset_path)
-    return paths
 
 
 def main():
@@ -151,16 +99,6 @@ def main():
         except Exception as e:
             print(f"{RED}[ERROR] Failed to generate factory for {table_name}: {e}{RESET}")
 
-        # Copy the JSON verbatim into each runtime data folder.
-        for target_dir in DATA_COPY_DIRS:
-            try:
-                os.makedirs(target_dir, exist_ok=True)
-                shutil.copy2(os.path.join(GAMEDATA_DIR, table["output_file"]),
-                             os.path.join(target_dir, table["output_file"]))
-                print(f"{GREEN}[OK] {table['output_file']} copied to {target_dir}{RESET}")
-            except Exception as e:
-                print(f"{RED}[ERROR] {table['output_file']} copy to {target_dir} failed: {e}{RESET}")
-
     # C++ data model + loader
     try:
         generate_gamedata_header(ENGINE_GAMEDATA_DIR, all_structs)
@@ -175,31 +113,6 @@ def main():
         print(f"{GREEN}[OK] Generated C# Gamedata model{RESET}")
     except Exception as e:
         print(f"{RED}[ERROR] Failed to generate C# model: {e}{RESET}")
-
-    # lua 스크립트 복사
-    for target_dir in LUA_COPY_DIRS:
-        os.makedirs(target_dir, exist_ok=True)
-        for lua_path in LUA_SCRIPTS:
-            try:
-                shutil.copy2(lua_path, os.path.join(target_dir, os.path.basename(lua_path)))
-                print(f"{GREEN}[OK] {os.path.basename(lua_path)} copied to {target_dir}{RESET}")
-            except Exception as e:
-                print(f"{RED}[ERROR] {lua_path} copy to {target_dir} failed: {e}{RESET}")
-
-    # 정적 에셋 복사 (Monster.xml, solo_navmesh.bin 등)
-    # + Map.json의 navmesh_path에 지정된 navmesh 바이너리도 함께 배포
-    static_assets = STATIC_ASSETS + collect_map_navmeshes()
-    for target_dir in STATIC_ASSET_COPY_DIRS:
-        os.makedirs(target_dir, exist_ok=True)
-        for asset_path in static_assets:
-            if not os.path.exists(asset_path):
-                print(f"{RED}[WARN] {asset_path} not found, skipping{RESET}")
-                continue
-            try:
-                shutil.copy2(asset_path, os.path.join(target_dir, os.path.basename(asset_path)))
-                print(f"{GREEN}[OK] {os.path.basename(asset_path)} copied to {target_dir}{RESET}")
-            except Exception as e:
-                print(f"{RED}[ERROR] {asset_path} copy to {target_dir} failed: {e}{RESET}")
 
     # 검증/로드 실패가 있으면 빌드 파이프라인이 실패하도록 종료 코드로 알린다.
     if had_error:

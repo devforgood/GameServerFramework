@@ -194,22 +194,12 @@ public class MapJsonUpdater : EditorWindow
         Debug.Log($"Map.json loaded from: {mapJsonPath} (maps: {mapDataList.Count})");
     }
 
-    // GameData 디렉토리에서 Map.json 찾기 (에디터 실행 위치에 따라 여러 경로 시도). 없으면 null.
+    // 게임 데이터 단일 소스: Assets/Resources/GameData/Map.json.
+    // (서버/UnitTest/Benchmark 도 GameDataPath::Resolve() 로 같은 폴더를 읽는다. 사본 없음)
     public static string FindMapJsonPath()
     {
-        string[] possiblePaths = {
-            Path.Combine(Application.dataPath, "..", "..", "..", "GameData", "Map.json"), // Client/Assets -> GameData
-            Path.Combine(Application.dataPath, "..", "..", "GameData", "Map.json"),      // Assets -> GameData
-            Path.Combine(Application.dataPath, "..", "GameData", "Map.json"),            // Assets -> GameData
-            Path.Combine(Directory.GetCurrentDirectory(), "GameData", "Map.json")       // 현재 디렉토리 -> GameData
-        };
-
-        foreach (string path in possiblePaths)
-        {
-            if (File.Exists(path))
-                return Path.GetFullPath(path);
-        }
-        return null;
+        string path = Path.Combine(Application.dataPath, "Resources", "GameData", "Map.json");
+        return File.Exists(path) ? Path.GetFullPath(path) : null;
     }
 
     public static List<MapData> LoadMapList(string path)
@@ -246,8 +236,7 @@ public class MapJsonUpdater : EditorWindow
         try
         {
             SaveMapList(mapJsonPath, mapDataList);
-            DeployMapJsonCopies(mapJsonPath);
-            Debug.Log($"Map JSON saved to: {mapJsonPath} (+ Client/Game/UnitTest 사본 복사)\n" +
+            Debug.Log($"Map JSON saved to: {mapJsonPath}\n" +
                       "스키마(필드 구조)가 바뀐 경우에는 GameDataFlow/GameDataFlow.py 로 코드젠도 갱신하세요.");
             AssetDatabase.Refresh();
         }
@@ -342,34 +331,6 @@ public class MapJsonUpdater : EditorWindow
         return problems;
     }
 
-    // Map.json을 소비처 런타임 GameData 폴더로 그대로 복사한다.
-    // (GameDataFlow.py의 JSON verbatim 복사와 동일 대상. 코드젠/navmesh 배포는 GameDataFlow 몫)
-    public static void DeployMapJsonCopies(string sourcePath)
-    {
-        string gameDataDir = Path.GetDirectoryName(sourcePath);
-        string root = Path.GetDirectoryName(gameDataDir); // 리포지토리 루트
-        string[] targetDirs = {
-            Path.Combine(root, "Client", "Assets", "Resources", "GameData"),
-            Path.Combine(root, "Game", "GameData"),
-            Path.Combine(root, "UnitTest", "GameData"),
-        };
-
-        foreach (string dir in targetDirs)
-        {
-            if (!Directory.Exists(dir))
-                continue; // 대상 폴더가 없으면 배포 대상이 아니다
-
-            try
-            {
-                File.Copy(sourcePath, Path.Combine(dir, Path.GetFileName(sourcePath)), true);
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"Map.json 사본 복사 실패 ({dir}): {e.Message}");
-            }
-        }
-    }
-
     // ---------------------------------------------------------------------
     // GUI
     // ---------------------------------------------------------------------
@@ -402,8 +363,8 @@ public class MapJsonUpdater : EditorWindow
         if (newAuto != auto)
             MapJsonAutoSync.Enabled = newAuto;
 
-        EditorGUILayout.HelpBox("저장 시 Map.json 사본은 Client/Game/UnitTest에 자동 복사됩니다.\n" +
-                                "코드젠(Gamedata.cs/gamedata.h)과 navmesh 배포는 스키마 변경 시 GameDataFlow.py를 실행하세요.", MessageType.Info);
+        EditorGUILayout.HelpBox("게임 데이터는 Assets/Resources/GameData 한 곳에서 관리됩니다 (서버/테스트도 같은 폴더를 읽음).\n" +
+                                "코드젠(Gamedata.cs/gamedata.h)은 스키마 변경 시 GameDataFlow.py를 실행하세요.", MessageType.Info);
 
         scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
@@ -540,6 +501,7 @@ public class MapJsonUpdater : EditorWindow
         {
             File.Copy(genPath, gameDataPath, true);
             map.navmesh_path = fileName;
+            AssetDatabase.Refresh(); // GameData가 Assets 안에 있으므로 임포트 갱신
             Debug.Log($"NavMesh copied: {genPath} -> {gameDataPath}. navmesh_path='{fileName}' (Save Map JSON 필요)");
         }
     }

@@ -48,7 +48,7 @@ World::~World()
 
 void World::Init(const std::string& movementOverride)
 {
-	Monster::Initialize("mob.lua");
+	Monster::Initialize(GameDataPath::Resolve() + "mob.lua");
 	Monster::registerLuaFunctionAll();
 
 	// 게임 모드용 공유 lua 상태 생성 + 호스트 함수(GM_*) 등록.

@@ -144,7 +144,9 @@
   </ItemDefinitionGroup>
   <!-- Generated GameData model + JSON resource loader -->
   <ItemGroup>
+    <ClCompile Include="GameData\GameDataPath.cpp" />
     <ClCompile Include="GameData\ResourceLoader.cpp" />
+    <ClInclude Include="GameData\GameDataPath.h" />
     <ClInclude Include="GameData\ResourceLoader.h" />
     <ClInclude Include="GameData\gamedata.h" />
   </ItemGroup>

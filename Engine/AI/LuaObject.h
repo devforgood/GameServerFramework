@@ -8,8 +8,29 @@ class LuaObject
 {
 private:
 
+    // 스크립트가 있는 폴더를 package.path 앞에 추가한다.
+    // mob.lua 의 require("behavior_tree") 같은 모듈 로드가 실행 위치(CWD)와 무관하게
+    // 스크립트와 같은 폴더(통합 GameData)에서 해석되도록 한다.
+    static void addScriptDirToPackagePath(lua_State* L, const std::string& scriptPath) {
+        size_t slash = scriptPath.find_last_of("/\\");
+        if (slash == std::string::npos)
+            return;
+        std::string dir = scriptPath.substr(0, slash + 1);
+
+        lua_getglobal(L, "package");
+        lua_getfield(L, -1, "path");
+        std::string path = dir + "?.lua;";
+        if (const char* current = lua_tostring(L, -1))
+            path += current;
+        lua_pop(L, 1);
+        lua_pushstring(L, path.c_str());
+        lua_setfield(L, -2, "path");
+        lua_pop(L, 1);
+    }
+
     // Lua 스크립트 로딩 함수
     static void loadLuaScript(lua_State* L, const std::string& script) {
+        addScriptDirToPackagePath(L, script);
         if (luaL_loadfile(L, script.c_str()) != LUA_OK) {
             std::cerr << "Lua Error: " << lua_tostring(L, -1) << std::endl;
         }

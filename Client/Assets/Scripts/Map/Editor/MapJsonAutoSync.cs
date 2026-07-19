@@ -10,7 +10,8 @@ using Newtonsoft.Json;
 //
 // 방향 규칙:
 // - 씬을 여는 순간에만 JSON이 이긴다: Map.json 기준으로 씬 마커를 생성/갱신/삭제한다.
-//   (게이트는 id, 오브젝트는 objectId로 매칭하여 기존 오브젝트(프리팹 인스턴스 포함)를 보존한 채 값만 맞춘다)
+//   (게이트는 id — id 미발급 시 이름 폴백, 오브젝트는 objectId로 매칭하여
+//    기존 오브젝트(프리팹 인스턴스 포함)를 보존한 채 값만 맞춘다)
 // - 그 이후에는 씬 편집이 이긴다: 마커 추가/삭제/이동/필드 변경을 감지해
 //   디바운스(1초) 후 Map.json을 자동 저장한다.
 //
@@ -122,7 +123,7 @@ public static class MapJsonAutoSync
         }
     }
 
-    // --- 게이트: Gate.id 로 매칭 ---
+    // --- 게이트: Gate.id 로 매칭, id 미발급(0)/불일치 시 이름으로 폴백 매칭 ---
 
     private static int ReconcileGates(MapJsonUpdater.MapData map)
     {
@@ -130,9 +131,28 @@ public static class MapJsonAutoSync
         var comps = Object.FindObjectsOfType<Gate>(true).ToList();
         var used = new HashSet<Gate>();
 
+        // 1차: id 매칭 (이름 변경에 안전)
+        var pending = new List<MapJsonUpdater.GateInfo>();
         foreach (var info in map.gates)
         {
             var comp = comps.FirstOrDefault(c => c.id == info.id && !used.Contains(c));
+            if (comp != null)
+            {
+                used.Add(comp);
+                changes += ApplyGate(comp, info);
+            }
+            else
+            {
+                pending.Add(info);
+            }
+        }
+
+        // 2차: id로 짝을 못 찾은 항목은 이름(gateName, 없으면 GameObject 이름)으로 짝짓는다.
+        // 씬에 id가 저장되지 않은 게이트(프리팹 기본값 0)의 마이그레이션 경로 —
+        // 삭제/재생성 대신 값만 갱신하며, ApplyGate가 id를 컴포넌트에 기록해 다음부터는 id로 매칭된다.
+        foreach (var info in pending)
+        {
+            var comp = comps.FirstOrDefault(c => !used.Contains(c) && GateNameMatches(c, info.name));
             if (comp == null)
             {
                 comp = CreateGate(info);
@@ -149,6 +169,14 @@ public static class MapJsonAutoSync
             changes++;
         }
         return changes;
+    }
+
+    private static bool GateNameMatches(Gate comp, string jsonName)
+    {
+        if (string.IsNullOrEmpty(jsonName))
+            return false;
+        string compName = string.IsNullOrEmpty(comp.gateName) ? comp.gameObject.name : comp.gateName;
+        return jsonName.Equals(compName, System.StringComparison.OrdinalIgnoreCase);
     }
 
     private static Gate CreateGate(MapJsonUpdater.GateInfo info)
@@ -582,8 +610,7 @@ public static class MapJsonAutoSync
             MapJsonUpdater.ValidateMapReferences(maps);
             MapJsonUpdater.BackupBeforeWrite(path);
             File.WriteAllText(path, json);
-            MapJsonUpdater.DeployMapJsonCopies(path);
-            Debug.Log($"[MapAutoSync] '{scene.name}' 마커 변경 감지 → Map.json 자동 저장 (+ Client/Game/UnitTest 사본 복사)");
+            Debug.Log($"[MapAutoSync] '{scene.name}' 마커 변경 감지 → Map.json 자동 저장");
             if (window != null)
                 window.Repaint();
         }

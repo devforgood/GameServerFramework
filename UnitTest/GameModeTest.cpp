@@ -11,22 +11,15 @@
 
 namespace
 {
-    // 테스트 실행 위치에 따라 GameData 경로가 달라지므로 후보들을 순회한다.
-    // (json 과 lua 스크립트가 같은 폴더에 함께 복사되어 있다.)
+    // 리소스는 통합 폴더(Client/Assets/Resources/GameData) 한 곳에서 읽는다.
+    // (json 과 lua 스크립트가 같은 폴더에서 관리된다.)
     std::string ResolveGameDataPath()
     {
-        const std::vector<std::string> candidates = {
-            "GameData/",
-            "../UnitTest/GameData/",
-            "../../UnitTest/GameData/",
-        };
-        for (const auto& p : candidates)
+        const std::string& p = GameDataPath::Resolve();
+        if (std::filesystem::exists(p + "GameMode.json") &&
+            std::filesystem::exists(p + "gamemode_raid.lua"))
         {
-            if (std::filesystem::exists(p + "GameMode.json") &&
-                std::filesystem::exists(p + "gamemode_raid.lua"))
-            {
-                return p;
-            }
+            return p;
         }
         return "";
     }

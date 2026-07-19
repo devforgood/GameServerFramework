@@ -119,12 +119,7 @@
       <AdditionalDependencies>advapi32.lib;bcrypt.lib;mariadbcpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"
-xcopy /D /Y /I "$(ProjectDir)..\GameData\*.bin" "$(OutDir)GameData\"
-xcopy /D /Y /I "$(ProjectDir)..\GameData\*.xml" "$(OutDir)GameData\"
-xcopy /D /Y /I "$(ProjectDir)..\GameData\*.lua" "$(OutDir)GameData\"
-xcopy /D /Y /I "$(ProjectDir)..\GameData\*.json" "$(OutDir)GameData\"
-echo -- mob.lua stub: lua BT is unused by the benchmark (tick uses Monster.xml)&gt; "$(OutDir)mob.lua"</Command>
+      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -145,12 +140,7 @@ echo -- mob.lua stub: lua BT is unused by the benchmark (tick uses Monster.xml)&
       <AdditionalDependencies>advapi32.lib;bcrypt.lib;mariadbcpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"
-xcopy /D /Y /I "$(ProjectDir)..\GameData\*.bin" "$(OutDir)GameData\"
-xcopy /D /Y /I "$(ProjectDir)..\GameData\*.xml" "$(OutDir)GameData\"
-xcopy /D /Y /I "$(ProjectDir)..\GameData\*.lua" "$(OutDir)GameData\"
-xcopy /D /Y /I "$(ProjectDir)..\GameData\*.json" "$(OutDir)GameData\"
-echo -- mob.lua stub: lua BT is unused by the benchmark (tick uses Monster.xml)&gt; "$(OutDir)mob.lua"</Command>
+      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

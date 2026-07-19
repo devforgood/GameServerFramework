@@ -6,10 +6,10 @@
     <Configurations>Debug;Release;DebugDummyClient;ReleaseDummyClient</Configurations>
   </PropertyGroup>
   
+  <!-- 게임 데이터 원본은 Client\Assets\Resources\GameData 한 곳에서 관리된다.
+       이 프로젝트는 솔루션에서 데이터 파일을 편집하기 위한 셸이다. -->
   <ItemGroup>
-    <Content Include="..\Client\Assets\Resources\JsonData\*.json" LinkBase="JsonData">
-	<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Content Include="..\Client\Assets\Resources\GameData\**\*.json;..\Client\Assets\Resources\GameData\*.lua;..\Client\Assets\Resources\GameData\*.xml" Exclude="..\Client\Assets\Resources\GameData\**\*.meta" LinkBase="GameData" />
    </ItemGroup>
   
 

@@ -259,6 +259,9 @@
     <ClCompile Include="World\World.cpp">
       <Filter>World</Filter>
     </ClCompile>
+    <ClCompile Include="GameData\GameDataPath.cpp">
+      <Filter>GameData</Filter>
+    </ClCompile>
     <ClCompile Include="GameData\ResourceLoader.cpp">
       <Filter>GameData</Filter>
     </ClCompile>
@@ -542,6 +545,9 @@
     </ClInclude>
     <ClInclude Include="Player\PlayerEventBrokerProxy.h">
       <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="GameData\GameDataPath.h">
+      <Filter>GameData</Filter>
     </ClInclude>
     <ClInclude Include="GameData\ResourceLoader.h">
       <Filter>GameData</Filter>

@@ -6,7 +6,7 @@
 #include "Common.h" // gamedata::GameMode 전체 정의
 
 lua_State* GameMode::L_ = nullptr;
-std::string GameMode::scriptBasePath_ = "GameData/";
+std::string GameMode::scriptBasePath_ = GameDataPath::Resolve();
 
 //---------------------------------------------------------------------------------------
 // 라이프사이클

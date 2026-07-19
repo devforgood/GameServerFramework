@@ -6,8 +6,8 @@
 //   - BM_WorldSpawnMonsters : 몬스터 N마리 스폰 처리량
 //   - BM_WorldTick          : N마리가 살아있는 상태에서 update(dt) 1회 소요 시간
 //
-// 실행 시 작업 디렉터리(또는 exe 디렉터리)에 GameData/ 자산이 있어야 한다
-// (*_navmesh.bin, Monster.xml, Map.json, *.lua, *.json). PostBuildEvent 가 exe 옆으로 복사한다.
+// 자산(*_navmesh.bin, Monster.xml, Map.json, *.lua, *.json)은 GameDataPath::Resolve() 가
+// 통합 폴더(Client/Assets/Resources/GameData)에서 찾는다. 리포 밖 배포 실행이면 exe 옆 GameData/ 를 쓴다.
 //
 // 주의: 스폰 수는 네비메시 크라우드 정원 CrowdNavMovement::MAX_AGENTS 미만이어야 한다(현재 16384).
 // 의미 있는 수치를 위해 Release/x64 로 빌드/실행할 것.
@@ -46,9 +46,10 @@ namespace
 	constexpr float kTickDt = 1.0f / 30.0f;
 
 	// 프로그램 시작 시 1회: 로그 초기화 + 리소스 로드.
-	// 자산("mob.lua", "GameData/...")은 실행 시 작업 디렉터리 기준 상대 경로로 로드된다.
-	// 실행 방식(VS 디버거/더블클릭/터미널)에 따라 작업 디렉터리가 달라지므로, exe 가 있는
-	// 폴더(=PostBuild 가 자산을 복사한 출력 폴더)로 작업 디렉터리를 고정한다.
+	// 자산(mob.lua, Monster.xml, navmesh 등)은 GameDataPath::Resolve() 가 찾는
+	// 통합 폴더(Client/Assets/Resources/GameData)에서 로드된다. 리졸버가 exe 위치도
+	// 탐색 기준으로 쓰므로, 실행 방식(VS 디버거/더블클릭/터미널)에 따라 작업 디렉터리가
+	// 달라져도 동작하도록 exe 폴더로 작업 디렉터리를 고정해 둔다.
 	void ChdirToExeDir()
 	{
 		wchar_t path[MAX_PATH];

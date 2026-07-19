@@ -1,5 +1,6 @@
 #include "MonsterBT.h"
 #include "behaviortree_cpp/bt_factory.h"
+#include "GameDataPath.h"
 #include "Monster.h"
 #include "World.h"
 #include "LogHelper.h"
@@ -368,7 +369,7 @@ BT::Tree* MonsterBT::createTree(Monster* monster)
 		});
 		
 
-	return new BT::Tree(factory.createTreeFromText(loadFile("GameData/Monster.xml")));
+	return new BT::Tree(factory.createTreeFromText(loadFile(GameDataPath::Resolve() + "Monster.xml")));
 
 }
 

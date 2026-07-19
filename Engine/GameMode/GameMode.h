@@ -1,6 +1,7 @@
 #pragma once
 #include <lua.hpp>
 #include <string>
+#include "GameDataPath.h"
 
 namespace gamedata
 {
@@ -54,7 +55,7 @@ public:
 	void  set_result(const std::string& r) { result_ = r; }
 
 	// ---- 공유 lua 상태 ----
-	static void InitializeLua(const std::string& script_base_path = "GameData/");
+	static void InitializeLua(const std::string& script_base_path = GameDataPath::Resolve());
 	static void CloseLua();
 	static void RegisterHostFunctions();
 	static lua_State* Lua() { return L_; }

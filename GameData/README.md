@@ -16,16 +16,26 @@
 
 ## 📁 프로젝트 구조
 
+> **데이터 파일 위치**: 실제 데이터 파일은 `Client/Assets/Resources/GameData/` 한 곳에서 관리됩니다.
+> Unity 클라이언트는 물론 Game 서버·UnitTest·Benchmark(C++)도 `GameDataPath::Resolve()` 로
+> 같은 폴더를 직접 읽습니다 — 사본/배포 복사가 없습니다.
+> 이 폴더(GameData/)에는 솔루션에서 데이터를 편집하기 위한 프로젝트 셸(GameData.csproj)만 남아 있습니다.
+
 ```
-GameData/
-├── GameData.csproj           # 프로젝트 파일
+Client/Assets/Resources/GameData/
 ├── item.json                 # 아이템 데이터
 ├── skill.json                # 스킬 데이터
 ├── quest.json                # 퀘스트 데이터
-├── Localization/             # 다국어 지원
-│   ├── localization_en.json  # 영어
-│   └── localization_ko.json  # 한국어
-└── obj/                      # 빌드 출력
+├── Map.json                  # 맵/게이트/스폰 데이터
+├── GameMode.json             # 게임 모드 데이터
+├── monster.json, level.json  # 몬스터/레벨 데이터
+├── table_meta.json           # GameDataFlow 코드젠 테이블 목록
+├── *.lua                     # mob/behavior_tree/gamemode 스크립트
+├── Monster.xml               # behaviortree_cpp 트리 정의
+├── *_navmesh.bin             # 맵별 navmesh 바이너리
+└── Localization/             # 다국어 지원
+    ├── localization_en.json  # 영어
+    └── localization_ko.json  # 한국어
 ```
 
 ## 📊 데이터 형식

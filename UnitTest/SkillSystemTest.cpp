@@ -8,9 +8,6 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_sinks.h"
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 #include "GameData/ResourceLoader.h"
 #include "gamedata.h"
 #include "World.h"
@@ -27,31 +24,6 @@
 
 namespace
 {
-	// 테스트 실행 위치(VS 테스트 탐색기/콘솔)에 따라 작업 디렉터리가 달라지므로,
-	// PostBuild 가 GameData 를 복사해 두는 exe 디렉터리를 최우선으로 찾는다.
-	// (다른 위치의 배포용 GameData 사본은 낡았을 수 있어 exe 옆 사본이 항상 기준이다)
-	// Map::Init 이 "GameData/..." 상대 경로로 navmesh 를 읽으므로, 찾은 디렉터리를
-	// 작업 디렉터리로 고정한다.
-	std::string ExeDir()
-	{
-		wchar_t path[MAX_PATH];
-		DWORD len = GetModuleFileNameW(nullptr, path, MAX_PATH);
-		if (len == 0 || len == MAX_PATH)
-			return "";
-		return std::filesystem::path(path).parent_path().string();
-	}
-
-	std::string ResolveGameDataRoot()
-	{
-		std::vector<std::string> candidates = { ExeDir(), ".", "../UnitTest", "../../UnitTest" };
-		for (const auto& p : candidates)
-		{
-			if (!p.empty() && std::filesystem::exists(p + "/GameData/skill.json"))
-				return p;
-		}
-		return "";
-	}
-
 	// 엔진 코드의 LOG 매크로는 "net" 로거를 역참조하므로 테스트 하네스에 등록해 둔다.
 	void EnsureNetLogger()
 	{
@@ -84,11 +56,13 @@ protected:
 	{
 		EnsureNetLogger();
 
-		std::string root = ResolveGameDataRoot();
-		ASSERT_FALSE(root.empty()) << "GameData/skill.json 을 알려진 경로에서 찾지 못했습니다.";
-		std::filesystem::current_path(root);
+		// 리소스는 통합 폴더(Client/Assets/Resources/GameData) 한 곳에서 읽는다.
+		// Map::Init 의 navmesh 로드도 같은 리졸버를 쓰므로 작업 디렉터리 고정이 필요 없다.
+		const std::string& dataPath = GameDataPath::Resolve();
+		ASSERT_TRUE(std::filesystem::exists(dataPath + "skill.json"))
+			<< "통합 GameData 폴더를 찾지 못했습니다: " << dataPath;
 
-		ASSERT_TRUE(ResourceLoader::Instance().LoadResources("GameData/")) << "LoadResources 실패";
+		ASSERT_TRUE(ResourceLoader::Instance().LoadResources(dataPath)) << "LoadResources 실패";
 		// 리소스를 다시 로드하면 이전 gamedata 포인터가 무효화되므로 공유 정의 캐시를 비운다.
 		SkillRegistry::Instance().Clear();
 
@@ -98,7 +72,7 @@ protected:
 		{
 			if (m == nullptr || m->navmesh_path.empty())
 				continue;
-			if (!std::filesystem::exists("GameData/" + m->navmesh_path))
+			if (!std::filesystem::exists(GameDataPath::Resolve() + m->navmesh_path))
 				continue;
 			if (m->spawn_points.player_spawn.empty())
 				continue;

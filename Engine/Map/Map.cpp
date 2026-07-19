@@ -87,7 +87,7 @@ bool Map::InitNavigation(const std::string& movementType)
 			mapData_ != nullptr ? mapData_->id : 0);
 		return false;
 	}
-	if (!navMesh_->Load(("GameData/" + mapData_->navmesh_path).c_str()))
+	if (!navMesh_->Load((GameDataPath::Resolve() + mapData_->navmesh_path).c_str()))
 	{
 		LOG.error("Map {} navmesh '{}' 로드에 실패했습니다. 맵 로드를 중단합니다.",
 			mapData_->id, mapData_->navmesh_path);

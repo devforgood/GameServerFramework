@@ -4,6 +4,7 @@
 #include <deque>
 #include <string>
 #include <unordered_map>
+#include "GameDataPath.h"
 #include "gamedata.h"
 
 class ResourceLoader : private boost::noncopyable
@@ -36,7 +37,7 @@ public:
         static ResourceLoader instance;
         return instance;
     }
-    bool LoadResources(const std::string& basePath = "GameData/");
+    bool LoadResources(const std::string& basePath = GameDataPath::Resolve());
 
     const std::unordered_map<long, const gamedata::Skill*>& GetSkills() const { return skills; }
     const gamedata::Skill* GetSkill(long id) const { auto itr = skills.find(id); return itr != skills.end() ? itr->second : nullptr; }
