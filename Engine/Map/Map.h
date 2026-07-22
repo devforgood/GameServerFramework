@@ -117,6 +117,10 @@ public:
 	void OnSetRaycast(const syncnet::Vec3* pos);
 	int DetectEnemy(Actor* actor);
 	std::vector<IGridActor*> get_actors_in_range(Actor* actor, float range, float dirDeg, float angle);
+	// 캐스터가 아닌 임의의 지점(서버 좌표계 x,z) 중심의 원형 범위. 시전 지점에 떨어지는
+	// 광역기(메테오/블리자드 등, aoe_damage 효과)에 쓴다. get_actors_in_range 가 캐스터
+	// 중심 부채꼴인 것과 대비된다.
+	std::vector<IGridActor*> get_actors_in_radius(float centerX, float centerZ, float radius);
 	void GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector);
 
 	void join(std::shared_ptr<Player> player);

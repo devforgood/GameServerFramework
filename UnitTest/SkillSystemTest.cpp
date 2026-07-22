@@ -351,3 +351,87 @@ TEST_F(SkillSystemTest, UnknownEffectRejectsCastWithoutCooldown)
 	EXPECT_EQ(skills.TryCast(caster.get(), ctx), CastResult::UnknownEffect);
 	EXPECT_EQ(skills.GetState(778)->phase, SkillPhase::Ready); // 실패 시 상태 불변
 }
+
+// aoe_damage: 시전 목표 지점(targetPos) 중심 반경(radius) 원형에 데미지.
+// damage(캐스터 중심 부채꼴)와 달리 캐스터에서 떨어진 지점을 노릴 수 있다(메테오/블리자드).
+TEST_F(SkillSystemTest, AoEDamageHitsAroundTargetPoint)
+{
+	auto attacker = SpawnCharacter();
+	auto victim = SpawnCharacter(2.0f, 0.0f);
+	ASSERT_NE(attacker, nullptr);
+	ASSERT_NE(victim, nullptr);
+
+	int before = victim->GetHealth();
+
+	CastContext ctx;
+	ctx.skillId = 101; // Fireball: effects=[aoe_damage], radius 4
+	ctx.targetPos = victim->GetPosition();
+	ASSERT_EQ(attacker->GetSkillSet().TryCast(attacker.get(), ctx), CastResult::Success);
+
+	EXPECT_LT(victim->GetHealth(), before);                              // 목표 지점 대상 피격
+	EXPECT_EQ(victim->GetLastAttackerActorId(), attacker->GetActorId()); // combat 단일 경로(킬 크레딧)
+	EXPECT_EQ(attacker->GetHealth(), 100);                              // 캐스터는 AoE 에서 제외
+}
+
+// heal: 캐스터 자신의 체력을 heal 만큼 회복한다(Health 플래그로 자동 동기화).
+TEST_F(SkillSystemTest, HealRestoresCasterHealth)
+{
+	auto caster = SpawnCharacter();
+	ASSERT_NE(caster, nullptr);
+	caster->SetHealth(50);
+
+	CastContext ctx;
+	ctx.skillId = 112; // Prayer: effects=[heal], heal 40
+	ctx.targetPos = caster->GetPosition();
+	ASSERT_EQ(caster->GetSkillSet().TryCast(caster.get(), ctx), CastResult::Success);
+
+	EXPECT_EQ(caster->GetHealth(), 90);
+}
+
+// 패시브(Holy Fire 오라): 유저 액션(시전) 없이 보유만으로 Update 마다 자동 적용된다.
+// 오라는 type("passive")이 아니라 effect(aura_damage, phase="pulse")로 표현되고,
+// pulse_interval 마다 캐스터 중심 반경에 데미지를 방출한다.
+TEST_F(SkillSystemTest, PassiveAuraAutoPulsesDamageWithoutCasting)
+{
+	auto caster = SpawnCharacter();
+	auto victim = SpawnMonster(1.0f, 0.0f);
+	ASSERT_NE(caster, nullptr);
+	ASSERT_NE(victim, nullptr);
+
+	SkillSet& skills = caster->GetSkillSet();
+
+	// 패시브는 시전 대상이 아니다 — 클라가 UseSkill 로 보내도 거부된다.
+	CastContext ctx;
+	ctx.skillId = 200; // Holy Fire: aura_damage pulse, interval 0.5, radius 5
+	ctx.targetPos = caster->GetPosition();
+	EXPECT_EQ(skills.TryCast(caster.get(), ctx), CastResult::SkillNotFound);
+
+	// 시전 없이도 Update 만으로 지속 적용된다.
+	int before = victim->GetHealth();
+	skills.Update(caster.get(), 0.4f); // interval(0.5) 미달 — 아직 pulse 없음
+	EXPECT_EQ(victim->GetHealth(), before);
+
+	skills.Update(caster.get(), 0.2f); // 누적 0.6 ≥ 0.5 — 1회 pulse
+	int afterOne = victim->GetHealth();
+	EXPECT_LT(afterOne, before);
+
+	skills.Update(caster.get(), 0.5f); // 추가 1회 pulse
+	EXPECT_LT(victim->GetHealth(), afterOne);
+	EXPECT_EQ(victim->GetLastAttackerActorId(), caster->GetActorId());
+}
+
+// 패시브(Prayer 오라): 보유만으로 pulse 마다 캐스터 체력을 회복한다.
+// (Holy Fire 패시브도 함께 켜져 있지만 근처 대상이 없으면 캐스터에는 영향이 없다.)
+TEST_F(SkillSystemTest, PassiveAuraAutoPulsesHeal)
+{
+	auto caster = SpawnCharacter();
+	ASSERT_NE(caster, nullptr);
+	caster->SetHealth(50);
+
+	SkillSet& skills = caster->GetSkillSet();
+
+	skills.Update(caster.get(), 1.0f); // Prayer(interval 1.0) 1회 pulse → +5
+	EXPECT_EQ(caster->GetHealth(), 55);
+	skills.Update(caster.get(), 2.0f); // 밀린 2회 pulse → +10
+	EXPECT_EQ(caster->GetHealth(), 65);
+}

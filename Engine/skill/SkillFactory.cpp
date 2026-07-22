@@ -3,6 +3,8 @@
 #include "Common.h"
 #include "SkillFactory.h"
 
+#include "AuraSkill.h"
+
 #include "JumpSkill.h"
 
 #include "NormalAttackSkill.h"
@@ -19,7 +21,11 @@ Skill* SkillFactory::Create(int32_t id) {
 
     const std::string& codeName = res->code_name;
 
-    if (codeName == "JumpSkill") {
+    if (codeName == "AuraSkill") {
+        obj = new AuraSkill();
+    }
+
+    else if (codeName == "JumpSkill") {
         obj = new JumpSkill();
     }
 

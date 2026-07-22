@@ -22,12 +22,16 @@ namespace gamedata
         std::string desc_id;
         int duration = 0;
         std::vector<SkillEffect> effects;
+        std::string fx;
+        int heal = 0;
         int height = 0;
         int id = 0;
         int max_damage = 0;
         int min_damage = 0;
         bool monster_only = false;
         std::string name_id;
+        double pulse_interval = 0.0;
+        int radius = 0;
         int range = 0;
         std::string type;
     };
@@ -326,12 +330,16 @@ namespace gamedata
         if (j.contains("desc_id") && !j.at("desc_id").is_null()) j.at("desc_id").get_to(o.desc_id);
         if (j.contains("duration") && !j.at("duration").is_null()) j.at("duration").get_to(o.duration);
         if (j.contains("effects") && !j.at("effects").is_null()) j.at("effects").get_to(o.effects);
+        if (j.contains("fx") && !j.at("fx").is_null()) j.at("fx").get_to(o.fx);
+        if (j.contains("heal") && !j.at("heal").is_null()) j.at("heal").get_to(o.heal);
         if (j.contains("height") && !j.at("height").is_null()) j.at("height").get_to(o.height);
         if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("max_damage") && !j.at("max_damage").is_null()) j.at("max_damage").get_to(o.max_damage);
         if (j.contains("min_damage") && !j.at("min_damage").is_null()) j.at("min_damage").get_to(o.min_damage);
         if (j.contains("monster_only") && !j.at("monster_only").is_null()) j.at("monster_only").get_to(o.monster_only);
         if (j.contains("name_id") && !j.at("name_id").is_null()) j.at("name_id").get_to(o.name_id);
+        if (j.contains("pulse_interval") && !j.at("pulse_interval").is_null()) j.at("pulse_interval").get_to(o.pulse_interval);
+        if (j.contains("radius") && !j.at("radius").is_null()) j.at("radius").get_to(o.radius);
         if (j.contains("range") && !j.at("range").is_null()) j.at("range").get_to(o.range);
         if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
     }

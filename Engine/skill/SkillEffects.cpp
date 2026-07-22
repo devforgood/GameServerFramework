@@ -61,6 +61,68 @@ public:
 	}
 };
 
+// "aoe_damage": 시전 목표 지점(state.targetPos) 중심 반경(radius) 원형 범위에 min~max 데미지.
+// 캐스터 중심 부채꼴인 "damage" 와 달리 '땅에 떨어지는' 광역기(메테오/블리자드/파이어볼 폭발 등)에 쓴다.
+// radius 가 없으면 range 를 반경으로 폴백한다. 체력 감소는 combat 단일 경로를 거쳐 동기화된다.
+class AoEDamageEffect : public ISkillEffect
+{
+public:
+	virtual CastResult Apply(Actor* caster, SkillState& state, const gamedata::Skill& data) override
+	{
+		Map* map = caster->GetMap();
+		if (map == nullptr)
+			return CastResult::CasterInvalid;
+
+		double damage = combat::RollDamage(caster, data.min_damage, data.max_damage);
+
+		float radius = static_cast<float>(data.radius > 0 ? data.radius : data.range);
+		const Vector3& center = state.targetPos;
+		auto targets = map->get_actors_in_radius(center.get_vecter2_x(), center.get_vecter2_y(), radius);
+		int hitCount = combat::ApplyAoEDamage(caster, targets, damage);
+
+		LOG.debug("AoEDamageEffect: skill {} radius {:.1f} hit {} damage {:.1f}",
+			data.id, radius, hitCount, damage);
+
+		return CastResult::Success;
+	}
+};
+
+// "aura_damage": 캐스터의 현재 위치 중심 반경(radius) 원형에 데미지. 오라(pulse)용 —
+// 시전 지점 고정인 aoe_damage 와 달리 캐스터를 따라다니며, damage 와 달리 회전/방향 판정이
+// 없다. 성화(Holy Fire) 같은 지속 오라가 매 pulse 마다 주변 적을 태우는 데 쓴다.
+class AuraDamageEffect : public ISkillEffect
+{
+public:
+	virtual CastResult Apply(Actor* caster, SkillState& state, const gamedata::Skill& data) override
+	{
+		Map* map = caster->GetMap();
+		if (map == nullptr)
+			return CastResult::CasterInvalid;
+
+		double damage = combat::RollDamage(caster, data.min_damage, data.max_damage);
+
+		float radius = static_cast<float>(data.radius > 0 ? data.radius : data.range);
+		auto targets = map->get_actors_in_radius(caster->GetVecter2X(), caster->GetVecter2Y(), radius);
+		combat::ApplyAoEDamage(caster, targets, damage);
+
+		return CastResult::Success;
+	}
+};
+
+// "heal": 캐스터 자신의 체력을 heal 만큼 회복한다. 체력 변경은 Health 플래그로 자동
+// 동기화되므로 별도 브로드캐스트가 필요 없다(서버 권위 그대로 유지).
+// TODO(개선): 최대 체력(MaxHealth) 개념이 없어 오버힐이 가능하다. MaxHealth 도입 시 clamp 한다.
+class HealEffect : public ISkillEffect
+{
+public:
+	virtual CastResult Apply(Actor* caster, SkillState& state, const gamedata::Skill& data) override
+	{
+		if (data.heal > 0)
+			caster->IncrementHealth(data.heal);
+		return CastResult::Success;
+	}
+};
+
 // "teleport": 시전 목표 지점으로 에이전트를 순간이동시킨다. (점프 착지 등, 보통 phase="end")
 class TeleportEffect : public ISkillEffect
 {
@@ -92,6 +154,9 @@ std::unordered_map<std::string, std::unique_ptr<ISkillEffect>> BuildRegistry()
 {
 	std::unordered_map<std::string, std::unique_ptr<ISkillEffect>> registry;
 	registry.emplace("damage", std::make_unique<DamageEffect>());
+	registry.emplace("aoe_damage", std::make_unique<AoEDamageEffect>());
+	registry.emplace("aura_damage", std::make_unique<AuraDamageEffect>());
+	registry.emplace("heal", std::make_unique<HealEffect>());
 	registry.emplace("teleport", std::make_unique<TeleportEffect>());
 	registry.emplace("input_lock", std::make_unique<InputLockEffect>());
 	return registry;

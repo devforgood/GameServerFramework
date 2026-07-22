@@ -27,7 +27,9 @@ public:
 	virtual CastResult Cast(Actor* caster, SkillState& state, const CastContext& ctx);
 
 	// Active 페이즈 동안 매 틱 호출.
-	virtual void Tick(Actor* caster, SkillState& state, float dt) {}
+	// 기본 구현은 오라를 데이터로 처리한다: gamedata.pulse_interval 마다 phase=="pulse" 효과를
+	// 캐스터 중심으로 방출한다(성화/기도 오라 등). pulse_interval 이 0 이면 아무 것도 하지 않는다.
+	virtual void Tick(Actor* caster, SkillState& state, float dt);
 
 	// Active 페이즈 종료 시 호출. phase == "end" 효과 적용 + 입력 잠금 해제.
 	virtual void OnActiveEnd(Actor* caster, SkillState& state);

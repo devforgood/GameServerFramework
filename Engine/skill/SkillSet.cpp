@@ -41,6 +41,10 @@ CastResult SkillSet::TryCast(Actor* caster, const CastContext& ctx)
 		return CastResult::SkillNotFound;
 
 	Entry& entry = itr->second;
+	// 패시브는 유저 액션으로 발동하지 않는다(보유만으로 Update 에서 지속 적용된다).
+	// 클라가 UseSkill 로 패시브 id 를 보내도 여기서 거부한다.
+	if (entry.skill->gamedata->type == "passive")
+		return CastResult::SkillNotFound;
 	if (entry.state.phase == SkillPhase::Active)
 		return CastResult::AlreadyActive;
 	if (entry.state.phase == SkillPhase::Cooldown)
@@ -73,6 +77,7 @@ CastResult SkillSet::TryCast(Actor* caster, const CastContext& ctx)
 	{
 		entry.state.phase = SkillPhase::Active;
 		entry.state.activeRemaining = active;
+		entry.state.pulseTimer = 0.0f; // 오라 pulse 는 Active 진입 후 첫 interval 부터 방출한다.
 	}
 	else
 	{
@@ -87,6 +92,17 @@ void SkillSet::Update(Actor* owner, float dt)
 	for (auto& pair : entries_)
 	{
 		Entry& entry = pair.second;
+		if (entry.skill == nullptr || entry.skill->gamedata == nullptr)
+			continue; // 데이터 없이 등록된 스킬(예: 몬스터 melee 미존재)은 건너뛴다.
+
+		// 패시브: 유저 액션/페이즈/쿨다운 없이 보유만으로 매 틱 지속 적용된다.
+		// 오라 등 주기 효과는 Skill::Tick 이 pulse_interval 마다 방출한다.
+		if (entry.skill->gamedata->type == "passive")
+		{
+			entry.skill->Tick(owner, entry.state, dt);
+			continue;
+		}
+
 		switch (entry.state.phase)
 		{
 		case SkillPhase::Active:

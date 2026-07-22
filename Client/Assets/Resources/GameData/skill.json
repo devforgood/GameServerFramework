@@ -11,7 +11,9 @@
     "desc_id": "normal_attack_desc",
     "code_name": "NormalAttackSkill",
     "effects": [
-      { "type": "damage" }
+      {
+        "type": "damage"
+      }
     ]
   },
   {
@@ -24,11 +26,16 @@
     "desc_id": "jump_desc",
     "code_name": "JumpSkill",
     "effects": [
-      { "type": "input_lock", "phase": "active" },
-      { "type": "teleport", "phase": "end" }
+      {
+        "type": "input_lock",
+        "phase": "active"
+      },
+      {
+        "type": "teleport",
+        "phase": "end"
+      }
     ]
-  }
-  ,
+  },
   {
     "id": 3,
     "type": "active",
@@ -41,7 +48,353 @@
     "name_id": "monster_melee_name",
     "desc_id": "monster_melee_desc",
     "effects": [
-      { "type": "damage" }
+      {
+        "type": "damage"
+      }
+    ]
+  },
+  {
+    "id": 100,
+    "type": "active",
+    "min_damage": 6,
+    "max_damage": 12,
+    "radius": 2,
+    "cooldown": 0.4,
+    "name_id": "fire_bolt_name",
+    "desc_id": "fire_bolt_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "projectile"
+  },
+  {
+    "id": 101,
+    "type": "active",
+    "min_damage": 18,
+    "max_damage": 36,
+    "radius": 4,
+    "cooldown": 1.0,
+    "name_id": "fireball_name",
+    "desc_id": "fireball_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "projectile"
+  },
+  {
+    "id": 102,
+    "type": "active",
+    "min_damage": 60,
+    "max_damage": 120,
+    "radius": 6,
+    "cooldown": 6.0,
+    "name_id": "meteor_name",
+    "desc_id": "meteor_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "meteor"
+  },
+  {
+    "id": 103,
+    "type": "active",
+    "min_damage": 40,
+    "max_damage": 70,
+    "radius": 7,
+    "cooldown": 5.0,
+    "name_id": "frozen_orb_name",
+    "desc_id": "frozen_orb_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "meteor"
+  },
+  {
+    "id": 104,
+    "type": "active",
+    "min_damage": 20,
+    "max_damage": 40,
+    "range": 6,
+    "angle": 360,
+    "cooldown": 1.2,
+    "name_id": "nova_name",
+    "desc_id": "nova_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "nova"
+  },
+  {
+    "id": 105,
+    "type": "active",
+    "min_damage": 30,
+    "max_damage": 60,
+    "radius": 8,
+    "cooldown": 6.0,
+    "name_id": "blizzard_name",
+    "desc_id": "blizzard_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "meteor"
+  },
+  {
+    "id": 106,
+    "type": "active",
+    "cooldown": 1.0,
+    "name_id": "teleport_name",
+    "desc_id": "teleport_desc",
+    "effects": [
+      {
+        "type": "teleport"
+      }
+    ],
+    "fx": "teleport"
+  },
+  {
+    "id": 107,
+    "type": "active",
+    "min_damage": 8,
+    "max_damage": 16,
+    "range": 7,
+    "angle": 360,
+    "cooldown": 0.8,
+    "name_id": "static_field_name",
+    "desc_id": "static_field_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "nova"
+  },
+  {
+    "id": 108,
+    "type": "active",
+    "min_damage": 22,
+    "max_damage": 30,
+    "range": 9,
+    "angle": 20,
+    "cooldown": 0.6,
+    "name_id": "bone_spear_name",
+    "desc_id": "bone_spear_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ]
+  },
+  {
+    "id": 109,
+    "type": "active",
+    "min_damage": 15,
+    "max_damage": 25,
+    "range": 5,
+    "angle": 360,
+    "cooldown": 2.5,
+    "name_id": "poison_nova_name",
+    "desc_id": "poison_nova_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "nova"
+  },
+  {
+    "id": 110,
+    "type": "active",
+    "min_damage": 25,
+    "max_damage": 55,
+    "radius": 4,
+    "cooldown": 1.5,
+    "name_id": "corpse_explosion_name",
+    "desc_id": "corpse_explosion_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "impact"
+  },
+  {
+    "id": 111,
+    "type": "active",
+    "min_damage": 16,
+    "max_damage": 28,
+    "range": 4,
+    "angle": 360,
+    "cooldown": 0.5,
+    "name_id": "blessed_hammer_name",
+    "desc_id": "blessed_hammer_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ]
+  },
+  {
+    "id": 112,
+    "type": "active",
+    "heal": 40,
+    "cooldown": 3.0,
+    "name_id": "prayer_name",
+    "desc_id": "prayer_desc",
+    "effects": [
+      {
+        "type": "heal"
+      }
+    ]
+  },
+  {
+    "id": 113,
+    "type": "active",
+    "min_damage": 10,
+    "max_damage": 18,
+    "range": 3,
+    "angle": 100,
+    "cooldown": 0.35,
+    "name_id": "zeal_name",
+    "desc_id": "zeal_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ]
+  },
+  {
+    "id": 114,
+    "type": "active",
+    "min_damage": 14,
+    "max_damage": 26,
+    "range": 3,
+    "angle": 360,
+    "cooldown": 0.3,
+    "name_id": "whirlwind_name",
+    "desc_id": "whirlwind_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ]
+  },
+  {
+    "id": 115,
+    "type": "active",
+    "height": 4,
+    "duration": 1,
+    "min_damage": 30,
+    "max_damage": 50,
+    "radius": 3,
+    "cooldown": 4.0,
+    "name_id": "leap_attack_name",
+    "desc_id": "leap_attack_desc",
+    "effects": [
+      {
+        "type": "input_lock",
+        "phase": "active"
+      },
+      {
+        "type": "teleport",
+        "phase": "end"
+      },
+      {
+        "type": "aoe_damage",
+        "phase": "end"
+      }
+    ]
+  },
+  {
+    "id": 116,
+    "type": "active",
+    "min_damage": 12,
+    "max_damage": 24,
+    "range": 3,
+    "angle": 120,
+    "cooldown": 0.5,
+    "name_id": "bash_name",
+    "desc_id": "bash_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ]
+  },
+  {
+    "id": 117,
+    "type": "active",
+    "min_damage": 20,
+    "max_damage": 45,
+    "radius": 5,
+    "cooldown": 1.0,
+    "name_id": "lightning_fury_name",
+    "desc_id": "lightning_fury_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "projectile"
+  },
+  {
+    "id": 118,
+    "type": "active",
+    "min_damage": 8,
+    "max_damage": 14,
+    "range": 3,
+    "angle": 60,
+    "cooldown": 0.25,
+    "name_id": "jab_name",
+    "desc_id": "jab_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ]
+  },
+  {
+    "id": 200,
+    "type": "passive",
+    "min_damage": 4,
+    "max_damage": 8,
+    "radius": 5,
+    "pulse_interval": 0.5,
+    "name_id": "holy_fire_name",
+    "desc_id": "holy_fire_desc",
+    "code_name": "AuraSkill",
+    "effects": [
+      {
+        "type": "aura_damage",
+        "phase": "pulse"
+      }
+    ]
+  },
+  {
+    "id": 201,
+    "type": "passive",
+    "heal": 5,
+    "radius": 5,
+    "pulse_interval": 1.0,
+    "name_id": "prayer_aura_name",
+    "desc_id": "prayer_aura_desc",
+    "code_name": "AuraSkill",
+    "effects": [
+      {
+        "type": "heal",
+        "phase": "pulse"
+      }
     ]
   }
 ]

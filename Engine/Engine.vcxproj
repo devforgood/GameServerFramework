@@ -169,6 +169,7 @@
     <ClCompile Include="GameObject\Component.h" />
     <ClCompile Include="GameMode\GameMode.cpp" />
     <ClCompile Include="GameMode\GameModeFactory.cpp" />
+    <ClCompile Include="skill\AuraSkill.cpp" />
     <ClCompile Include="skill\JumpSkill.cpp" />
     <ClCompile Include="Level\Level.cpp" />
     <ClCompile Include="Level\LevelFactory.cpp" />
@@ -266,6 +267,7 @@
     <ClInclude Include="GameObject\GameObject.h" />
     <ClInclude Include="Item\Item.h" />
     <ClInclude Include="Item\ItemFactory.h" />
+    <ClInclude Include="skill\AuraSkill.h" />
     <ClInclude Include="skill\JumpSkill.h" />
     <ClInclude Include="Level\Level.h" />
     <ClInclude Include="Level\LevelFactory.h" />

@@ -129,6 +129,9 @@
     <ClCompile Include="GameMode\GameModeFactory.cpp">
       <Filter>GameMode</Filter>
     </ClCompile>
+    <ClCompile Include="skill\AuraSkill.cpp">
+      <Filter>skill</Filter>
+    </ClCompile>
     <ClCompile Include="skill\JumpSkill.cpp">
       <Filter>skill</Filter>
     </ClCompile>
@@ -394,6 +397,9 @@
     </ClInclude>
     <ClInclude Include="Item\ItemFactory.h">
       <Filter>Item</Filter>
+    </ClInclude>
+    <ClInclude Include="skill\AuraSkill.h">
+      <Filter>skill</Filter>
     </ClInclude>
     <ClInclude Include="skill\JumpSkill.h">
       <Filter>skill</Filter>

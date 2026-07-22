@@ -485,15 +485,24 @@ public class Session : MonoBehaviour
 		}
 		
 		var pos = new Vector3(useSkill.Pos.Value.X, useSkill.Pos.Value.Y, useSkill.Pos.Value.Z);
-		var obj = (GameObject)Instantiate(Resources.Load("DebugTarget"), pos, Quaternion.identity);
-
 		var target_agent_id = useSkill.Id;
-		var remote_player_skill_duration = skill_duration - (unixTimestampMs - useSkill.Timestamp) / 1000f;
 
-		if (game_objects.TryGetValue(target_agent_id, out GameObject game_object))
+		if (!game_objects.TryGetValue(target_agent_id, out GameObject game_object))
+			return;
+
+		Gamedata.Skill resSkill = null;
+		GameManager.Instance.resource.Skills.TryGetValue(useSkill.SkillId, out resSkill);
+
+		// 점프는 액터 위치를 시간에 걸쳐 이동시키는 특수 연출이라 기존 경로 유지(지연 보정 포함).
+		if (resSkill != null && resSkill.code_name == "JumpSkill")
 		{
+			var remote_player_skill_duration = skill_duration - (unixTimestampMs - useSkill.Timestamp) / 1000f;
 			jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, remote_player_skill_duration, skill_height, useSkill.Timestamp));
+			return;
 		}
+
+		// 그 외는 fx 기반 디스패처로 연출한다(원격 관전자에게도 자신과 동일한 연출이 보인다).
+		SkillFxDispatcher.Play(resSkill, game_object, pos, this);
 	}
 
 	void Update()
@@ -778,9 +787,15 @@ public class Session : MonoBehaviour
 
 
         SendMessage(PacketFactory.CreateUseSkillMessage(skillId, player_agnet_id, pos, type, timestamp));
+
+		// 서버 브로드캐스트는 캐스터(자신)를 제외하므로, 자신의 연출은 여기서 즉시 재생한다.
 		if (resSkill.code_name == "JumpSkill")
 		{
 			jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, skill_duration, skill_height, timestamp));
+		}
+		else
+		{
+			SkillFxDispatcher.Play(resSkill, game_object, pos, this);
 		}
     }
 

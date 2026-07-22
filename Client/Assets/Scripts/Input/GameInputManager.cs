@@ -14,6 +14,10 @@ public class GameInputManager : MonoBehaviour
 
     // 스킬 관리
     private Dictionary<KeyCode, Skill> skillKeyMap = new Dictionary<KeyCode, Skill>();
+    // 데이터(gamedata) 기반 스킬 프리뷰: KeyCode→skillId. gamedata 는 리소스 로드 이후에야
+    // 유효하므로 첫 선택 시 지연 생성해 캐싱한다(순수 연출 프리뷰, 네트워크 전송 없음).
+    private Dictionary<KeyCode, int> fxSkillKeyMap = new Dictionary<KeyCode, int>();
+    private Dictionary<int, Skill> fxSkillCache = new Dictionary<int, Skill>();
     private Skill currentSkill = null;
     public bool IsSkillActive { get; set; } = false;
 
@@ -40,6 +44,13 @@ public class GameInputManager : MonoBehaviour
         skillKeyMap[KeyCode.F2] = new JumpSkill();
         skillKeyMap[KeyCode.F3] = new WhirlwindSkill();
         skillKeyMap[KeyCode.F4] = new ExplosionNoPhysics();
+
+        // 데이터 기반 D2 스킬 프리뷰(우클릭으로 발동). 실제 시전/데미지는 서버 경로(Session.UseSkill)가 담당.
+        fxSkillKeyMap[KeyCode.F5] = 101; // Fireball(projectile)
+        fxSkillKeyMap[KeyCode.F6] = 102; // Meteor(meteor)
+        fxSkillKeyMap[KeyCode.F7] = 104; // Nova(nova)
+        fxSkillKeyMap[KeyCode.F8] = 106; // Teleport(teleport)
+        fxSkillKeyMap[KeyCode.F9] = 200; // Holy Fire(passive aura, 지면 링)
 
         currentSkill = skillKeyMap[KeyCode.F1]; // 기본 스킬 설정
 
@@ -112,6 +123,22 @@ public class GameInputManager : MonoBehaviour
             }
         }
 
+        // 데이터 기반 스킬 선택(지연 생성)
+        foreach (var kv in fxSkillKeyMap)
+        {
+            if (Input.GetKeyDown(kv.Key))
+            {
+                var skill = GetOrCreateFxSkill(kv.Value);
+                if (skill != null)
+                {
+                    if (currentSkill != null)
+                        currentSkill.OnDeselect(this);
+                    currentSkill = skill;
+                    currentSkill.OnSelect(this);
+                }
+            }
+        }
+
         // 스킬 발동(우클릭)
         if (currentSkill != null)
         {
@@ -144,6 +171,31 @@ public class GameInputManager : MonoBehaviour
             if (Vector3.Distance(playerTransform.position, targetPosition.Value) < 0.05f)
                 targetPosition = null;
         }
+    }
+
+    // skillId 로 스킬 인스턴스를 지연 생성한다(gamedata 채움). 리소스 미로드면 null.
+    // code_name 이 있으면 SkillFactory(AuraSkill 등), 없으면 fx 기반 ActiveFxSkill 로 감싼다.
+    private Skill GetOrCreateFxSkill(int skillId)
+    {
+        if (fxSkillCache.TryGetValue(skillId, out var cached))
+            return cached;
+
+        Gamedata.Skill data = null;
+        if (GameManager.Instance == null || GameManager.Instance.resource == null
+            || !GameManager.Instance.resource.Skills.TryGetValue(skillId, out data))
+            return null;
+
+        Skill skill;
+        if (!string.IsNullOrEmpty(data.code_name))
+            skill = SkillFactory.Create(skillId); // AuraSkill 등 클라 클래스
+        else
+        {
+            skill = new ActiveFxSkill();
+            skill.gamedata = data;
+        }
+
+        fxSkillCache[skillId] = skill;
+        return skill;
     }
 
     // 마우스 위치의 지면 좌표 반환

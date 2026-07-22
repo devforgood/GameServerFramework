@@ -437,6 +437,12 @@ std::vector<IGridActor*> Map::get_actors_in_range(Actor* actor, float range, flo
 	return gridManager_->getEntitiesInAoEMask(actor->GetVecter2X(), actor->GetVecter2Y(), range, dirDeg, angle);
 }
 
+std::vector<IGridActor*> Map::get_actors_in_radius(float centerX, float centerZ, float radius)
+{
+	// dirDeg 인자만 받는 오버로드는 angle=360(완전한 원형)으로 처리된다.
+	return gridManager_->getEntitiesInAoEMask(centerX, centerZ, radius, 0.0f);
+}
+
 void Map::Enter(std::shared_ptr<Player> player)
 {
 	if (player == nullptr)

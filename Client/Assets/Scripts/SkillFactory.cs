@@ -19,6 +19,8 @@ public static class SkillFactory
         switch (res.code_name)
         {
             
+            case "AuraSkill": obj = new AuraSkill(); break;
+            
             case "JumpSkill": obj = new JumpSkill(); break;
             
             case "NormalAttackSkill": obj = new NormalAttackSkill(); break;
