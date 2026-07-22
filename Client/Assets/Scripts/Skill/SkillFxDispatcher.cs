@@ -16,9 +16,13 @@ public static class SkillFxDispatcher
     public static void Play(Gamedata.Skill data, GameObject caster, Vector3 targetPos, MonoBehaviour host)
     {
         if (data == null || caster == null || host == null)
+        {
+            Debug.LogWarning($"[SkillFx] Play skipped: data={(data == null ? "null" : data.id.ToString())} caster={(caster == null ? "null" : caster.name)} host={(host == null ? "null" : host.name)}");
             return;
+        }
 
         string fx = data.fx ?? "";
+        Debug.Log($"[SkillFx] Play skill={data.id} fx='{fx}' caster={caster.name} target={targetPos}");
         switch (fx)
         {
             case "projectile": host.StartCoroutine(Projectile(data, caster, targetPos, host)); break;
@@ -26,8 +30,34 @@ public static class SkillFxDispatcher
             case "nova":       Nova(data, caster, host); break;
             case "teleport":   Teleport(caster, targetPos, host); break;
             case "impact":     host.StartCoroutine(SkillFx.Burst(targetPos, Radius(data, 3f), 0.4f, new Color(1f, 0.9f, 0.3f))); break;
-            default: break; // fx 미지정 스킬(근접 등)은 연출 없음
+            case "slash":      host.StartCoroutine(Slash(data, caster, targetPos, host)); break;
+            default:
+                Debug.Log($"[SkillFx] skill {data.id} 에 fx 가 없어 연출을 생략합니다(fx='{fx}').");
+                break;
         }
+    }
+
+    // 근접 베기: 캐스터가 목표를 향한 부채꼴(range/angle) 호를 순간 그렸다 페이드(일반공격/광란/휠윈드 등).
+    private static IEnumerator Slash(Gamedata.Skill data, GameObject caster, Vector3 target, MonoBehaviour host)
+    {
+        float radius = data.range > 0 ? data.range : 2f;
+        float angle = data.angle > 0 ? data.angle : 90f;
+        Vector3 center = caster.transform.position;
+        Vector3 dir = target - center; dir.y = 0f;
+        float baseDeg = (dir.sqrMagnitude > 0.001f) ? Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg : 0f;
+
+        var color = new Color(1f, 1f, 0.85f);
+        var lr = SkillFx.Arc(center, radius, baseDeg - angle / 2f, baseDeg + angle / 2f, color);
+
+        float t = 0f; const float dur = 0.25f;
+        while (t < dur)
+        {
+            t += Time.deltaTime;
+            var c = color; c.a = Mathf.Clamp01(1f - t / dur);
+            lr.startColor = lr.endColor = c;
+            yield return null;
+        }
+        if (lr != null) Object.Destroy(lr.gameObject);
     }
 
     // radius(우선) → range → 폴백. 클라 연출 크기용.
