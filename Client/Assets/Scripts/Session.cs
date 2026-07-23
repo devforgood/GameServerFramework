@@ -581,16 +581,12 @@ public class Session : MonoBehaviour
                     continue;
 				}
 
-                float lerpSpeed = 15f; // 원하는 값으로 조정 (5~15 정도가 적당함)
-    //            float threshold = 1f; // 원하는 값으로 조정 (1 정도가 적당함)
-    //            float dist = Vector3.Distance(game_object.transform.position, actor.pos);
-				//if (dist > threshold)
-				//{
-				//	Debug.Log($"Update Actor: {actor.agnet_id}, pos({game_object.transform.position.x}, {game_object.transform.position.y}, {game_object.transform.position.z}) -> ({actor.pos.x}, {actor.pos.y}, {actor.pos.z}) dist: {dist}");
-				//	game_object.transform.position = actor.pos;
-				//}
-				//else
-					game_object.transform.position = Vector3.Lerp(game_object.transform.position, actor.pos, Time.deltaTime * lerpSpeed);
+                float lerpSpeed = 15f;   // 일반 이동 보간 속도(5~15 적당)
+                float snapDistance = 4f; // 이보다 큰 위치 변화(텔레포트/게이트/스폰)는 보간 대신 즉시 스냅
+                if (Vector3.Distance(game_object.transform.position, actor.pos) > snapDistance)
+                    game_object.transform.position = actor.pos; // 서버가 확정한 위치로 순간이동(블링크)
+                else
+                    game_object.transform.position = Vector3.Lerp(game_object.transform.position, actor.pos, Time.deltaTime * lerpSpeed);
 			}
 			catch
 			{

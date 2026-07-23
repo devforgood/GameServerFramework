@@ -30,6 +30,7 @@ public static class SkillFxDispatcher
             case "nova":       Nova(data, caster, host); break;
             case "teleport":   Teleport(caster, targetPos, host); break;
             case "impact":     host.StartCoroutine(SkillFx.Burst(targetPos, Radius(data, 3f), 0.4f, new Color(1f, 0.9f, 0.3f))); break;
+            case "heal":       host.StartCoroutine(SkillFx.Burst(caster.transform.position, 1.6f, 0.5f, new Color(0.3f, 1f, 0.4f))); break;
             case "slash":      host.StartCoroutine(Slash(data, caster, targetPos, host)); break;
             default:
                 Debug.Log($"[SkillFx] skill {data.id} 에 fx 가 없어 연출을 생략합니다(fx='{fx}').");
@@ -120,13 +121,15 @@ public static class SkillFxDispatcher
         host.StartCoroutine(SkillFx.Burst(caster.transform.position, radius * 0.5f, 0.3f, new Color(0.5f, 0.85f, 1f)));
     }
 
-    // 순간이동: 출발/도착 지점 섬광 + 즉시 위치 이동(서버도 텔레포트하므로 위치는 곧 동기화된다).
+    // 순간이동: 출발/도착 지점 섬광만 재생한다.
+    // 위치 이동은 절대 클라가 낙관적으로 하지 않는다(서버 권위) — 서버가 쿨다운 등으로 거부하면
+    // 에이전트가 안 움직이는데 클라만 옮겨두면, 위치 동기화(actor.pos)가 원위치로 스냅백시킨다.
+    // 실제 이동은 서버 텔레포트 후 UpdateActorNotify → Session 의 위치 보간/스냅으로 반영된다.
     private static void Teleport(GameObject caster, Vector3 target, MonoBehaviour host)
     {
         var color = new Color(0.7f, 0.4f, 1f);
         Vector3 from = caster.transform.position;
-        host.StartCoroutine(SkillFx.Burst(from, 1.5f, 0.25f, color));
-        caster.transform.position = new Vector3(target.x, from.y, target.z);
-        host.StartCoroutine(SkillFx.Burst(caster.transform.position, 1.5f, 0.25f, color));
+        host.StartCoroutine(SkillFx.Burst(from, 1.5f, 0.25f, color));                                  // 출발 지점 섬광
+        host.StartCoroutine(SkillFx.Burst(new Vector3(target.x, from.y, target.z), 1.5f, 0.25f, color)); // 도착 지점 섬광
     }
 }

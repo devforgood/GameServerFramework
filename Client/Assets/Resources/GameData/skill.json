@@ -14,7 +14,8 @@
       {
         "type": "damage"
       }
-    ]
+    ],
+    "fx": "slash"
   },
   {
     "id": 2,
@@ -194,7 +195,8 @@
       {
         "type": "damage"
       }
-    ]
+    ],
+    "fx": "projectile"
   },
   {
     "id": 109,
@@ -243,7 +245,8 @@
       {
         "type": "damage"
       }
-    ]
+    ],
+    "fx": "slash"
   },
   {
     "id": 112,
@@ -256,7 +259,8 @@
       {
         "type": "heal"
       }
-    ]
+    ],
+    "fx": "heal"
   },
   {
     "id": 113,
@@ -272,7 +276,8 @@
       {
         "type": "damage"
       }
-    ]
+    ],
+    "fx": "slash"
   },
   {
     "id": 114,
@@ -288,7 +293,8 @@
       {
         "type": "damage"
       }
-    ]
+    ],
+    "fx": "slash"
   },
   {
     "id": 115,
@@ -330,7 +336,8 @@
       {
         "type": "damage"
       }
-    ]
+    ],
+    "fx": "slash"
   },
   {
     "id": 117,
@@ -362,7 +369,8 @@
       {
         "type": "damage"
       }
-    ]
+    ],
+    "fx": "slash"
   },
   {
     "id": 200,

@@ -21,6 +21,19 @@ public class GameInputManager : MonoBehaviour
     private Skill currentSkill = null;
     public bool IsSkillActive { get; set; } = false;
 
+    // 현재 선택된 스킬(HUD/외부 UI 용).
+    public Skill CurrentSkill => currentSkill;
+
+    // HUD 핫바 표시 순서(Dictionary 는 순서를 보장하지 않으므로 명시한다).
+    private static readonly KeyCode[] HotbarOrder =
+    {
+        KeyCode.F1, KeyCode.F2, KeyCode.F3, KeyCode.F4,
+        KeyCode.F5, KeyCode.F6, KeyCode.F7, KeyCode.F8, KeyCode.F9
+    };
+    private GUIStyle hudTitleStyle;
+    private GUIStyle hudRowStyle;
+    private Texture2D hudBoxTex;
+
     public Transform PlayerTransform => playerTransform;
     public Vector3 PlayerPosition { get => playerTransform.position; set => playerTransform.position = value; }
 
@@ -210,6 +223,86 @@ public class GameInputManager : MonoBehaviour
             return dest;
         }
         return null;
+    }
+
+    // ── 현재 선택된 스킬 HUD (IMGUI — 씬/캔버스 세팅 없이 플레이하면 바로 표시) ──
+    // 좌상단에 선택된 스킬을 크게, 아래에 F1~F9 핫바를 그리고 선택 항목을 강조한다.
+    // 실제 네트워크 시전은 Shift+좌클릭(항상 skillId 1)이라는 힌트도 함께 표시한다.
+    void OnGUI()
+    {
+        EnsureHudStyles();
+
+        const float w = 240f;
+        const float rowH = 20f;
+        float x = 10f, y = 10f;
+        float h = 30f + HotbarOrder.Length * rowH + 26f;
+
+        GUI.DrawTexture(new Rect(x, y, w, h), hudBoxTex, ScaleMode.StretchToFill);
+
+        GUI.Label(new Rect(x + 10, y + 6, w - 20, 22),
+            $"선택된 스킬: {PrettyName(currentSkill)}", hudTitleStyle);
+
+        float ly = y + 32f;
+        foreach (var key in HotbarOrder)
+        {
+            string label;
+            bool selected;
+            if (skillKeyMap.TryGetValue(key, out var s))
+            {
+                label = PrettyName(s);
+                selected = (currentSkill == s);
+            }
+            else if (fxSkillKeyMap.TryGetValue(key, out var id))
+            {
+                label = PrettyName(id);
+                selected = fxSkillCache.TryGetValue(id, out var cached) && cached == currentSkill;
+            }
+            else
+            {
+                continue;
+            }
+
+            hudRowStyle.normal.textColor = selected ? new Color(1f, 0.9f, 0.3f) : Color.white;
+            string mark = selected ? "▶ " : "   ";
+            GUI.Label(new Rect(x + 10, ly, w - 20, rowH), $"{mark}[{key}] {label}", hudRowStyle);
+            ly += rowH;
+        }
+
+        hudRowStyle.normal.textColor = new Color(0.7f, 0.85f, 1f);
+        GUI.Label(new Rect(x + 10, ly + 4, w - 20, rowH), "시전: 선택 후 우클릭 / 서버: Shift+좌클릭", hudRowStyle);
+    }
+
+    private void EnsureHudStyles()
+    {
+        if (hudBoxTex == null)
+        {
+            hudBoxTex = new Texture2D(1, 1);
+            hudBoxTex.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.6f));
+            hudBoxTex.Apply();
+        }
+        if (hudTitleStyle == null)
+            hudTitleStyle = new GUIStyle(GUI.skin.label) { fontSize = 15, fontStyle = FontStyle.Bold };
+        if (hudRowStyle == null)
+            hudRowStyle = new GUIStyle(GUI.skin.label) { fontSize = 12 };
+    }
+
+    // 스킬 표시 이름. gamedata 가 있으면 name_id("fireball_name"→"fireball"), 없으면 클래스명.
+    private string PrettyName(Skill s)
+    {
+        if (s == null) return "없음";
+        if (s.gamedata != null) return PrettyName(s.gamedata.id);
+        return s.GetType().Name.Replace("Skill", "");
+    }
+
+    private string PrettyName(int skillId)
+    {
+        if (GameManager.Instance != null && GameManager.Instance.resource != null
+            && GameManager.Instance.resource.Skills.TryGetValue(skillId, out var d)
+            && !string.IsNullOrEmpty(d.name_id))
+        {
+            return d.name_id.Replace("_name", "");
+        }
+        return $"skill {skillId}";
     }
 
 #if UNITY_EDITOR

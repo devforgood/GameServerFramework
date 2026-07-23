@@ -41,6 +41,27 @@ public static class SkillFx
         return lr;
     }
 
+    // 지면 호(arc): center 중심 반경 radius 로 fromDeg→toDeg 부채꼴 테두리를 그린다(비-loop).
+    // 각도 규약은 게임과 동일: 0도 = +Z, x=sin, z=cos (NormalAttackSkill 의 Atan2(x,z) 와 일치).
+    public static LineRenderer Arc(Vector3 center, float radius, float fromDeg, float toDeg, Color color, int segments = 24, float width = 0.2f)
+    {
+        var go = new GameObject("SkillArc");
+        var lr = go.AddComponent<LineRenderer>();
+        lr.material = UnlitColor(color);
+        lr.startColor = lr.endColor = color;
+        lr.startWidth = lr.endWidth = width;
+        lr.useWorldSpace = true;
+        lr.loop = false;
+        lr.positionCount = segments;
+        for (int i = 0; i < segments; i++)
+        {
+            float deg = Mathf.Lerp(fromDeg, toDeg, (float)i / (segments - 1));
+            float a = deg * Mathf.Deg2Rad;
+            lr.SetPosition(i, center + new Vector3(Mathf.Sin(a) * radius, 0.1f, Mathf.Cos(a) * radius));
+        }
+        return lr;
+    }
+
     // LineRenderer 정점을 center 중심 반경 radius 의 원으로 배치.
     public static void SetRing(LineRenderer lr, Vector3 center, float radius)
     {
