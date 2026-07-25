@@ -1,1017 +1,243 @@
 using FlatBuffers;
 using syncnet;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
+// 클라이언트 세션의 '조립과 창구' 역할만 한다. 실제 일은 역할별 객체가 나눠 맡는다:
+//
+//   ServerConnection  연결/자동 재접속/하트비트/송신/요청-응답
+//   ActorSync         액터 생성·상태 갱신·위치 보간
+//   SkillController   스킬 시전·거부 처리·연출·점프 애니메이션
+//   MapTransition     게이트 이동과 씬 전환
+//   LoginController   로그인/재접속 핸드오버/자동 스폰
+//
+// Session 이 MonoBehaviour 로 남는 이유는 두 가지다. 씬에 배치된 컴포넌트 참조를 유지해야 하고,
+// TcpConnection 이 Receiver 를 Session 타입으로 캐스팅하기 때문이다. 그래서 프레임 진행(Update)과
+// 외부 공개 API(Gate/InputHandler/Actor 가 부르는 것들)는 여기 두고, 내용은 전부 위임한다.
 public class Session : MonoBehaviour
 {
-	// 게이트(Gate) 등에서 접근할 수 있도록 노출하는 인스턴스.
-	// 씬 전환(게이트 이동) 중에도 네트워크 연결을 유지하기 위해 DontDestroyOnLoad 로 유지된다.
-	public static Session Instance { get; private set; }
+    // 게이트(Gate) 등에서 접근할 수 있도록 노출하는 인스턴스.
+    // 씬 전환(게이트 이동) 중에도 네트워크 연결을 유지하기 위해 DontDestroyOnLoad 로 유지된다.
+    public static Session Instance { get; private set; }
 
-	private bool isChangingMap = false;   // 게이트 이동 요청 진행 중(중복 요청 방지)
-	private bool isLoadingScene = false;  // 씬 로드 대기 중 — 이 동안 네트워크 동기화 처리를 멈춘다
+    private ServerConnection connection;
+    private ActorSync actors;
+    private SkillController skills;
+    private MapTransition mapTransition;
+    private LoginController login;
 
-	// 게이트 이동으로 막 도착하면 목적지 게이트 위치에 스폰되어 도착 즉시 트리거가 재발동한다.
-	// "밖에서 안으로 들어온 경우"만 이동시키기 위해, 도착 직후에는 재이동을 억제하고
-	// 플레이어가 게이트 밖으로 나가면(OnTriggerExit) 해제한다. Gate.cs 에서 참조/해제한다.
-	public bool SuppressGateWarpUntilExit { get; set; } = false;
-
-	// 다음 씬 로드 완료 시 재이동 억제를 걸지 여부. 단방향(one_way) 게이트로 스폰 지점에
-	// 도착하는 경우(gateId 0)는 게이트 위가 아니므로 억제하면 다음 게이트 진입이 한 번 무시된다.
-	private bool suppressWarpOnNextSceneLoad = true;
-
-	int seq = 1;
-	TcpConnection session;
-	int message_count = 0;
-	float lastSendTime = 0f;
-
-	public Dictionary<int, GameObject> game_objects = new Dictionary<int, GameObject>();
-
-	public Dictionary<int, Action<GameMessage>> responses = new Dictionary<int, Action<GameMessage>>();
-
-	public long unixTimestampMs => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
+    /// <summary>내 캐릭터의 agent id. 로그인/스폰/게이트 이동 응답으로 갱신된다.</summary>
     public int player_agnet_id = 0;
-	// 최초 로그인 시 서버가 반환한 현재 맵 id 와 스폰 위치(캐릭터 생성/배치에 사용).
-	public int loginMapId = 0;
-	public Vector3 loginSpawnPos = Vector3.zero;
 
-	// 신규 로그인 후 자동 스폰 대기 플래그. 씬 로드가 끝나면(또는 이미 대상 씬이면 즉시)
-	// 서버가 준 스폰 위치(loginSpawnPos: 기본 스폰 마커 또는 이전 로그아웃 위치)로
-	// AddAgent(Character) 를 1회 보낸다. 재접속 핸드오버는 서버가 기존 캐릭터를 넘겨주므로 제외.
-	private bool pendingLoginSpawn = false;
+    public long unixTimestampMs => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-	// 재접속 토큰(서버가 로그인 응답으로 내려준 플레이어 uuid). 재접속(세션 재연결 또는
-	// 앱 재시작) 시 로그인 요청에 되돌려 보내면 서버가 유예 중이던 기존 캐릭터를 넘겨준다.
-	// PlayerPrefs 에 영속 저장해 앱/플레이 재시작에도 유지한다.
-	private string reconnectToken = "";
-	private const string ReconnectTokenKey = "reconnectToken";
-	private int last_message_id = 0;
-	private bool isConnected = false;  // 연결 상태 추적
-
-    // 자동 재접속 관련 변수
-    private bool isReconnecting = false;  // 재접속 중인지 확인
-    private float reconnectDelay = 3f;    // 재접속 대기 시간 (초)
-    private float lastReconnectTime = 0f; // 마지막 재접속 시도 시간
-    private int reconnectAttempts = 0;    // 재접속 시도 횟수
-    private int maxReconnectAttempts = 5; // 최대 재접속 시도 횟수
-    
-    // Ping 기반 연결 상태 확인
-    private float pingInterval = 5f;      // ping 전송 간격 (초)
-    private float lastPingTime = 0f;      // 마지막 ping 전송 시간
-    private float pingTimeout = 10f;      // ping 응답 대기 시간 (초)
-    private float lastPongTime = 0f;      // 마지막 pong 수신 시간
-    private bool pingEnabled = true;      // ping 활성화 여부
-
-    // todo : 스킬 테이블 생성시 스킬별 지속 시간 설정
-    private float skill_duration = 1f; // 스킬 지속 시간
-	private float skill_height = 3f; // 스킬 점프 높이
-
-    private Coroutine jumpCoroutine;
-
-    // 로컬 쿨다운 예측(서버 거부로 헛연출이 남지 않게 미리 거른다) + 그 예측으로 재생한 연출 핸들.
-    // 서버가 거부 응답을 보내오면 여기 저장된 코루틴을 멈춰 연출을 취소한다.
-    private readonly SkillCooldownTracker skillCooldowns = new SkillCooldownTracker();
-    private readonly Dictionary<int, Coroutine> localSkillFx = new Dictionary<int, Coroutine>();
-
-    // 클라가 transform 을 직접 애니메이션 중인 액터(점프/돌진). 이 액터만 서버 위치 반영을 건너뛴다.
-    private readonly HashSet<int> locallyAnimatedAgents = new HashSet<int>();
+    // ── 외부에 열어 둔 접근자(기존 호출부 유지) ──
+    /// <summary>agentId → 씬 오브젝트(Actor 가 자기 참조를 지울 때 사용).</summary>
+    public Dictionary<int, GameObject> game_objects => actors.Objects;
 
     /// <summary>HUD 등에서 남은 쿨다운을 표시하기 위한 접근자.</summary>
-    public SkillCooldownTracker SkillCooldowns => skillCooldowns;
+    public SkillCooldownTracker SkillCooldowns => skills.Cooldowns;
 
-    public int nextMesssagetId()
-	{
-		++last_message_id;
-		if (last_message_id <= 0)
-		{
-			last_message_id = 1;
-		}
-		return last_message_id;
-	}
+    /// <summary>게이트 재이동 억제 플래그(Gate.cs 가 참조/해제).</summary>
+    public bool SuppressGateWarpUntilExit
+    {
+        get { return mapTransition.SuppressGateWarpUntilExit; }
+        set { mapTransition.SuppressGateWarpUntilExit = value; }
+    }
+
+    /// <summary>서버가 알려준 로그인 맵/스폰 위치.</summary>
+    public int loginMapId => login.MapId;
+    public Vector3 loginSpawnPos => login.SpawnPos;
 
     void Awake()
-	{
-		// 씬 전환에도 연결을 유지하기 위한 영속 싱글톤. 새 씬에 중복 Session 이 있으면 자가 파괴한다.
-		if (Instance != null && Instance != this)
-		{
-			Destroy(gameObject);
-			return;
-		}
-		Instance = this;
-		DontDestroyOnLoad(gameObject);
+    {
+        // 씬 전환에도 연결을 유지하기 위한 영속 싱글톤. 새 씬에 중복 Session 이 있으면 자가 파괴한다.
+        if (Instance != null && Instance != this)
+        {
+            enabled = false; // 파괴는 프레임 끝에 일어나므로 그때까지 Start/Update 가 돌지 않게 막는다
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
 
-		// 재접속 토큰(uuid)을 영속 저장소에서 복원한다. 앱/플레이 재시작으로 Session 이 새로
-		// 생성돼도, 유예 시간(서버 60초) 내라면 이 토큰으로 기존 캐릭터를 넘겨받을 수 있다.
-		reconnectToken = PlayerPrefs.GetString(ReconnectTokenKey, "");
-	}
+        BuildParts();
+        login.RestoreToken();
+    }
+
+    // 역할별 객체를 만들고 서로 연결한다. 의존 방향은 한쪽으로만 흐른다:
+    // 연결 → (액터/스킬/맵/로그인). 반대로 부를 일은 이벤트로 되돌려 받는다.
+    private void BuildParts()
+    {
+        connection = new ServerConnection(this, () => GameManager.Instance.server_address);
+        actors = new ActorSync();
+        skills = new SkillController(this, connection, actors, () => player_agnet_id);
+        mapTransition = new MapTransition(connection, actors);
+        login = new LoginController(connection, mapTransition,
+            agentId => player_agnet_id = agentId,
+            pos => AddAgent(0, pos, GameObjectType.Character));
+
+        // 연결되면(최초/재접속 공통) 자동 로그인한다.
+        connection.Connected += login.Login;
+
+        // 게이트 이동으로 캐릭터가 새로 만들어지면 id 를 갱신하고 스킬 예측을 버린다.
+        mapTransition.GateEntered += agentId =>
+        {
+            player_agnet_id = agentId;
+            skills.Reset();
+        };
+
+        // 씬이 준비되면 신규 로그인 대기 중이던 캐릭터를 스폰한다.
+        mapTransition.SceneReady += login.TrySpawnCharacter;
+    }
 
     void Start()
-	{
-		Application.runInBackground = true;
-		// BT 디버그 뷰(Tools/BT Debug Viewer)가 트리 정의를 요청할 때 사용할 송신 경로 등록
-		TreeDebugRepository.DefinitionRequestSender = RequestTreeDebug;
-		startServer();
-	}
+    {
+        Application.runInBackground = true;
+        // BT 디버그 뷰(Tools/BT Debug Viewer)가 트리 정의를 요청할 때 사용할 송신 경로 등록
+        TreeDebugRepository.DefinitionRequestSender = RequestTreeDebug;
+        startServer();
+    }
 
-	void OnDestroy()
-	{
-		if (TreeDebugRepository.DefinitionRequestSender == (System.Action<long>)RequestTreeDebug)
-			TreeDebugRepository.DefinitionRequestSender = null;
-	}
+    void OnDestroy()
+    {
+        if (TreeDebugRepository.DefinitionRequestSender == (System.Action<long>)RequestTreeDebug)
+            TreeDebugRepository.DefinitionRequestSender = null;
+    }
 
-	/// <summary>특정 몬스터의 BT 정의(+현재 상태)를 서버에 요청한다.</summary>
-	public void RequestTreeDebug(long monsterId)
-	{
-		SendMessage(PacketFactory.CreateTreeDebugRequestMessage(monsterId));
-	}
+    void Update()
+    {
+        // 중복 Session 은 Awake 에서 Destroy 되지만 실제 파괴는 프레임 끝이라 Update 가 한 번 더 돈다.
+        // 그때는 아직(또는 영영) 조립되지 않았으므로 아무 일도 하지 않는다.
+        if (connection == null)
+            return;
 
-	public void startServer()
-	{
-		Debug.Log($"서버 연결 시작: {GameManager.Instance.server_address}");
-		session = new TcpConnection(core.NetworkHelper.CreateIPEndPoint(GameManager.Instance.server_address));
-		session.Receiver = this;
-		Debug.Log("TcpConnection 생성 완료, 연결 시도 중...");
-		session.Connect();
-		Debug.Log("Connect() 호출 완료");
-	}
-	
-	// 연결 완료 시 호출되는 메서드
-	public void OnConnected()
-	{
-		Debug.Log("OnConnected() 메서드가 호출되었습니다.");
-		isConnected = true;
-		Debug.Log("서버에 연결되었습니다.");
-		Debug.Log($"TcpConnection.IsConnected: {session?.IsConnected}");
-		
-		// 재접속 중이었다면 재접속 성공 처리
-		if (isReconnecting)
-		{
-			OnReconnectSuccess();
-		}
-		
-		// 연결 성공 시 ping 타이머 초기화
-		lastPongTime = Time.time;
-		
-		// 연결 완료 시 자동 로그인
-		Debug.Log("자동 로그인 시작...");
-		Login();
-	}
-	
-	// 연결 해제 시 호출되는 메서드
-	public void OnDisconnected()
-	{
-		bool wasConnected = isConnected;
-		isConnected = false;
-		
-		if (wasConnected)
-		{
-			Debug.Log("서버와의 연결이 해제되었습니다.");
-		}
-		else
-		{
-			Debug.Log("서버 연결에 실패했습니다.");
-		}
-		
-		// 자동 재접속 시작 (이미 재접속 중이면 하지 않음)
-		if (!isReconnecting && reconnectAttempts < maxReconnectAttempts)
-		{
-			StartReconnect();
-		}
-		else if (reconnectAttempts >= maxReconnectAttempts)
-		{
-			Debug.LogError($"최대 재접속 시도 횟수({maxReconnectAttempts})에 도달했습니다. 수동으로 재접속해주세요.");
-		}
-		else if (isReconnecting)
-		{
-			Debug.Log("이미 재접속 중입니다.");
-		}
-	}
+        connection.Tick();
 
-	// 자동 재접속 시작
-	private void StartReconnect()
-	{
-		if (isReconnecting) return;
-		
-		isReconnecting = true;
-		reconnectAttempts++;
-		lastReconnectTime = Time.time;
-		
-		Debug.Log($"자동 재접속 시도 {reconnectAttempts}/{maxReconnectAttempts} - {reconnectDelay}초 후 시도");
-		
-		// 기존 연결 정리
-		if (session != null)
-		{
-			session.Dispose();
-			session = null;
-		}
-	}
-	
-	// 재접속 시도
-	private void AttemptReconnect()
-	{
-		if (!isReconnecting) return;
-		
-		Debug.Log($"재접속 시도 중... ({reconnectAttempts}/{maxReconnectAttempts})");
-		startServer();
-		
-		// 재접속 시도 후 타이머 리셋 (다음 시도까지 대기)
-		lastReconnectTime = Time.time;
-	}
-	
-	// 재접속 성공 시 호출
-	private void OnReconnectSuccess()
-	{
-		isReconnecting = false;
-		reconnectAttempts = 0;
-		lastPongTime = Time.time; // ping 타이머 리셋
-		Debug.Log("재접속 성공!");
-	}
-	
-	// 수동 재접속 (최대 시도 횟수 초과 시 사용)
-	public void ManualReconnect()
-	{
-		reconnectAttempts = 0;
-		isReconnecting = false;
-		StartReconnect();
-	}
-
-	private byte[] MakeHeader(byte[] body)
-	{
-        // 2byte header + 2byte body length
-        return BitConverter.GetBytes((ushort)body.Length);
-	}
-
-	public void SendPing(float deltaTime)
-	{
-		if (!isConnected) return;  // 연결되지 않은 경우 ping 전송하지 않음
-		
-		lastSendTime += deltaTime;
-		if (lastSendTime >= 0.1f)
-		{
-			
-			byte[] body = PacketFactory.CreatePingMessage(seq++);
-
-			session.SendBytes(MakeHeader(body));
-			session.SendBytes(body);
-
-			lastSendTime = 0f;
-		}
-	}
-
-	public void SendMessage(byte[] msg, Action<GameMessage> response = null)
-	{
-		if (!isConnected)
-		{
-			Debug.LogWarning("서버에 연결되지 않았습니다. 메시지 전송을 건너뜁니다.");
-			return;
-		}
-		
-		// TcpConnection의 실제 연결 상태도 확인
-		if (session != null && !session.IsConnected)
-		{
-			Debug.LogWarning("TcpConnection이 연결되지 않았습니다. 메시지 전송을 건너뜁니다.");
-			return;
-		}
-		
-		session.SendBytes(MakeHeader(msg));
-		session.SendBytes(msg);
-		if (response != null)
-		{
-			responses.Add(last_message_id, response);
-		}
-	}
-
-	void OnReceive(byte[] bytes)
-	{
-		var recv_msg = syncnet.GameMessage.GetRootAsGameMessage(new ByteBuffer(bytes));
-		switch (recv_msg.MsgType)
-		{
-			case syncnet.GameMessages.UpdateActorNotify:
-				HandleUpdateActorNotify(recv_msg);
-				break;
-			case syncnet.GameMessages.UseSkill:
-				HandleUseSkillNotify(recv_msg);
-				break;
-			case syncnet.GameMessages.Ping:
-				// Ping 응답 처리
-				HandlePong();
-				break;
-			case syncnet.GameMessages.TreeDebugSync:
-				HandleTreeDebugSync(recv_msg);
-				break;
-		}
-
-		if(recv_msg.Id > 0 && responses.ContainsKey(recv_msg.Id))
-		{
-			responses[recv_msg.Id](recv_msg);
-			responses.Remove(recv_msg.Id);
-		}
-	}
-
-	private void HandleUpdateActorNotify(syncnet.GameMessage recv_msg)
-	{
-		syncnet.UpdateActorNotify updateActorNotify = recv_msg.Msg<syncnet.UpdateActorNotify>().Value;
-		//Debug.LogWarning($"HandleUpdateActorNotify: {updateActorNotify.ActorsLength} actors received");
-		
-		for (int i = 0; i < updateActorNotify.ActorsLength; ++i)	
-		{
-			var updatedActor = updateActorNotify.Actors(i).Value;
-			var agent_id = updatedActor.AgentId;
-
-			//Debug.LogWarning($"Processing Actor {agent_id}: Type={updatedActor.GameObjectType}, State={updatedActor.State?.State}, Health={updatedActor.Health?.Health}");
-
-			// Pos가 null인 경우 처리
-			Vector3 pos = new Vector3();
-			GameObject game_object = null;
-			Actor actor = null;
-			if (!game_objects.TryGetValue(agent_id, out game_object))
-			{
-                if (updatedActor.Pos.HasValue)
-                {
-                    pos = new Vector3(updatedActor.Pos.Value.X, updatedActor.Pos.Value.Y, updatedActor.Pos.Value.Z);
-                }
-                else
-                {
-                    Debug.LogWarning($"Actor {agent_id} has no position, skipping creation");
-                }
-
-					game_object = CreateGameObject(updatedActor.GameObjectType, pos, agent_id);
-				if (game_object != null)
-				{
-					game_objects[agent_id] = game_object;
-					actor = game_object.GetComponent<Actor>();
-					Debug.LogWarning($"Created new {updatedActor.GameObjectType} object for agent {agent_id}");
-				}
-			}
-			else
-			{
-				actor = game_object.GetComponent<Actor>();
-                if (updatedActor.Pos.HasValue)
-                {
-                    pos = new Vector3(updatedActor.Pos.Value.X, updatedActor.Pos.Value.Y, updatedActor.Pos.Value.Z);
-                } else
-				{
-					pos = actor.pos; // Pos가 null인 경우 기존 위치 유지
-                }
-            }
-
-			if (actor != null)
-			{
-				UpdateActorState(actor, updatedActor, pos);
-			}
-			else
-			{
-				Debug.LogError($"Failed to get Actor component for agent {agent_id}");
-			}
-		}
-
-		// Debug lines 처리
-		for (int i = 0; i < updateActorNotify.DebugsLength; ++i)
-		{
-			var debugInfo = updateActorNotify.Debugs(i).Value;
-			
-			// EndPos가 null인 경우 처리
-			if (!debugInfo.EndPos.HasValue)
-			{
-				Debug.LogWarning($"Debug {i}: EndPos is null, skipping debug line");
-				continue;
-			}
-			
-			Vector3 pos;
-			pos.x = debugInfo.EndPos.Value.X;
-			pos.y = debugInfo.EndPos.Value.Y;
-			pos.z = debugInfo.EndPos.Value.Z;
-			var obj = (GameObject)Instantiate(Resources.Load("DebugTarget"), pos, Quaternion.identity);
-		}
-	}
-
-	private void HandleTreeDebugSync(syncnet.GameMessage recv_msg)
-	{
-		syncnet.TreeDebugSync treeDebugSync = recv_msg.Msg<syncnet.TreeDebugSync>().Value;
-		TreeDebugRepository.Apply(treeDebugSync);
-	}
-
-	private GameObject CreateGameObject(GameObjectType type, Vector3 pos, int agentId)
-	{
-		GameObject game_object = null;
-		Actor actor = null;
-
-		switch (type)
-		{
-			case GameObjectType.Monster:
-				game_object = (GameObject)Instantiate(Resources.Load("Monster"), pos, Quaternion.identity);
-				actor = game_object.GetComponent<Monster>();
-				break;
-			case GameObjectType.Character:
-				game_object = (GameObject)Instantiate(Resources.Load("Character2"), pos, Quaternion.identity);
-				actor = game_object.GetComponent<Character>();
-				break;
-			default:
-				Debug.LogError("error game object type");
-				return null;
-		}
-
-		if (actor != null)
-		{
-			actor.agnet_id = agentId;
-		}
-
-		return game_object;
-	}
-
-	// 이보다 큰 위치 변화(텔레포트/게이트/스폰)는 보간 대신 즉시 스냅한다.
-	private const float PositionSnapDistance = 4f;
-
-	private void UpdateActorState(Actor actor, syncnet.ActorInfo updatedActor, Vector3 pos)
-	{
-		actor.SetServerPosition(pos, PositionSnapDistance);
-		actor.input_locked = updatedActor.InputLocked;
-
-		// 상태 업데이트
-		if (updatedActor.State.HasValue)
-		{
-			var newState = updatedActor.State.Value.State;
-			actor.UpdateState(actor.gameObject, newState);
-		}
-		
-		// HP 업데이트
-		if (updatedActor.Health.HasValue)
-		{
-            int oldHealth = actor.health;
-            int newHealth = updatedActor.Health.Value.Health;
-            if (oldHealth > newHealth)
+        // 통합 큐 처리 (네트워크 데이터 + 연결 이벤트)
+        // 씬 로드 대기 중에는 처리하지 않고 큐에 남겨, 씬 로드 완료 후 새 씬에서 처리한다.
+        if (!mapTransition.IsLoadingScene)
+        {
+            object item;
+            while (connection.TryDequeue(out item))
             {
-                Debug.LogWarning($"=== DAMAGE EVENT === Session: Actor {actor.agnet_id} ({actor.gameObject.name}) health: {oldHealth} -> {newHealth}");
+                if (item is byte[])
+                {
+                    OnReceive((byte[])item);
+
+                    // 게이트 응답 처리로 씬 로드가 시작되면, 남은 메시지(새 맵 동기화 등)는
+                    // 씬 로드 완료 후 처리하도록 이번 프레임 처리를 중단한다.
+                    if (mapTransition.IsLoadingScene)
+                        break;
+                }
+                else if (item is string)
+                {
+                    connection.HandleQueuedEvent((string)item);
+                }
             }
-            actor.UpdateHealth(updatedActor.Health.Value.Health);
-		}
+        }
 
-		// 몬스터 특별 처리
-		if (updatedActor.GameObjectType == GameObjectType.Monster)
-		{
-			// 몬스터 상태에 따른 시각적 업데이트
-			if (updatedActor.State.HasValue)
-			{
-				UpdateMonsterVisuals(actor.gameObject, updatedActor.State.Value.State);
-			}
-		}
-	}
+        actors.Tick();
+    }
 
+    // 수신 메시지를 종류별 담당자에게 넘긴다. 요청-응답 콜백은 그 뒤에 실행한다(기존 순서 유지).
+    void OnReceive(byte[] bytes)
+    {
+        var recv_msg = GameMessage.GetRootAsGameMessage(new ByteBuffer(bytes));
+        switch (recv_msg.MsgType)
+        {
+            case GameMessages.UpdateActorNotify:
+                actors.Apply(recv_msg.Msg<UpdateActorNotify>().Value);
+                break;
+            case GameMessages.UseSkill:
+                skills.OnServerMessage(recv_msg, recv_msg.Msg<syncnet.UseSkill>().Value);
+                break;
+            case GameMessages.Ping:
+                connection.OnPong();
+                break;
+            case GameMessages.TreeDebugSync:
+                TreeDebugRepository.Apply(recv_msg.Msg<TreeDebugSync>().Value);
+                break;
+        }
 
+        connection.CompleteResponse(recv_msg);
+    }
 
-	private void UpdateMonsterVisuals(GameObject monster, AIState state)
-	{
-		var renderer = monster.GetComponent<MeshRenderer>();
-		if (renderer != null)
-		{
-			switch (state)
-			{
-				case AIState.Detect:
-					renderer.material.color = Color.red;
-					break;
-				case AIState.Patrol:
-					renderer.material.color = Color.white;
-					break;
-				case AIState.Attack:
-					renderer.material.color = Color.blue;
-					break;
-			}
-		}
-	}
+    // ── 접속 ──
+    public void startServer() { connection.Connect(); }
+    public void ManualReconnect() { connection.ManualReconnect(); }
+    public void Login() { login.Login(); }
 
-	private void HandleUseSkillNotify(syncnet.GameMessage recv_msg)
-	{
-		syncnet.UseSkill useSkill = recv_msg.Msg<syncnet.UseSkill>().Value;
-
-		// 성공 시전의 브로드캐스트가 아니라, 내 시전이 거부됐다는 응답이다(캐스터에게만 온다).
-		if (recv_msg.Result != StatusCode.Success)
-		{
-			HandleUseSkillRejected(useSkill, recv_msg.Result);
-			return;
-		}
-
-		// Pos가 null인 경우 처리
-		if (!useSkill.Pos.HasValue)
-		{
-			Debug.LogWarning("UseSkill: Pos is null, skipping skill effect");
-			return;
-		}
-
-		var pos = new Vector3(useSkill.Pos.Value.X, useSkill.Pos.Value.Y, useSkill.Pos.Value.Z);
-		var target_agent_id = useSkill.Id;
-
-		if (!game_objects.TryGetValue(target_agent_id, out GameObject game_object))
-			return;
-
-		Gamedata.Skill resSkill = null;
-		GameManager.Instance.resource.Skills.TryGetValue(useSkill.SkillId, out resSkill);
-
-		// 점프는 액터 위치를 시간에 걸쳐 이동시키는 특수 연출이라 기존 경로 유지(지연 보정 포함).
-		if (resSkill != null && resSkill.code_name == "JumpSkill")
-		{
-			var remote_player_skill_duration = skill_duration - (unixTimestampMs - useSkill.Timestamp) / 1000f;
-			jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, remote_player_skill_duration, skill_height, useSkill.Timestamp));
-			return;
-		}
-
-		// 그 외는 fx 기반 디스패처로 연출한다(원격 관전자에게도 자신과 동일한 연출이 보인다).
-		SkillFxDispatcher.Play(resSkill, game_object, pos, this);
-	}
-
-	void Update()
-	{
-		// 연결 상태 디버깅 (연결 상태가 변경될 때만 출력)
-		if (session != null && session.IsConnected != isConnected)
-		{
-			Debug.Log($"연결 상태 변경 - isConnected: {isConnected} -> {session.IsConnected}");
-			// OnConnected에서 로그인을 처리하므로 여기서는 하지 않음
-		}
-		
-		// 자동 재접속 처리
-		if (isReconnecting && Time.time - lastReconnectTime >= reconnectDelay)
-		{
-			AttemptReconnect();
-		}
-		
-		// Ping 기반 연결 상태 확인
-		if (isConnected && pingEnabled)
-		{
-			// Ping 전송 (주기적)
-			if (Time.time - lastPingTime >= pingInterval)
-			{
-				SendPing();
-			}
-			
-			// Ping 타임아웃 확인
-			CheckPingTimeout();
-		}
-		
-		// 통합 큐 처리 (네트워크 데이터 + 이벤트)
-		// 씬 로드 대기 중(isLoadingScene)에는 처리하지 않고 큐에 남겨, 씬 로드 완료 후 새 씬에서 처리한다.
-		if (session != null && !isLoadingScene)
-		{
-			object item;
-			while (session.queue.TryDequeue(out item))
-			{
-				if (item is byte[])
-				{
-					// 네트워크 데이터 처리
-					OnReceive((byte[])item);
-
-					// EnterGate 응답 처리로 씬 로드가 시작되면, 남은 메시지(새 맵 동기화 등)는
-					// 씬 로드 완료 후 처리하도록 이번 프레임 처리를 중단한다.
-					if (isLoadingScene)
-						break;
-				}
-				else if (item is string)
-				{
-					// 이벤트 처리
-					string eventName = (string)item;
-					Debug.Log($"이벤트 처리: {eventName}");
-					switch (eventName)
-					{
-						case "OnConnected":
-							OnConnected();
-							break;
-						case "OnDisconnected":
-							OnDisconnected();
-							break;
-					}
-				}
-			}
-		}
-		
-		//SendPing(Time.deltaTime);
-
-		foreach (var game_object in game_objects.Values)
-		{
-			try
-			{
-				var actor = game_object.GetComponent<Actor>();
-				// 클라가 직접 transform 을 애니메이션하는 동안(점프 포물선)만 서버 위치 반영을 멈춘다.
-				// 예전에는 input_locked 전체를 건너뛰었는데, 그러면 돌진(dash)처럼 서버가 잠금 상태로
-				// 이동시키는 스킬은 잠금이 풀릴 때까지 제자리에 있다가 도착 지점으로 튀어(=텔레포트처럼)
-				// 보였다. 입력 잠금은 '시전 중 조작 금지'이지 '위치 동기화 금지'가 아니다.
-				//
-				// 돌진은 서버가 매 틱 실제로 이동시키는 '이동 공격'이라 위치는 서버가 진실이다
-				// (오라 데미지·몬스터 감지 판정이 그 경로를 쓰고, 벽에 막히면 네비메시가 경로를 꺾는다).
-				// 클라는 서버 갱신 사이(10Hz)를 등속으로 메우기만 한다 — Actor.InterpolatedPosition.
-				if (locallyAnimatedAgents.Contains(actor.agnet_id))
-					continue;
-
-                game_object.transform.position = actor.InterpolatedPosition();
-			}
-			catch
-			{
-
-			}
-		}
-	}
-
+    // ── 서버로 보내는 게임 명령 ──
     public void AddAgent(int agent_id, Vector3 pos, GameObjectType type)
     {
-        int messageId = nextMesssagetId();
-        SendMessage(PacketFactory.CreateAddAgentMessage(messageId, pos, type), response =>
+        int messageId = connection.NextMessageId();
+        connection.Send(PacketFactory.CreateAddAgentMessage(messageId, pos, type), response =>
         {
-            if (response.MsgType == GameMessages.AddAgent)
-            {
-                AddAgent addAgent = response.Msg<AddAgent>().Value;
-                if (response.Result == StatusCode.Success)
-                {
-                    Debug.Log("AddAgent Success");
-                    if(addAgent.GameObjectType == (int)GameObjectType.Character)
-                    {
-                        player_agnet_id = addAgent.AgentId;
-                        Debug.Log($"Player Agent ID: {player_agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
-                    }
-                }
-                else
-                {
-                    Debug.Log("AddAgent Fail");
-                }
-            }
-            else
+            if (response.MsgType != GameMessages.AddAgent)
             {
                 Debug.Log("AddAgent Error");
+                return;
+            }
+
+            if (response.Result != StatusCode.Success)
+            {
+                Debug.Log("AddAgent Fail");
+                return;
+            }
+
+            AddAgent addAgent = response.Msg<AddAgent>().Value;
+            Debug.Log("AddAgent Success");
+            if (addAgent.GameObjectType == (int)GameObjectType.Character)
+            {
+                player_agnet_id = addAgent.AgentId;
+                Debug.Log($"Player Agent ID: {player_agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
             }
         });
     }
 
     public void RemoveAgent(int agentId)
     {
-        SendMessage(PacketFactory.CreateRemoveAgentMessage(agentId));
+        connection.Send(PacketFactory.CreateRemoveAgentMessage(agentId));
     }
 
     public void SetMoveTarget(int agentId, Vector3 pos)
     {
         Debug.Log($"SetMoveTarget agent_id: {agentId}, pos({pos.x}, {pos.y}, {pos.z}) ");
-        SendMessage(PacketFactory.CreateSetMoveTargetMessage(agentId, pos));
+        connection.Send(PacketFactory.CreateSetMoveTargetMessage(agentId, pos));
     }
 
     public void SetRaycast(Vector3 pos)
     {
         Debug.Log($"SetRaycast pos({pos.x}, {pos.y}, {pos.z}) ");
-        SendMessage(PacketFactory.CreateSetRaycastMessage(pos));
-    }
-
-    /// <summary>
-    /// 게이트 이동을 서버에 요청한다. 성공 응답 시 목적지 맵 씬을 로드한다.
-    /// (씬 단위 이동. 프리팹 단위 로드는 추후 최적화로 진행 예정.)
-    /// </summary>
-    public void EnterGate(int mapId, int gateId, string sceneName)
-    {
-        if (isChangingMap)
-        {
-            Debug.Log("EnterGate ignored: already changing map.");
-            return;
-        }
-        isChangingMap = true;
-
-        int messageId = nextMesssagetId();
-        Debug.Log($"EnterGate request mapId:{mapId}, gateId:{gateId}, scene:{sceneName}");
-        SendMessage(PacketFactory.CreateEnterGateMessage(messageId, mapId, gateId), response =>
-        {
-            if (response.MsgType == GameMessages.EnterGate && response.Result == StatusCode.Success)
-            {
-                EnterGate enterGate = response.Msg<EnterGate>().Value;
-
-                // 서버가 목적지 맵에 캐릭터를 재생성하면서 부여한 새 agent id 로 갱신한다.
-                player_agnet_id = enterGate.AgentId;
-
-                // 캐릭터가 새로 만들어지면 서버 스킬 상태(쿨다운/페이즈)도 초기화되므로 로컬 예측을 버린다.
-                skillCooldowns.Clear();
-                localSkillFx.Clear();
-
-                Vector3 destPos = Vector3.zero;
-                if (enterGate.Pos.HasValue)
-                    destPos = new Vector3(enterGate.Pos.Value.X, enterGate.Pos.Value.Y, enterGate.Pos.Value.Z);
-
-                Debug.Log($"EnterGate Success. new agentId:{player_agnet_id}, pos({destPos.x},{destPos.y},{destPos.z})");
-
-                // 게이트 위 도착(gateId != 0)일 때만 재이동 억제가 필요하다.
-                // 스폰 지점 도착(gateId 0, one_way 인스턴스 입구)은 게이트 위가 아니다.
-                suppressWarpOnNextSceneLoad = enterGate.GateId != 0;
-
-                // 씬 로드 동안 네트워크 동기화 처리를 멈춘다. 서버는 응답 직후 새 맵 상태(SendStateTo)를
-                // 보내는데, 씬 로드 전에 처리하면 새로 만든 액터가 씬 전환으로 파괴되기 때문이다.
-                // 큐에 남겨 두었다가 씬 로드 완료(OnGateSceneLoaded) 후 처리한다.
-                LoadMapScene(sceneName);
-            }
-            else
-            {
-                Debug.Log("EnterGate Fail");
-                isChangingMap = false;
-            }
-        });
-    }
-
-    /// <summary>
-    /// 맵 씬을 로드한다. 로드가 끝날 때까지 네트워크 동기화 처리를 멈춰(OnGateSceneLoaded 에서 재개),
-    /// 로드 전에 도착한 새 맵 상태가 씬 전환으로 파괴되지 않게 한다.
-    /// </summary>
-    private void LoadMapScene(string sceneName)
-    {
-        // Build Settings 에 등록되지 않은 씬은 로드할 수 없다. 강제로 LoadScene 하면 예외가 나므로
-        // 방어적으로 확인하고, 불가능하면 현재 씬을 유지한 채 네트워크 처리를 계속한다.
-        if (!Application.CanStreamedLevelBeLoaded(sceneName))
-        {
-            Debug.LogWarning($"Scene '{sceneName}' is not in Build Settings (File > Build Settings 에 추가 필요). 씬 로드를 건너뜁니다.");
-            isLoadingScene = false;
-            isChangingMap = false;
-            // 로그인 자동 스폰 대기 중이었다면 현재 씬에서라도 스폰한다(서버 위치가 권위).
-            TrySpawnLoginCharacter();
-            return;
-        }
-
-        isLoadingScene = true;
-        SceneManager.sceneLoaded += OnGateSceneLoaded;
-        SceneManager.LoadScene(sceneName);
-    }
-
-    /// <summary>
-    /// 게이트 이동으로 인한 씬 로드 완료 콜백. 씬 전환으로 파괴된 이전 액터 참조를 정리하고
-    /// 네트워크 동기화 처리를 재개한다. 대기 중이던 새 맵 상태(UpdateActorNotify)가 새 씬에서 액터를 생성한다.
-    /// </summary>
-    private void OnGateSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        SceneManager.sceneLoaded -= OnGateSceneLoaded;
-
-        // 씬 로드로 파괴된 이전 맵의 액터 GameObject 참조 정리(딕셔너리에는 파괴된 참조가 남아 있다).
-        game_objects.Clear();
-
-        isLoadingScene = false;
-        isChangingMap = false;
-
-        // 게이트 위 도착이면 도착 즉시 트리거가 재발동하므로, 밖으로 걸어 나가기 전까지
-        // 재이동을 억제한다(무한 왕복 방지). 스폰 지점 도착(one_way, gateId 0)은 억제하지 않는다.
-        SuppressGateWarpUntilExit = suppressWarpOnNextSceneLoad;
-        suppressWarpOnNextSceneLoad = true;
-
-        Debug.Log($"Gate scene loaded: {scene.name}");
-
-        // 신규 로그인으로 인한 씬 로드였다면 서버가 준 스폰 위치로 캐릭터를 자동 생성한다.
-        // (게이트 이동/재접속 핸드오버는 서버가 캐릭터를 만들어 주므로 플래그가 꺼져 있다.)
-        TrySpawnLoginCharacter();
-    }
-
-    /// <summary>
-    /// 신규 로그인 자동 스폰: 서버가 Login 응답으로 준 위치(기본 스폰 마커 또는 이전 로그아웃
-    /// 위치)로 AddAgent(Character) 를 1회 보낸다. 대기 플래그가 없으면 아무것도 하지 않는다.
-    /// </summary>
-    private void TrySpawnLoginCharacter()
-    {
-        if (!pendingLoginSpawn)
-            return;
-        pendingLoginSpawn = false;
-
-        Debug.Log($"Auto spawn character at login pos({loginSpawnPos.x},{loginSpawnPos.y},{loginSpawnPos.z})");
-        AddAgent(0, loginSpawnPos, GameObjectType.Character);
+        connection.Send(PacketFactory.CreateSetRaycastMessage(pos));
     }
 
     public void UseSkill(int skillId, Vector3 pos, int type)
     {
-        var timestamp = unixTimestampMs;
-        Debug.Log($"UseSkill agent_id: {player_agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) timestamp({timestamp})");
-
-        GameObject game_object = null;
-        if (game_objects.TryGetValue(player_agnet_id, out game_object) == false)
-        {
-            Debug.LogError("Player agent not found in game_objects dictionary.");
-            return;
-        }
-        var actor = game_object.GetComponent<Actor>();
-        if (actor == null)
-        {
-            Debug.LogError("Actor component not found on player agent GameObject.");
-            return;
-        }
-        if(actor.input_locked == true)
-        {
-            Debug.Log("Player input is locked, cannot use skill.");
-            return;
-        }
-		Gamedata.Skill resSkill = null;
-		if(!GameManager.Instance.resource.Skills.TryGetValue(skillId, out resSkill))
-		{
-			Debug.LogError($"Skill with ID {skillId} not found in resource skills.");
-			return;
-        }
-
-		// 로컬 쿨다운 예측으로 미리 거른다. 이게 없으면 쿨다운 중에도 패킷을 보내고 연출까지 재생해
-		// 서버는 거부(OnCooldown)했는데 클라만 이펙트가 나오는 상태가 된다.
-		// 최종 판정은 여전히 서버 권위이고(아래 거부 응답 처리), 이건 왕복 없이 즉시 반응하기 위한 예측이다.
-		float remaining;
-		if (!skillCooldowns.IsReady(resSkill, out remaining))
-		{
-			Debug.Log($"UseSkill 스킵: skillId {skillId} 쿨다운 {remaining:F1}초 남음");
-			return;
-		}
-
-        SendMessage(PacketFactory.CreateUseSkillMessage(skillId, player_agnet_id, pos, type, timestamp));
-		skillCooldowns.OnCast(resSkill);
-
-		// 서버 브로드캐스트는 캐스터(자신)를 제외하므로, 자신의 연출은 여기서 즉시 재생한다.
-		if (resSkill.code_name == "JumpSkill")
-		{
-			jumpCoroutine = StartCoroutine(JumpToPosition(game_object, game_object.transform.position, pos, skill_duration, skill_height, timestamp));
-		}
-		else
-		{
-			// 서버가 거부하면 취소할 수 있도록 연출 코루틴을 스킬별로 보관한다.
-			if (localSkillFx.TryGetValue(skillId, out var running) && running != null)
-				StopCoroutine(running);
-			localSkillFx[skillId] = SkillFxDispatcher.Play(resSkill, game_object, pos, this);
-		}
+        skills.Cast(skillId, pos, type);
     }
 
-	/// <summary>
-	/// 서버가 시전을 거부했을 때(result != Success). 클라가 낙관적으로 재생한 연출을 취소하고
-	/// 로컬 쿨다운 예측을 서버 기준으로 되돌린다. 로컬 예측이 정확하면 거의 오지 않는 경로다
-	/// (시차/패킷 유실/다른 스킬의 입력 잠금 등으로 어긋났을 때의 안전망).
-	/// </summary>
-	private void HandleUseSkillRejected(syncnet.UseSkill useSkill, StatusCode result)
-	{
-		int skillId = useSkill.SkillId;
-
-		if (localSkillFx.TryGetValue(skillId, out var running))
-		{
-			if (running != null)
-				StopCoroutine(running);
-			localSkillFx.Remove(skillId);
-		}
-
-		Gamedata.Skill resSkill = null;
-		if (GameManager.Instance != null && GameManager.Instance.resource != null)
-			GameManager.Instance.resource.Skills.TryGetValue(skillId, out resSkill);
-		skillCooldowns.OnRejected(resSkill);
-
-		Debug.LogWarning($"UseSkill 거부됨: skillId {skillId}, result {result} — 연출을 취소하고 쿨다운 예측을 보정합니다.");
-	}
-
-    public void Login()
+    public void EnterGate(int mapId, int gateId, string sceneName)
     {
-        int messageId = nextMesssagetId();
-        // 보유한 재접속 토큰(uuid)을 함께 보낸다. 최초 로그인이면 빈 문자열이라 신규 로그인으로
-        // 처리되고, 재접속이면 서버가 이 토큰으로 유예 중이던 기존 캐릭터를 넘겨준다.
-        SendMessage(PacketFactory.CreateLoginMessage(messageId, reconnectToken), response =>
-        {
-            if (response.MsgType == GameMessages.Login)
-            {
-                Login login = response.Msg<Login>().Value;
-                if (response.Result == StatusCode.Success)
-                {
-                    // 서버가 반환한 현재 맵 id 와 스폰 위치를 저장한다.
-                    loginMapId = login.MapId;
-                    if (login.Pos.HasValue)
-                        loginSpawnPos = new Vector3(login.Pos.Value.X, login.Pos.Value.Y, login.Pos.Value.Z);
-
-                    // 재접속 토큰(플레이어 uuid) 저장. 이후 재접속 로그인 요청에 되돌려 보낸다.
-                    // PlayerPrefs 에도 저장해 앱/플레이 재시작에도 유지되게 한다.
-                    if (!string.IsNullOrEmpty(login.Uuid))
-                    {
-                        reconnectToken = login.Uuid;
-                        PlayerPrefs.SetString(ReconnectTokenKey, reconnectToken);
-                        PlayerPrefs.Save();
-                    }
-
-                    // AgentId 가 0 이 아니면 재접속: 서버가 유지하던 기존 캐릭터를 넘겨받는다.
-                    // AddAgent(신규 스폰)를 하지 않고, 그 agentId 를 채택한 뒤 대상 맵 씬을
-                    // (재)로드한다. 로드 완료 후 서버가 보낸 상태 동기화(SendStateTo)가 큐에서
-                    // 처리되며 기존 캐릭터가 재생성된다. (게이트 이동과 동일한 씬 로드 파이프라인)
-                    if (login.AgentId != 0)
-                    {
-                        player_agnet_id = login.AgentId;
-                        Debug.Log($"Reconnect handover. agentId:{player_agnet_id}, mapId:{loginMapId}, pos({loginSpawnPos.x},{loginSpawnPos.y},{loginSpawnPos.z})");
-
-                        Gamedata.Map rmap;
-                        if (GameManager.Instance.resource.Maps.TryGetValue(loginMapId, out rmap)
-                            && !string.IsNullOrEmpty(rmap.scene))
-                        {
-                            // 같은 씬이어도 재로드해 이전(정지된) 액터/참조를 초기화한다.
-                            LoadMapScene(rmap.scene);
-                        }
-                        return;
-                    }
-
-                    Debug.Log($"Login Success. mapId:{loginMapId}, pos({loginSpawnPos.x},{loginSpawnPos.y},{loginSpawnPos.z})");
-
-                    // 씬 준비가 끝나면 서버가 준 스폰 위치로 캐릭터를 자동 생성한다.
-                    pendingLoginSpawn = true;
-
-                    // 맵 데이터에 연동된 씬 정보로 해당 맵 씬을 로드한다(현재 씬과 다를 때만).
-                    Gamedata.Map map;
-                    if (GameManager.Instance.resource.Maps.TryGetValue(loginMapId, out map)
-                        && !string.IsNullOrEmpty(map.scene)
-                        && SceneManager.GetActiveScene().name != map.scene)
-                    {
-                        LoadMapScene(map.scene); // 스폰은 OnGateSceneLoaded 에서 수행
-                    }
-                    else
-                    {
-                        // 이미 대상 씬에 있으면 즉시 스폰한다.
-                        TrySpawnLoginCharacter();
-                    }
-                }
-                else
-                {
-                    Debug.Log("Login Fail");
-                }
-            }
-            else
-            {
-                Debug.Log("Login Error");
-            }
-        });
+        mapTransition.EnterGate(mapId, gateId, sceneName);
     }
 
-    // 점프는 클라가 포물선을 직접 그리는 유일한 스킬이다. 그리는 동안에는 서버 위치 보간이
-    // 끼어들지 않도록 locallyAnimatedAgents 에 등록한다(등록된 액터만 Update 의 위치 반영을 건너뛴다).
-    // 중간에 StopCoroutine 으로 끊겨도 finally 가 반드시 등록을 해제한다(안 그러면 그 액터가 영영 안 움직인다).
-    private IEnumerator JumpToPosition(GameObject game_object, Vector3 start, Vector3 end, float duration, float height, long timestamp)
+    /// <summary>특정 몬스터의 BT 정의(+현재 상태)를 서버에 요청한다.</summary>
+    public void RequestTreeDebug(long monsterId)
     {
-        float time = 0;
-        float dropPoint = 0.7f; // 상승 구간 비율 (0~1)
-        float fallDuration = duration * (1f - dropPoint); // 하강 구간 시간
-        Vector3 lastPos = start;
-
-        var actor = game_object.GetComponent<Actor>();
-        actor.input_locked = true; // 서버 통보 전까지의 선반영(시전 차단용). 위치 동기화와는 무관하다.
-        locallyAnimatedAgents.Add(actor.agnet_id);
-
-        try
-        {
-            while (time < duration)
-            {
-                float t = time / duration;
-                float yOffset;
-
-                if (t < dropPoint)
-                {
-                    // 천천히 상승 (곡선 조정 가능)
-                    yOffset = Mathf.Lerp(0, height, t / dropPoint);
-                }
-                else
-                {
-                    // 완만하게 하강 (선형 하강)
-                    float fallT = (t - dropPoint) / (1f - dropPoint); // 0~1
-                    yOffset = Mathf.Lerp(height, 0, fallT);
-                }
-
-                Vector3 pos = Vector3.Lerp(start, end, t) + Vector3.up * yOffset;
-                game_object.transform.position = pos;
-                lastPos = pos;
-                time += Time.deltaTime;
-                yield return null;
-            }
-            // 마지막 위치는 착지점
-            game_object.transform.position = end;
-            Debug.Log($"JumpToPosition End: {game_object.name}, pos({end.x}, {end.y}, {end.z}), timestamp({timestamp})");
-        }
-        finally
-        {
-            locallyAnimatedAgents.Remove(actor.agnet_id);
-        }
+        connection.Send(PacketFactory.CreateTreeDebugRequestMessage(monsterId));
     }
 
-    // Ping 전송
-    private void SendPing()
+    /// <summary>임의 패킷 전송(도구/디버그용). 일반 흐름은 위의 명령 메서드를 쓴다.</summary>
+    public void SendMessage(byte[] msg, Action<GameMessage> response = null)
     {
-        if (!isConnected || !pingEnabled) return;
-        
-        lastPingTime = Time.time;
-        byte[] body = PacketFactory.CreatePingMessage(seq++);
-        session.SendBytes(MakeHeader(body));
-        session.SendBytes(body);
-        Debug.Log("Ping 전송");
+        connection.Send(msg, response);
     }
-    
-    // Pong 수신 처리
-    private void HandlePong()
+
+    public int nextMesssagetId()
     {
-        lastPongTime = Time.time;
-        Debug.Log("Pong 수신");
-    }
-    
-    // Ping 타임아웃 확인
-    private void CheckPingTimeout()
-    {
-        if (!isConnected || !pingEnabled || isReconnecting) return;
-        
-        float timeSinceLastPong = Time.time - lastPongTime;
-        if (timeSinceLastPong > pingTimeout)
-        {
-            Debug.LogWarning($"Ping 타임아웃! 마지막 Pong 수신 후 {timeSinceLastPong:F1}초 경과");
-            // 연결 끊김으로 간주하고 재접속 시작
-            OnDisconnected();
-        }
+        return connection.NextMessageId();
     }
 }
