@@ -32,6 +32,13 @@ AI(BehaviorTree)가 **같은 경로**를 쓴다.
   효과가 체력만 바꾸면 별도 브로드캐스트가 필요 없다.
 - 클라가 보고한 지속시간/시차는 참고만 하고, **데이터(`duration`, `cooldown`)가 상한**이다.
 - 클라이언트는 서버가 재전송한 `UseSkill`(skillId + 목표 지점 + 방향)로 **연출만** 재생한다.
+- **거부도 응답한다**: 검증에 걸리면 서버는 캐스터에게 `UseSkill`(`result != Success`)을 돌려준다
+  ([PlayerController.cpp](../Controller/PlayerController.cpp)). 클라는 전송 직후 연출을 낙관적으로
+  재생하므로, 응답이 없으면 "이펙트는 나오는데 캐릭터는 그대로"인 헛연출이 남는다(차지에서 특히 눈에 띈다).
+  클라는 이 응답으로 연출 코루틴을 멈추고 로컬 쿨다운 예측을 보정한다.
+- **클라의 로컬 쿨다운 예측**([SkillCooldownTracker.cs](../../Client/Assets/Scripts/Skill/SkillCooldownTracker.cs)):
+  같은 데이터(`duration`+`cooldown`)로 서버 페이즈 머신을 흉내 내 헛시전을 왕복 없이 미리 거른다.
+  어디까지나 예측이고 **판정은 서버가 한다** — 어긋나면 위의 거부 응답이 바로잡는다.
 
 ### 1-5. 액티브 vs 패시브
 | 구분 | 발동 | 예시 | 서버 처리 |
@@ -96,7 +103,7 @@ cd GameDataFlow && python GameDataFlow.py
 | `aura_damage` | 캐스터(원형) | 캐스터를 따라다니는 원형 데미지. 회전 없음(오라 pulse용) | `min/max_damage`, `radius` |
 | `heal` | 캐스터 | 자신 체력 회복 | `heal` |
 | `teleport` | 목표 지점 | 목표 지점으로 순간이동 | (targetPos) |
-| `dash` | 캐스터→목표 | 목표 방향으로 `range` 만큼(더 가까우면 목표까지) `duration` 동안 **전진**. 도착 지점을 `state.targetPos` 에 되써서 `end` 효과가 착지 지점에 적용된다 | `range`, `duration` |
+| `dash` | 캐스터→목표 | 목표 방향으로 `range` 만큼(더 가까우면 목표까지) **전진**. 속도는 `range/duration` 고정이라 가까운 목표는 일찍 도착하고 **도착 즉시 Active 가 끝난다**. 도착 지점을 `state.targetPos` 에 되써서 `end` 효과가 착지 지점에 적용된다 | `range`, `duration` |
 | `knockback` | 캐스터(원형) | 반경 안의 대상을 캐스터 반대 방향으로 밀어냄(네비메시 스냅으로 벽 통과 없음) | `knockback`, `radius`(없으면 `range`) |
 | `input_lock` | 캐스터 | 입력 잠금(Active 종료 시 자동 해제) | — |
 
@@ -145,6 +152,13 @@ cd GameDataFlow && python GameDataFlow.py
   값이 없으면 그 연출의 기본색을 쓴다 — 속성별 **상태이상**(빙결/중독 틱)은 아직 없고 색만 구분한다.
 - **절차적 VFX**: [SkillFx.cs](../../Client/Assets/Scripts/Skill/SkillFx.cs) 가 아트 에셋 없이
   프리미티브/LineRenderer 로 투사체·링·확장 파문·폭발 버스트를 생성한다(수명 후 자가 소멸).
+- **이동은 연출이 아니라 동기화**: 돌진(`dash`)은 서버가 매 틱 실제로 이동시키는 '이동 공격'이라
+  화면 위치의 진실은 서버다(오라 데미지·몬스터 감지가 그 경로를 쓰고, 벽에 막히면 네비메시가 경로를 꺾는다).
+  그래서 클라는 경로를 직접 그리지 않고 **서버 갱신(10Hz) 사이를 등속 보간으로 메운다**
+  ([Actor.InterpolatedPosition](../../Client/Assets/Scripts/GameObject/Actor.cs)).
+  반대로 점프는 서버에 중간 위치가 없어(`teleport` 는 착지 순간만) 클라가 포물선을 직접 그린다 —
+  이렇게 클라가 transform 을 소유하는 동안만 `Session.locallyAnimatedAgents` 로 위치 반영을 멈춘다.
+  **입력 잠금은 '시전 중 조작 금지'이지 '위치 동기화 금지'가 아니다**(예전엔 이걸 혼동해 돌진이 텔레포트처럼 보였다).
 - **특수 표현은 클라 Skill 파생**: 지속/입력이 필요한 스킬만 클래스를 둔다.
   예: [AuraSkill.cs](../../Client/Assets/Scripts/Skill/AuraSkill.cs)(패시브 오라 지면 링 = [AuraRing.cs](../../Client/Assets/Scripts/Skill/AuraRing.cs), 캐릭터를 따라다니며 맥동),
   `JumpSkill`(위치 이동). 패시브는 브로드캐스트가 없어 디스패처가 아니라 이 클래스가 링을 붙였다 뗀다.

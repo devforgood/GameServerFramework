@@ -262,18 +262,31 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 		return;
 	}
 
-	if (player_->GetCharacter()->IsInputLocked())
-	{
-		LOG.debug("character is input locked");
-		return;
-	}
-
 	// 서버 권위: 검증(쿨다운/페이즈/입력잠금)을 통과해 실제로 시전된 경우에만
 	// 다른 클라이언트에 브로드캐스트한다.
-	CastResult result = character->use_skill(msg);
+	CastResult result = character->IsInputLocked() ? CastResult::InputLocked : character->use_skill(msg);
 	if (result != CastResult::Success)
 	{
 		LOG.debug("UseSkill rejected: skillId {}, reason code {}", msg->skillId(), static_cast<int>(result));
+
+		// 거부는 캐스터에게 반드시 되돌려준다. 클라는 전송 직후 연출을 낙관적으로 재생하므로,
+		// 응답이 없으면 "이펙트는 나오는데 캐릭터는 그대로"인 헛연출이 남는다(차지에서 특히 눈에 띈다).
+		// 클라는 이 응답으로 연출을 취소하고 로컬 쿨다운 예측을 서버 기준으로 되돌린다.
+		player_->Send(
+			syncnet::CreateUseSkill
+			, syncnet::GameMessages::GameMessages_UseSkill
+			, 0 /* GameMessage id: 요청/응답 짝이 아니라 알림이므로 0 */
+			, result == CastResult::SkillNotFound
+				? syncnet::StatusCode::StatusCode_NotFound
+				: syncnet::StatusCode::StatusCode_Failed
+			, msg->id()
+			, msg->skillId()
+			, msg->targetId()
+			, msg->pos()
+			, msg->dir()
+			, msg->timestamp()
+			, msg->duration()
+		);
 		return;
 	}
 

@@ -390,6 +390,8 @@ TEST_F(SkillSystemTest, HealRestoresCasterHealth)
 
 // dash(팔라딘 차지): 순간이동(teleport)과 달리 Active 동안 지면을 따라 전진하고,
 // 도착 지점에서 phase="end" 효과(aoe_damage)가 터진다.
+// 속도는 range/duration 로 고정이라(거리 비례가 아니라) 가까운 목표는 duration 보다 일찍 도착하고,
+// 도착하는 즉시 Active 가 끝나 착지 데미지와 입력 잠금 해제가 이뤄진다.
 TEST_F(SkillSystemTest, ChargeDashesToTargetAndDamagesOnArrival)
 {
 	auto caster = SpawnCharacter();
@@ -417,15 +419,18 @@ TEST_F(SkillSystemTest, ChargeDashesToTargetAndDamagesOnArrival)
 		return std::sqrt(dx * dx + dz * dz);
 	};
 
-	// 절반 시점: 출발 지점에서 멀어졌지만 아직 목적지는 아니다(순간이동이 아니라 전진).
-	skills.Update(caster.get(), 0.5f);
+	// 이동 중: 출발 지점에서 멀어졌지만 아직 목적지는 아니다(순간이동이 아니라 전진).
+	// 3유닛 거리를 속도 12(range 12 / duration 1)로 달리므로 0.25초면 도착한다.
+	skills.Update(caster.get(), 0.1f);
 	const float* midPos = map_->GetNavMap()->GetPos(caster->GetActorId());
 	ASSERT_NE(midPos, nullptr);
 	EXPECT_GT(distanceXZ(midPos, start), 0.5f);
 	EXPECT_GT(distanceXZ(midPos, dest), 0.5f);
+	EXPECT_EQ(skills.GetState(119)->phase, SkillPhase::Active);
+	EXPECT_EQ(victim->GetHealth(), healthBefore); // 아직 도착 전 — 데미지 없음
 
-	// 지속시간 종료: 목적지 도달 + 착지 광역 데미지 + 입력 잠금 해제.
-	skills.Update(caster.get(), 0.6f);
+	// 도착: duration(1초)이 다 되기 전이라도 Active 가 끝나 착지 효과가 적용된다.
+	skills.Update(caster.get(), 0.2f);
 	EXPECT_EQ(skills.GetState(119)->phase, SkillPhase::Cooldown);
 	EXPECT_FALSE(caster->IsInputLocked());
 

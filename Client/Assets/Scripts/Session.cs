@@ -76,6 +76,18 @@ public class Session : MonoBehaviour
 	private float skill_height = 3f; // 스킬 점프 높이
 
     private Coroutine jumpCoroutine;
+
+    // 로컬 쿨다운 예측(서버 거부로 헛연출이 남지 않게 미리 거른다) + 그 예측으로 재생한 연출 핸들.
+    // 서버가 거부 응답을 보내오면 여기 저장된 코루틴을 멈춰 연출을 취소한다.
+    private readonly SkillCooldownTracker skillCooldowns = new SkillCooldownTracker();
+    private readonly Dictionary<int, Coroutine> localSkillFx = new Dictionary<int, Coroutine>();
+
+    // 클라가 transform 을 직접 애니메이션 중인 액터(점프/돌진). 이 액터만 서버 위치 반영을 건너뛴다.
+    private readonly HashSet<int> locallyAnimatedAgents = new HashSet<int>();
+
+    /// <summary>HUD 등에서 남은 쿨다운을 표시하기 위한 접근자.</summary>
+    public SkillCooldownTracker SkillCooldowns => skillCooldowns;
+
     public int nextMesssagetId()
 	{
 		++last_message_id;
@@ -416,9 +428,12 @@ public class Session : MonoBehaviour
 		return game_object;
 	}
 
+	// 이보다 큰 위치 변화(텔레포트/게이트/스폰)는 보간 대신 즉시 스냅한다.
+	private const float PositionSnapDistance = 4f;
+
 	private void UpdateActorState(Actor actor, syncnet.ActorInfo updatedActor, Vector3 pos)
 	{
-		actor.pos = pos;
+		actor.SetServerPosition(pos, PositionSnapDistance);
 		actor.input_locked = updatedActor.InputLocked;
 
 		// 상태 업데이트
@@ -476,14 +491,21 @@ public class Session : MonoBehaviour
 	private void HandleUseSkillNotify(syncnet.GameMessage recv_msg)
 	{
 		syncnet.UseSkill useSkill = recv_msg.Msg<syncnet.UseSkill>().Value;
-		
+
+		// 성공 시전의 브로드캐스트가 아니라, 내 시전이 거부됐다는 응답이다(캐스터에게만 온다).
+		if (recv_msg.Result != StatusCode.Success)
+		{
+			HandleUseSkillRejected(useSkill, recv_msg.Result);
+			return;
+		}
+
 		// Pos가 null인 경우 처리
 		if (!useSkill.Pos.HasValue)
 		{
 			Debug.LogWarning("UseSkill: Pos is null, skipping skill effect");
 			return;
 		}
-		
+
 		var pos = new Vector3(useSkill.Pos.Value.X, useSkill.Pos.Value.Y, useSkill.Pos.Value.Z);
 		var target_agent_id = useSkill.Id;
 
@@ -575,18 +597,18 @@ public class Session : MonoBehaviour
 			try
 			{
 				var actor = game_object.GetComponent<Actor>();
-				if (actor.input_locked)
-				{
-                    //Debug.Log($"Actor {actor.agnet_id} input is locked, skipping position update.");
-                    continue;
-				}
+				// 클라가 직접 transform 을 애니메이션하는 동안(점프 포물선)만 서버 위치 반영을 멈춘다.
+				// 예전에는 input_locked 전체를 건너뛰었는데, 그러면 돌진(dash)처럼 서버가 잠금 상태로
+				// 이동시키는 스킬은 잠금이 풀릴 때까지 제자리에 있다가 도착 지점으로 튀어(=텔레포트처럼)
+				// 보였다. 입력 잠금은 '시전 중 조작 금지'이지 '위치 동기화 금지'가 아니다.
+				//
+				// 돌진은 서버가 매 틱 실제로 이동시키는 '이동 공격'이라 위치는 서버가 진실이다
+				// (오라 데미지·몬스터 감지 판정이 그 경로를 쓰고, 벽에 막히면 네비메시가 경로를 꺾는다).
+				// 클라는 서버 갱신 사이(10Hz)를 등속으로 메우기만 한다 — Actor.InterpolatedPosition.
+				if (locallyAnimatedAgents.Contains(actor.agnet_id))
+					continue;
 
-                float lerpSpeed = 15f;   // 일반 이동 보간 속도(5~15 적당)
-                float snapDistance = 4f; // 이보다 큰 위치 변화(텔레포트/게이트/스폰)는 보간 대신 즉시 스냅
-                if (Vector3.Distance(game_object.transform.position, actor.pos) > snapDistance)
-                    game_object.transform.position = actor.pos; // 서버가 확정한 위치로 순간이동(블링크)
-                else
-                    game_object.transform.position = Vector3.Lerp(game_object.transform.position, actor.pos, Time.deltaTime * lerpSpeed);
+                game_object.transform.position = actor.InterpolatedPosition();
 			}
 			catch
 			{
@@ -664,6 +686,10 @@ public class Session : MonoBehaviour
 
                 // 서버가 목적지 맵에 캐릭터를 재생성하면서 부여한 새 agent id 로 갱신한다.
                 player_agnet_id = enterGate.AgentId;
+
+                // 캐릭터가 새로 만들어지면 서버 스킬 상태(쿨다운/페이즈)도 초기화되므로 로컬 예측을 버린다.
+                skillCooldowns.Clear();
+                localSkillFx.Clear();
 
                 Vector3 destPos = Vector3.zero;
                 if (enterGate.Pos.HasValue)
@@ -780,9 +806,18 @@ public class Session : MonoBehaviour
 			return;
         }
 
-
+		// 로컬 쿨다운 예측으로 미리 거른다. 이게 없으면 쿨다운 중에도 패킷을 보내고 연출까지 재생해
+		// 서버는 거부(OnCooldown)했는데 클라만 이펙트가 나오는 상태가 된다.
+		// 최종 판정은 여전히 서버 권위이고(아래 거부 응답 처리), 이건 왕복 없이 즉시 반응하기 위한 예측이다.
+		float remaining;
+		if (!skillCooldowns.IsReady(resSkill, out remaining))
+		{
+			Debug.Log($"UseSkill 스킵: skillId {skillId} 쿨다운 {remaining:F1}초 남음");
+			return;
+		}
 
         SendMessage(PacketFactory.CreateUseSkillMessage(skillId, player_agnet_id, pos, type, timestamp));
+		skillCooldowns.OnCast(resSkill);
 
 		// 서버 브로드캐스트는 캐스터(자신)를 제외하므로, 자신의 연출은 여기서 즉시 재생한다.
 		if (resSkill.code_name == "JumpSkill")
@@ -791,9 +826,36 @@ public class Session : MonoBehaviour
 		}
 		else
 		{
-			SkillFxDispatcher.Play(resSkill, game_object, pos, this);
+			// 서버가 거부하면 취소할 수 있도록 연출 코루틴을 스킬별로 보관한다.
+			if (localSkillFx.TryGetValue(skillId, out var running) && running != null)
+				StopCoroutine(running);
+			localSkillFx[skillId] = SkillFxDispatcher.Play(resSkill, game_object, pos, this);
 		}
     }
+
+	/// <summary>
+	/// 서버가 시전을 거부했을 때(result != Success). 클라가 낙관적으로 재생한 연출을 취소하고
+	/// 로컬 쿨다운 예측을 서버 기준으로 되돌린다. 로컬 예측이 정확하면 거의 오지 않는 경로다
+	/// (시차/패킷 유실/다른 스킬의 입력 잠금 등으로 어긋났을 때의 안전망).
+	/// </summary>
+	private void HandleUseSkillRejected(syncnet.UseSkill useSkill, StatusCode result)
+	{
+		int skillId = useSkill.SkillId;
+
+		if (localSkillFx.TryGetValue(skillId, out var running))
+		{
+			if (running != null)
+				StopCoroutine(running);
+			localSkillFx.Remove(skillId);
+		}
+
+		Gamedata.Skill resSkill = null;
+		if (GameManager.Instance != null && GameManager.Instance.resource != null)
+			GameManager.Instance.resource.Skills.TryGetValue(skillId, out resSkill);
+		skillCooldowns.OnRejected(resSkill);
+
+		Debug.LogWarning($"UseSkill 거부됨: skillId {skillId}, result {result} — 연출을 취소하고 쿨다운 예측을 보정합니다.");
+	}
 
     public void Login()
     {
@@ -871,6 +933,9 @@ public class Session : MonoBehaviour
         });
     }
 
+    // 점프는 클라가 포물선을 직접 그리는 유일한 스킬이다. 그리는 동안에는 서버 위치 보간이
+    // 끼어들지 않도록 locallyAnimatedAgents 에 등록한다(등록된 액터만 Update 의 위치 반영을 건너뛴다).
+    // 중간에 StopCoroutine 으로 끊겨도 finally 가 반드시 등록을 해제한다(안 그러면 그 액터가 영영 안 움직인다).
     private IEnumerator JumpToPosition(GameObject game_object, Vector3 start, Vector3 end, float duration, float height, long timestamp)
     {
         float time = 0;
@@ -879,34 +944,42 @@ public class Session : MonoBehaviour
         Vector3 lastPos = start;
 
         var actor = game_object.GetComponent<Actor>();
-        actor.input_locked = true;
+        actor.input_locked = true; // 서버 통보 전까지의 선반영(시전 차단용). 위치 동기화와는 무관하다.
+        locallyAnimatedAgents.Add(actor.agnet_id);
 
-        while (time < duration)
+        try
         {
-            float t = time / duration;
-            float yOffset;
-
-            if (t < dropPoint)
+            while (time < duration)
             {
-                // 천천히 상승 (곡선 조정 가능)
-                yOffset = Mathf.Lerp(0, height, t / dropPoint);
-            }
-            else
-            {
-                // 완만하게 하강 (선형 하강)
-                float fallT = (t - dropPoint) / (1f - dropPoint); // 0~1
-                yOffset = Mathf.Lerp(height, 0, fallT);
-            }
+                float t = time / duration;
+                float yOffset;
 
-            Vector3 pos = Vector3.Lerp(start, end, t) + Vector3.up * yOffset;
-            game_object.transform.position = pos;
-            lastPos = pos;
-            time += Time.deltaTime;
-            yield return null;
+                if (t < dropPoint)
+                {
+                    // 천천히 상승 (곡선 조정 가능)
+                    yOffset = Mathf.Lerp(0, height, t / dropPoint);
+                }
+                else
+                {
+                    // 완만하게 하강 (선형 하강)
+                    float fallT = (t - dropPoint) / (1f - dropPoint); // 0~1
+                    yOffset = Mathf.Lerp(height, 0, fallT);
+                }
+
+                Vector3 pos = Vector3.Lerp(start, end, t) + Vector3.up * yOffset;
+                game_object.transform.position = pos;
+                lastPos = pos;
+                time += Time.deltaTime;
+                yield return null;
+            }
+            // 마지막 위치는 착지점
+            game_object.transform.position = end;
+            Debug.Log($"JumpToPosition End: {game_object.name}, pos({end.x}, {end.y}, {end.z}), timestamp({timestamp})");
         }
-        // 마지막 위치는 착지점
-        game_object.transform.position = end;
-        Debug.Log($"JumpToPosition End: {game_object.name}, pos({end.x}, {end.y}, {end.z}), timestamp({timestamp})");
+        finally
+        {
+            locallyAnimatedAgents.Remove(actor.agnet_id);
+        }
     }
 
     // Ping 전송

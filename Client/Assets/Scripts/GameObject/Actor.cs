@@ -3,11 +3,20 @@ using UnityEngine;
 public class Actor : MonoBehaviour
 {
     public int agnet_id;
-    public Vector3 pos;
+    public Vector3 pos;   // 서버가 마지막으로 알려준 위치(보간 목표)
     public syncnet.AIState state;
     public int health = 100;
     public bool input_locked;
-    
+
+    // ── 위치 보간(entity interpolation) ──
+    // 서버 시뮬레이션은 10Hz(0.1초)라, 그 사이를 '직전 서버 위치 → 최신 서버 위치' 등속 보간으로 메운다.
+    // 예전처럼 지수 Lerp 로 목표를 쫓으면 패킷이 올 때마다 속도가 튀었다가 잦아들어(빠르게 붙고 느려짐)
+    // 돌진(차지)처럼 빠른 이동에서 출렁이고 끊겨 보인다. 등속 보간은 한 틱만큼 뒤에서 매끄럽게 따라간다.
+    [HideInInspector] public Vector3 prevPos;        // 보간 시작점(직전 서버 위치)
+    [HideInInspector] public float posReceivedTime;  // pos 를 받은 시각
+    [HideInInspector] public float posInterval = 0.1f; // 보간 구간 길이(직전 수신과의 간격)
+
+
     public HealthBar healthBar;
     private Session session;
     private DamageTextManager damageTextManager;
@@ -52,6 +61,40 @@ public class Actor : MonoBehaviour
                 healthBar.UpdateHealth(healthPercent);
             }
         }
+    }
+
+    /// <summary>
+    /// 서버가 보낸 새 위치를 보간 목표로 받는다. 스폰/텔레포트/게이트처럼 한 번에 크게 뛴
+    /// 경우(snapDistance 초과)는 보간하지 않고 즉시 스냅한다 — 그 사이를 걸어가면 벽을 통과해 보인다.
+    /// </summary>
+    public void SetServerPosition(Vector3 next, float snapDistance)
+    {
+        bool first = posReceivedTime <= 0f;
+        bool jumped = Vector3.Distance(pos, next) > snapDistance;
+
+        if (first || jumped)
+        {
+            prevPos = next;
+            transform.position = next;
+        }
+        else
+        {
+            prevPos = pos; // 직전 목표 → 새 목표 구간을 등속으로 채운다
+        }
+
+        posInterval = first ? 0.1f : Mathf.Clamp(Time.time - posReceivedTime, 0.02f, 0.5f);
+        posReceivedTime = Time.time;
+        pos = next;
+    }
+
+    /// <summary>이번 프레임에 그릴 위치. 서버 갱신 간격을 등속으로 나눠 채운다(넘으면 최신 위치에 멈춘다).</summary>
+    public Vector3 InterpolatedPosition()
+    {
+        if (posReceivedTime <= 0f)
+            return transform.position;
+
+        float t = posInterval > 0f ? (Time.time - posReceivedTime) / posInterval : 1f;
+        return Vector3.Lerp(prevPos, pos, Mathf.Clamp01(t));
     }
 
     public void TakeDamage(int damage)

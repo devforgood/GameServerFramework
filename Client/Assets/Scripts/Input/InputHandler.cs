@@ -155,10 +155,19 @@ public class InputHandler : MonoBehaviour
         for (int i = 0; i < skillBar.Length; i++)
         {
             bool selected = (i == selectedIndex);
-            hudRowStyle.normal.textColor = selected ? new Color(1f, 0.9f, 0.3f) : Color.white;
+            // 쿨다운 중인 스킬은 남은 시간을 함께 보여준다(시전해도 로컬에서 걸러지는 이유가 드러나게).
+            float remaining = (session != null) ? session.SkillCooldowns.Remaining(skillBar[i]) : 0f;
+            bool onCooldown = remaining > 0f;
+
+            if (onCooldown)
+                hudRowStyle.normal.textColor = selected ? new Color(0.8f, 0.6f, 0.3f) : new Color(0.55f, 0.55f, 0.55f);
+            else
+                hudRowStyle.normal.textColor = selected ? new Color(1f, 0.9f, 0.3f) : Color.white;
+
             string mark = selected ? "▶ " : "   ";
+            string cooldownText = onCooldown ? $"  ({remaining:F1}s)" : "";
             GUI.Label(new Rect(x + 10, ly, w - 20, rowH),
-                $"{mark}[{i + 1}] {PrettyName(skillBar[i])}", hudRowStyle);
+                $"{mark}[{i + 1}] {PrettyName(skillBar[i])}{cooldownText}", hudRowStyle);
             ly += rowH;
         }
 

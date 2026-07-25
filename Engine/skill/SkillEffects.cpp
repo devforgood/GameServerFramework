@@ -171,8 +171,12 @@ public:
 
 		caster->SetFrontVector(delta.x, 0.0f, delta.z); // 돌진 방향을 바로 바라보게 한다
 
+		// 속도는 '최대 사거리를 duration 안에 주파하는 속도'로 고정한다(거리/duration 이 아니다).
+		// 거리에 비례해 속도를 정하면 가까이 찍었을 때 걷기보다 느려져 돌진처럼 보이지 않는다.
+		// 가까운 목표는 대신 일찍 도착하고, 도착 즉시 Active 가 끝나 착지 효과가 터진다(skill_dash::Finish).
 		const float duration = static_cast<float>(data.duration);
-		state.dashSpeed = duration > 0.0f ? distance / duration : distance;
+		const float fullDistance = maxDistance > 0.0f ? maxDistance : distance;
+		state.dashSpeed = duration > 0.0f ? fullDistance / duration : fullDistance;
 		state.dashing = true;
 
 		LOG.debug("DashEffect: skill {} distance {:.1f} speed {:.1f}", data.id, distance, state.dashSpeed);
@@ -332,6 +336,11 @@ void Finish(Actor* caster, SkillState& state)
 		return;
 
 	state.dashing = false;
+
+	// 도착했으면 남은 Active 를 소진시켜 그 틱에 바로 OnActiveEnd(착지 효과 + 입력 잠금 해제)로 넘어가게 한다.
+	// 속도가 고정이라 가까운 목표는 duration 보다 일찍 도착하는데, 그동안 잠긴 채 서 있으면 어색하다.
+	// (OnActiveEnd 에서 불릴 때는 이미 dashing==false 라 위 early return 으로 걸러진다.)
+	state.activeRemaining = 0.0f;
 
 	Map* map = caster->GetMap();
 	if (map == nullptr || map->GetNavMap() == nullptr)

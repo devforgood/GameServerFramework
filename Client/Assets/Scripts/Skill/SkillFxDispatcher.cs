@@ -13,33 +13,35 @@ using UnityEngine;
 // 두 경로가 같은 함수를 써서 자신과 남에게 동일한 연출이 보인다.
 public static class SkillFxDispatcher
 {
-    public static void Play(Gamedata.Skill data, GameObject caster, Vector3 targetPos, MonoBehaviour host)
+    // 반환값은 이 연출의 본체 코루틴이다. 캐스터가 낙관적으로 재생한 연출을 서버가 거부했을 때
+    // Session 이 StopCoroutine 으로 취소하는 데 쓴다(취소할 게 없는 즉발 연출은 null).
+    public static Coroutine Play(Gamedata.Skill data, GameObject caster, Vector3 targetPos, MonoBehaviour host)
     {
         if (data == null || caster == null || host == null)
         {
             Debug.LogWarning($"[SkillFx] Play skipped: data={(data == null ? "null" : data.id.ToString())} caster={(caster == null ? "null" : caster.name)} host={(host == null ? "null" : host.name)}");
-            return;
+            return null;
         }
 
         string fx = data.fx ?? "";
         Debug.Log($"[SkillFx] Play skill={data.id} fx='{fx}' element='{data.element}' caster={caster.name} target={targetPos}");
         switch (fx)
         {
-            case "projectile": host.StartCoroutine(Projectile(data, caster, targetPos, host)); break;
-            case "meteor":     host.StartCoroutine(Meteor(data, targetPos, host)); break;
-            case "nova":       Nova(data, caster, host); break;
-            case "teleport":   Teleport(caster, targetPos, host); break;
-            case "impact":     host.StartCoroutine(SkillFx.Burst(targetPos, Radius(data, 3f), 0.4f, Tint(data, new Color(1f, 0.9f, 0.3f)))); break;
-            case "heal":       host.StartCoroutine(SkillFx.Burst(caster.transform.position, 1.6f, 0.5f, new Color(0.3f, 1f, 0.4f))); break;
-            case "slash":      host.StartCoroutine(Slash(data, caster, targetPos, host)); break;
-            case "charge":     host.StartCoroutine(Charge(data, caster, targetPos, host)); break;
-            case "chain":      host.StartCoroutine(Chain(data, caster, targetPos, host)); break;
-            case "holy":       host.StartCoroutine(Holy(data, targetPos, host)); break;
-            case "tornado":    host.StartCoroutine(Tornado(data, targetPos, host)); break;
-            case "cone":       host.StartCoroutine(Cone(data, caster, targetPos, host)); break;
+            case "projectile": return host.StartCoroutine(Projectile(data, caster, targetPos, host));
+            case "meteor":     return host.StartCoroutine(Meteor(data, targetPos, host));
+            case "nova":       Nova(data, caster, host); return null;
+            case "teleport":   Teleport(caster, targetPos, host); return null;
+            case "impact":     return host.StartCoroutine(SkillFx.Burst(targetPos, Radius(data, 3f), 0.4f, Tint(data, new Color(1f, 0.9f, 0.3f))));
+            case "heal":       return host.StartCoroutine(SkillFx.Burst(caster.transform.position, 1.6f, 0.5f, new Color(0.3f, 1f, 0.4f)));
+            case "slash":      return host.StartCoroutine(Slash(data, caster, targetPos, host));
+            case "charge":     return host.StartCoroutine(Charge(data, caster, targetPos, host));
+            case "chain":      return host.StartCoroutine(Chain(data, caster, targetPos, host));
+            case "holy":       return host.StartCoroutine(Holy(data, targetPos, host));
+            case "tornado":    return host.StartCoroutine(Tornado(data, targetPos, host));
+            case "cone":       return host.StartCoroutine(Cone(data, caster, targetPos, host));
             default:
                 Debug.Log($"[SkillFx] skill {data.id} 에 fx 가 없어 연출을 생략합니다(fx='{fx}').");
-                break;
+                return null;
         }
     }
 
