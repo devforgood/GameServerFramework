@@ -28,6 +28,9 @@ CastResult Skill::Cast(Actor* caster, SkillState& state, const CastContext& ctx)
 
 void Skill::Tick(Actor* caster, SkillState& state, float dt)
 {
+	// dash 효과의 전진. 효과는 시전 시 목적지/속도만 정하고 이동은 Active 동안 여기서 진행된다.
+	skill_dash::Step(caster, state, dt);
+
 	if (caster == nullptr || gamedata == nullptr || gamedata->pulse_interval <= 0.0)
 		return;
 
@@ -54,6 +57,9 @@ void Skill::OnActiveEnd(Actor* caster, SkillState& state)
 {
 	if (caster == nullptr || gamedata == nullptr)
 		return;
+
+	// 돌진 중 Active 가 끝났다면(틱 단위 오차 등) 목적지에 붙여 두고 end 효과를 적용한다.
+	skill_dash::Finish(caster, state);
 
 	for (const auto& fx : gamedata->effects)
 	{

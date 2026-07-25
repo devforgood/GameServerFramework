@@ -53,13 +53,78 @@ public static class SkillFx
         lr.useWorldSpace = true;
         lr.loop = false;
         lr.positionCount = segments;
-        for (int i = 0; i < segments; i++)
+        SetArc(lr, center, radius, fromDeg, toDeg);
+        return lr;
+    }
+
+    // LineRenderer 정점을 center 중심 반경 radius 의 호로 다시 배치(반경/중심이 변하는 연출용).
+    public static void SetArc(LineRenderer lr, Vector3 center, float radius, float fromDeg, float toDeg)
+    {
+        int n = lr.positionCount;
+        for (int i = 0; i < n; i++)
         {
-            float deg = Mathf.Lerp(fromDeg, toDeg, (float)i / (segments - 1));
+            float deg = Mathf.Lerp(fromDeg, toDeg, n > 1 ? (float)i / (n - 1) : 0f);
             float a = deg * Mathf.Deg2Rad;
             lr.SetPosition(i, center + new Vector3(Mathf.Sin(a) * radius, 0.1f, Mathf.Cos(a) * radius));
         }
+    }
+
+    // 지그재그 번개 줄기(체인 라이트닝/라이트닝). SetBolt 로 매 프레임 다시 흔들면 번쩍이는 느낌이 난다.
+    public static LineRenderer Bolt(Vector3 from, Vector3 to, Color color, int segments = 12, float width = 0.12f)
+    {
+        var go = new GameObject("SkillBolt");
+        var lr = go.AddComponent<LineRenderer>();
+        lr.material = UnlitColor(color);
+        lr.startColor = lr.endColor = color;
+        lr.startWidth = lr.endWidth = width;
+        lr.useWorldSpace = true;
+        lr.loop = false;
+        lr.positionCount = Mathf.Max(2, segments);
+        SetBolt(lr, from, to);
         return lr;
+    }
+
+    // 양 끝점은 고정하고 중간 정점만 진행 방향의 수직으로 흔든다.
+    public static void SetBolt(LineRenderer lr, Vector3 from, Vector3 to, float jitter = 0.5f)
+    {
+        int n = lr.positionCount;
+        Vector3 dir = (to - from).normalized;
+        Vector3 side = Vector3.Cross(dir, Vector3.up).normalized;
+        for (int i = 0; i < n; i++)
+        {
+            float k = (float)i / (n - 1);
+            Vector3 p = Vector3.Lerp(from, to, k);
+            if (i != 0 && i != n - 1)
+                p += side * Random.Range(-jitter, jitter) + Vector3.up * Random.Range(-jitter, jitter) * 0.5f;
+            lr.SetPosition(i, p);
+        }
+    }
+
+    // 지면에서 솟는 빛기둥(천상의 주먹 등). 콜라이더 없는 원기둥.
+    public static GameObject Column(Vector3 pos, float radius, float height, Color color)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        var col = go.GetComponent<Collider>();
+        if (col != null) Object.Destroy(col);
+        go.transform.position = pos + Vector3.up * (height * 0.5f);
+        go.transform.localScale = new Vector3(radius * 2f, height * 0.5f, radius * 2f); // 실린더 기본 높이 2
+        go.GetComponent<Renderer>().material = UnlitColor(color);
+        return go;
+    }
+
+    // 렌더러 색을 duration 동안 페이드아웃시키고 오브젝트를 정리한다.
+    public static IEnumerator FadeOut(GameObject go, float duration, Color color)
+    {
+        var rend = go != null ? go.GetComponent<Renderer>() : null;
+        float t = 0f;
+        while (t < duration && go != null)
+        {
+            t += Time.deltaTime;
+            var c = color; c.a = Mathf.Clamp01(1f - t / duration);
+            if (rend != null) rend.material.color = c;
+            yield return null;
+        }
+        if (go != null) Object.Destroy(go);
     }
 
     // LineRenderer 정점을 center 중심 반경 radius 의 원으로 배치.

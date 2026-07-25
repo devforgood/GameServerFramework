@@ -15,7 +15,8 @@
         "type": "damage"
       }
     ],
-    "fx": "slash"
+    "fx": "slash",
+    "element": "physical"
   },
   {
     "id": 2,
@@ -52,7 +53,8 @@
       {
         "type": "damage"
       }
-    ]
+    ],
+    "element": "physical"
   },
   {
     "id": 100,
@@ -68,7 +70,8 @@
         "type": "aoe_damage"
       }
     ],
-    "fx": "projectile"
+    "fx": "projectile",
+    "element": "fire"
   },
   {
     "id": 101,
@@ -84,7 +87,8 @@
         "type": "aoe_damage"
       }
     ],
-    "fx": "projectile"
+    "fx": "projectile",
+    "element": "fire"
   },
   {
     "id": 102,
@@ -100,7 +104,8 @@
         "type": "aoe_damage"
       }
     ],
-    "fx": "meteor"
+    "fx": "meteor",
+    "element": "fire"
   },
   {
     "id": 103,
@@ -116,7 +121,8 @@
         "type": "aoe_damage"
       }
     ],
-    "fx": "meteor"
+    "fx": "meteor",
+    "element": "cold"
   },
   {
     "id": 104,
@@ -133,7 +139,8 @@
         "type": "damage"
       }
     ],
-    "fx": "nova"
+    "fx": "nova",
+    "element": "lightning"
   },
   {
     "id": 105,
@@ -149,7 +156,8 @@
         "type": "aoe_damage"
       }
     ],
-    "fx": "meteor"
+    "fx": "meteor",
+    "element": "cold"
   },
   {
     "id": 106,
@@ -179,7 +187,8 @@
         "type": "damage"
       }
     ],
-    "fx": "nova"
+    "fx": "nova",
+    "element": "lightning"
   },
   {
     "id": 108,
@@ -196,7 +205,8 @@
         "type": "damage"
       }
     ],
-    "fx": "projectile"
+    "fx": "projectile",
+    "element": "physical"
   },
   {
     "id": 109,
@@ -213,7 +223,8 @@
         "type": "damage"
       }
     ],
-    "fx": "nova"
+    "fx": "nova",
+    "element": "poison"
   },
   {
     "id": 110,
@@ -229,7 +240,8 @@
         "type": "aoe_damage"
       }
     ],
-    "fx": "impact"
+    "fx": "impact",
+    "element": "fire"
   },
   {
     "id": 111,
@@ -246,7 +258,8 @@
         "type": "damage"
       }
     ],
-    "fx": "slash"
+    "fx": "slash",
+    "element": "holy"
   },
   {
     "id": 112,
@@ -260,7 +273,8 @@
         "type": "heal"
       }
     ],
-    "fx": "heal"
+    "fx": "heal",
+    "element": "holy"
   },
   {
     "id": 113,
@@ -277,7 +291,8 @@
         "type": "damage"
       }
     ],
-    "fx": "slash"
+    "fx": "slash",
+    "element": "physical"
   },
   {
     "id": 114,
@@ -294,7 +309,8 @@
         "type": "damage"
       }
     ],
-    "fx": "slash"
+    "fx": "slash",
+    "element": "physical"
   },
   {
     "id": 115,
@@ -320,7 +336,8 @@
         "type": "aoe_damage",
         "phase": "end"
       }
-    ]
+    ],
+    "element": "physical"
   },
   {
     "id": 116,
@@ -337,7 +354,8 @@
         "type": "damage"
       }
     ],
-    "fx": "slash"
+    "fx": "slash",
+    "element": "physical"
   },
   {
     "id": 117,
@@ -353,7 +371,8 @@
         "type": "aoe_damage"
       }
     ],
-    "fx": "projectile"
+    "fx": "projectile",
+    "element": "lightning"
   },
   {
     "id": 118,
@@ -370,7 +389,533 @@
         "type": "damage"
       }
     ],
-    "fx": "slash"
+    "fx": "slash",
+    "element": "physical"
+  },
+  {
+    "id": 119,
+    "type": "active",
+    "min_damage": 35,
+    "max_damage": 60,
+    "range": 12,
+    "radius": 3,
+    "duration": 1,
+    "cooldown": 5.0,
+    "name_id": "charge_name",
+    "desc_id": "charge_desc",
+    "effects": [
+      {
+        "type": "input_lock",
+        "phase": "active"
+      },
+      {
+        "type": "dash",
+        "phase": "active"
+      },
+      {
+        "type": "aoe_damage",
+        "phase": "end"
+      }
+    ],
+    "fx": "charge",
+    "element": "physical"
+  },
+  {
+    "id": 120,
+    "type": "active",
+    "min_damage": 14,
+    "max_damage": 26,
+    "range": 3,
+    "angle": 90,
+    "knockback": 3,
+    "cooldown": 0.8,
+    "name_id": "smite_name",
+    "desc_id": "smite_desc",
+    "effects": [
+      {
+        "type": "damage"
+      },
+      {
+        "type": "knockback"
+      }
+    ],
+    "fx": "slash",
+    "element": "physical"
+  },
+  {
+    "id": 121,
+    "type": "active",
+    "min_damage": 18,
+    "max_damage": 30,
+    "range": 10,
+    "angle": 15,
+    "cooldown": 0.5,
+    "name_id": "holy_bolt_name",
+    "desc_id": "holy_bolt_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "projectile",
+    "element": "holy"
+  },
+  {
+    "id": 122,
+    "type": "active",
+    "min_damage": 55,
+    "max_damage": 90,
+    "radius": 5,
+    "cooldown": 4.0,
+    "name_id": "fist_of_heavens_name",
+    "desc_id": "fist_of_heavens_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "holy",
+    "element": "holy"
+  },
+  {
+    "id": 123,
+    "type": "active",
+    "min_damage": 18,
+    "max_damage": 30,
+    "range": 6,
+    "angle": 360,
+    "knockback": 4,
+    "cooldown": 3.0,
+    "name_id": "war_cry_name",
+    "desc_id": "war_cry_desc",
+    "effects": [
+      {
+        "type": "damage"
+      },
+      {
+        "type": "knockback"
+      }
+    ],
+    "fx": "nova",
+    "element": "physical"
+  },
+  {
+    "id": 124,
+    "type": "active",
+    "min_damage": 12,
+    "max_damage": 20,
+    "range": 3,
+    "angle": 180,
+    "cooldown": 0.4,
+    "name_id": "double_swing_name",
+    "desc_id": "double_swing_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "slash",
+    "element": "physical"
+  },
+  {
+    "id": 125,
+    "type": "active",
+    "min_damage": 30,
+    "max_damage": 55,
+    "range": 4,
+    "angle": 120,
+    "cooldown": 1.2,
+    "name_id": "berserk_name",
+    "desc_id": "berserk_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "slash",
+    "element": "physical"
+  },
+  {
+    "id": 126,
+    "type": "active",
+    "min_damage": 10,
+    "max_damage": 20,
+    "range": 12,
+    "angle": 60,
+    "cooldown": 0.7,
+    "name_id": "multiple_shot_name",
+    "desc_id": "multiple_shot_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "projectile",
+    "element": "physical"
+  },
+  {
+    "id": 127,
+    "type": "active",
+    "min_damage": 12,
+    "max_damage": 22,
+    "range": 12,
+    "angle": 25,
+    "cooldown": 0.3,
+    "name_id": "strafe_name",
+    "desc_id": "strafe_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "projectile",
+    "element": "physical"
+  },
+  {
+    "id": 128,
+    "type": "active",
+    "min_damage": 35,
+    "max_damage": 70,
+    "range": 4,
+    "angle": 30,
+    "cooldown": 1.5,
+    "name_id": "impale_name",
+    "desc_id": "impale_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "slash",
+    "element": "physical"
+  },
+  {
+    "id": 129,
+    "type": "active",
+    "min_damage": 16,
+    "max_damage": 34,
+    "range": 3,
+    "angle": 60,
+    "cooldown": 0.6,
+    "name_id": "charged_strike_name",
+    "desc_id": "charged_strike_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "slash",
+    "element": "lightning"
+  },
+  {
+    "id": 130,
+    "type": "active",
+    "range": 8,
+    "duration": 1,
+    "cooldown": 4.0,
+    "name_id": "vault_name",
+    "desc_id": "vault_desc",
+    "effects": [
+      {
+        "type": "input_lock",
+        "phase": "active"
+      },
+      {
+        "type": "dash",
+        "phase": "active"
+      }
+    ],
+    "fx": "charge",
+    "element": "physical"
+  },
+  {
+    "id": 131,
+    "type": "active",
+    "min_damage": 25,
+    "max_damage": 45,
+    "range": 12,
+    "angle": 30,
+    "cooldown": 1.0,
+    "name_id": "chain_lightning_name",
+    "desc_id": "chain_lightning_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "chain",
+    "element": "lightning"
+  },
+  {
+    "id": 132,
+    "type": "active",
+    "min_damage": 14,
+    "max_damage": 26,
+    "range": 5,
+    "angle": 360,
+    "cooldown": 1.5,
+    "name_id": "frost_nova_name",
+    "desc_id": "frost_nova_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "nova",
+    "element": "cold"
+  },
+  {
+    "id": 133,
+    "type": "active",
+    "min_damage": 24,
+    "max_damage": 40,
+    "radius": 3,
+    "cooldown": 1.0,
+    "name_id": "glacial_spike_name",
+    "desc_id": "glacial_spike_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "projectile",
+    "element": "cold"
+  },
+  {
+    "id": 134,
+    "type": "active",
+    "min_damage": 6,
+    "max_damage": 12,
+    "range": 4,
+    "angle": 45,
+    "cooldown": 0.25,
+    "name_id": "inferno_name",
+    "desc_id": "inferno_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "cone",
+    "element": "fire"
+  },
+  {
+    "id": 135,
+    "type": "active",
+    "min_damage": 20,
+    "max_damage": 60,
+    "range": 14,
+    "angle": 12,
+    "cooldown": 0.4,
+    "name_id": "lightning_name",
+    "desc_id": "lightning_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "chain",
+    "element": "lightning"
+  },
+  {
+    "id": 136,
+    "type": "active",
+    "min_damage": 8,
+    "max_damage": 16,
+    "range": 8,
+    "angle": 40,
+    "cooldown": 0.5,
+    "name_id": "teeth_name",
+    "desc_id": "teeth_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "projectile",
+    "element": "physical"
+  },
+  {
+    "id": 137,
+    "type": "active",
+    "min_damage": 30,
+    "max_damage": 50,
+    "radius": 3,
+    "cooldown": 1.2,
+    "name_id": "bone_spirit_name",
+    "desc_id": "bone_spirit_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "projectile",
+    "element": "physical"
+  },
+  {
+    "id": 138,
+    "type": "active",
+    "min_damage": 10,
+    "max_damage": 20,
+    "range": 2,
+    "angle": 60,
+    "cooldown": 0.4,
+    "name_id": "poison_dagger_name",
+    "desc_id": "poison_dagger_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "slash",
+    "element": "poison"
+  },
+  {
+    "id": 139,
+    "type": "active",
+    "min_damage": 28,
+    "max_damage": 48,
+    "radius": 4,
+    "cooldown": 1.0,
+    "name_id": "tornado_name",
+    "desc_id": "tornado_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "tornado",
+    "element": "physical"
+  },
+  {
+    "id": 140,
+    "type": "active",
+    "min_damage": 20,
+    "max_damage": 35,
+    "radius": 5,
+    "cooldown": 1.5,
+    "name_id": "firestorm_name",
+    "desc_id": "firestorm_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "meteor",
+    "element": "fire"
+  },
+  {
+    "id": 141,
+    "type": "active",
+    "min_damage": 70,
+    "max_damage": 130,
+    "radius": 8,
+    "cooldown": 8.0,
+    "name_id": "armageddon_name",
+    "desc_id": "armageddon_desc",
+    "effects": [
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "meteor",
+    "element": "fire"
+  },
+  {
+    "id": 142,
+    "type": "active",
+    "min_damage": 20,
+    "max_damage": 34,
+    "range": 5,
+    "angle": 90,
+    "knockback": 5,
+    "cooldown": 2.5,
+    "name_id": "shock_wave_name",
+    "desc_id": "shock_wave_desc",
+    "effects": [
+      {
+        "type": "damage"
+      },
+      {
+        "type": "knockback"
+      }
+    ],
+    "fx": "nova",
+    "element": "physical"
+  },
+  {
+    "id": 143,
+    "type": "active",
+    "min_damage": 9,
+    "max_damage": 15,
+    "range": 2,
+    "angle": 60,
+    "cooldown": 0.3,
+    "name_id": "dragon_talon_name",
+    "desc_id": "dragon_talon_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "slash",
+    "element": "physical"
+  },
+  {
+    "id": 144,
+    "type": "active",
+    "min_damage": 14,
+    "max_damage": 24,
+    "range": 10,
+    "angle": 15,
+    "cooldown": 0.4,
+    "name_id": "blade_fury_name",
+    "desc_id": "blade_fury_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "projectile",
+    "element": "physical"
+  },
+  {
+    "id": 145,
+    "type": "active",
+    "min_damage": 26,
+    "max_damage": 48,
+    "range": 5,
+    "angle": 360,
+    "cooldown": 2.0,
+    "name_id": "phoenix_strike_name",
+    "desc_id": "phoenix_strike_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "nova",
+    "element": "fire"
+  },
+  {
+    "id": 146,
+    "type": "active",
+    "min_damage": 30,
+    "max_damage": 50,
+    "radius": 3,
+    "cooldown": 4.0,
+    "name_id": "dragon_flight_name",
+    "desc_id": "dragon_flight_desc",
+    "effects": [
+      {
+        "type": "teleport"
+      },
+      {
+        "type": "aoe_damage"
+      }
+    ],
+    "fx": "teleport",
+    "element": "physical"
   },
   {
     "id": 200,
@@ -387,7 +932,8 @@
         "type": "aura_damage",
         "phase": "pulse"
       }
-    ]
+    ],
+    "element": "fire"
   },
   {
     "id": 201,
@@ -403,6 +949,43 @@
         "type": "heal",
         "phase": "pulse"
       }
-    ]
+    ],
+    "element": "holy"
+  },
+  {
+    "id": 202,
+    "type": "passive",
+    "min_damage": 15,
+    "max_damage": 30,
+    "radius": 7,
+    "pulse_interval": 2.0,
+    "name_id": "thunder_storm_name",
+    "desc_id": "thunder_storm_desc",
+    "code_name": "AuraSkill",
+    "effects": [
+      {
+        "type": "aura_damage",
+        "phase": "pulse"
+      }
+    ],
+    "element": "lightning"
+  },
+  {
+    "id": 203,
+    "type": "passive",
+    "min_damage": 6,
+    "max_damage": 12,
+    "radius": 6,
+    "pulse_interval": 0.8,
+    "name_id": "hurricane_name",
+    "desc_id": "hurricane_desc",
+    "code_name": "AuraSkill",
+    "effects": [
+      {
+        "type": "aura_damage",
+        "phase": "pulse"
+      }
+    ],
+    "element": "cold"
   }
 ]

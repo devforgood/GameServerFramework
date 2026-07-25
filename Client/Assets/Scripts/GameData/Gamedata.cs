@@ -22,10 +22,12 @@ namespace Gamedata
         public string desc_id;
         public int duration;
         public System.Collections.Generic.List<SkillEffect> effects;
+        public string element;
         public string fx;
         public int heal;
         public int height;
         public int id;
+        public int knockback;
         public int max_damage;
         public int min_damage;
         public bool monster_only;

@@ -10,8 +10,10 @@ public class InputHandler : MonoBehaviour
     [SerializeField] private Session session;  // Session 참조
 
     // 스킬 핫바: 숫자키(1~9)로 선택하고, Shift+좌클릭으로 선택된 스킬을 시전한다.
-    // 씬에 직렬화된 값이 없으면 이 기본값이 쓰인다(패시브 200 은 시전 불가라 제외).
-    [SerializeField] private int[] skillBar = { 1, 101, 102, 104, 106, 110, 112, 117 };
+    // 씬에 직렬화된 값이 없으면 이 기본값이 쓰인다(패시브 200~ 은 시전 불가라 제외).
+    // 기본값은 서로 다른 메커니즘/연출을 한 번씩 보여주는 조합이다:
+    // 근접 → 돌진(dash) → 넉백 → 넉백 노바 → 번개 → 빛기둥 → 회오리 → 낙하 광역 → 회복.
+    [SerializeField] private int[] skillBar = { 1, 119, 120, 123, 131, 122, 139, 102, 112 };
     private int selectedIndex = 0;
 
     /// <summary>현재 선택된(=Shift+좌클릭으로 시전될) 스킬 id.</summary>

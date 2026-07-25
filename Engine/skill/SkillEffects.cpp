@@ -138,6 +138,100 @@ public:
 	}
 };
 
+// "dash": 캐스터를 목표 지점 방향으로 range 만큼(더 가까우면 목표까지) 돌진시킨다(팔라딘 차지).
+// 한 번에 사라졌다 나타나는 teleport 와 달리 duration 동안 지면을 따라 전진하므로,
+// 여기서는 도착 지점(state.targetPos 보정)과 속도만 정하고 실제 전진은 Skill::Tick(skill_dash::Step)이 한다.
+// 도착 지점을 state.targetPos 에 되써 두면 phase="end" 효과(aoe_damage 등)가 착지 지점에 적용된다.
+class DashEffect : public ISkillEffect
+{
+public:
+	virtual CastResult Apply(Actor* caster, SkillState& state, const gamedata::Skill& data) override
+	{
+		Map* map = caster->GetMap();
+		if (map == nullptr || map->GetNavMap() == nullptr)
+			return CastResult::CasterInvalid;
+
+		const Vector3 from = caster->GetPosition();
+		Vector3 delta = state.targetPos - from;
+		delta.y = 0.0f;
+
+		float distance = delta.length();
+		if (distance < 0.01f)
+		{
+			state.dashing = false; // 제자리 시전 — 이동 없이 end 효과만 적용된다
+			return CastResult::Success;
+		}
+
+		const float maxDistance = static_cast<float>(data.range);
+		if (maxDistance > 0.0f && distance > maxDistance)
+		{
+			state.targetPos = from + delta.normalized() * maxDistance;
+			distance = maxDistance;
+		}
+
+		caster->SetFrontVector(delta.x, 0.0f, delta.z); // 돌진 방향을 바로 바라보게 한다
+
+		const float duration = static_cast<float>(data.duration);
+		state.dashSpeed = duration > 0.0f ? distance / duration : distance;
+		state.dashing = true;
+
+		LOG.debug("DashEffect: skill {} distance {:.1f} speed {:.1f}", data.id, distance, state.dashSpeed);
+		return CastResult::Success;
+	}
+};
+
+// "knockback": 캐스터 중심 radius(없으면 range) 안의 대상을 캐스터 반대 방향으로 knockback 만큼 밀어낸다.
+// 밀린 위치는 TeleportAgent 가 네비메시로 스냅하므로 벽 너머로 밀려나지 않는다.
+// 중심이 항상 캐스터라 강타/전투 함성처럼 캐스터 주변을 때리는 스킬에 쓴다(시전 지점 광역기와 조합하지 않는다).
+class KnockbackEffect : public ISkillEffect
+{
+public:
+	virtual CastResult Apply(Actor* caster, SkillState& state, const gamedata::Skill& data) override
+	{
+		Map* map = caster->GetMap();
+		if (map == nullptr || map->GetNavMap() == nullptr)
+			return CastResult::CasterInvalid;
+		if (data.knockback <= 0)
+			return CastResult::Success;
+
+		INavMovement* nav = map->GetNavMap();
+		const float radius = static_cast<float>(data.radius > 0 ? data.radius : data.range);
+		const float centerX = caster->GetVecter2X();
+		const float centerZ = caster->GetVecter2Y();
+
+		auto targets = map->get_actors_in_radius(centerX, centerZ, radius);
+		for (IGridActor* target : targets)
+		{
+			if (target == nullptr || target == static_cast<IGridActor*>(caster))
+				continue;
+
+			const float* pos = nav->GetPos(target->GetActorId());
+			if (pos == nullptr)
+				continue;
+
+			float dx = pos[0] - centerX;
+			float dz = pos[2] - centerZ;
+			float length = std::sqrt(dx * dx + dz * dz);
+			if (length < 0.001f)
+			{
+				// 캐스터와 완전히 겹친 대상은 방향을 정할 수 없으므로 캐스터 정면으로 민다.
+				const Vector3& front = caster->GetFrontVector();
+				dx = front.x;
+				dz = front.z;
+				length = std::sqrt(dx * dx + dz * dz);
+				if (length < 0.001f)
+					continue;
+			}
+
+			const float scale = static_cast<float>(data.knockback) / length;
+			float dest[3] = { pos[0] + dx * scale, pos[1], pos[2] + dz * scale };
+			nav->TeleportAgent(target->GetActorId(), dest);
+		}
+
+		return CastResult::Success;
+	}
+};
+
 // "input_lock": 캐스터 입력을 잠근다. Active 페이즈 종료 시 Skill::OnActiveEnd 가 해제한다.
 class InputLockEffect : public ISkillEffect
 {
@@ -158,6 +252,8 @@ std::unordered_map<std::string, std::unique_ptr<ISkillEffect>> BuildRegistry()
 	registry.emplace("aura_damage", std::make_unique<AuraDamageEffect>());
 	registry.emplace("heal", std::make_unique<HealEffect>());
 	registry.emplace("teleport", std::make_unique<TeleportEffect>());
+	registry.emplace("dash", std::make_unique<DashEffect>());
+	registry.emplace("knockback", std::make_unique<KnockbackEffect>());
 	registry.emplace("input_lock", std::make_unique<InputLockEffect>());
 	return registry;
 }
@@ -190,3 +286,58 @@ bool SkillEffectRegistry::Has(const std::string& type)
 {
 	return Registry().count(type) > 0;
 }
+
+namespace skill_dash
+{
+
+void Step(Actor* caster, SkillState& state, float dt)
+{
+	if (!state.dashing || caster == nullptr)
+		return;
+
+	Map* map = caster->GetMap();
+	if (map == nullptr || map->GetNavMap() == nullptr)
+	{
+		state.dashing = false;
+		return;
+	}
+
+	INavMovement* nav = map->GetNavMap();
+	// 현재 위치는 네비 에이전트가 권위다(Actor::position_ 는 ECS 동기화로 한 틱 늦을 수 있다).
+	const float* pos = nav->GetPos(caster->GetActorId());
+	if (pos == nullptr)
+	{
+		state.dashing = false;
+		return;
+	}
+
+	Vector3 delta = state.targetPos - Vector3(pos[0], pos[1], pos[2]);
+	delta.y = 0.0f;
+
+	const float remaining = delta.length();
+	const float step = state.dashSpeed * dt;
+	if (remaining <= step || remaining < 0.01f)
+	{
+		Finish(caster, state);
+		return;
+	}
+
+	Vector3 next = Vector3(pos[0], pos[1], pos[2]) + delta.normalized() * step;
+	nav->TeleportAgent(caster->GetActorId(), next.pos());
+}
+
+void Finish(Actor* caster, SkillState& state)
+{
+	if (!state.dashing || caster == nullptr)
+		return;
+
+	state.dashing = false;
+
+	Map* map = caster->GetMap();
+	if (map == nullptr || map->GetNavMap() == nullptr)
+		return;
+
+	map->GetNavMap()->TeleportAgent(caster->GetActorId(), state.targetPos.pos());
+}
+
+} // namespace skill_dash

@@ -36,7 +36,7 @@ AI(BehaviorTree)가 **같은 경로**를 쓴다.
 ### 1-5. 액티브 vs 패시브
 | 구분 | 발동 | 예시 | 서버 처리 |
 |------|------|------|-----------|
-| **`type: "active"`** | 유저 액션(`UseSkill`)으로 발동 | 파이어볼, 텔레포트, 도약 공격 | `TryCast` → 페이즈 머신(Active→Cooldown→Ready) |
+| **`type: "active"`** | 유저 액션(`UseSkill`)으로 발동 | 파이어볼, 텔레포트, 도약 공격, 차지 | `TryCast` → 페이즈 머신(Active→Cooldown→Ready) |
 | **`type: "passive"`** | **보유만으로 지속 적용**(액션 불필요) | 성화·기도 오라 | `SkillSet::Update` 가 매 틱 `Skill::Tick` 호출, 쿨다운/페이즈 없음 |
 
 > **오라(aura)는 `type` 이 아니라 효과**다. "지면에 지속되는 오라"는 패시브 스킬이
@@ -96,7 +96,13 @@ cd GameDataFlow && python GameDataFlow.py
 | `aura_damage` | 캐스터(원형) | 캐스터를 따라다니는 원형 데미지. 회전 없음(오라 pulse용) | `min/max_damage`, `radius` |
 | `heal` | 캐스터 | 자신 체력 회복 | `heal` |
 | `teleport` | 목표 지점 | 목표 지점으로 순간이동 | (targetPos) |
+| `dash` | 캐스터→목표 | 목표 방향으로 `range` 만큼(더 가까우면 목표까지) `duration` 동안 **전진**. 도착 지점을 `state.targetPos` 에 되써서 `end` 효과가 착지 지점에 적용된다 | `range`, `duration` |
+| `knockback` | 캐스터(원형) | 반경 안의 대상을 캐스터 반대 방향으로 밀어냄(네비메시 스냅으로 벽 통과 없음) | `knockback`, `radius`(없으면 `range`) |
 | `input_lock` | 캐스터 | 입력 잠금(Active 종료 시 자동 해제) | — |
+
+> `dash` 는 효과가 목적지/속도만 정하고 실제 전진은 Active 동안 `Skill::Tick`(`skill_dash::Step`)이
+> 매 틱 처리한다. 위치는 네비 에이전트가 권위이므로 이동 중에도 그대로 동기화된다(순간이동 `teleport` 와 다른 점).
+> `knockback` 은 중심이 항상 캐스터라 강타/전투 함성처럼 **캐스터 주변**을 때리는 스킬에 쓴다.
 
 **phase**:
 | phase | 실행 시점 |
@@ -107,13 +113,21 @@ cd GameDataFlow && python GameDataFlow.py
 
 **주요 Skill 필드**: `id`, `type`(active/passive), `monster_only`, `code_name`, `name_id`, `desc_id`,
 `min_damage`/`max_damage`, `range`, `angle`, `radius`, `cooldown`, `duration`, `height`,
-`heal`, `pulse_interval`, `effects[]`.
+`heal`, `knockback`, `pulse_interval`, `effects[]`, `fx`/`element`(클라 전용).
 
 ### 2-5. 조합 예시
+- **차지(Charge, 팔라딘)**: `input_lock`(active) → `dash`(active) → `aoe_damage`(end).
+  `range` 만큼 돌진해 착지 지점에 광역 데미지. 도약 공격과 달리 **사라지지 않고 지면을 달린다**.
+- **회피 도약(Vault)**: `input_lock` → `dash` 만. 데미지 없는 순수 이동기(같은 효과의 재사용 예).
 - **도약 공격(Leap Attack)**: `input_lock`(active) → `teleport`(end) → `aoe_damage`(end).
   점프 중 입력잠금 후 착지 지점에 순간이동하며 광역 데미지.
+- **강타/전투 함성(Smite, War Cry)**: `damage` → `knockback`. 때린 뒤 주변 대상을 밀어냄.
 - **성화 오라(Holy Fire, passive)**: `aura_damage`(pulse), `pulse_interval` 마다 주변 적을 태움.
 - **노바(Nova)**: `damage` 에 `angle: 360` — 캐스터 중심 전방위.
+
+현재 [skill.json](../../Client/Assets/Resources/GameData/skill.json) 에는 D2 7개 클래스 계열의
+액티브 스킬(1~146)과 패시브 오라(200~203)가 들어 있고, **차지/회피 도약(dash)과
+강타/전투 함성/충격파(knockback)를 뺀 나머지는 전부 데이터만으로 추가된 것**이다.
 
 ### 2-6. 클라이언트 연출(이펙트) 구현
 연출은 **클라이언트 전용**이며 서버 로직과 분리된다. 서버가 시전 성공 시 `UseSkill` 을
@@ -122,9 +136,13 @@ cd GameDataFlow && python GameDataFlow.py
 - **두 재생 경로 · 같은 함수**: 캐스터 자신은 [Session.cs](../../Client/Assets/Scripts/Session.cs) `UseSkill`,
   원격 관전자는 `HandleUseSkillNotify` 에서 각각 `SkillFxDispatcher.Play(...)` 를 호출한다.
   브로드캐스트가 캐스터를 제외하므로 자신은 로컬에서 즉시 재생, 남은 브로드캐스트로 재생 → 모두 같은 연출을 본다.
-- **`fx` 필드로 연출 선택**: `skill.json` 의 클라 전용 문자열 `fx`("projectile"/"meteor"/"nova"/"teleport"/"impact")로
+- **`fx` 필드로 연출 선택**: `skill.json` 의 클라 전용 문자열 `fx`
+  ("slash"/"projectile"/"meteor"/"nova"/"teleport"/"impact"/"heal"/"charge"/"chain"/"holy"/"tornado"/"cone")로
   [SkillFxDispatcher.cs](../../Client/Assets/Scripts/Skill/SkillFxDispatcher.cs) 가 분기한다.
   `fx` 는 서버가 무시하는 프레젠테이션 데이터라 **`code_name` 과 달리 서버 파생 클래스를 만들지 않는다**(서버 churn 0).
+- **`element` 필드로 색 결정**: 같은 `fx` 라도 `element`("physical"/"fire"/"cold"/"lightning"/"poison"/"holy")에 따라
+  색이 달라진다(`SkillFxDispatcher.Tint`). `fx` 와 마찬가지로 서버는 무시한다.
+  값이 없으면 그 연출의 기본색을 쓴다 — 속성별 **상태이상**(빙결/중독 틱)은 아직 없고 색만 구분한다.
 - **절차적 VFX**: [SkillFx.cs](../../Client/Assets/Scripts/Skill/SkillFx.cs) 가 아트 에셋 없이
   프리미티브/LineRenderer 로 투사체·링·확장 파문·폭발 버스트를 생성한다(수명 후 자가 소멸).
 - **특수 표현은 클라 Skill 파생**: 지속/입력이 필요한 스킬만 클래스를 둔다.
@@ -151,7 +169,8 @@ cd GameDataFlow && python GameDataFlow.py
 | **일회성 패시브** | pulse 효과만 지원 | "습득 시 1회 적용"(상시 스탯) 경로 별도 필요 |
 | **투사체(projectile)** | 서버는 즉발 히트스캔(클라 연출만 투사체) | 서버도 이동 투사체 시뮬 + 충돌 판정 + 스냅샷 동기화 |
 | **DB 보유 스킬** | 모든 비-몬스터 스킬을 전원에게 등록 | 캐릭터별 학습/장착 스킬 목록을 DB 에서 로드(`InitFromResources` 대체) |
-| **연출 색상/속성** | `fx` 종류별 고정 색(라이트닝 퓨리도 주황) | `element`/`fx_color` 데이터로 화염/냉기/번개 색·파티클 구분 |
+| **연출 색상/속성** | `element` 로 색만 구분(파티클/속성 상태이상 없음) | 속성별 파티클·피격 반응 + 속성 저항/상태이상 연동 |
+| **넉백 중심** | `knockback` 은 항상 캐스터 중심(시전 지점 광역기와 조합 불가) | 중심(캐스터/시전 지점) 선택 파라미터 또는 대상별 밀림 방향 계산 |
 | **패시브 오라 연출 동기화** | 클라 오라 링이 로컬 선택 기반(남에게 안 보임) | 서버가 활성 패시브 목록을 동기화 → 보유 여부로 상시·원격 표시 |
 | **입력 경로 이원화** | 로컬 샌드박스(GameInputManager)와 네트워크(InputHandler→Session) 분리 | 시전 입력을 Session 경로로 일원화(프리뷰는 프리뷰대로 유지) |
 

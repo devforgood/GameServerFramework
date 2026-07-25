@@ -27,3 +27,13 @@ public:
 	static CastResult Apply(const gamedata::SkillEffect& fx, Actor* caster, SkillState& state, const gamedata::Skill& data);
 	static bool Has(const std::string& type);
 };
+
+// "dash" 효과의 진행. 효과는 시전 시 목적지/속도만 정하고(SkillState), 실제 전진은
+// Active 페이즈 동안 Skill::Tick 이 이 함수로 매 틱 처리한다(순간이동인 teleport 와 다른 점).
+namespace skill_dash
+{
+	// state.dashing 이면 dashSpeed * dt 만큼 목적지 쪽으로 전진시킨다(도달하면 dashing 해제).
+	void Step(Actor* caster, SkillState& state, float dt);
+	// 남은 거리와 무관하게 목적지로 붙이고 돌진을 끝낸다(Active 종료 시).
+	void Finish(Actor* caster, SkillState& state);
+}

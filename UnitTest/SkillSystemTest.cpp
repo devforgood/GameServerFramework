@@ -388,6 +388,113 @@ TEST_F(SkillSystemTest, HealRestoresCasterHealth)
 	EXPECT_EQ(caster->GetHealth(), 90);
 }
 
+// dash(팔라딘 차지): 순간이동(teleport)과 달리 Active 동안 지면을 따라 전진하고,
+// 도착 지점에서 phase="end" 효과(aoe_damage)가 터진다.
+TEST_F(SkillSystemTest, ChargeDashesToTargetAndDamagesOnArrival)
+{
+	auto caster = SpawnCharacter();
+	auto victim = SpawnCharacter(3.0f, 0.0f); // navmesh 위임이 검증된 좌표를 돌진 목적지로 쓴다
+	ASSERT_NE(caster, nullptr);
+	ASSERT_NE(victim, nullptr);
+
+	const Vector3 start = caster->GetPosition();
+	const Vector3 dest = victim->GetPosition();
+	int healthBefore = victim->GetHealth();
+
+	SkillSet& skills = caster->GetSkillSet();
+	CastContext ctx;
+	ctx.skillId = 119; // Charge: input_lock + dash(active) + aoe_damage(end), range 12, duration 1
+	ctx.targetPos = dest;
+
+	ASSERT_EQ(skills.TryCast(caster.get(), ctx), CastResult::Success);
+	EXPECT_EQ(skills.GetState(119)->phase, SkillPhase::Active);
+	EXPECT_TRUE(caster->IsInputLocked());
+	EXPECT_EQ(victim->GetHealth(), healthBefore); // 데미지는 도착(end)에만 들어간다
+
+	auto distanceXZ = [](const float* pos, const Vector3& to) {
+		float dx = pos[0] - to.x;
+		float dz = pos[2] - to.z;
+		return std::sqrt(dx * dx + dz * dz);
+	};
+
+	// 절반 시점: 출발 지점에서 멀어졌지만 아직 목적지는 아니다(순간이동이 아니라 전진).
+	skills.Update(caster.get(), 0.5f);
+	const float* midPos = map_->GetNavMap()->GetPos(caster->GetActorId());
+	ASSERT_NE(midPos, nullptr);
+	EXPECT_GT(distanceXZ(midPos, start), 0.5f);
+	EXPECT_GT(distanceXZ(midPos, dest), 0.5f);
+
+	// 지속시간 종료: 목적지 도달 + 착지 광역 데미지 + 입력 잠금 해제.
+	skills.Update(caster.get(), 0.6f);
+	EXPECT_EQ(skills.GetState(119)->phase, SkillPhase::Cooldown);
+	EXPECT_FALSE(caster->IsInputLocked());
+
+	const float* endPos = map_->GetNavMap()->GetPos(caster->GetActorId());
+	ASSERT_NE(endPos, nullptr);
+	EXPECT_LT(distanceXZ(endPos, dest), 1.0f) << "돌진이 목적지에 도달하지 못했습니다";
+	EXPECT_LT(victim->GetHealth(), healthBefore);
+	EXPECT_EQ(victim->GetLastAttackerActorId(), caster->GetActorId()); // combat 단일 경로
+}
+
+// dash 의 이동 거리는 데이터(range)가 상한이다 — 클라가 맵 반대편을 찍어도 range 까지만 간다.
+TEST_F(SkillSystemTest, DashClampsDistanceToRange)
+{
+	auto caster = SpawnCharacter();
+	ASSERT_NE(caster, nullptr);
+
+	const Vector3 start = caster->GetPosition();
+	SkillSet& skills = caster->GetSkillSet();
+
+	CastContext ctx;
+	ctx.skillId = 130; // Vault: input_lock + dash, range 8, duration 1 (데미지 없음)
+	ctx.targetPos = Vector3(start.x + 500.0f, start.y, start.z);
+
+	ASSERT_EQ(skills.TryCast(caster.get(), ctx), CastResult::Success);
+	skills.Update(caster.get(), 1.1f); // 지속시간 종료까지 진행
+
+	const float* pos = map_->GetNavMap()->GetPos(caster->GetActorId());
+	ASSERT_NE(pos, nullptr);
+	float dx = pos[0] - start.x;
+	float dz = pos[2] - start.z;
+	EXPECT_LE(std::sqrt(dx * dx + dz * dz), 8.5f) << "range 를 넘어 돌진했습니다";
+}
+
+// knockback: 캐스터 주변 대상을 캐스터 반대 방향으로 밀어낸다(강타/전투 함성).
+TEST_F(SkillSystemTest, KnockbackPushesTargetsAwayFromCaster)
+{
+	auto caster = SpawnCharacter();
+	auto victim = SpawnCharacter(1.0f, 0.0f);
+	ASSERT_NE(caster, nullptr);
+	ASSERT_NE(victim, nullptr);
+
+	const Vector3 casterPos = caster->GetPosition();
+	auto distanceFromCaster = [&casterPos](const float* pos) {
+		float dx = pos[0] - casterPos.x;
+		float dz = pos[2] - casterPos.z;
+		return std::sqrt(dx * dx + dz * dz);
+	};
+
+	const float* before = map_->GetNavMap()->GetPos(victim->GetActorId());
+	ASSERT_NE(before, nullptr);
+	float distanceBefore = distanceFromCaster(before);
+	int healthBefore = victim->GetHealth();
+
+	CastContext ctx;
+	ctx.skillId = 123; // War Cry: damage(range 6, angle 360) + knockback 4
+	ctx.targetPos = victim->GetPosition();
+	ASSERT_EQ(caster->GetSkillSet().TryCast(caster.get(), ctx), CastResult::Success);
+
+	const float* after = map_->GetNavMap()->GetPos(victim->GetActorId());
+	ASSERT_NE(after, nullptr);
+	EXPECT_GT(distanceFromCaster(after), distanceBefore + 1.0f) << "대상이 밀려나지 않았습니다";
+	EXPECT_LT(victim->GetHealth(), healthBefore); // 데미지도 함께 적용된다
+
+	// 캐스터 자신은 밀리지 않는다.
+	const float* casterAfter = map_->GetNavMap()->GetPos(caster->GetActorId());
+	ASSERT_NE(casterAfter, nullptr);
+	EXPECT_LT(distanceFromCaster(casterAfter), 0.5f);
+}
+
 // 패시브(Holy Fire 오라): 유저 액션(시전) 없이 보유만으로 Update 마다 자동 적용된다.
 // 오라는 type("passive")이 아니라 effect(aura_damage, phase="pulse")로 표현되고,
 // pulse_interval 마다 캐스터 중심 반경에 데미지를 방출한다.
