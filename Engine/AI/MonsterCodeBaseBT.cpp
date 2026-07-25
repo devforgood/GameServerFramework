@@ -255,6 +255,7 @@ protected:
 	{
 		monster_->SetState(syncnet::AIState::AIState_Dead);
 		monster_->NotifyKilledBy(); // 킬한 플레이어에게 사망 이벤트 발행(최초 1회)
+		LOG.info("Monster dead");
 		return BT::EStatus::Success;
 	}
 };
@@ -275,6 +276,7 @@ protected:
 	virtual BT::EStatus Update() override
 	{
 		monster_->SetState(syncnet::AIState::AIState_Destroyed);
+		LOG.info("Monster destoryed");
 		return BT::EStatus::Success;
 	}
 };

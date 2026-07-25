@@ -139,6 +139,7 @@
     <ClCompile Include="GameModeTest.cpp" />
     <ClCompile Include="MapNavMeshTest.cpp" />
     <ClCompile Include="SkillSystemTest.cpp" />
+    <ClCompile Include="MonsterBTTest.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

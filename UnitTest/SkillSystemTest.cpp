@@ -83,7 +83,7 @@ protected:
 
 		world_ = std::make_unique<World>();
 		map_ = std::make_unique<Map>(world_.get());
-		ASSERT_TRUE(map_->Init("crowd", mapData)) << "Map::Init 실패";
+		ASSERT_TRUE(map_->Init("waypoint", mapData)) << "Map::Init 실패";
 
 		const auto& spawn = mapData->spawn_points.player_spawn[0].position;
 		spawnX_ = spawn.x;

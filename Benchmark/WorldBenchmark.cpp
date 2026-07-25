@@ -22,11 +22,15 @@
 #include <vector>
 
 #define WIN32_LEAN_AND_MEAN
+// windows.h 의 min/max 매크로는 boost(uuid) 의 std::numeric_limits<T>::max() 를 깨뜨린다.
+#define NOMINMAX
 #include <windows.h>
 
 #include "World.h"
 #include "Map.h"
 #include "Actor.h"
+#include "Player.h"
+#include <algorithm>
 #include "ResourceLoader.h"
 #include "syncnet_generated.h"
 #include "LogHelper.h"
@@ -155,18 +159,18 @@ BENCHMARK(BM_WorldCreate)->Unit(benchmark::kMillisecond)->Iterations(30);
 static void BM_WorldSpawnMonsters(benchmark::State& state)
 {
 	const int count = static_cast<int>(state.range(0));
-	ValidSpawns("crowd"); // 유효 좌표 탐색은 1회성 비용이므로 타이밍 밖에서 미리 준비한다.
+	ValidSpawns("waypoint"); // 유효 좌표 탐색은 1회성 비용이므로 타이밍 밖에서 미리 준비한다.
 	int spawned = 0;
 	for (auto _ : state)
 	{
 		state.PauseTiming();
 		World world;
-		// 게임모드 데이터의 movement(현재 waypoint)와 무관하게 crowd 로 고정한다.
-		// ValidSpawns("crowd") 좌표는 crowd 의 스냅 조건으로 탐색된 것이라 전략이 다르면 스폰이 실패한다.
-		world.Init("crowd");
+		// 프로덕션 기본 전략(waypoint)으로 고정한다. ValidSpawns 좌표는 전략별 스냅 조건으로
+		// 탐색된 것이라 전략과 좌표 집합이 어긋나면 스폰이 실패한다.
+		world.Init("waypoint");
 		state.ResumeTiming();
 
-		spawned = SpawnMonsters(world, count, "crowd");
+		spawned = SpawnMonsters(world, count, "waypoint");
 		benchmark::DoNotOptimize(spawned);
 	}
 	state.counters["monsters"] = spawned;
@@ -182,8 +186,8 @@ static void BM_WorldTick(benchmark::State& state)
 	const int count = static_cast<int>(state.range(0));
 
 	World world;
-	world.Init("crowd"); // ValidSpawns("crowd") 좌표와 이동 전략을 일치시킨다.
-	const int spawned = SpawnMonsters(world, count, "crowd");
+	world.Init("waypoint"); // 프로덕션 기본 전략. ValidSpawns 좌표와 이동 전략을 일치시킨다.
+	const int spawned = SpawnMonsters(world, count, "waypoint");
 
 	for (auto _ : state)
 	{
@@ -197,6 +201,107 @@ static void BM_WorldTick(benchmark::State& state)
 BENCHMARK(BM_WorldTick)
 	->Arg(1)->Arg(64)->Arg(128)->Arg(256)->Arg(512)->Arg(1000)
 	->Unit(benchmark::kMicrosecond);
+
+// 수용량 탐색: "틱당 예산 안에 몇 마리까지 들어가는가".
+//  서버 시뮬레이션은 10Hz(GameServer::SIM_RATE)이므로 한 틱 예산은 100ms 다.
+//  budget_pct = 한 틱 소요 / 100ms. 이 값이 100% 를 넘는 지점이 수용 한계다.
+//  BM_WorldTick 과 동일하게 World::update(모든 맵 + 게임모드)를 잰다.
+static void BM_WorldTickCapacity(benchmark::State& state)
+{
+	const int count = static_cast<int>(state.range(0));
+	ValidSpawns("waypoint");
+
+	World world;
+	world.Init("waypoint");
+	const int spawned = SpawnMonsters(world, count, "waypoint");
+
+	using clock = std::chrono::steady_clock;
+	double totalNs = 0.0;
+	int64_t iters = 0;
+
+	for (auto _ : state)
+	{
+		const auto t0 = clock::now();
+		world.update(kTickDt);
+		const auto t1 = clock::now();
+		totalNs += std::chrono::duration<double, std::nano>(t1 - t0).count();
+		++iters;
+	}
+
+	constexpr double kTickBudgetMs = 100.0; // 10Hz(SIM_RATE) 한 틱 예산
+	const double tickMs = (iters > 0) ? (totalNs / static_cast<double>(iters) / 1e6) : 0.0;
+
+	state.counters["monsters"] = spawned;
+	state.counters["tick_ms"] = tickMs;
+	state.counters["budget_pct"] = tickMs / kTickBudgetMs * 100.0; // 100 을 넘으면 수용 한계 초과
+	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
+}
+BENCHMARK(BM_WorldTickCapacity)
+	->Arg(10000)->Arg(16000)->Arg(20000)->Arg(24000)->Arg(28000)->Arg(32000)->Arg(40000)->Arg(60000)
+	->Unit(benchmark::kMillisecond)
+	->MinTime(1.0);
+
+// 수용량(교전 포함): 플레이어가 있는 상태의 틱 비용.
+//  몬스터만 있는 BM_WorldTickCapacity 는 전원이 배회 상태라 탐지가 즉시 실패하고 경로 재계산도 없다.
+//  실제로는 플레이어 근처 몬스터가 교전에 들어가면서 매 틱 탐지 성공 + ActionChase 의
+//  SetMoveTarget(경로 재계산) + 사거리 판정 raycast 를 돈다. 그 차이를 보기 위한 벤치다.
+//  플레이어는 스폰 좌표를 넓게 훑어 배치해 여러 지점에서 동시에 교전이 일어나게 한다.
+static void BM_WorldTickCapacityEngaged(benchmark::State& state)
+{
+	const int count = static_cast<int>(state.range(0));
+	const int playerCount = static_cast<int>(state.range(1));
+	const auto& spawns = ValidSpawns("waypoint");
+
+	World world;
+	world.Init("waypoint");
+	const int spawned = SpawnMonsters(world, count, "waypoint");
+
+	// 캐릭터를 스폰 좌표에 고르게 흩뿌린다(몬스터와 같은 좌표 집합).
+	std::vector<std::shared_ptr<Player>> players;
+	int placed = 0;
+	if (!spawns.empty() && playerCount > 0)
+	{
+		const size_t stride = std::max<size_t>(1, spawns.size() / static_cast<size_t>(playerCount));
+		for (int i = 0; i < playerCount; ++i)
+		{
+			const auto& c = spawns[(i * stride) % spawns.size()];
+			syncnet::Vec3 v(c[0], c[1], c[2]);
+			auto player = std::make_shared<Player>();
+			if (world.OnAddAgent(player, syncnet::GameObjectType_Character, &v))
+			{
+				players.push_back(player);
+				++placed;
+			}
+		}
+	}
+
+	using clock = std::chrono::steady_clock;
+	double totalNs = 0.0;
+	int64_t iters = 0;
+
+	for (auto _ : state)
+	{
+		const auto t0 = clock::now();
+		world.update(kTickDt);
+		const auto t1 = clock::now();
+		totalNs += std::chrono::duration<double, std::nano>(t1 - t0).count();
+		++iters;
+	}
+
+	constexpr double kTickBudgetMs = 100.0;
+	const double tickMs = (iters > 0) ? (totalNs / static_cast<double>(iters) / 1e6) : 0.0;
+
+	state.counters["monsters"] = spawned;
+	state.counters["players"] = placed;
+	state.counters["tick_ms"] = tickMs;
+	state.counters["budget_pct"] = tickMs / kTickBudgetMs * 100.0;
+	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
+}
+BENCHMARK(BM_WorldTickCapacityEngaged)
+	->Args({ 10000, 50 })->Args({ 20000, 50 })->Args({ 28000, 50 })->Args({ 30000, 50 })
+	->Args({ 32000, 50 })->Args({ 40000, 50 })
+	->Unit(benchmark::kMillisecond)
+	->MinTime(1.0);
 
 // 대규모: 몬스터 10000마리가 살아있는 월드의 update(dt) 평균 소요 시간.
 //  - 스폰(셋업)은 타이밍에서 제외된다(반복마다 1회).
@@ -284,11 +389,18 @@ static void BM_WorldTickPhases(benchmark::State& state, const char* movement)
 	state.counters["monsters"]    = spawned;
 	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
 }
-BENCHMARK_CAPTURE(BM_WorldTickPhases, crowd, "crowd")
-	->Arg(10000)
-	->Unit(benchmark::kMillisecond)
-	->MinTime(3.0);
+// Arg(1) 은 몬스터 수와 무관한 '고정비'를 드러낸다(이동 시뮬/ECS 순회/스냅샷 생성).
+// BM_WorldTick/1 은 World::update 라 모든 맵을 돌지만 여기는 primary 맵 하나만 돈다.
+// 두 값의 차이가 곧 '살아있지만 비어 있는 나머지 맵들'의 비용이다.
+// waypoint 가 프로덕션 기본 전략이므로 스케일 전체를 재고, crowd 는 비교용으로 10000만 잰다.
 BENCHMARK_CAPTURE(BM_WorldTickPhases, waypoint, "waypoint")
+	->Arg(1)
+	->Arg(1000)
+	->Arg(10000)
+	->Arg(24000) // 10Hz 수용 한계 부근 — 어느 단계가 먼저 무너지는지 본다
+	->Unit(benchmark::kMillisecond)
+	->MinTime(1.0);
+BENCHMARK_CAPTURE(BM_WorldTickPhases, crowd, "crowd")
 	->Arg(10000)
 	->Unit(benchmark::kMillisecond)
 	->MinTime(3.0);
@@ -315,7 +427,7 @@ static void BM_DetectEnemyOnly(benchmark::State& state, const char* movement)
 	state.counters["monsters"] = spawned;
 	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
 }
-BENCHMARK_CAPTURE(BM_DetectEnemyOnly, crowd, "crowd")
+BENCHMARK_CAPTURE(BM_DetectEnemyOnly, waypoint, "waypoint")
 	->Arg(10000)
 	->Unit(benchmark::kMillisecond)
 	->MinTime(3.0);
@@ -545,7 +657,7 @@ BENCHMARK(BM_BTFrameworkTick_CodeBase);
 // (Monster::Init 이 실제로 지불하는 비용). 인하우스는 빌더로 노드를 직접 생성한다.
 static void BM_BTCreate(benchmark::State& state, Monster::BTBackend backend)
 {
-	const auto& spawns = ValidSpawns("crowd");
+	const auto& spawns = ValidSpawns("waypoint");
 	if (spawns.empty())
 	{
 		state.SkipWithError("no valid spawn position");
@@ -553,7 +665,7 @@ static void BM_BTCreate(benchmark::State& state, Monster::BTBackend backend)
 	}
 
 	World world;
-	world.Init("crowd");
+	world.Init("waypoint");
 	syncnet::Vec3 v(spawns[0][0], spawns[0][1], spawns[0][2]);
 	auto actor = world.OnAddAgent(nullptr, syncnet::GameObjectType_Monster, &v);
 	Monster* monster = static_cast<Monster*>(actor.get());
@@ -589,19 +701,22 @@ BENCHMARK_CAPTURE(BM_BTCreate, codebase, Monster::BTBackend::CodeBase)
 static void BM_BTWorldTickActors(benchmark::State& state, Monster::BTBackend backend)
 {
 	const int count = static_cast<int>(state.range(0));
-	ValidSpawns("crowd"); // 1회성 좌표 탐색을 셋업에서 먼저 끝낸다.
+	ValidSpawns("waypoint"); // 1회성 좌표 탐색을 셋업에서 먼저 끝낸다.
+
+	// 백엔드는 스폰 시점에 트리를 결정하므로 반드시 스폰 전에 설정한다.
+	const Monster::BTBackend previous = Monster::btBackend_;
+	Monster::btBackend_ = backend;
 
 	World world;
-	world.Init("crowd");
-	const int spawned = SpawnMonsters(world, count, "crowd");
+	world.Init("waypoint");
+	const int spawned = SpawnMonsters(world, count, "waypoint");
 	Map* map = world.GetPrimaryMap();
 
-	Monster::btBackend_ = backend;
 	for (auto _ : state)
 	{
 		map->UpdateActors(kTickDt);
 	}
-	Monster::btBackend_ = Monster::BTBackend::BTCpp; // 기본값 복원.
+	Monster::btBackend_ = previous; // 기본값 복원.
 
 	state.counters["monsters"] = spawned;
 	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));

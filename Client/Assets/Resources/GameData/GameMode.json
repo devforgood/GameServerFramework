@@ -34,7 +34,7 @@
     "category": "instance",
     "type": "raid",
     "script": "gamemode_raid.lua",
-    "movement": "crowd",
+    "movement": "waypoint",
     "rules": {
       "time_limit": 1800,
       "has_time_limit": true,

@@ -23,7 +23,10 @@
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
 
-Monster::BTBackend Monster::btBackend_ = Monster::BTBackend::BTCpp;
+// 기본 백엔드는 인하우스 BT 다. 두 트리는 같은 로직을 수행하지만 틱 비용이 크게 다르다
+// (10,000마리 UpdateActors 기준 behaviortree_cpp 50ms vs 인하우스 12ms — Benchmark/PERFORMANCE.md).
+// behaviortree_cpp 로 되돌리면 BT 디버그 뷰어(BTDebugManager)를 쓸 수 있다.
+Monster::BTBackend Monster::btBackend_ = Monster::BTBackend::CodeBase;
 
 
 Monster::Monster(Map* map)
@@ -75,9 +78,6 @@ bool Monster::Init(Vector3& pos)
 	entityManager.GetComponent<engine::StateComponent>(entityId_).ActorID = actorId_;
 
 
-	bt_ = MonsterCodeBaseBT::createTree(this);
-
-
 	if (map_ != nullptr) {
 		// 스폰 위치는 네비메시에 스냅된 현재 위치를 기준으로 삼는다(patrol 의 중심점).
 		dtVcopy(spawnPos_, map_->GetNavMap()->GetPos(actorId_));
@@ -85,12 +85,20 @@ bool Monster::Init(Vector3& pos)
 
 	name_ = "Monster:" + std::to_string(actorId_);
 
-
-
-	tree_ = MonsterBT::createTree(this);
+	// 실제로 틱할 트리 하나만 만든다. 예전에는 둘 다 만들어 두고 하나만 틱했는데,
+	// 스폰마다 Monster.xml 을 읽어 파싱하는 비용(behaviortree_cpp)을 쓰지도 않는 트리에 지불했다.
+	// 백엔드는 스폰 시점에 고정되므로, 바꾸려면 몬스터 생성 전에 btBackend_ 를 설정해야 한다.
+	if (btBackend_ == BTBackend::CodeBase)
+	{
+		bt_ = MonsterCodeBaseBT::createTree(this);
+	}
+	else
+	{
+		tree_ = MonsterBT::createTree(this);
 #if defined(ENABLE_BT_DEBUG)
-	BTDebugManager::Instance().PublishTreeDefinition(this);
+		BTDebugManager::Instance().PublishTreeDefinition(this);
 #endif
+	}
 	return true;
 }
 
@@ -99,12 +107,12 @@ void Monster::Update(float dt)
 	Actor::Update(dt);
 	skillSet_.Update(this, dt); // 스킬 쿨다운/페이즈 진행
 	//runBehaviorTree(this);
-	if (btBackend_ == BTBackend::CodeBase)
+	if (bt_ != nullptr)
 	{
-		// 인하우스 BT(BT 디버그 뷰어 미지원). 벤치마크 비교용 경로.
+		// 인하우스 BT(기본). 틱 비용이 낮은 대신 BT 디버그 뷰어를 지원하지 않는다.
 		bt_->Tick();
 	}
-	else
+	else if (tree_ != nullptr)
 	{
 		BT_DEBUG_BEGIN_TICK(this);
 		tree_->tickOnce();
