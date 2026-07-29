@@ -150,6 +150,7 @@
     <ClCompile Include="ECSBenchmark.cpp" />
     <ClCompile Include="EventBrokerBenchmark.cpp" />
     <ClCompile Include="GameObjectAllocBenchmark.cpp" />
+    <ClCompile Include="GridBenchmark.cpp" />
     <ClCompile Include="WorldBenchmark.cpp" />
   </ItemGroup>
   <ItemGroup>

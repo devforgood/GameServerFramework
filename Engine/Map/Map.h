@@ -104,6 +104,10 @@ public:
 	// BehaviorTree tick 안에서 적 탐지(그리드 쿼리)가 차지하는 비용을 격리 측정하기 위한 훅.
 	int ProfileDetectEnemyAll();
 
+	// 프로파일링용: 모든 액터의 ActorInfo 를 1회씩 직렬화하고 만들어진 개수를 반환한다.
+	// systems 단계(SyncActorState)가 액터마다 지불하는 flatbuffer 직렬화 비용을 격리 측정한다.
+	int ProfileSerializeAll();
+
 	World* world() { return world_; }
 	INavMovement* GetNavMap() { return movement_; }
 

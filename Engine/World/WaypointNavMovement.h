@@ -26,7 +26,16 @@ class WaypointNavMovement : public INavMovement
 		std::vector<float> corners;   // 직선 경로 점들(평탄화된 x,y,z).
 		int cornerCount = 0;
 		int nextCorner = 0;           // 다음에 향할 웨이포인트 인덱스.
+
+		float pathTarget[3] = { 0, 0, 0 }; // 마지막으로 경로를 산출한 목표 지점.
+		bool hasPathTarget = false;
 	};
+
+	// 목표가 이 거리 안에서만 움직였고 기존 경로가 남아 있으면 경로를 다시 내지 않는다.
+	// 추격(ActionChase)은 매 틱 SetMoveTarget 을 부르는데, 경로 산출은 한 번에 약 4us 로
+	// 틱 안의 다른 작업보다 10~100배 비싸다(Benchmark/PERFORMANCE.md).
+	// 몬스터 공격 사거리(3)보다 작게 잡아, 경로가 조금 낡아도 사거리 판정에는 영향이 없게 한다.
+	static constexpr float kRepathDistance = 1.5f;
 
 	NavMesh* nav_;                    // 공유 네비메시(소유권 없음).
 	std::vector<Agent> agents_;
@@ -35,6 +44,7 @@ class WaypointNavMovement : public INavMovement
 	float randomRadius_;              // patrol 임의 지점 탐색 반경.
 
 	bool computePath(Agent& a, const float* targetPos);
+	bool CanReusePath(const Agent& a, const float* target) const;
 
 public:
 	explicit WaypointNavMovement(NavMesh* nav);

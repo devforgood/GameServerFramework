@@ -175,20 +175,46 @@ bool WaypointNavMovement::TeleportAgent(int id, const float* pos)
 	return true;
 }
 
+// 목표가 거의 그대로면 기존 경로를 재사용한다.
+// 추격은 매 틱 같은 대상을 다시 지정하는데, 그때마다 경로를 새로 내면 틱 비용이 폭증한다.
+// 경로가 남아 있고(도착 전) 목표 이동이 kRepathDistance 미만이면 산출을 건너뛴다.
+bool WaypointNavMovement::CanReusePath(const Agent& a, const float* target) const
+{
+	if (!a.hasPathTarget || a.nextCorner >= a.cornerCount)
+		return false; // 경로가 없거나 이미 끝까지 갔다 — 다시 내야 한다.
+
+	return dtVdist2DSqr(target, a.pathTarget) < kRepathDistance * kRepathDistance;
+}
+
 void WaypointNavMovement::SetMoveTarget(int id, const float* p, bool /*adjust*/)
 {
 	if (id != -1)
 	{
 		if (id < 0 || id >= (int)agents_.size() || !agents_[id].active)
 			return;
-		computePath(agents_[id], p);
+
+		Agent& a = agents_[id];
+		if (CanReusePath(a, p))
+			return;
+
+		if (computePath(a, p))
+		{
+			dtVcopy(a.pathTarget, p);
+			a.hasPathTarget = true;
+		}
 	}
 	else
 	{
 		for (auto& a : agents_)
 		{
-			if (a.active)
-				computePath(a, p);
+			if (!a.active || CanReusePath(a, p))
+				continue;
+
+			if (computePath(a, p))
+			{
+				dtVcopy(a.pathTarget, p);
+				a.hasPathTarget = true;
+			}
 		}
 	}
 }
@@ -231,7 +257,16 @@ bool WaypointNavMovement::Patrol(int id, const float* originPos, float radius, f
 	{
 		if (outDest)
 			dtVcopy(outDest, epos);
-		return computePath(agents_[id], epos);
+
+		Agent& a = agents_[id];
+		if (!computePath(a, epos))
+			return false;
+
+		// 배회 목적지도 경로 목표로 기록해 둔다. 이후 추격(SetMoveTarget)이 들어오면
+		// 목표가 달라졌으므로 재사용 검사에서 걸러져 정상적으로 새 경로가 나온다.
+		dtVcopy(a.pathTarget, epos);
+		a.hasPathTarget = true;
+		return true;
 	}
 
 	return false;

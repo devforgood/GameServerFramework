@@ -30,6 +30,8 @@
 #include "Map.h"
 #include "Actor.h"
 #include "Player.h"
+#include "INavMovement.h"
+#include "DetourCommon.h"
 #include <algorithm>
 #include "ResourceLoader.h"
 #include "syncnet_generated.h"
@@ -427,6 +429,131 @@ static void BM_DetectEnemyOnly(benchmark::State& state, const char* movement)
 	state.counters["monsters"] = spawned;
 	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
 }
+// 이동 명령 1회 = 경로 산출 비용(dtNavMeshQuery findPath + findStraightPath).
+//  ActionPatrol 은 목적지 도달/휴식 종료 때마다, ActionChase 는 교전 중 매 틱 이 비용을 낸다.
+//  mode: 0 = Patrol(임의 지점 탐색 + 경로), 1 = SetMoveTarget(지정 지점 경로), 2 = Raycast(시야 판정).
+static void BM_NavPathIssue(benchmark::State& state, int mode)
+{
+	const int count = static_cast<int>(state.range(0));
+	ValidSpawns("waypoint");
+
+	World world;
+	world.Init("waypoint");
+	const int spawned = SpawnMonsters(world, count, "waypoint");
+	Map* map = world.GetPrimaryMap();
+	INavMovement* nav = map->GetNavMap();
+
+	// 목적지로 쓸 좌표 하나(첫 에이전트 위치).
+	float target[3] = { 0, 0, 0 };
+	if (const float* p = nav->GetPos(0))
+		dtVcopy(target, p);
+
+	int id = 0;
+	for (auto _ : state)
+	{
+		const float* origin = nav->GetPos(id);
+		if (origin != nullptr)
+		{
+			if (mode == 0)
+			{
+				float dest[3];
+				nav->Patrol(id, origin, 40.0f, dest);
+				benchmark::DoNotOptimize(dest);
+			}
+			else if (mode == 1)
+			{
+				nav->SetMoveTarget(id, target, false);
+			}
+			else
+			{
+				// 시야 판정: DetectEnemy 가 후보 캐릭터마다, AttackRange 가 사거리 안에서 부른다.
+				float hit[3];
+				benchmark::DoNotOptimize(nav->Raycast(id, target, hit));
+			}
+		}
+		id = (id + 1) % (spawned > 0 ? spawned : 1);
+	}
+	state.counters["monsters"] = spawned;
+}
+BENCHMARK_CAPTURE(BM_NavPathIssue, patrol, 0)->Arg(10000)->Unit(benchmark::kMicrosecond);
+BENCHMARK_CAPTURE(BM_NavPathIssue, move_target, 1)->Arg(10000)->Unit(benchmark::kMicrosecond);
+BENCHMARK_CAPTURE(BM_NavPathIssue, raycast, 2)->Arg(10000)->Unit(benchmark::kMicrosecond);
+
+// 적 탐지 비용을 '캐릭터가 있을 때' 로 다시 잰다.
+//  BM_DetectEnemyOnly 는 캐릭터가 0명이라 그리드 스캔만 돌고 끝난다. 실제로는 후보 캐릭터마다
+//  navmesh Raycast(시야 판정)가 붙으므로, 플레이어가 있으면 탐지 단가 자체가 달라진다.
+static void BM_DetectEnemyWithPlayers(benchmark::State& state)
+{
+	const int count = static_cast<int>(state.range(0));
+	const int playerCount = static_cast<int>(state.range(1));
+	const auto& spawns = ValidSpawns("waypoint");
+
+	World world;
+	world.Init("waypoint");
+	const int spawned = SpawnMonsters(world, count, "waypoint");
+	Map* map = world.GetPrimaryMap();
+
+	std::vector<std::shared_ptr<Player>> players;
+	int placed = 0;
+	if (!spawns.empty() && playerCount > 0)
+	{
+		const size_t stride = std::max<size_t>(1, spawns.size() / static_cast<size_t>(playerCount));
+		for (int i = 0; i < playerCount; ++i)
+		{
+			const auto& c = spawns[(i * stride) % spawns.size()];
+			syncnet::Vec3 v(c[0], c[1], c[2]);
+			auto player = std::make_shared<Player>();
+			if (world.OnAddAgent(player, syncnet::GameObjectType_Character, &v))
+			{
+				players.push_back(player);
+				++placed;
+			}
+		}
+	}
+
+	long long found = 0;
+	for (auto _ : state)
+	{
+		found += map->ProfileDetectEnemyAll();
+		benchmark::DoNotOptimize(found);
+	}
+	state.counters["monsters"] = spawned;
+	state.counters["players"] = placed;
+	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
+}
+BENCHMARK(BM_DetectEnemyWithPlayers)
+	->Args({ 10000, 0 })->Args({ 10000, 50 })
+	->Unit(benchmark::kMillisecond)
+	->MinTime(1.0);
+
+// systems 단계 안에서 ActorInfo 직렬화(flatbuffer)만 격리 측정.
+//  Time 열 = 10000마리 전원을 1회 직렬화하는 비용 = 한 틱 분량(모두 움직였다고 가정).
+//  이 값이 BM_WorldTickPhases 의 systems_us 에서 큰 비중이면, 관전자가 없을 때
+//  직렬화를 건너뛰는 것만으로 그만큼이 사라진다.
+static void BM_SerializeActorsOnly(benchmark::State& state)
+{
+	const int count = static_cast<int>(state.range(0));
+	ValidSpawns("waypoint");
+
+	World world;
+	world.Init("waypoint");
+	const int spawned = SpawnMonsters(world, count, "waypoint");
+	Map* map = world.GetPrimaryMap();
+
+	long long serialized = 0;
+	for (auto _ : state)
+	{
+		serialized += map->ProfileSerializeAll();
+		benchmark::DoNotOptimize(serialized);
+	}
+	state.counters["monsters"] = spawned;
+	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
+}
+BENCHMARK(BM_SerializeActorsOnly)
+	->Arg(10000)->Arg(40000)
+	->Unit(benchmark::kMicrosecond)
+	->MinTime(1.0);
+
 BENCHMARK_CAPTURE(BM_DetectEnemyOnly, waypoint, "waypoint")
 	->Arg(10000)
 	->Unit(benchmark::kMillisecond)

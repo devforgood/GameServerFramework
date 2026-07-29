@@ -289,6 +289,21 @@ int Map::ProfileDetectEnemyAll()
 	return found;
 }
 
+// 프로파일링용: SyncActorState 가 액터마다 부르는 GetActorInfo(직렬화)만 격리해 돌린다.
+// 실제 전송은 하지 않고, 만든 오프셋은 버린다(빌더는 다음 SendWorldState 가 리셋한다).
+int Map::ProfileSerializeAll()
+{
+	int count = 0;
+	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
+	{
+		Actor* actor = itr->get();
+		auto offset = actor->GetActorInfo(*sendMessageBuilder_, actor->GetChangedFlag());
+		(void)offset;
+		++count;
+	}
+	return count;
+}
+
 void Map::SendWorldState()
 {
 	auto agents = sendMessageBuilder_->CreateVector(actorPendingUpdates_);
