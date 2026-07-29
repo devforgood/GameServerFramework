@@ -148,7 +148,10 @@ void Map::SyncActorState(engine::StateComponent& state, engine::PositionComponen
 		gridManager_->move(actor, npos[0], npos[2]);
 	}
 
-	actorPendingUpdates_.push_back(actor->GetActorInfo(*sendMessageBuilder_, actor->GetChangedFlag()));
+	// 볼 사람이 없으면 스냅샷을 만들 이유가 없다. 위치/그리드 갱신은 그대로 하되 직렬화만 건너뛴다.
+	// (몬스터만 도는 맵에서 액터마다 매 틱 flatbuffer 를 만들던 비용이 사라진다.)
+	if (!players_.empty())
+		actorPendingUpdates_.push_back(actor->GetActorInfo(*sendMessageBuilder_, actor->GetChangedFlag()));
 
 	actor->ResetChangedFlag();
 }
@@ -306,6 +309,18 @@ int Map::ProfileSerializeAll()
 
 void Map::SendWorldState()
 {
+	// 관전자가 없으면 만들 것도 보낼 것도 없다. 제거 대기 액터 정리는 그대로 수행한다.
+	if (players_.empty())
+	{
+		this->raycasts_.clear();
+		for (auto& agent_id : removedAgents_)
+			OnRemoveAgent(agent_id);
+
+		actorPendingUpdates_.clear();
+		removedAgents_.clear();
+		return;
+	}
+
 	auto agents = sendMessageBuilder_->CreateVector(actorPendingUpdates_);
 
 	// ----------------------------

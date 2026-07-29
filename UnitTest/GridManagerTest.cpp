@@ -10,6 +10,7 @@ private:
     int agentId;
     float x, y;
     int gridX, gridY;
+    int gridSlot = -1;
     bool isCharacterType;
     int lastAttackerActorId = -1;
 
@@ -27,6 +28,8 @@ public:
     virtual int GetGridY() const override { return gridY; }
     virtual float GetVector2X() const override { return x; }
     virtual float GetVector2Y() const override { return y; }
+    virtual void SetGridSlot(int slot) override { gridSlot = slot; }
+    virtual int GetGridSlot() const override { return gridSlot; }
     virtual int GetActorId() const override { return agentId; }
 	virtual void DecrementHealth(int amount) override {}
     virtual void SetLastAttacker(int attacker_actor_id) override { lastAttackerActorId = attacker_actor_id; }

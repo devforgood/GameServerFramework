@@ -40,9 +40,12 @@ public:
     std::vector<IGridActor*> getEntitiesInAoEMask(float x, float y, float range, float dirDeg);
     std::vector<IGridActor*> getEntitiesInAoEMask(float x, float y, float range, float dirDeg, float angle);
 
+    // 셀 내용은 vector 로 담는다. unordered_set 은 원소마다 노드를 할당/해제해서
+    // 셀 이동(leave+enter)이 셀 내 이동보다 13배 비쌌고, 순회도 포인터 추적이라 캐시에 불리했다.
+    // 제거는 마지막 원소와 swap 후 pop 이라 O(1) 이며, 각 액터는 자신의 인덱스를 GridSlot 으로 들고 있다.
     struct Cell {
-        std::unordered_set<IGridActor*> characters;
-        std::unordered_set<IGridActor*> monsters;
+        std::vector<IGridActor*> characters;
+        std::vector<IGridActor*> monsters;
     };
 
     class IGrid
@@ -59,6 +62,11 @@ private:
 
 
     IGrid* grid_;
+
+    // 맵 전체의 캐릭터 목록. 적 탐지는 캐릭터만 찾는데, 셀 스캔은 캐릭터가 하나도 없어도
+    // 시야 반경의 모든 셀(예: 반경 10/셀 2 → 121칸)을 방문한다. 캐릭터 수가 그보다 적으면
+    // 이 목록을 직접 훑는 편이 싸다(getCharactersInViewRange 가 둘 중 싼 쪽을 고른다).
+    std::vector<IGridActor*> characters_;
 
     std::pair<int, int> getCellCoord(float x, float y);
     void enterCell(IGridActor* actor, int x, int y);

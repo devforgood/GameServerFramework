@@ -89,9 +89,11 @@ public:
 		return gridX; 
 	}
 	virtual int GetGridY() const
-		{ 
-		return gridY; 
+		{
+		return gridY;
 	}
+	virtual void SetGridSlot(int slot) override { gridSlot = slot; }
+	virtual int GetGridSlot() const override { return gridSlot; }
 	virtual float GetVector2X() const
 	{
 		return GetVecter2X();
@@ -222,6 +224,7 @@ public:
 public:
 	int gridX = -1;
 	int gridY = -1;
+	int gridSlot = -1; // 소속 셀 vector 안의 인덱스(GridManager 전용)
 	float speed = 0.0f;
 };
 

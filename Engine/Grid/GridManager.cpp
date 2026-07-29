@@ -164,20 +164,27 @@ void GridManager::enterCell(IGridActor* actor, int x, int y) {
     if (x < 0 || x >= grid_->getWidth() || y < 0 || y >= grid_->getHeight()) return;
 
     auto& cell = grid_->get(x, y);
-    if (actor->IsCharacter())
-        cell.characters.insert(actor);
-    else
-        cell.monsters.insert(actor);
+    auto& bucket = actor->IsCharacter() ? cell.characters : cell.monsters;
+    actor->SetGridSlot(static_cast<int>(bucket.size()));
+    bucket.push_back(actor);
 }
 
+// 마지막 원소를 빈 자리로 옮기고 pop 한다(O(1)). 옮겨온 원소의 슬롯 인덱스도 갱신한다.
 void GridManager::leaveCell(IGridActor* actor, int x, int y) {
     if (x < 0 || x >= grid_->getWidth() || y < 0 || y >= grid_->getHeight()) return;
 
-    auto& cell =  grid_->get(x, y);;
-    if (actor->IsCharacter())
-        cell.characters.erase(actor);
-    else
-        cell.monsters.erase(actor);
+    auto& cell = grid_->get(x, y);
+    auto& bucket = actor->IsCharacter() ? cell.characters : cell.monsters;
+
+    const int slot = actor->GetGridSlot();
+    if (slot < 0 || slot >= static_cast<int>(bucket.size()) || bucket[slot] != actor)
+        return; // 등록된 적 없거나 이미 빠진 액터.
+
+    IGridActor* moved = bucket.back();
+    bucket[slot] = moved;
+    moved->SetGridSlot(slot);
+    bucket.pop_back();
+    actor->SetGridSlot(-1);
 }
 
 void GridManager::add(IGridActor* actor) {
@@ -185,6 +192,9 @@ void GridManager::add(IGridActor* actor) {
     actor->SetGridX(cx);
     actor->SetGridY(cy);
     enterCell(actor, cx, cy);
+
+    if (actor->IsCharacter())
+        characters_.push_back(actor);
 }
 
 void GridManager::move(IGridActor* actor, float newX, float newY) {
@@ -199,6 +209,16 @@ void GridManager::move(IGridActor* actor, float newX, float newY) {
 
 void GridManager::remove(IGridActor* actor) {
     leaveCell(actor, actor->GetGridX(), actor->GetGridY());
+
+    if (actor->IsCharacter()) {
+        for (size_t i = 0; i < characters_.size(); ++i) {
+            if (characters_[i] == actor) {
+                characters_[i] = characters_.back();
+                characters_.pop_back();
+                break;
+            }
+        }
+    }
 }
 
 std::vector<IGridActor*> GridManager::getEntitiesInViewRange(IGridActor* viewer, float range) {
@@ -230,6 +250,20 @@ void GridManager::getCharactersInViewRange(IGridActor* viewer, float range, std:
     auto [cx, cy] = getCellCoord(vx, vy);
     const int cells = static_cast<int>(std::ceil(range / grid_->getCellSize()));
     const float rangeSq = range * range;
+
+    // 셀 스캔은 캐릭터가 하나도 없어도 (2*cells+1)^2 칸을 방문한다(반경 10/셀 2 → 121칸).
+    // 맵 전체 캐릭터 수가 그보다 적으면 목록을 직접 훑는 편이 싸다 — 결과는 동일하다.
+    const size_t cellsToScan = static_cast<size_t>(2 * cells + 1) * static_cast<size_t>(2 * cells + 1);
+    if (characters_.size() <= cellsToScan) {
+        for (auto* e : characters_) {
+            if (e == viewer) continue;
+            const float ex = e->GetVector2X() - vx;
+            const float ey = e->GetVector2Y() - vy;
+            if (ex * ex + ey * ey <= rangeSq)
+                out.push_back(e);
+        }
+        return;
+    }
 
     for (int dx = -cells; dx <= cells; ++dx) {
         for (int dy = -cells; dy <= cells; ++dy) {

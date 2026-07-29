@@ -35,6 +35,8 @@ namespace
 		int GetGridY() const override { return gridY_; }
 		float GetVector2X() const override { return x_; }
 		float GetVector2Y() const override { return y_; }
+		void SetGridSlot(int slot) override { gridSlot_ = slot; }
+		int GetGridSlot() const override { return gridSlot_; }
 		int GetActorId() const override { return id_; }
 		void DecrementHealth(int) override {}
 		void SetLastAttacker(int) override {}
@@ -46,6 +48,7 @@ namespace
 		float x_, y_;
 		bool isCharacter_;
 		int gridX_ = -1, gridY_ = -1;
+		int gridSlot_ = -1;
 	};
 
 	// 결정적 의사난수(런마다 같은 배치를 쓰기 위해 rand 대신 직접 굴린다).
