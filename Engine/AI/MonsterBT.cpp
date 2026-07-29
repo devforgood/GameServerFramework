@@ -31,20 +31,29 @@ public:
 
 	BT::NodeStatus tick() override
 	{
-		// 스태거링: 적 탐지 그리드 스캔은 비싸다(월드 업데이트 병목). 이미 교전 중(타겟 보유)이면
-		// 반응성을 위해 매 틱 재확인하지만, 배회 중(타겟 없음)에는 N틱마다 1회만 실제 스캔한다.
-		// actorId 로 위상을 분산해 같은 틱에 모든 몬스터가 몰리지 않게 한다.
-		const bool engaged = (monster_->targetAgentId_ >= 0);
-		if (!engaged)
+		// 교전 중(타겟 보유)에는 전체 재탐색 대신 그 대상이 아직 유효한지만 확인한다.
+		// 전체 스캔은 시야 반경의 모든 셀을 훑고 후보마다 시야 판정을 하지만, 검증은 대상 하나만 본다.
+		// (MonsterCodeBaseBT.cpp 의 Condition_DetectEnemy 와 동일 로직)
+		if (monster_->targetAgentId_ >= 0)
 		{
-			const unsigned int phase = static_cast<unsigned int>(monster_->GetActorId());
-			if (((phase + detectTick_++) % kDetectInterval) != 0)
+			if (monster_->GetMap()->IsTargetVisible(monster_, monster_->targetAgentId_))
 			{
-				// 이번 틱은 스캔 생략 → 배회 유지.
-				monster_->SetState(syncnet::AIState_Patrol);
-				BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionDetectEnemy, "ConditionDetectEnemy", BT::NodeStatus::FAILURE, "detect skipped (staggered)");
-				return BT::NodeStatus::FAILURE;
+				monster_->SetState(syncnet::AIState_Detect);
+				BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionDetectEnemy, "ConditionDetectEnemy", BT::NodeStatus::SUCCESS, "target still visible");
+				return BT::NodeStatus::SUCCESS;
 			}
+			monster_->targetAgentId_ = -1; // 놓쳤다 — 아래에서 새 대상을 찾는다.
+		}
+
+		// 스태거링: 적 탐지 그리드 스캔은 비싸다(월드 업데이트 병목). 배회 중에는 N틱마다 1회만
+		// 실제 스캔하고, actorId 로 위상을 분산해 같은 틱에 모든 몬스터가 몰리지 않게 한다.
+		const unsigned int phase = static_cast<unsigned int>(monster_->GetActorId());
+		if (((phase + detectTick_++) % kDetectInterval) != 0)
+		{
+			// 이번 틱은 스캔 생략 → 배회 유지.
+			monster_->SetState(syncnet::AIState_Patrol);
+			BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionDetectEnemy, "ConditionDetectEnemy", BT::NodeStatus::FAILURE, "detect skipped (staggered)");
+			return BT::NodeStatus::FAILURE;
 		}
 
 		monster_->targetAgentId_ = monster_->GetMap()->DetectEnemy(monster_);

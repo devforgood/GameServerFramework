@@ -120,6 +120,10 @@ public:
 	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
 	void OnSetRaycast(const syncnet::Vec3* pos);
 	int DetectEnemy(Actor* actor);
+
+	// 이미 잡은 대상이 아직 유효한지(살아있고, 시야 반경 안이고, 가려지지 않았는지) 확인한다.
+	// 교전 중에는 전체 재탐색 대신 이 검사만 돌려 탐지 비용을 줄인다.
+	bool IsTargetVisible(Actor* viewer, int targetActorId);
 	std::vector<IGridActor*> get_actors_in_range(Actor* actor, float range, float dirDeg, float angle);
 	// 캐스터가 아닌 임의의 지점(서버 좌표계 x,z) 중심의 원형 범위. 시전 지점에 떨어지는
 	// 광역기(메테오/블리자드 등, aoe_damage 효과)에 쓴다. get_actors_in_range 가 캐스터

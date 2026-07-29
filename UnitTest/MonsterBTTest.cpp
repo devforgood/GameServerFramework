@@ -151,6 +151,53 @@ TEST_P(MonsterBTTest, PatrolsWhenNoEnemyNearby)
 	EXPECT_EQ(monster->GetState(), syncnet::AIState_Patrol);
 }
 
+// 교전 중에는 전체 재탐색 대신 잡은 대상을 유지한다(대상이 유효한 동안 타깃이 흔들리지 않는다).
+TEST_P(MonsterBTTest, KeepsTargetWhileItStaysVisible)
+{
+	auto first = SpawnCharacter();
+	auto second = SpawnCharacter(0.0f, 1.0f); // 후보가 둘이어도 잡은 대상을 바꾸지 않는다
+	auto monster = SpawnMonster(1.0f, 0.0f);
+	ASSERT_NE(first, nullptr);
+	ASSERT_NE(second, nullptr);
+	ASSERT_NE(monster, nullptr);
+
+	for (int i = 0; i < 20; ++i)
+		map_->UpdateActors(kTickDt);
+
+	const int acquired = monster->targetAgentId_;
+	ASSERT_GE(acquired, 0) << "적을 탐지하지 못했습니다";
+
+	for (int i = 0; i < 20; ++i)
+		map_->UpdateActors(kTickDt);
+
+	EXPECT_EQ(monster->targetAgentId_, acquired) << "유효한 대상이 있는데 타깃이 바뀌었습니다";
+}
+
+// 잡은 대상이 시야 밖으로 벗어나면 놓치고(타깃 해제) 배회로 돌아간다.
+TEST_P(MonsterBTTest, DropsTargetWhenItLeavesViewRange)
+{
+	auto victim = SpawnCharacter();
+	auto monster = SpawnMonster(1.0f, 0.0f);
+	ASSERT_NE(victim, nullptr);
+	ASSERT_NE(monster, nullptr);
+
+	for (int i = 0; i < 20; ++i)
+		map_->UpdateActors(kTickDt);
+	ASSERT_EQ(monster->targetAgentId_, victim->GetActorId());
+
+	// 대상이 시야 반경(10) 밖으로 멀어진다.
+	const Vector3& here = victim->GetPosition();
+	victim->SetPosition(here.x + 50.0f, here.y, here.z + 50.0f);
+
+	// 재탐색은 스태거링(10틱)에 걸리므로 충분히 돌린다. 근처에 다른 캐릭터가 없으므로
+	// 결국 타깃이 없는 상태(배회)로 돌아간다.
+	for (int i = 0; i < 30; ++i)
+		map_->UpdateActors(kTickDt);
+
+	EXPECT_EQ(monster->targetAgentId_, -1) << "시야 밖 대상을 계속 타깃으로 잡고 있습니다";
+	EXPECT_EQ(monster->GetState(), syncnet::AIState_Patrol);
+}
+
 // 체력이 0 이하가 되면 사망 분기로 넘어간다(생존 조건 실패 → ActionDead).
 TEST_P(MonsterBTTest, SwitchesToDeadBranchWhenHealthDepleted)
 {

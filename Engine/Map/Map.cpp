@@ -428,6 +428,31 @@ void Map::OnSetRaycast(const syncnet::Vec3* pos)
 	}
 }
 
+// 이미 잡아 둔 대상이 아직 유효한지만 확인한다(교전 중 전체 재탐색 대체).
+// 전체 탐색은 시야 반경 안 모든 셀을 훑고 후보마다 시야 판정을 하지만, 여기서는
+// 대상 하나에 대해 거리 1회 + 시야 판정 1회로 끝난다(약 1/3 비용).
+bool Map::IsTargetVisible(Actor* viewer, int targetActorId)
+{
+	if (viewer == nullptr || targetActorId < 0)
+		return false;
+
+	// 판정 기준은 DetectEnemy 와 정확히 같아야 한다(맵에 존재 + 시야 반경 + 가림 없음).
+	// 여기서만 추가 조건(예: 사망 제외)을 걸면, 검증에서 놓친 대상을 바로 다음 전체 탐색이
+	// 다시 잡아 타깃이 매 틱 붙었다 떨어지는 진동이 생긴다.
+	auto target = FindActor(targetActorId);
+	if (target == nullptr)
+		return false;
+
+	const float dx = target->GetVector2X() - viewer->GetVector2X();
+	const float dy = target->GetVector2Y() - viewer->GetVector2Y();
+	if (dx * dx + dy * dy > g_fDistance * g_fDistance)
+		return false;
+
+	float hitPoint[3];
+	const float* targetPos = GetNavMap()->GetPos(targetActorId);
+	return GetNavMap()->Raycast(viewer->GetActorId(), targetPos, hitPoint) == false;
+}
+
 int Map::DetectEnemy(Actor* actor)
 {
 	float hitPoint[3];
