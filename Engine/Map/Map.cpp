@@ -71,6 +71,8 @@ bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 	gridManager_ = new GridManager(100, 100, 2);
 	sendMessageBuilder_ = std::make_shared<send_message>();
 
+	RefreshAoIMode(); // 맵 데이터의 aoi_radius 로 관심영역 사용 여부를 정한다
+
 	InitEcs();
 	return true;
 }
@@ -120,6 +122,266 @@ void Map::InitEcs()
 		});
 }
 
+// ── 관심영역(AoI) ── (설계 배경은 AOI_DESIGN.md)
+
+// 관심영역 반경. 0 이하면 AoI 를 쓰지 않고 맵 전체를 한 메시지로 브로드캐스트한다.
+//
+// AoI 는 CPU 를 대역폭과 맞바꾸는 기법이다. 플레이어마다 메시지를 따로 조립하므로
+// 시야가 겹치는 액터는 사람 수만큼 중복 직렬화된다. 맵이 시야 반경보다 크지 않으면
+// 어차피 모두가 모두를 보므로, 걸러지는 것 없이 중복 비용만 남는다(측정치는 PERFORMANCE.md).
+// 그래서 반경은 맵 크기에 맞춰 데이터로 정하고, 작은 맵은 0(브로드캐스트)으로 둔다.
+// AoI 상태는 쓰는 맵에서만 할당한다(Map 의 멤버 배치를 건드리지 않기 위해 별도 객체).
+struct Map::AoIState
+{
+	// 뷰어(플레이어)별 구독 상태.
+	struct Viewer
+	{
+		int cellX = 0;
+		int cellY = 0;
+		int cellRadius = 0;
+		bool subscribed = false;
+	};
+
+	// 한 틱 동안 그 플레이어에게 보낼 것들.
+	// enter 는 전체 스냅샷, update 는 변경분, leave 는 시야에서 빠진 agentId.
+	struct PendingView
+	{
+		std::vector<Actor*> enters;
+		std::vector<Actor*> updates;
+		std::vector<int> leaves;
+
+		bool empty() const { return enters.empty() && updates.empty() && leaves.empty(); }
+		void clear() { enters.clear(); updates.clear(); leaves.clear(); }
+	};
+
+	std::unordered_map<long, Viewer> viewers;
+	std::unordered_map<long, PendingView> pending;
+	std::vector<IGridActor*> scratch;   // 셀 순회용 임시 버퍼(호출당 힙 할당 방지)
+	float radiusOverride = 0.0f;        // 0 이하면 맵 데이터 값
+};
+
+float Map::AoIRadius() const
+{
+	if (aoi_ != nullptr && aoi_->radiusOverride > 0.0f)
+		return aoi_->radiusOverride;
+	if (mapData_ != nullptr)
+		return static_cast<float>(mapData_->aoi_radius);
+	return 0.0f;
+}
+
+// 반경/데이터가 바뀌면 켜짐 여부를 다시 계산한다. 매 액터마다 확인하지 않도록 bool 로 캐시한다.
+void Map::RefreshAoIMode()
+{
+	aoiEnabled_ = AoIRadius() > 0.0f;
+	if (aoiEnabled_ && aoi_ == nullptr)
+		aoi_ = std::make_unique<AoIState>();
+}
+
+void Map::SetAoIRadius(float radius)
+{
+	if (aoi_ == nullptr)
+		aoi_ = std::make_unique<AoIState>();
+	aoi_->radiusOverride = radius;
+	RefreshAoIMode();
+}
+
+bool Map::IsInViewOf(long playerId, int actorId)
+{
+	auto actor = FindActor(actorId);
+	if (actor == nullptr)
+		return false;
+
+	for (long viewerId : gridManager_->SubscribersOf(actor->GetGridX(), actor->GetGridY()))
+	{
+		if (viewerId == playerId)
+			return true;
+	}
+	return false;
+}
+
+// 캐릭터 주변 셀을 구독하고, 필요하면 그 안의 액터들을 enter 로 큐잉한다(입장 스냅샷).
+void Map::SubscribeViewer(long playerId, Actor* character, bool sendSnapshot)
+{
+	if (character == nullptr || aoi_ == nullptr)
+		return;
+
+	AoIState::Viewer& viewer = aoi_->viewers[playerId];
+	const auto [cellX, cellY] = gridManager_->CellOf(character->GetVecter2X(), character->GetVecter2Y());
+	const int radius = gridManager_->CellRadius(AoIRadius());
+
+	viewer.cellX = cellX;
+	viewer.cellY = cellY;
+	viewer.cellRadius = radius;
+	viewer.subscribed = true;
+
+	AoIState::PendingView& view = aoi_->pending[playerId];
+	for (int dx = -radius; dx <= radius; ++dx)
+	{
+		for (int dy = -radius; dy <= radius; ++dy)
+		{
+			const int cx = cellX + dx;
+			const int cy = cellY + dy;
+			gridManager_->Subscribe(cx, cy, playerId);
+
+			if (!sendSnapshot)
+				continue;
+
+			aoi_->scratch.clear();
+			gridManager_->CollectActorsInCell(cx, cy, aoi_->scratch);
+			for (IGridActor* entity : aoi_->scratch)
+				view.enters.push_back(static_cast<Actor*>(entity));
+		}
+	}
+}
+
+void Map::UnsubscribeViewer(long playerId)
+{
+	if (aoi_ == nullptr)
+		return;
+
+	auto itr = aoi_->viewers.find(playerId);
+	if (itr == aoi_->viewers.end())
+		return;
+
+	const AoIState::Viewer& viewer = itr->second;
+	if (viewer.subscribed)
+	{
+		for (int dx = -viewer.cellRadius; dx <= viewer.cellRadius; ++dx)
+			for (int dy = -viewer.cellRadius; dy <= viewer.cellRadius; ++dy)
+				gridManager_->Unsubscribe(viewer.cellX + dx, viewer.cellY + dy, playerId);
+	}
+
+	aoi_->viewers.erase(itr);
+	aoi_->pending.erase(playerId);
+}
+
+// 플레이어 캐릭터가 셀을 옮겼다. 새로 들어온 셀의 액터는 enter, 빠진 셀의 액터는 leave 다.
+void Map::OnViewerCellChanged(long playerId, Actor* character)
+{
+	auto itr = aoi_->viewers.find(playerId);
+	if (itr == aoi_->viewers.end() || !itr->second.subscribed)
+		return;
+
+	AoIState::Viewer& viewer = itr->second;
+	const auto [newX, newY] = gridManager_->CellOf(character->GetVecter2X(), character->GetVecter2Y());
+	if (newX == viewer.cellX && newY == viewer.cellY)
+		return;
+
+	const int radius = viewer.cellRadius;
+	const int oldX = viewer.cellX;
+	const int oldY = viewer.cellY;
+	AoIState::PendingView& view = aoi_->pending[playerId];
+
+	auto inRange = [radius](int cell, int center) { return cell >= center - radius && cell <= center + radius; };
+
+	// 빠진 셀: 구독 해제 + 그 안의 액터를 leave.
+	for (int cx = oldX - radius; cx <= oldX + radius; ++cx)
+	{
+		for (int cy = oldY - radius; cy <= oldY + radius; ++cy)
+		{
+			if (inRange(cx, newX) && inRange(cy, newY))
+				continue; // 새 범위에도 포함 — 유지
+
+			gridManager_->Unsubscribe(cx, cy, playerId);
+
+			aoi_->scratch.clear();
+			gridManager_->CollectActorsInCell(cx, cy, aoi_->scratch);
+			for (IGridActor* entity : aoi_->scratch)
+				view.leaves.push_back(entity->GetActorId());
+		}
+	}
+
+	// 새로 들어온 셀: 구독 + 그 안의 액터를 enter.
+	for (int cx = newX - radius; cx <= newX + radius; ++cx)
+	{
+		for (int cy = newY - radius; cy <= newY + radius; ++cy)
+		{
+			if (inRange(cx, oldX) && inRange(cy, oldY))
+				continue; // 이전 범위에도 있었음 — 이미 구독 중
+
+			gridManager_->Subscribe(cx, cy, playerId);
+
+			aoi_->scratch.clear();
+			gridManager_->CollectActorsInCell(cx, cy, aoi_->scratch);
+			for (IGridActor* entity : aoi_->scratch)
+				view.enters.push_back(static_cast<Actor*>(entity));
+		}
+	}
+
+	viewer.cellX = newX;
+	viewer.cellY = newY;
+}
+
+// 액터가 셀을 옮겼다. 옛 셀에만 있던 구독자에게는 leave, 새 셀에만 있는 구독자에게는 enter.
+void Map::OnActorCellChanged(Actor* actor, int oldCellX, int oldCellY, int newCellX, int newCellY)
+{
+	if (aoi_->viewers.empty())
+		return;
+
+	const std::vector<long>& before = gridManager_->SubscribersOf(oldCellX, oldCellY);
+	// 새 셀 구독자는 복사해 둔다(아래에서 before 를 순회하는 동안 참조가 살아 있어야 한다).
+	const std::vector<long> after = gridManager_->SubscribersOf(newCellX, newCellY);
+
+	auto contains = [](const std::vector<long>& list, long id) {
+		for (long v : list)
+			if (v == id) return true;
+		return false;
+	};
+
+	for (long viewerId : before)
+	{
+		if (!contains(after, viewerId))
+			aoi_->pending[viewerId].leaves.push_back(actor->GetActorId());
+	}
+
+	for (long viewerId : after)
+	{
+		if (!contains(before, viewerId))
+			aoi_->pending[viewerId].enters.push_back(actor);
+	}
+}
+
+// 변경된 액터를 그 액터가 있는 셀의 구독자에게만 큐잉한다.
+void Map::QueueUpdate(Actor* actor)
+{
+	const std::vector<long>& subscribers = gridManager_->SubscribersOf(actor->GetGridX(), actor->GetGridY());
+	for (long viewerId : subscribers)
+		aoi_->pending[viewerId].updates.push_back(actor);
+}
+
+// 플레이어마다 자기 시야 분량의 메시지를 조립해 보낸다. enter 는 전체 스냅샷, update 는 변경분만 담는다.
+void Map::SendPendingViews()
+{
+	if (aoi_ == nullptr)
+		return;
+
+	for (auto& [playerId, view] : aoi_->pending)
+	{
+		auto player = FindPlayer(playerId);
+		if (player == nullptr || view.empty())
+		{
+			view.clear();
+			continue;
+		}
+
+		auto builder = std::make_shared<send_message>();
+		std::vector<flatbuffers::Offset<syncnet::ActorInfo>> actors;
+		actors.reserve(view.enters.size() + view.updates.size());
+
+		for (Actor* actor : view.enters)
+			actors.push_back(actor->GetActorInfo(*builder, static_cast<long>(GameObjectChangeType::All)));
+		for (Actor* actor : view.updates)
+			actors.push_back(actor->GetActorInfo(*builder, actor->GetChangedFlag()));
+
+		auto notify = syncnet::CreateUpdateActorNotifyDirect(*builder, &actors, nullptr, &view.leaves);
+		auto msg = syncnet::CreateGameMessage(*builder, syncnet::GameMessages::GameMessages_UpdateActorNotify, notify.Union());
+		builder->Finish(msg);
+		player->Send(builder);
+
+		view.clear();
+	}
+}
+
 void Map::SyncActorState(engine::StateComponent& state, engine::PositionComponent& position)
 {
 	if (state.stateID == syncnet::AIState::AIState_Destroyed) {
@@ -142,16 +404,43 @@ void Map::SyncActorState(engine::StateComponent& state, engine::PositionComponen
 	}
 	auto actor = (Actor*)itr->second->get();
 
-	if (changed_position)
+	// AoI 를 쓰지 않는 맵에서는 아래 두 분기가 모두 예측 가능한 bool 검사 하나로 끝난다.
+	// (이 함수는 매 틱 액터마다 도는 가장 뜨거운 경로라, 여기에 조건이 붙으면 바로 비용이 된다.)
+	if (aoiEnabled_)
 	{
-		actor->SetPosition(npos[0], npos[1], npos[2]);
-		gridManager_->move(actor, npos[0], npos[2]);
-	}
+		const int oldCellX = actor->GetGridX();
+		const int oldCellY = actor->GetGridY();
 
-	// 볼 사람이 없으면 스냅샷을 만들 이유가 없다. 위치/그리드 갱신은 그대로 하되 직렬화만 건너뛴다.
-	// (몬스터만 도는 맵에서 액터마다 매 틱 flatbuffer 를 만들던 비용이 사라진다.)
-	if (!players_.empty())
-		actorPendingUpdates_.push_back(actor->GetActorInfo(*sendMessageBuilder_, actor->GetChangedFlag()));
+		if (changed_position)
+		{
+			actor->SetPosition(npos[0], npos[1], npos[2]);
+			gridManager_->move(actor, npos[0], npos[2]);
+
+			// 셀을 넘었으면 시야 진입/이탈이 생긴다. 플레이어 캐릭터면 자기 구독 범위도 함께 옮긴다.
+			if (actor->GetGridX() != oldCellX || actor->GetGridY() != oldCellY)
+			{
+				if (actor->IsCharacter())
+					OnViewerCellChanged(static_cast<Character*>(actor)->GetPlayerId(), actor);
+
+				OnActorCellChanged(actor, oldCellX, oldCellY, actor->GetGridX(), actor->GetGridY());
+			}
+		}
+
+		// 이 액터를 보고 있는 플레이어에게만 변경분을 큐잉한다(구독자 0이면 직렬화도 없다).
+		QueueUpdate(actor);
+	}
+	else
+	{
+		if (changed_position)
+		{
+			actor->SetPosition(npos[0], npos[1], npos[2]);
+			gridManager_->move(actor, npos[0], npos[2]);
+		}
+
+		// 브로드캐스트 모드: 한 번만 직렬화해 전원에게 같은 메시지를 보낸다.
+		if (!players_.empty())
+			actorPendingUpdates_.push_back(actor->GetActorInfo(*sendMessageBuilder_, actor->GetChangedFlag()));
+	}
 
 	actor->ResetChangedFlag();
 }
@@ -293,20 +582,22 @@ int Map::ProfileDetectEnemyAll()
 }
 
 // 프로파일링용: SyncActorState 가 액터마다 부르는 GetActorInfo(직렬화)만 격리해 돌린다.
-// 실제 전송은 하지 않고, 만든 오프셋은 버린다(빌더는 다음 SendWorldState 가 리셋한다).
+// 실제 전송은 하지 않고, 만든 오프셋과 빌더는 그대로 버린다.
 int Map::ProfileSerializeAll()
 {
+	auto builder = std::make_shared<send_message>();
 	int count = 0;
 	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
 	{
 		Actor* actor = itr->get();
-		auto offset = actor->GetActorInfo(*sendMessageBuilder_, actor->GetChangedFlag());
+		auto offset = actor->GetActorInfo(*builder, actor->GetChangedFlag());
 		(void)offset;
 		++count;
 	}
 	return count;
 }
 
+// 플레이어마다 자기 관심영역 분량의 메시지를 조립해 보낸다(맵 전체 브로드캐스트가 아니다).
 void Map::SendWorldState()
 {
 	// 관전자가 없으면 만들 것도 보낼 것도 없다. 제거 대기 액터 정리는 그대로 수행한다.
@@ -316,32 +607,22 @@ void Map::SendWorldState()
 		for (auto& agent_id : removedAgents_)
 			OnRemoveAgent(agent_id);
 
-		actorPendingUpdates_.clear();
+		if (aoi_ != nullptr)
+			aoi_->pending.clear();
 		removedAgents_.clear();
 		return;
 	}
 
-	auto agents = sendMessageBuilder_->CreateVector(actorPendingUpdates_);
-
-	// ----------------------------
-	flatbuffers::Offset<syncnet::DebugRaycast> debug_raycast;
-	std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> debug_raycast_vector;
-	for (int i = 0; i < this->raycasts_.size(); ++i)
+	if (AoIEnabled())
 	{
-		debug_raycast = syncnet::CreateDebugRaycast(*sendMessageBuilder_, 0, &this->raycasts_[i]);
-		debug_raycast_vector.push_back(debug_raycast);
+		SendPendingViews();
 	}
-	this->raycasts_.clear();
-	auto debug_raycasts = sendMessageBuilder_->CreateVector(debug_raycast_vector);
-	// ----------------------------
+	else
+	{
+		SendBroadcastState();
+	}
 
-	auto updateActorNotify = syncnet::CreateUpdateActorNotify(*sendMessageBuilder_, agents, debug_raycasts);
-
-	auto send_msg = syncnet::CreateGameMessage(*sendMessageBuilder_, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
-	sendMessageBuilder_->Finish(send_msg);
-
-	SendBroadcast(sendMessageBuilder_);
-
+	SendDebugRaycasts();
 	SendTreeDebugSync();
 
 	for (auto& agent_id : removedAgents_)
@@ -349,9 +630,44 @@ void Map::SendWorldState()
 		OnRemoveAgent(agent_id);
 	}
 
+	removedAgents_.clear();
+}
+
+// 브로드캐스트 모드: 이번 틱에 바뀐 액터를 한 메시지로 묶어 맵의 전원에게 보낸다.
+// 시야 반경이 맵 크기 이상이라 어차피 모두가 모두를 보는 맵에서는 이쪽이 싸다.
+void Map::SendBroadcastState()
+{
+	if (actorPendingUpdates_.empty())
+		return;
+
+	auto agents = sendMessageBuilder_->CreateVector(actorPendingUpdates_);
+	auto notify = syncnet::CreateUpdateActorNotify(*sendMessageBuilder_, agents, 0, 0);
+	auto msg = syncnet::CreateGameMessage(*sendMessageBuilder_, syncnet::GameMessages::GameMessages_UpdateActorNotify, notify.Union());
+	sendMessageBuilder_->Finish(msg);
+
+	SendBroadcast(sendMessageBuilder_);
+
 	sendMessageBuilder_ = std::make_shared<send_message>();
 	actorPendingUpdates_.clear();
-	removedAgents_.clear();
+}
+
+// 디버그 레이캐스트 표식은 관심영역과 무관한 개발 편의 기능이라 그대로 전원에게 보낸다.
+void Map::SendDebugRaycasts()
+{
+	if (raycasts_.empty())
+		return;
+
+	auto builder = std::make_shared<send_message>();
+	std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> debugs;
+	debugs.reserve(raycasts_.size());
+	for (size_t i = 0; i < raycasts_.size(); ++i)
+		debugs.push_back(syncnet::CreateDebugRaycast(*builder, 0, &raycasts_[i]));
+	raycasts_.clear();
+
+	auto notify = syncnet::CreateUpdateActorNotifyDirect(*builder, nullptr, &debugs, nullptr);
+	auto msg = syncnet::CreateGameMessage(*builder, syncnet::GameMessages::GameMessages_UpdateActorNotify, notify.Union());
+	builder->Finish(msg);
+	SendBroadcast(builder);
 }
 
 void Map::SendTreeDebugSync()
@@ -391,9 +707,14 @@ void Map::OnRemoveAgent(int agent_id)
 		return;
 	}
 
-	if (itr->second->get()->GetType() == syncnet::GameObjectType_Character)
+	Actor* removed = (Actor*)itr->second->get();
+
+	if (removed->GetType() == syncnet::GameObjectType_Character)
 	{
 		auto character = std::dynamic_pointer_cast<Character>(*itr->second);
+
+		// 이 캐릭터가 보던 관심영역 구독을 먼저 걷어낸다.
+		UnsubscribeViewer(character->GetPlayerId());
 
 		auto itr_player = players_.find(character->GetPlayerId());
 		if (itr_player != players_.end())
@@ -402,7 +723,15 @@ void Map::OnRemoveAgent(int agent_id)
 		}
 	}
 
-	gridManager_->remove((Actor*)itr->second->get());
+	// 사라지는 액터는 그 자리를 보고 있던 플레이어들의 시야에서도 빠진다.
+	// (사망 연출은 이미 상태 동기화로 전달됐고, 여기 leave 는 목록에서 지우라는 뜻이다.)
+	if (AoIEnabled())
+	{
+		for (long viewerId : gridManager_->SubscribersOf(removed->GetGridX(), removed->GetGridY()))
+			aoi_->pending[viewerId].leaves.push_back(agent_id);
+	}
+
+	gridManager_->remove(removed);
 	actorList_.erase(itr->second);
 	actorMap_.erase(itr);
 
@@ -422,6 +751,11 @@ std::shared_ptr<Actor> Map::OnAddAgent(std::shared_ptr<Player> player, syncnet::
 	auto itr = actorList_.insert(actorList_.end(), actor);
 	actorMap_.insert(std::make_pair(actor->GetActorId(), itr));
 	actor->SetChangedFlag(static_cast<long>(GameObjectChangeType::All));
+
+	// 플레이어 캐릭터가 생기는 시점이 곧 그 플레이어의 관심영역이 열리는 시점이다.
+	// (입장 시점에는 아직 캐릭터가 없어 구독할 중심 좌표가 없다.)
+	if (AoIEnabled() && player != nullptr && actor->IsCharacter())
+		SubscribeViewer(player->GetPlayerId(), actor.get(), true);
 
 	return actor;
 }
@@ -522,14 +856,29 @@ void Map::SendStateTo(std::shared_ptr<Player> player)
 		return;
 	}
 
-	// 현재 맵의 모든 액터 상태를 해당 플레이어에게 전송한다.
-	auto builder_ptr = std::make_shared<send_message>();
-	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agents;
-	GetAgentsInfo(builder_ptr, agents);
-	auto updateActorNotify = syncnet::CreateUpdateActorNotifyDirect(*builder_ptr, &agents, nullptr);
-	auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
-	builder_ptr->Finish(send_msg);
-	player->Send(builder_ptr);
+	if (!AoIEnabled())
+	{
+		// 브로드캐스트 모드: 맵의 모든 액터 상태를 그대로 보낸다.
+		auto builder_ptr = std::make_shared<send_message>();
+		std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agents;
+		GetAgentsInfo(builder_ptr, agents);
+		auto updateActorNotify = syncnet::CreateUpdateActorNotifyDirect(*builder_ptr, &agents, nullptr, nullptr);
+		auto send_msg = syncnet::CreateGameMessage(*builder_ptr, syncnet::GameMessages::GameMessages_UpdateActorNotify, updateActorNotify.Union());
+		builder_ptr->Finish(send_msg);
+		player->Send(builder_ptr);
+		return;
+	}
+
+	// 관심영역 모드: 시야 안의 액터만 보낸다. 캐릭터가 아직 없으면(입장 직후) 기준점이 없으므로,
+	// 캐릭터가 생기는 시점(OnAddAgent)에 구독과 함께 스냅샷이 나간다.
+	auto character = player->GetCharacter();
+	if (character == nullptr)
+		return;
+
+	SubscribeViewer(player->GetPlayerId(), character.get(), true);
+
+	// 구독하면서 쌓인 스냅샷(enter)을 바로 내보낸다.
+	SendPendingViews();
 }
 
 void Map::join(std::shared_ptr<Player> player)
@@ -551,6 +900,7 @@ void Map::leave(std::shared_ptr<Player> player)
 		LOG.error("Map::leave error player not found");
 		return;
 	}
+	UnsubscribeViewer(player->GetPlayerId());
 	players_.erase(itr);
 }
 

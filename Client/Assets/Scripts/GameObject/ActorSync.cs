@@ -76,6 +76,23 @@ public class ActorSync
                 Debug.LogError($"Failed to get Actor component for agent {agentId}");
         }
 
+        // 관심영역(AoI) 이탈 처리.
+        // 서버가 "이 액터는 더 이상 동기화하지 않는다"고 알려준 것이지 죽은 게 아니다 —
+        // 사망 연출(ShowDeathEffect) 없이 조용히 치운다. 다시 가까워지면 서버가 전체 스냅샷으로
+        // 다시 보내주므로 그때 새로 만들어진다.
+        for (int i = 0; i < notify.RemovedLength; ++i)
+        {
+            int agentId = notify.Removed(i);
+            GameObject leaving;
+            if (!Objects.TryGetValue(agentId, out leaving))
+                continue;
+
+            Objects.Remove(agentId);
+            locallyAnimated.Remove(agentId);
+            if (leaving != null)
+                Object.Destroy(leaving);
+        }
+
         // Debug lines 처리
         for (int i = 0; i < notify.DebugsLength; ++i)
         {

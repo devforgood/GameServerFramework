@@ -285,6 +285,57 @@ void GridManager::getCharactersInViewRange(IGridActor* viewer, float range, std:
     }
 }
 
+// ── 관심영역(AoI) 구독 ──
+
+std::pair<int, int> GridManager::CellOf(float x, float y) {
+    return getCellCoord(x, y);
+}
+
+int GridManager::CellRadius(float range) const {
+    return static_cast<int>(std::ceil(range / grid_->getCellSize()));
+}
+
+bool GridManager::IsValidCell(int cellX, int cellY) const {
+    return cellX >= 0 && cellY >= 0 && cellX < grid_->getWidth() && cellY < grid_->getHeight();
+}
+
+void GridManager::Subscribe(int cellX, int cellY, long viewerId) {
+    if (!IsValidCell(cellX, cellY)) return;
+
+    auto& subscribers = grid_->get(cellX, cellY).subscribers;
+    for (long id : subscribers) {
+        if (id == viewerId) return; // 중복 구독 방지
+    }
+    subscribers.push_back(viewerId);
+}
+
+void GridManager::Unsubscribe(int cellX, int cellY, long viewerId) {
+    if (!IsValidCell(cellX, cellY)) return;
+
+    auto& subscribers = grid_->get(cellX, cellY).subscribers;
+    for (size_t i = 0; i < subscribers.size(); ++i) {
+        if (subscribers[i] == viewerId) {
+            subscribers[i] = subscribers.back();
+            subscribers.pop_back();
+            return;
+        }
+    }
+}
+
+const std::vector<long>& GridManager::SubscribersOf(int cellX, int cellY) {
+    static const std::vector<long> empty;
+    if (!IsValidCell(cellX, cellY)) return empty;
+    return grid_->get(cellX, cellY).subscribers;
+}
+
+void GridManager::CollectActorsInCell(int cellX, int cellY, std::vector<IGridActor*>& out) {
+    if (!IsValidCell(cellX, cellY)) return;
+
+    auto& cell = grid_->get(cellX, cellY);
+    out.insert(out.end(), cell.characters.begin(), cell.characters.end());
+    out.insert(out.end(), cell.monsters.begin(), cell.monsters.end());
+}
+
 void GridManager::broadcastToNearby(float x, float y, float range, const std::string& msg) {
     auto entities = getEntitiesInAoEMask(x, y, range, 0);
     for (auto* e : entities) {

@@ -306,6 +306,7 @@ namespace Gamedata
     [Serializable]
     public class Map
     {
+        public int aoi_radius;
         public string desc_id;
         public int game_mode_id;
         public System.Collections.Generic.List<MapGate> gates;

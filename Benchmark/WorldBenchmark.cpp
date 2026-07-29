@@ -252,10 +252,15 @@ static void BM_WorldTickCapacityEngaged(benchmark::State& state)
 {
 	const int count = static_cast<int>(state.range(0));
 	const int playerCount = static_cast<int>(state.range(1));
+	// 3번째 인자는 관심영역 반경(0 이면 맵 데이터 값). 반경이 맵 크기에 가까우면 모두가 모두를 보게 되어
+	// 필터 효과가 사라지고 플레이어별 직렬화 중복만 남는다 — 그 차이를 재기 위한 인자다.
+	const float aoiRadius = static_cast<float>(state.range(2));
 	const auto& spawns = ValidSpawns("waypoint");
 
 	World world;
 	world.Init("waypoint");
+	if (aoiRadius > 0.0f)
+		world.GetPrimaryMap()->SetAoIRadius(aoiRadius);
 	const int spawned = SpawnMonsters(world, count, "waypoint");
 
 	// 캐릭터를 스폰 좌표에 고르게 흩뿌린다(몬스터와 같은 좌표 집합).
@@ -299,9 +304,12 @@ static void BM_WorldTickCapacityEngaged(benchmark::State& state)
 	state.counters["budget_pct"] = tickMs / kTickBudgetMs * 100.0;
 	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
 }
+// 인자: (몬스터 수, 플레이어 수, 관심영역 반경 — 0 이면 맵 데이터 값)
 BENCHMARK(BM_WorldTickCapacityEngaged)
-	->Args({ 10000, 50 })->Args({ 20000, 50 })->Args({ 28000, 50 })->Args({ 30000, 50 })
-	->Args({ 32000, 50 })->Args({ 40000, 50 })
+	->Args({ 10000, 50, 0 })->Args({ 20000, 50, 0 })->Args({ 28000, 50, 0 })
+	->Args({ 30000, 50, 0 })->Args({ 32000, 50, 0 })->Args({ 40000, 50, 0 })
+	// 반경별 비교(맵이 약 50유닛이라 반경 40 이면 사실상 전 맵이 시야다).
+	->Args({ 10000, 50, 20 })->Args({ 10000, 50, 10 })->Args({ 10000, 50, 5 })
 	->Unit(benchmark::kMillisecond)
 	->MinTime(1.0);
 

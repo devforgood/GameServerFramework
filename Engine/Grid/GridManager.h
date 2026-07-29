@@ -40,12 +40,31 @@ public:
     std::vector<IGridActor*> getEntitiesInAoEMask(float x, float y, float range, float dirDeg);
     std::vector<IGridActor*> getEntitiesInAoEMask(float x, float y, float range, float dirDeg, float angle);
 
+    // ── 관심영역(AoI) 구독 ──
+    // 뷰어는 자기 주변 셀들을 구독하고, 액터 변경은 그 액터가 속한 셀의 구독자에게만 전달된다.
+    // 셀 좌표 계산/유효성 판단이 여기 모여 있으므로 구독 관리도 그리드가 맡는다.
+    std::pair<int, int> CellOf(float x, float y);        // 월드 좌표 → 셀 좌표
+    int CellRadius(float range) const;                   // 반경(월드 단위) → 셀 개수
+    bool IsValidCell(int cellX, int cellY) const;
+
+    void Subscribe(int cellX, int cellY, long viewerId);
+    void Unsubscribe(int cellX, int cellY, long viewerId);
+    // 구독자 목록. 셀이 범위 밖이면 비어 있는 목록을 돌려준다(호출 측 분기 제거).
+    const std::vector<long>& SubscribersOf(int cellX, int cellY);
+
+    // 셀 안의 모든 액터(캐릭터+몬스터)를 out 에 덧붙인다(비우지 않는다).
+    void CollectActorsInCell(int cellX, int cellY, std::vector<IGridActor*>& out);
+
     // 셀 내용은 vector 로 담는다. unordered_set 은 원소마다 노드를 할당/해제해서
     // 셀 이동(leave+enter)이 셀 내 이동보다 13배 비쌌고, 순회도 포인터 추적이라 캐시에 불리했다.
     // 제거는 마지막 원소와 swap 후 pop 이라 O(1) 이며, 각 액터는 자신의 인덱스를 GridSlot 으로 들고 있다.
     struct Cell {
         std::vector<IGridActor*> characters;
         std::vector<IGridActor*> monsters;
+        // 이 셀을 관심영역에 포함한 뷰어(플레이어) id 목록.
+        // 액터가 바뀌면 그 액터가 있는 셀의 구독자에게만 전달하면 되므로,
+        // 전달 비용이 '전체 플레이어 수'가 아니라 '그 자리를 보고 있는 사람 수'가 된다.
+        std::vector<long> subscribers;
     };
 
     class IGrid

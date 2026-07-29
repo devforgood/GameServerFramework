@@ -92,6 +92,10 @@ table DebugRaycast {
 table UpdateActorNotify {
   actors:[ActorInfo];
   debugs:[DebugRaycast];
+  // 관심영역(AoI) 밖으로 나가 더 이상 동기화하지 않는 액터들의 agentId.
+  // 사망이 아니라 '시야에서 사라짐'이므로 클라는 사망 연출 없이 조용히 제거한다.
+  // (테이블 끝에 추가한 필드라 이전 버전과 호환된다)
+  removed:[int];
 }
 
 table Ping {

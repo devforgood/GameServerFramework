@@ -48,6 +48,28 @@ private:
 	// DetectEnemy 의 시야 쿼리 결과 재사용 버퍼(호출당 힙 할당 방지).
 	std::vector<IGridActor*> detectScratch_;
 
+	// ── 관심영역(AoI) ──
+	// 플레이어는 자기 캐릭터 주변 셀을 구독하고, 액터 변경은 그 액터가 있는 셀의 구독자에게만 간다.
+	// 덕분에 전송량이 '맵 전체 액터 × 전체 플레이어'가 아니라 '주변 액터 × 그 자리를 보는 사람'이 된다.
+	// 설계 배경과 전체 흐름은 AOI_DESIGN.md 참고.
+	//
+	// 상태는 통째로 별도 객체(AoIState)에 두고 쓰는 맵에서만 할당한다. 매 틱 액터마다 도는
+	// SyncActorState 가 Map 의 멤버 배치에 민감해서, 여기에 컨테이너를 직접 늘리면
+	// AoI 를 끄고도 틱이 느려졌다(10,000마리 기준 +6ms). 켜짐 여부는 bool 하나로만 본다.
+	struct AoIState;
+	std::unique_ptr<AoIState> aoi_;
+	bool aoiEnabled_ = false;
+
+	float AoIRadius() const;
+	bool AoIEnabled() const { return aoiEnabled_; }
+	void RefreshAoIMode();
+	void SubscribeViewer(long playerId, Actor* character, bool sendSnapshot);
+	void UnsubscribeViewer(long playerId);
+	void OnViewerCellChanged(long playerId, Actor* character);
+	void OnActorCellChanged(Actor* actor, int oldCellX, int oldCellY, int newCellX, int newCellY);
+	void QueueUpdate(Actor* actor);
+	void SendPendingViews();
+
 	// Init 을 구성하는 단계들. Init 은 이들을 순서대로 호출하는 오케스트레이터다.
 	// 내비게이션: 맵별 navmesh 로드/정합 검증 + 이동 전략 생성. 실패 시 false.
 	bool InitNavigation(const std::string& movementType);
@@ -113,6 +135,8 @@ public:
 
 	void SendWorldState();
 	void SendTreeDebugSync();
+	void SendDebugRaycasts();
+	void SendBroadcastState();
 	void SendBroadcast(std::shared_ptr<send_message> msg);
 	void SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except);
 	void OnRemoveAgent(int agent_id);
@@ -124,6 +148,13 @@ public:
 	// 이미 잡은 대상이 아직 유효한지(살아있고, 시야 반경 안이고, 가려지지 않았는지) 확인한다.
 	// 교전 중에는 전체 재탐색 대신 이 검사만 돌려 탐지 비용을 줄인다.
 	bool IsTargetVisible(Actor* viewer, int targetActorId);
+
+	// 관심영역 반경을 강제로 지정한다(0 이하면 맵 데이터 값). 테스트/벤치에서 효과를 관찰하기 위한 것으로,
+	// 이미 구독 중인 플레이어에게는 다음 구독 갱신부터 적용된다.
+	void SetAoIRadius(float radius);
+
+	// 진단/테스트용: 이 액터가 해당 플레이어의 관심영역(구독 셀) 안에 있는가.
+	bool IsInViewOf(long playerId, int actorId);
 	std::vector<IGridActor*> get_actors_in_range(Actor* actor, float range, float dirDeg, float angle);
 	// 캐스터가 아닌 임의의 지점(서버 좌표계 x,z) 중심의 원형 범위. 시전 지점에 떨어지는
 	// 광역기(메테오/블리자드 등, aoe_damage 효과)에 쓴다. get_actors_in_range 가 캐스터

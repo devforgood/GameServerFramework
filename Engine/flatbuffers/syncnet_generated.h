@@ -889,13 +889,17 @@ struct UpdateActorNotify FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef UpdateActorNotifyBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ACTORS = 4,
-    VT_DEBUGS = 6
+    VT_DEBUGS = 6,
+    VT_REMOVED = 8
   };
   const flatbuffers::Vector<flatbuffers::Offset<syncnet::ActorInfo>> *actors() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::ActorInfo>> *>(VT_ACTORS);
   }
   const flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>> *debugs() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>> *>(VT_DEBUGS);
+  }
+  const flatbuffers::Vector<int32_t> *removed() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_REMOVED);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -905,6 +909,8 @@ struct UpdateActorNotify FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_DEBUGS) &&
            verifier.VerifyVector(debugs()) &&
            verifier.VerifyVectorOfTables(debugs()) &&
+           VerifyOffset(verifier, VT_REMOVED) &&
+           verifier.VerifyVector(removed()) &&
            verifier.EndTable();
   }
 };
@@ -918,6 +924,9 @@ struct UpdateActorNotifyBuilder {
   }
   void add_debugs(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>>> debugs) {
     fbb_.AddOffset(UpdateActorNotify::VT_DEBUGS, debugs);
+  }
+  void add_removed(flatbuffers::Offset<flatbuffers::Vector<int32_t>> removed) {
+    fbb_.AddOffset(UpdateActorNotify::VT_REMOVED, removed);
   }
   explicit UpdateActorNotifyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -934,8 +943,10 @@ struct UpdateActorNotifyBuilder {
 inline flatbuffers::Offset<UpdateActorNotify> CreateUpdateActorNotify(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::ActorInfo>>> actors = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>>> debugs = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::DebugRaycast>>> debugs = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> removed = 0) {
   UpdateActorNotifyBuilder builder_(_fbb);
+  builder_.add_removed(removed);
   builder_.add_debugs(debugs);
   builder_.add_actors(actors);
   return builder_.Finish();
@@ -944,13 +955,16 @@ inline flatbuffers::Offset<UpdateActorNotify> CreateUpdateActorNotify(
 inline flatbuffers::Offset<UpdateActorNotify> CreateUpdateActorNotifyDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<flatbuffers::Offset<syncnet::ActorInfo>> *actors = nullptr,
-    const std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> *debugs = nullptr) {
+    const std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> *debugs = nullptr,
+    const std::vector<int32_t> *removed = nullptr) {
   auto actors__ = actors ? _fbb.CreateVector<flatbuffers::Offset<syncnet::ActorInfo>>(*actors) : 0;
   auto debugs__ = debugs ? _fbb.CreateVector<flatbuffers::Offset<syncnet::DebugRaycast>>(*debugs) : 0;
+  auto removed__ = removed ? _fbb.CreateVector<int32_t>(*removed) : 0;
   return syncnet::CreateUpdateActorNotify(
       _fbb,
       actors__,
-      debugs__);
+      debugs__,
+      removed__);
 }
 
 struct Ping FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

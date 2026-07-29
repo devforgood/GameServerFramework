@@ -84,7 +84,8 @@
       "static_objects": [],
       "movable_objects": []
     },
-    "navmesh_path": "Starting Village_navmesh.bin"
+    "navmesh_path": "Starting Village_navmesh.bin",
+    "aoi_radius": 0
   },
   {
     "id": 2,
@@ -158,7 +159,8 @@
       "static_objects": [],
       "movable_objects": []
     },
-    "navmesh_path": "Dark Forest_navmesh.bin"
+    "navmesh_path": "Dark Forest_navmesh.bin",
+    "aoi_radius": 0
   },
   {
     "id": 6,
@@ -266,7 +268,8 @@
       ],
       "movable_objects": []
     },
-    "navmesh_path": ""
+    "navmesh_path": "",
+    "aoi_radius": 0
   },
   {
     "id": 9,
@@ -447,7 +450,8 @@
         }
       ]
     },
-    "navmesh_path": ""
+    "navmesh_path": "",
+    "aoi_radius": 0
   },
   {
     "id": 12,
@@ -566,7 +570,8 @@
       ],
       "movable_objects": []
     },
-    "navmesh_path": ""
+    "navmesh_path": "",
+    "aoi_radius": 0
   },
   {
     "id": 13,
@@ -653,7 +658,8 @@
       "static_objects": [],
       "movable_objects": []
     },
-    "navmesh_path": "Field1_navmesh.bin"
+    "navmesh_path": "Field1_navmesh.bin",
+    "aoi_radius": 0
   },
   {
     "id": 14,
@@ -727,6 +733,7 @@
       "static_objects": [],
       "movable_objects": []
     },
-    "navmesh_path": "Field2_navmesh.bin"
+    "navmesh_path": "Field2_navmesh.bin",
+    "aoi_radius": 0
   }
 ]

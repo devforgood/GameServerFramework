@@ -23,17 +23,27 @@ public struct UpdateActorNotify : IFlatbufferObject
   public int ActorsLength { get { int o = __p.__offset(4); return o != 0 ? __p.__vector_len(o) : 0; } }
   public syncnet.DebugRaycast? Debugs(int j) { int o = __p.__offset(6); return o != 0 ? (syncnet.DebugRaycast?)(new syncnet.DebugRaycast()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int DebugsLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public int Removed(int j) { int o = __p.__offset(8); return o != 0 ? __p.bb.GetInt(__p.__vector(o) + j * 4) : (int)0; }
+  public int RemovedLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
+#if ENABLE_SPAN_T
+  public Span<int> GetRemovedBytes() { return __p.__vector_as_span<int>(8, 4); }
+#else
+  public ArraySegment<byte>? GetRemovedBytes() { return __p.__vector_as_arraysegment(8); }
+#endif
+  public int[] GetRemovedArray() { return __p.__vector_as_array<int>(8); }
 
   public static Offset<syncnet.UpdateActorNotify> CreateUpdateActorNotify(FlatBufferBuilder builder,
       VectorOffset actorsOffset = default(VectorOffset),
-      VectorOffset debugsOffset = default(VectorOffset)) {
-    builder.StartTable(2);
+      VectorOffset debugsOffset = default(VectorOffset),
+      VectorOffset removedOffset = default(VectorOffset)) {
+    builder.StartTable(3);
+    UpdateActorNotify.AddRemoved(builder, removedOffset);
     UpdateActorNotify.AddDebugs(builder, debugsOffset);
     UpdateActorNotify.AddActors(builder, actorsOffset);
     return UpdateActorNotify.EndUpdateActorNotify(builder);
   }
 
-  public static void StartUpdateActorNotify(FlatBufferBuilder builder) { builder.StartTable(2); }
+  public static void StartUpdateActorNotify(FlatBufferBuilder builder) { builder.StartTable(3); }
   public static void AddActors(FlatBufferBuilder builder, VectorOffset actorsOffset) { builder.AddOffset(0, actorsOffset.Value, 0); }
   public static VectorOffset CreateActorsVector(FlatBufferBuilder builder, Offset<syncnet.ActorInfo>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateActorsVectorBlock(FlatBufferBuilder builder, Offset<syncnet.ActorInfo>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
@@ -42,6 +52,10 @@ public struct UpdateActorNotify : IFlatbufferObject
   public static VectorOffset CreateDebugsVector(FlatBufferBuilder builder, Offset<syncnet.DebugRaycast>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateDebugsVectorBlock(FlatBufferBuilder builder, Offset<syncnet.DebugRaycast>[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartDebugsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddRemoved(FlatBufferBuilder builder, VectorOffset removedOffset) { builder.AddOffset(2, removedOffset.Value, 0); }
+  public static VectorOffset CreateRemovedVector(FlatBufferBuilder builder, int[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddInt(data[i]); return builder.EndVector(); }
+  public static VectorOffset CreateRemovedVectorBlock(FlatBufferBuilder builder, int[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartRemovedVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static Offset<syncnet.UpdateActorNotify> EndUpdateActorNotify(FlatBufferBuilder builder) {
     int o = builder.EndTable();
     return new Offset<syncnet.UpdateActorNotify>(o);

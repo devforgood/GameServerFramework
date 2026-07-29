@@ -281,6 +281,7 @@ namespace gamedata
 
     struct Map
     {
+        int aoi_radius = 0;
         std::string desc_id;
         int game_mode_id = 0;
         std::vector<MapGate> gates;
@@ -591,6 +592,7 @@ namespace gamedata
 
     inline void from_json(const nlohmann::json& j, Map& o)
     {
+        if (j.contains("aoi_radius") && !j.at("aoi_radius").is_null()) j.at("aoi_radius").get_to(o.aoi_radius);
         if (j.contains("desc_id") && !j.at("desc_id").is_null()) j.at("desc_id").get_to(o.desc_id);
         if (j.contains("game_mode_id") && !j.at("game_mode_id").is_null()) j.at("game_mode_id").get_to(o.game_mode_id);
         if (j.contains("gates") && !j.at("gates").is_null()) j.at("gates").get_to(o.gates);
