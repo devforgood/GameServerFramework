@@ -7,27 +7,19 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-// 씬과 Map.json을 양방향으로 연동하는 맵 디자인 툴.
-// - 씬 스캔: 씬에 배치된 Gate / SpawnPoint / MapObjectMarker 컴포넌트를 찾아 Map.json에 기록
-// - 씬 빌드: Map.json의 게이트/스폰/오브젝트 데이터를 씬에 마커 오브젝트로 생성
-// - 배치 툴박스: 게이트/스폰/오브젝트 마커를 씬 뷰 위치에 바로 생성
-// - NavMesh 연동: GeneratedNavMeshes의 bin 파일을 GameData로 복사하고 navmesh_path를 갱신
-public class MapJsonUpdater : EditorWindow
+// Map.json 데이터 모델과 씬 ⇔ JSON 변환 로직.
+// - 씬 스캔: 씬의 Gate / SpawnPoint / MapObjectMarker 컴포넌트를 찾아 Map.json 에 기록
+// - 씬 빌드: Map.json 의 게이트/스폰/오브젝트를 씬 마커로 생성
+// - 마커 배치: 씬 뷰 위치에 게이트/스폰/오브젝트 마커 생성
+// 예전에는 이 클래스가 독립 창(Tools > Map JSON Updater)이었지만, 맵 제작 흐름을
+// Map Tool 하나로 합치면서 UI 를 걷어내고 라이브러리만 남겼다.
+// 호출자: MapPipeline(Map Tool 파이프라인), MapJsonAutoSync(씬 열기/편집 시 자동 동기화).
+public static class MapJsonUpdater
 {
     private const string MarkerRootName = "MapDesign";
     public const string GateGroupName = "Gates";
     public const string SpawnGroupName = "SpawnPoints";
     public const string ObjectGroupName = "Objects";
-
-    private string mapJsonPath = "";
-    private List<MapData> mapDataList = new List<MapData>();
-
-    // AutoSync가 열려 있는 창의 미저장 편집(맵 메타데이터 등)을 덮어쓰지 않도록 상태를 공유한다.
-    public string SharedJsonPath => mapJsonPath;
-    public List<MapData> SharedMapList => mapDataList;
-    private Vector2 scrollPosition;
-    private bool showAllMaps = false;
-    private readonly HashSet<int> expandedMaps = new HashSet<int>();
 
     // ---------------------------------------------------------------------
     // 데이터 모델 (Map.json 스키마와 동일한 필드 순서 유지)
@@ -174,39 +166,9 @@ public class MapJsonUpdater : EditorWindow
     }
 
     // ---------------------------------------------------------------------
-    // 윈도우 / 로드 / 저장
+    // Map.json 파일 접근 (창이 아니라 Map Tool 파이프라인이 호출한다)
     // ---------------------------------------------------------------------
 
-    [MenuItem("Tools/Map JSON Updater")]
-    public static void ShowWindow()
-    {
-        GetWindow<MapJsonUpdater>("Map JSON Updater");
-    }
-
-    private void OnEnable()
-    {
-        LoadMapJson();
-    }
-
-    private string GameDataDir => string.IsNullOrEmpty(mapJsonPath) ? null : Path.GetDirectoryName(mapJsonPath);
-
-    private void LoadMapJson()
-    {
-        string found = FindMapJsonPath();
-        if (found == null)
-        {
-            mapJsonPath = "";
-            Debug.LogError("Map.json not found. 프로젝트 루트의 GameData/Map.json 경로를 확인하세요.");
-            return;
-        }
-
-        mapJsonPath = found;
-        mapDataList = LoadMapList(mapJsonPath);
-        Debug.Log($"Map.json loaded from: {mapJsonPath} (maps: {mapDataList.Count})");
-    }
-
-    // 게임 데이터 단일 소스: Assets/Resources/GameData/Map.json.
-    // (서버/UnitTest/Benchmark 도 GameDataPath::Resolve() 로 같은 폴더를 읽는다. 사본 없음)
     public static string FindMapJsonPath()
     {
         string path = Path.Combine(Application.dataPath, "Resources", "GameData", "Map.json");
@@ -241,27 +203,6 @@ public class MapJsonUpdater : EditorWindow
         if (map.objects == null) map.objects = new MapObjects();
         if (map.objects.static_objects == null) map.objects.static_objects = new List<StaticObjectInfo>();
         if (map.objects.movable_objects == null) map.objects.movable_objects = new List<MovableObjectInfo>();
-    }
-
-    private void SaveMapJson()
-    {
-        if (string.IsNullOrEmpty(mapJsonPath))
-        {
-            Debug.LogError("Map JSON path is not set!");
-            return;
-        }
-
-        try
-        {
-            SaveMapList(mapJsonPath, mapDataList);
-            Debug.Log($"Map JSON saved to: {mapJsonPath}\n" +
-                      "스키마(필드 구조)가 바뀐 경우에는 GameDataFlow/GameDataFlow.py 로 코드젠도 갱신하세요.");
-            AssetDatabase.Refresh();
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"Failed to save Map JSON: {e.Message}");
-        }
     }
 
     public static void SaveMapList(string path, List<MapData> list)
@@ -377,252 +318,7 @@ public class MapJsonUpdater : EditorWindow
     }
 
     // ---------------------------------------------------------------------
-    // GUI
-    // ---------------------------------------------------------------------
-
-    private void OnGUI()
-    {
-        GUILayout.Label("Map JSON Updater", EditorStyles.boldLabel);
-
-        if (string.IsNullOrEmpty(mapJsonPath))
-        {
-            EditorGUILayout.HelpBox("Map.json not found. Please check GameData directory.", MessageType.Error);
-            if (GUILayout.Button("Retry"))
-                LoadMapJson();
-            return;
-        }
-
-        EditorGUILayout.LabelField("Map JSON Path:", mapJsonPath);
-
-        EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("Reload Map JSON"))
-            LoadMapJson();
-        if (GUILayout.Button("Save Map JSON"))
-            SaveMapJson();
-        EditorGUILayout.EndHorizontal();
-
-        // 자동 동기화 토글 (씬 열 때 JSON→씬 배치, 마커 변경 시 Map.json 자동 저장)
-        bool auto = MapJsonAutoSync.Enabled;
-        bool newAuto = EditorGUILayout.ToggleLeft(
-            "Auto Sync — 씬을 열면 Map.json 기준으로 마커 배치, 마커 변경 시 Map.json 자동 저장", auto);
-        if (newAuto != auto)
-            MapJsonAutoSync.Enabled = newAuto;
-
-        EditorGUILayout.HelpBox("게임 데이터는 Assets/Resources/GameData 한 곳에서 관리됩니다 (서버/테스트도 같은 폴더를 읽음).\n" +
-                                "코드젠(Gamedata.cs/gamedata.h)은 스키마 변경 시 GameDataFlow.py를 실행하세요.", MessageType.Info);
-
-        scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
-
-        DrawCurrentSceneSection();
-
-        EditorGUILayout.Space();
-
-        DrawAllMapsSection();
-
-        EditorGUILayout.EndScrollView();
-    }
-
-    private void DrawCurrentSceneSection()
-    {
-        string sceneName = EditorSceneManager.GetActiveScene().name;
-
-        EditorGUILayout.BeginVertical("box");
-        GUI.backgroundColor = Color.green;
-        EditorGUILayout.LabelField($"Current Scene: {sceneName}", EditorStyles.boldLabel);
-        GUI.backgroundColor = Color.white;
-
-        MapData map = FindMapForScene(sceneName);
-
-        if (map == null)
-        {
-            EditorGUILayout.HelpBox($"'{sceneName}' 씬과 연결된 맵이 Map.json에 없습니다.", MessageType.Warning);
-            if (GUILayout.Button("Create Map Entry for This Scene"))
-            {
-                map = CreateMapForScene(sceneName);
-            }
-            EditorGUILayout.EndVertical();
-            return;
-        }
-
-        // --- 맵 메타데이터 편집 ---
-        EditorGUILayout.LabelField($"Map ID: {map.id}");
-        map.name = EditorGUILayout.TextField("Name", map.name);
-        map.scene = EditorGUILayout.TextField("Scene", map.scene);
-        map.name_id = EditorGUILayout.TextField("Name ID", map.name_id);
-        map.desc_id = EditorGUILayout.TextField("Desc ID", map.desc_id);
-        map.game_mode_id = EditorGUILayout.IntField("Game Mode ID", map.game_mode_id);
-
-        EditorGUILayout.BeginHorizontal();
-        map.size.width = EditorGUILayout.DoubleField("Size (W x H)", map.size.width);
-        map.size.height = EditorGUILayout.DoubleField(map.size.height);
-        if (GUILayout.Button("From Scene Bounds", GUILayout.Width(130)))
-            CalcSizeFromSceneBounds(map);
-        EditorGUILayout.EndHorizontal();
-
-        EditorGUILayout.Space();
-
-        // --- 씬 <-> JSON 동기화 ---
-        EditorGUILayout.LabelField("Scene ⇔ JSON", EditorStyles.boldLabel);
-        EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("Scan Scene → JSON"))
-            ScanScene(sceneName, map);
-        if (GUILayout.Button("Sync Scene ← JSON"))
-            SyncSceneFromJson(sceneName);
-        if (GUILayout.Button("Build Scene ← JSON (전체 재생성)"))
-            BuildSceneFromJson(map);
-        EditorGUILayout.EndHorizontal();
-
-        EditorGUILayout.LabelField($"Gates: {map.gates.Count}   " +
-                                   $"Player: {map.spawn_points.player_spawn.Count}   " +
-                                   $"Monster: {map.spawn_points.monster_spawn.Count}   " +
-                                   $"Boss: {map.spawn_points.boss_spawn.Count}   " +
-                                   $"Static: {map.objects.static_objects.Count}   " +
-                                   $"Movable: {map.objects.movable_objects.Count}");
-
-        EditorGUILayout.Space();
-
-        // --- 배치 툴박스 ---
-        EditorGUILayout.LabelField("Place Markers (씬 뷰 중심에 생성)", EditorStyles.boldLabel);
-        EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("+ Gate"))
-            CreateGateMarker();
-        if (GUILayout.Button("+ Player Spawn"))
-            CreateSpawnMarker(SpawnType.Player);
-        if (GUILayout.Button("+ Monster Spawn"))
-            CreateSpawnMarker(SpawnType.Monster);
-        if (GUILayout.Button("+ Boss Spawn"))
-            CreateSpawnMarker(SpawnType.Boss);
-        EditorGUILayout.EndHorizontal();
-        EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("+ Static Object"))
-            CreateObjectMarker(MapObjectKind.Static);
-        if (GUILayout.Button("+ Movable Object"))
-            CreateObjectMarker(MapObjectKind.Movable);
-        EditorGUILayout.EndHorizontal();
-
-        EditorGUILayout.Space();
-
-        // --- NavMesh 상태 ---
-        DrawNavMeshSection(map, sceneName);
-
-        EditorGUILayout.EndVertical();
-    }
-
-    private void DrawNavMeshSection(MapData map, string sceneName)
-    {
-        EditorGUILayout.LabelField("NavMesh", EditorStyles.boldLabel);
-        EditorGUILayout.LabelField($"navmesh_path: {(string.IsNullOrEmpty(map.navmesh_path) ? "(none)" : map.navmesh_path)}");
-
-        string fileName = $"{sceneName}_navmesh.bin";
-        string genPath = Path.Combine(Application.dataPath, "GeneratedNavMeshes", fileName);
-        string gameDataPath = GameDataDir != null ? Path.Combine(GameDataDir, fileName) : null;
-
-        bool genExists = File.Exists(genPath);
-        bool gameDataExists = gameDataPath != null && File.Exists(gameDataPath);
-
-        if (!genExists)
-        {
-            EditorGUILayout.HelpBox($"Assets/GeneratedNavMeshes/{fileName} 이 없습니다. NavMesh를 먼저 생성하세요.\n" +
-                                    "(서버는 navmesh가 없으면 solo_navmesh로 폴백하여 씬과 불일치가 발생합니다)",
-                                    MessageType.Warning);
-            return;
-        }
-
-        if (!gameDataExists)
-        {
-            EditorGUILayout.HelpBox($"GameData/{fileName} 이 없습니다. 서버가 이 맵의 NavMesh를 로드하지 못합니다.", MessageType.Warning);
-        }
-        else
-        {
-            var genTime = File.GetLastWriteTimeUtc(genPath);
-            var dstTime = File.GetLastWriteTimeUtc(gameDataPath);
-            if (genTime > dstTime)
-                EditorGUILayout.HelpBox("GeneratedNavMeshes의 NavMesh가 GameData보다 최신입니다. 복사가 필요합니다.", MessageType.Warning);
-            else
-                EditorGUILayout.HelpBox("GameData의 NavMesh가 최신 상태입니다.", MessageType.Info);
-        }
-
-        if (GUILayout.Button("Copy NavMesh → GameData & Update navmesh_path"))
-        {
-            File.Copy(genPath, gameDataPath, true);
-            map.navmesh_path = fileName;
-            AssetDatabase.Refresh(); // GameData가 Assets 안에 있으므로 임포트 갱신
-            Debug.Log($"NavMesh copied: {genPath} -> {gameDataPath}. navmesh_path='{fileName}' (Save Map JSON 필요)");
-        }
-    }
-
-    private void DrawAllMapsSection()
-    {
-        showAllMaps = EditorGUILayout.Foldout(showAllMaps, $"All Maps ({mapDataList.Count})", true);
-        if (!showAllMaps)
-            return;
-
-        string currentSceneName = EditorSceneManager.GetActiveScene().name;
-        MapData toRemove = null;
-
-        foreach (var map in mapDataList)
-        {
-            EditorGUILayout.BeginVertical("box");
-
-            bool isCurrent = IsMapForScene(map, currentSceneName);
-            string title = $"{map.name} (ID: {map.id})" + (isCurrent ? " [CURRENT]" : "");
-
-            bool expanded = expandedMaps.Contains(map.id);
-            bool newExpanded = EditorGUILayout.Foldout(expanded, title, true);
-            if (newExpanded != expanded)
-            {
-                if (newExpanded) expandedMaps.Add(map.id);
-                else expandedMaps.Remove(map.id);
-            }
-
-            if (newExpanded)
-            {
-                EditorGUILayout.LabelField($"Scene: {map.scene}   Game Mode: {map.game_mode_id}   Size: {map.size.width} x {map.size.height}");
-                EditorGUILayout.LabelField($"Gates: {map.gates.Count}   " +
-                                           $"Player: {map.spawn_points.player_spawn.Count}   " +
-                                           $"Monster: {map.spawn_points.monster_spawn.Count}   " +
-                                           $"Boss: {map.spawn_points.boss_spawn.Count}   " +
-                                           $"Objects: {map.objects.static_objects.Count + map.objects.movable_objects.Count}");
-                EditorGUILayout.LabelField($"NavMesh: {(string.IsNullOrEmpty(map.navmesh_path) ? "(none)" : map.navmesh_path)}");
-
-                foreach (var gate in map.gates)
-                {
-                    EditorGUILayout.LabelField($"  Gate {gate.id}: {gate.name} [{gate.type}] → map {gate.target_map_id}, gate {gate.target_gate_id} (Lv.{gate.required_level})");
-                }
-
-                EditorGUILayout.BeginHorizontal();
-                if (!isCurrent && GUILayout.Button("Open Scene", GUILayout.Width(100)))
-                    OpenSceneForMap(map);
-                if (GUILayout.Button("Delete Map", GUILayout.Width(100)))
-                {
-                    if (EditorUtility.DisplayDialog("Delete Map",
-                            $"맵 '{map.name}' (ID: {map.id}) 항목을 Map.json에서 삭제할까요?\n" +
-                            "다른 맵의 게이트가 이 맵을 참조 중이면 참조가 깨집니다.", "Delete", "Cancel"))
-                    {
-                        toRemove = map;
-                    }
-                }
-                EditorGUILayout.EndHorizontal();
-            }
-
-            EditorGUILayout.EndVertical();
-        }
-
-        if (toRemove != null)
-        {
-            // 이 맵을 참조하는 게이트가 있으면 경고 로그를 남긴다.
-            foreach (var other in mapDataList.Where(m => m != toRemove))
-            {
-                foreach (var gate in other.gates.Where(g => g.target_map_id == toRemove.id))
-                    Debug.LogWarning($"Map '{other.name}' gate '{gate.name}' references deleted map id {toRemove.id}.");
-            }
-            mapDataList.Remove(toRemove);
-            Debug.Log($"Map '{toRemove.name}' removed. (Save Map JSON 필요)");
-        }
-    }
-
-    // ---------------------------------------------------------------------
-    // 씬 ⇔ 맵 매칭
+    // 씬 ↔ 맵 항목 매칭
     // ---------------------------------------------------------------------
 
     public static bool IsMapForScene(MapData map, string sceneName)
@@ -637,65 +333,9 @@ public class MapJsonUpdater : EditorWindow
         return maps.FirstOrDefault(m => IsMapForScene(m, sceneName));
     }
 
-    private MapData FindMapForScene(string sceneName)
-    {
-        return FindMapForScene(mapDataList, sceneName);
-    }
-
-    private MapData CreateMapForScene(string sceneName)
-    {
-        var map = new MapData
-        {
-            id = GetNextMapId(),
-            name = sceneName,
-            scene = sceneName,
-            name_id = $"map_{sceneName.ToLower().Replace(" ", "_")}_name",
-            desc_id = $"map_{sceneName.ToLower().Replace(" ", "_")}_desc",
-            game_mode_id = 1, // 기본값: Field
-            size = new MapSize { width = 1000, height = 1000 },
-        };
-        mapDataList.Add(map);
-        Debug.Log($"Created new map entry: {sceneName} (ID: {map.id})");
-        return map;
-    }
-
-    private int GetNextMapId()
-    {
-        return mapDataList.Count == 0 ? 1 : mapDataList.Max(m => m.id) + 1;
-    }
-
-    private void OpenSceneForMap(MapData map)
-    {
-        string sceneName = string.IsNullOrEmpty(map.scene) ? map.name : map.scene;
-        string[] guids = AssetDatabase.FindAssets($"t:Scene {sceneName}");
-        string scenePath = guids
-            .Select(AssetDatabase.GUIDToAssetPath)
-            .FirstOrDefault(p => Path.GetFileNameWithoutExtension(p)
-                .Equals(sceneName, System.StringComparison.OrdinalIgnoreCase));
-
-        if (scenePath == null)
-        {
-            Debug.LogWarning($"Scene asset '{sceneName}' not found for map '{map.name}'.");
-            return;
-        }
-
-        if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-            EditorSceneManager.OpenScene(scenePath);
-    }
-
     // ---------------------------------------------------------------------
     // 씬 스캔 → JSON
     // ---------------------------------------------------------------------
-
-    private void ScanScene(string sceneName, MapData map)
-    {
-        if (map == null)
-            map = CreateMapForScene(sceneName);
-
-        ScanSceneIntoMap(map, mapDataList, sceneName);
-        ValidateMapReferences(mapDataList);
-        Debug.Log($"Scan complete for '{sceneName}': {map.gates.Count} gates. (Save Map JSON 필요)");
-    }
 
     // 씬의 마커를 스캔하여 map에 기록한다 (MapJsonAutoSync에서도 사용).
     public static void ScanSceneIntoMap(MapData map, List<MapData> allMaps, string sceneName)
@@ -908,9 +548,9 @@ public class MapJsonUpdater : EditorWindow
             map.navmesh_path = fileName;
     }
 
-    private void CalcSizeFromSceneBounds(MapData map)
+    public static void CalcSizeFromSceneBounds(MapData map)
     {
-        var renderers = FindObjectsOfType<Renderer>();
+        var renderers = Object.FindObjectsOfType<Renderer>();
         if (renderers.Length == 0)
         {
             Debug.LogWarning("씬에 Renderer가 없어 크기를 계산할 수 없습니다.");
@@ -932,28 +572,27 @@ public class MapJsonUpdater : EditorWindow
 
     // 씬을 연 채 Map.json을 외부에서 편집했을 때 재오픈 없이 반영한다.
     // Build와 달리 id 매칭 기반 reconcile이라 기존 오브젝트(프리팹 인스턴스 포함)를 보존한다.
-    private void SyncSceneFromJson(string sceneName)
+    public static void SyncSceneFromJson(string sceneName)
     {
-        if (!EditorUtility.DisplayDialog("Sync Scene ← JSON",
-                "Map.json을 디스크에서 다시 읽어 씬 마커를 JSON 기준으로 맞춥니다.\n" +
-                "(id 매칭으로 값만 갱신, JSON에 없는 마커는 삭제)\n\n" +
-                "이 창에서 저장하지 않은 맵 메타데이터 편집은 사라집니다. 계속할까요?",
+        if (!EditorUtility.DisplayDialog("Sync Scene from JSON",
+                "Rebuild scene markers from Map.json on disk.\n" +
+                "(matched by id: values are updated, markers missing from JSON are deleted)\n\n" +
+                "Unsaved marker edits in the scene will be lost. Continue?",
                 "Sync", "Cancel"))
             return;
 
-        LoadMapJson(); // 외부 편집을 반영하기 위해 디스크에서 재로드 (AutoSync는 이 창의 리스트를 공유한다)
         int changes = MapJsonAutoSync.ApplyJsonToScene(sceneName);
         if (changes == 0)
-            Debug.Log($"[MapJsonUpdater] '{sceneName}' 씬은 이미 Map.json과 일치합니다 (변경 0건).");
+            Debug.Log($"[MapTool] Scene '{sceneName}' already matches Map.json (0 changes).");
     }
 
-    private void BuildSceneFromJson(MapData map)
+    public static void BuildSceneFromJson(MapData map)
     {
         // 기존 마커가 있으면 교체 여부 확인
         var existing = new List<GameObject>();
-        existing.AddRange(FindObjectsOfType<Gate>(true).Select(c => c.gameObject));
-        existing.AddRange(FindObjectsOfType<SpawnPoint>(true).Select(c => c.gameObject));
-        existing.AddRange(FindObjectsOfType<MapObjectMarker>(true).Select(c => c.gameObject));
+        existing.AddRange(Object.FindObjectsOfType<Gate>(true).Select(c => c.gameObject));
+        existing.AddRange(Object.FindObjectsOfType<SpawnPoint>(true).Select(c => c.gameObject));
+        existing.AddRange(Object.FindObjectsOfType<MapObjectMarker>(true).Select(c => c.gameObject));
         existing = existing.Distinct().ToList();
 
         if (existing.Count > 0)
@@ -1040,7 +679,7 @@ public class MapJsonUpdater : EditorWindow
         Debug.Log($"Build complete: {created} marker objects created from map '{map.name}'. (씬 저장 필요)");
     }
 
-    private int BuildSpawns(List<SpawnPointInfo> spawns, SpawnType type, string baseName)
+    private static int BuildSpawns(List<SpawnPointInfo> spawns, SpawnType type, string baseName)
     {
         for (int i = 0; i < spawns.Count; i++)
         {
@@ -1066,7 +705,7 @@ public class MapJsonUpdater : EditorWindow
     // 배치 툴박스
     // ---------------------------------------------------------------------
 
-    private void CreateGateMarker()
+    public static void CreateGateMarker()
     {
         var go = new GameObject("NewGate");
         Undo.RegisterCreatedObjectUndo(go, "Create Gate Marker");
@@ -1086,7 +725,7 @@ public class MapJsonUpdater : EditorWindow
         FinishMarkerCreation(go);
     }
 
-    private void CreateSpawnMarker(SpawnType type)
+    public static void CreateSpawnMarker(SpawnType type)
     {
         var go = new GameObject($"New{type}Spawn");
         Undo.RegisterCreatedObjectUndo(go, "Create Spawn Marker");
@@ -1100,7 +739,7 @@ public class MapJsonUpdater : EditorWindow
         FinishMarkerCreation(go);
     }
 
-    private void CreateObjectMarker(MapObjectKind kind)
+    public static void CreateObjectMarker(MapObjectKind kind)
     {
         var go = new GameObject(kind == MapObjectKind.Static ? "NewStaticObject" : "NewMovableObject");
         Undo.RegisterCreatedObjectUndo(go, "Create Map Object Marker");

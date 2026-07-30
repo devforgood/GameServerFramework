@@ -299,22 +299,22 @@ bool GridManager::IsValidCell(int cellX, int cellY) const {
     return cellX >= 0 && cellY >= 0 && cellX < grid_->getWidth() && cellY < grid_->getHeight();
 }
 
-void GridManager::Subscribe(int cellX, int cellY, long viewerId) {
+void GridManager::Subscribe(int cellX, int cellY, int viewerSlot) {
     if (!IsValidCell(cellX, cellY)) return;
 
     auto& subscribers = grid_->get(cellX, cellY).subscribers;
-    for (long id : subscribers) {
-        if (id == viewerId) return; // 중복 구독 방지
+    for (int slot : subscribers) {
+        if (slot == viewerSlot) return; // 중복 구독 방지
     }
-    subscribers.push_back(viewerId);
+    subscribers.push_back(viewerSlot);
 }
 
-void GridManager::Unsubscribe(int cellX, int cellY, long viewerId) {
+void GridManager::Unsubscribe(int cellX, int cellY, int viewerSlot) {
     if (!IsValidCell(cellX, cellY)) return;
 
     auto& subscribers = grid_->get(cellX, cellY).subscribers;
     for (size_t i = 0; i < subscribers.size(); ++i) {
-        if (subscribers[i] == viewerId) {
+        if (subscribers[i] == viewerSlot) {
             subscribers[i] = subscribers.back();
             subscribers.pop_back();
             return;
@@ -322,8 +322,8 @@ void GridManager::Unsubscribe(int cellX, int cellY, long viewerId) {
     }
 }
 
-const std::vector<long>& GridManager::SubscribersOf(int cellX, int cellY) {
-    static const std::vector<long> empty;
+const std::vector<int>& GridManager::SubscribersOf(int cellX, int cellY) {
+    static const std::vector<int> empty;
     if (!IsValidCell(cellX, cellY)) return empty;
     return grid_->get(cellX, cellY).subscribers;
 }

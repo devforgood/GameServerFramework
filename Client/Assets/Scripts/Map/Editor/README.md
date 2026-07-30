@@ -1,4 +1,70 @@
-# Map JSON Updater
+# Map Tool
+
+맵 하나를 **씬부터 서버가 읽는 데이터까지** 만들어 내는 통합 창입니다.
+Unity 에디터에서 `Tools > Map Tool`.
+
+```
+1. 맵 씬      씬 생성/열기 + Build Settings 등록
+2. 지형       프리셋(평지/장애물/미로) + 경계 벽 생성
+3. NavMesh    씬 전체 → OBJ → Recast 로 굽기
+4. Map.json   맵 항목 생성/갱신 + 마커 스캔 + NavMesh 를 GameData 로 복사
+```
+
+네 단계는 **현재 씬 이름 하나로 엮입니다.** 씬 `Foo` 라면
+`Assets/GeneratedObj/Foo.obj` → `Assets/GeneratedNavMeshes/Foo_navmesh.bin` →
+`GameData/Foo_navmesh.bin` → `Map.json` 의 `scene == "Foo"` 항목(`navmesh_path`)으로 이어집니다.
+경로를 손으로 맞출 일이 없고, 각 단계는 파일 존재/수정 시각으로 상태를 스스로 판정합니다.
+
+| 표시 | 뜻 |
+| --- | --- |
+| 해야 함 | 산출물이 아직 없음 |
+| 갱신 필요 | 앞 단계가 더 최신 (예: 씬을 고쳤는데 NavMesh 를 다시 굽지 않음) |
+| 완료 | 최신 상태 |
+
+**한 번에 실행** 버튼은 지형은 그대로 두고 `NavMesh 굽기 → Map.json 등록`만 다시 맞춥니다.
+씬을 편집한 뒤 서버에 반영할 때 쓰는 경로입니다.
+
+## 주의
+
+- 서버가 읽는 것은 **GameData 쪽 NavMesh 사본**입니다. 4단계까지 해야 실제로 반영됩니다.
+- Build Settings 에 없는 씬은 게이트로 진입할 수 없습니다(1단계에서 경고/버튼 제공).
+- 지형 프리셋은 NavMesh 를 구울 수 있는 최소 지오메트리(평지·장애물·경사로·미로·경계 벽)만 만듭니다.
+  더 복잡한 지형은 창 하단의 기존 도구(`Terrain Generator`)로 만들고 3단계부터 이어가면 됩니다.
+- 클라/서버 배포는 별도입니다 — `GameDataFlow/GameDataFlow.py` 를 실행하세요.
+
+## 구성
+
+| 파일 | 역할 |
+| --- | --- |
+| `MapToolWindow.cs` | 창(UI) — 단계 상태 표시와 실행 버튼만. 표기는 영어 |
+| `MapPipeline.cs` | 단계 실행 로직과 경로 규칙(창 상태에 의존하지 않는 정적 API) |
+| `TerrainBuilder.cs` | 지형 생성 |
+| `MapJsonUpdater.cs` | 씬 ⇔ Map.json 변환 라이브러리(아래 문서) |
+| `MapJsonAutoSync.cs` | 씬 열기/편집 시 Map.json 자동 동기화 |
+
+## 통합되면서 없어진 창
+
+`Tools` 메뉴에는 이제 **Map Tool 하나만** 있습니다. 아래 창들은 삭제됐습니다.
+
+| 없어진 창 | 대체 |
+| --- | --- |
+| `Tools > Terrain Generator` (+ Legacy 2종) | Map Tool 2단계 (`TerrainBuilder`) |
+| `Tools > RecastNavigation/Open NavMesh Generator` | Map Tool 3단계 (씬 → OBJ → 굽기 자동) |
+| `Tools > Map JSON Updater` | Map Tool 4단계 + `Markers` 접기 영역 |
+
+- 지형 프리셋은 실제로 동작하던 것(평지·장애물·경사로·미로)만 옮겼습니다.
+  삭제된 창의 City/Forest/Mountain/Battlefield/Dungeon 은 로그만 출력하는 빈 구현이었습니다.
+- OBJ 추출은 더 이상 선택(Selection) 기반이 아니라 **씬 전체 자동**입니다.
+- 마커 배치 · `Rebuild scene markers from Map.json` · Auto Sync 토글은 4단계의 `Markers` 안에 있습니다.
+- 없어진 기능: 창에서 맵 메타데이터(name/scene/name_id/game_mode_id)를 직접 편집하던 필드와
+  **All Maps** 목록입니다. 지금은 `Map.json` 을 직접 편집하세요(게이트 id 연결도 동일).
+
+---
+
+# Map JSON Updater (라이브러리)
+
+> 예전에는 같은 이름의 독립 창이었지만, 지금은 UI 없이 데이터 모델과 변환 로직만 제공합니다.
+> 아래 설명 중 창 조작에 해당하는 부분은 Map Tool 로 옮겨졌습니다.
 
 Unity 씬과 `GameData/Map.json`을 양방향으로 연동하는 맵 디자인 툴입니다.
 씬에 배치한 마커(게이트, 스폰 포인트, 맵 오브젝트)를 JSON으로 기록하고,

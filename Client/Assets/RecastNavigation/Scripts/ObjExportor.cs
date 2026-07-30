@@ -241,6 +241,34 @@ public class ObjExportor
 		MaterialsToFile(materialList, folder, filename);
 	}
 
+	/// <summary>
+	/// 지정한 메시들을 하나의 OBJ 로 내보낸다(대화상자 없이, 실패는 out error 로).
+	/// Map Tool 파이프라인이 '씬 전체 → NavMesh 입력 OBJ' 를 자동으로 만들 때 쓴다.
+	/// 기존 Export* 메서드들은 Selection 기반이라 자동화 경로에서는 쓸 수 없다.
+	/// </summary>
+	public static bool ExportMeshesToFile(MeshFilter[] meshFilters, string folder, string filename, out string error)
+	{
+		error = null;
+
+		if (meshFilters == null || meshFilters.Length == 0)
+		{
+			error = "내보낼 메시가 없습니다.";
+			return false;
+		}
+
+		try
+		{
+			System.IO.Directory.CreateDirectory(folder);
+			MeshesToFile(meshFilters, folder, filename);
+			return true;
+		}
+		catch (System.Exception e)
+		{
+			error = e.Message;
+			return false;
+		}
+	}
+
 	private static void MeshesToFile(MeshFilter[] mf, string folder, string filename)
 	{
 		Dictionary<string, ObjMaterial> materialList = PrepareFileWrite();

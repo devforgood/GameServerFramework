@@ -55,19 +55,13 @@ public static class MapJsonAutoSync
     }
 
     // -------------------------------------------------------------
-    // 데이터 소스: 창이 열려 있으면 창의 리스트를 공유하고, 아니면 파일에서 읽는다.
+    // 데이터 소스: Map.json 파일을 직접 읽는다.
+    // (예전에는 Map JSON Updater 창이 열려 있으면 그 창의 리스트를 공유했지만,
+    //  창이 Map Tool 로 통합되면서 항상 파일이 유일한 출처가 됐다.)
     // -------------------------------------------------------------
 
-    private static bool TryGetMapList(out string path, out List<MapJsonUpdater.MapData> maps, out MapJsonUpdater window)
+    private static bool TryGetMapList(out string path, out List<MapJsonUpdater.MapData> maps)
     {
-        window = Resources.FindObjectsOfTypeAll<MapJsonUpdater>().FirstOrDefault();
-        if (window != null && !string.IsNullOrEmpty(window.SharedJsonPath))
-        {
-            path = window.SharedJsonPath;
-            maps = window.SharedMapList;
-            return true;
-        }
-
         path = MapJsonUpdater.FindMapJsonPath();
         if (path == null)
         {
@@ -94,7 +88,7 @@ public static class MapJsonAutoSync
     {
         if (string.IsNullOrEmpty(sceneName))
             return -1;
-        if (!TryGetMapList(out _, out var maps, out _))
+        if (!TryGetMapList(out _, out var maps))
             return -1;
 
         var map = MapJsonUpdater.FindMapForScene(maps, sceneName);
@@ -592,7 +586,7 @@ public static class MapJsonAutoSync
         var scene = EditorSceneManager.GetActiveScene();
         if (string.IsNullOrEmpty(scene.name))
             return;
-        if (!TryGetMapList(out var path, out var maps, out var window))
+        if (!TryGetMapList(out var path, out var maps))
             return;
 
         var map = MapJsonUpdater.FindMapForScene(maps, scene.name);
@@ -614,8 +608,6 @@ public static class MapJsonAutoSync
             MapJsonUpdater.BackupBeforeWrite(path);
             File.WriteAllText(path, json);
             Debug.Log($"[MapAutoSync] '{scene.name}' 마커 변경 감지 → Map.json 자동 저장");
-            if (window != null)
-                window.Repaint();
         }
         catch (System.Exception e)
         {

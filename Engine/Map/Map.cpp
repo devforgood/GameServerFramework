@@ -131,17 +131,12 @@ void Map::InitEcs()
 // 어차피 모두가 모두를 보므로, 걸러지는 것 없이 중복 비용만 남는다(측정치는 PERFORMANCE.md).
 // 그래서 반경은 맵 크기에 맞춰 데이터로 정하고, 작은 맵은 0(브로드캐스트)으로 둔다.
 // AoI 상태는 쓰는 맵에서만 할당한다(Map 의 멤버 배치를 건드리지 않기 위해 별도 객체).
+//
+// 뷰어는 '슬롯'(연속 배열의 인덱스)으로 다룬다. 셀 구독자 목록에도 이 슬롯 번호가 들어가므로,
+// 액터 변경을 구독자에게 전달할 때 해시 조회 없이 배열 색인 한 번으로 끝난다.
+// (매 틱 '변경 액터 수 × 구독자 수' 만큼 반복되는 자리라 조회 비용이 그대로 틱 비용이 된다.)
 struct Map::AoIState
 {
-	// 뷰어(플레이어)별 구독 상태.
-	struct Viewer
-	{
-		int cellX = 0;
-		int cellY = 0;
-		int cellRadius = 0;
-		bool subscribed = false;
-	};
-
 	// 한 틱 동안 그 플레이어에게 보낼 것들.
 	// enter 는 전체 스냅샷, update 는 변경분, leave 는 시야에서 빠진 agentId.
 	struct PendingView
@@ -154,10 +149,64 @@ struct Map::AoIState
 		void clear() { enters.clear(); updates.clear(); leaves.clear(); }
 	};
 
-	std::unordered_map<long, Viewer> viewers;
-	std::unordered_map<long, PendingView> pending;
-	std::vector<IGridActor*> scratch;   // 셀 순회용 임시 버퍼(호출당 힙 할당 방지)
-	float radiusOverride = 0.0f;        // 0 이하면 맵 데이터 값
+	struct Slot
+	{
+		long playerId = -1;
+		int cellX = 0;
+		int cellY = 0;
+		int cellRadius = 0;
+		bool active = false;
+		PendingView pending;
+	};
+
+	std::vector<Slot> slots;
+	std::unordered_map<long, int> slotOf;   // playerId → 슬롯(구독/해제 때만 쓴다)
+	std::vector<int> freeSlots;
+	std::vector<IGridActor*> scratch;       // 셀 순회용 임시 버퍼(호출당 힙 할당 방지)
+	float radiusOverride = 0.0f;            // 0 이하면 맵 데이터 값
+
+	int AcquireSlot(long playerId)
+	{
+		auto itr = slotOf.find(playerId);
+		if (itr != slotOf.end())
+			return itr->second;
+
+		int index;
+		if (!freeSlots.empty())
+		{
+			index = freeSlots.back();
+			freeSlots.pop_back();
+			slots[index] = Slot();
+		}
+		else
+		{
+			index = static_cast<int>(slots.size());
+			slots.emplace_back();
+		}
+
+		slots[index].playerId = playerId;
+		slots[index].active = true;
+		slotOf[playerId] = index;
+		return index;
+	}
+
+	int FindSlot(long playerId) const
+	{
+		auto itr = slotOf.find(playerId);
+		return itr != slotOf.end() ? itr->second : -1;
+	}
+
+	void ReleaseSlot(long playerId)
+	{
+		auto itr = slotOf.find(playerId);
+		if (itr == slotOf.end())
+			return;
+
+		const int index = itr->second;
+		slots[index] = Slot();
+		freeSlots.push_back(index);
+		slotOf.erase(itr);
+	}
 };
 
 float Map::AoIRadius() const
@@ -187,13 +236,20 @@ void Map::SetAoIRadius(float radius)
 
 bool Map::IsInViewOf(long playerId, int actorId)
 {
+	if (aoi_ == nullptr)
+		return false;
+
+	const int slot = aoi_->FindSlot(playerId);
+	if (slot < 0)
+		return false;
+
 	auto actor = FindActor(actorId);
 	if (actor == nullptr)
 		return false;
 
-	for (long viewerId : gridManager_->SubscribersOf(actor->GetGridX(), actor->GetGridY()))
+	for (int subscriber : gridManager_->SubscribersOf(actor->GetGridX(), actor->GetGridY()))
 	{
-		if (viewerId == playerId)
+		if (subscriber == slot)
 			return true;
 	}
 	return false;
@@ -205,23 +261,23 @@ void Map::SubscribeViewer(long playerId, Actor* character, bool sendSnapshot)
 	if (character == nullptr || aoi_ == nullptr)
 		return;
 
-	AoIState::Viewer& viewer = aoi_->viewers[playerId];
+	const int slotIndex = aoi_->AcquireSlot(playerId);
+	AoIState::Slot& slot = aoi_->slots[slotIndex];
+
 	const auto [cellX, cellY] = gridManager_->CellOf(character->GetVecter2X(), character->GetVecter2Y());
 	const int radius = gridManager_->CellRadius(AoIRadius());
 
-	viewer.cellX = cellX;
-	viewer.cellY = cellY;
-	viewer.cellRadius = radius;
-	viewer.subscribed = true;
+	slot.cellX = cellX;
+	slot.cellY = cellY;
+	slot.cellRadius = radius;
 
-	AoIState::PendingView& view = aoi_->pending[playerId];
 	for (int dx = -radius; dx <= radius; ++dx)
 	{
 		for (int dy = -radius; dy <= radius; ++dy)
 		{
 			const int cx = cellX + dx;
 			const int cy = cellY + dy;
-			gridManager_->Subscribe(cx, cy, playerId);
+			gridManager_->Subscribe(cx, cy, slotIndex);
 
 			if (!sendSnapshot)
 				continue;
@@ -229,7 +285,7 @@ void Map::SubscribeViewer(long playerId, Actor* character, bool sendSnapshot)
 			aoi_->scratch.clear();
 			gridManager_->CollectActorsInCell(cx, cy, aoi_->scratch);
 			for (IGridActor* entity : aoi_->scratch)
-				view.enters.push_back(static_cast<Actor*>(entity));
+				aoi_->slots[slotIndex].pending.enters.push_back(static_cast<Actor*>(entity));
 		}
 	}
 }
@@ -239,38 +295,33 @@ void Map::UnsubscribeViewer(long playerId)
 	if (aoi_ == nullptr)
 		return;
 
-	auto itr = aoi_->viewers.find(playerId);
-	if (itr == aoi_->viewers.end())
+	const int slotIndex = aoi_->FindSlot(playerId);
+	if (slotIndex < 0)
 		return;
 
-	const AoIState::Viewer& viewer = itr->second;
-	if (viewer.subscribed)
-	{
-		for (int dx = -viewer.cellRadius; dx <= viewer.cellRadius; ++dx)
-			for (int dy = -viewer.cellRadius; dy <= viewer.cellRadius; ++dy)
-				gridManager_->Unsubscribe(viewer.cellX + dx, viewer.cellY + dy, playerId);
-	}
+	const AoIState::Slot& slot = aoi_->slots[slotIndex];
+	for (int dx = -slot.cellRadius; dx <= slot.cellRadius; ++dx)
+		for (int dy = -slot.cellRadius; dy <= slot.cellRadius; ++dy)
+			gridManager_->Unsubscribe(slot.cellX + dx, slot.cellY + dy, slotIndex);
 
-	aoi_->viewers.erase(itr);
-	aoi_->pending.erase(playerId);
+	aoi_->ReleaseSlot(playerId);
 }
 
 // 플레이어 캐릭터가 셀을 옮겼다. 새로 들어온 셀의 액터는 enter, 빠진 셀의 액터는 leave 다.
 void Map::OnViewerCellChanged(long playerId, Actor* character)
 {
-	auto itr = aoi_->viewers.find(playerId);
-	if (itr == aoi_->viewers.end() || !itr->second.subscribed)
+	const int slotIndex = aoi_->FindSlot(playerId);
+	if (slotIndex < 0)
 		return;
 
-	AoIState::Viewer& viewer = itr->second;
+	AoIState::Slot& slot = aoi_->slots[slotIndex];
 	const auto [newX, newY] = gridManager_->CellOf(character->GetVecter2X(), character->GetVecter2Y());
-	if (newX == viewer.cellX && newY == viewer.cellY)
+	if (newX == slot.cellX && newY == slot.cellY)
 		return;
 
-	const int radius = viewer.cellRadius;
-	const int oldX = viewer.cellX;
-	const int oldY = viewer.cellY;
-	AoIState::PendingView& view = aoi_->pending[playerId];
+	const int radius = slot.cellRadius;
+	const int oldX = slot.cellX;
+	const int oldY = slot.cellY;
 
 	auto inRange = [radius](int cell, int center) { return cell >= center - radius && cell <= center + radius; };
 
@@ -282,12 +333,12 @@ void Map::OnViewerCellChanged(long playerId, Actor* character)
 			if (inRange(cx, newX) && inRange(cy, newY))
 				continue; // 새 범위에도 포함 — 유지
 
-			gridManager_->Unsubscribe(cx, cy, playerId);
+			gridManager_->Unsubscribe(cx, cy, slotIndex);
 
 			aoi_->scratch.clear();
 			gridManager_->CollectActorsInCell(cx, cy, aoi_->scratch);
 			for (IGridActor* entity : aoi_->scratch)
-				view.leaves.push_back(entity->GetActorId());
+				aoi_->slots[slotIndex].pending.leaves.push_back(entity->GetActorId());
 		}
 	}
 
@@ -299,54 +350,53 @@ void Map::OnViewerCellChanged(long playerId, Actor* character)
 			if (inRange(cx, oldX) && inRange(cy, oldY))
 				continue; // 이전 범위에도 있었음 — 이미 구독 중
 
-			gridManager_->Subscribe(cx, cy, playerId);
+			gridManager_->Subscribe(cx, cy, slotIndex);
 
 			aoi_->scratch.clear();
 			gridManager_->CollectActorsInCell(cx, cy, aoi_->scratch);
 			for (IGridActor* entity : aoi_->scratch)
-				view.enters.push_back(static_cast<Actor*>(entity));
+				aoi_->slots[slotIndex].pending.enters.push_back(static_cast<Actor*>(entity));
 		}
 	}
 
-	viewer.cellX = newX;
-	viewer.cellY = newY;
+	aoi_->slots[slotIndex].cellX = newX;
+	aoi_->slots[slotIndex].cellY = newY;
 }
 
 // 액터가 셀을 옮겼다. 옛 셀에만 있던 구독자에게는 leave, 새 셀에만 있는 구독자에게는 enter.
 void Map::OnActorCellChanged(Actor* actor, int oldCellX, int oldCellY, int newCellX, int newCellY)
 {
-	if (aoi_->viewers.empty())
+	if (aoi_->slotOf.empty())
 		return;
 
-	const std::vector<long>& before = gridManager_->SubscribersOf(oldCellX, oldCellY);
+	const std::vector<int>& before = gridManager_->SubscribersOf(oldCellX, oldCellY);
 	// 새 셀 구독자는 복사해 둔다(아래에서 before 를 순회하는 동안 참조가 살아 있어야 한다).
-	const std::vector<long> after = gridManager_->SubscribersOf(newCellX, newCellY);
+	const std::vector<int> after = gridManager_->SubscribersOf(newCellX, newCellY);
 
-	auto contains = [](const std::vector<long>& list, long id) {
-		for (long v : list)
-			if (v == id) return true;
+	auto contains = [](const std::vector<int>& list, int slot) {
+		for (int v : list)
+			if (v == slot) return true;
 		return false;
 	};
 
-	for (long viewerId : before)
+	for (int slot : before)
 	{
-		if (!contains(after, viewerId))
-			aoi_->pending[viewerId].leaves.push_back(actor->GetActorId());
+		if (!contains(after, slot))
+			aoi_->slots[slot].pending.leaves.push_back(actor->GetActorId());
 	}
 
-	for (long viewerId : after)
+	for (int slot : after)
 	{
-		if (!contains(before, viewerId))
-			aoi_->pending[viewerId].enters.push_back(actor);
+		if (!contains(before, slot))
+			aoi_->slots[slot].pending.enters.push_back(actor);
 	}
 }
 
-// 변경된 액터를 그 액터가 있는 셀의 구독자에게만 큐잉한다.
+// 변경된 액터를 그 액터가 있는 셀의 구독자에게만 큐잉한다(슬롯 색인이라 해시 조회가 없다).
 void Map::QueueUpdate(Actor* actor)
 {
-	const std::vector<long>& subscribers = gridManager_->SubscribersOf(actor->GetGridX(), actor->GetGridY());
-	for (long viewerId : subscribers)
-		aoi_->pending[viewerId].updates.push_back(actor);
+	for (int slot : gridManager_->SubscribersOf(actor->GetGridX(), actor->GetGridY()))
+		aoi_->slots[slot].pending.updates.push_back(actor);
 }
 
 // 플레이어마다 자기 시야 분량의 메시지를 조립해 보낸다. enter 는 전체 스냅샷, update 는 변경분만 담는다.
@@ -355,9 +405,13 @@ void Map::SendPendingViews()
 	if (aoi_ == nullptr)
 		return;
 
-	for (auto& [playerId, view] : aoi_->pending)
+	for (AoIState::Slot& slot : aoi_->slots)
 	{
-		auto player = FindPlayer(playerId);
+		if (!slot.active)
+			continue;
+
+		AoIState::PendingView& view = slot.pending;
+		auto player = FindPlayer(slot.playerId);
 		if (player == nullptr || view.empty())
 		{
 			view.clear();
@@ -608,7 +662,10 @@ void Map::SendWorldState()
 			OnRemoveAgent(agent_id);
 
 		if (aoi_ != nullptr)
-			aoi_->pending.clear();
+		{
+			for (AoIState::Slot& slot : aoi_->slots)
+				slot.pending.clear();
+		}
 		removedAgents_.clear();
 		return;
 	}
@@ -728,7 +785,7 @@ void Map::OnRemoveAgent(int agent_id)
 	if (AoIEnabled())
 	{
 		for (long viewerId : gridManager_->SubscribersOf(removed->GetGridX(), removed->GetGridY()))
-			aoi_->pending[viewerId].leaves.push_back(agent_id);
+			aoi_->slots[viewerId].pending.leaves.push_back(agent_id);
 	}
 
 	gridManager_->remove(removed);

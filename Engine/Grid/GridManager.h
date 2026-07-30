@@ -47,10 +47,10 @@ public:
     int CellRadius(float range) const;                   // 반경(월드 단위) → 셀 개수
     bool IsValidCell(int cellX, int cellY) const;
 
-    void Subscribe(int cellX, int cellY, long viewerId);
-    void Unsubscribe(int cellX, int cellY, long viewerId);
-    // 구독자 목록. 셀이 범위 밖이면 비어 있는 목록을 돌려준다(호출 측 분기 제거).
-    const std::vector<long>& SubscribersOf(int cellX, int cellY);
+    void Subscribe(int cellX, int cellY, int viewerSlot);
+    void Unsubscribe(int cellX, int cellY, int viewerSlot);
+    // 구독자 슬롯 목록. 셀이 범위 밖이면 비어 있는 목록을 돌려준다(호출 측 분기 제거).
+    const std::vector<int>& SubscribersOf(int cellX, int cellY);
 
     // 셀 안의 모든 액터(캐릭터+몬스터)를 out 에 덧붙인다(비우지 않는다).
     void CollectActorsInCell(int cellX, int cellY, std::vector<IGridActor*>& out);
@@ -61,10 +61,11 @@ public:
     struct Cell {
         std::vector<IGridActor*> characters;
         std::vector<IGridActor*> monsters;
-        // 이 셀을 관심영역에 포함한 뷰어(플레이어) id 목록.
+        // 이 셀을 관심영역에 포함한 뷰어들의 '슬롯 인덱스'.
         // 액터가 바뀌면 그 액터가 있는 셀의 구독자에게만 전달하면 되므로,
         // 전달 비용이 '전체 플레이어 수'가 아니라 '그 자리를 보고 있는 사람 수'가 된다.
-        std::vector<long> subscribers;
+        // 값의 의미는 소유자(Map)가 정한다 — 그래야 전달 시 해시 조회 없이 배열 색인으로 끝난다.
+        std::vector<int> subscribers;
     };
 
     class IGrid
