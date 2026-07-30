@@ -22,7 +22,16 @@ namespace std {
 
 class GridManager {
 public:
+    // 맵 원점(셀 (0,0) 의 월드 좌표)을 명시하는 형태. 네비메시 경계가 원점 대칭이 아닌
+    // 맵(예: x [-26.3, 25])도 그대로 담을 수 있다.
+    GridManager(int width, int height, int cellSize, float originX, float originZ);
+
+    // 원점 대칭 맵을 위한 축약형 — 원점을 (-width*cellSize/2, -height*cellSize/2) 로 잡는다.
     GridManager(int width, int height, int cellSize);
+
+    // 그리드가 담당하는 월드 범위. 이 밖의 좌표는 어떤 셀에도 속하지 않는다.
+    float OriginX() const { return originX_; }
+    float OriginZ() const { return originZ_; }
 
     void add(IGridActor* actor);
     void move(IGridActor* actor, float newX, float newY);
@@ -92,5 +101,7 @@ private:
     void enterCell(IGridActor* actor, int x, int y);
     void leaveCell(IGridActor* actor, int x, int y);
 
-    const int NEGATIVE_VALUE_OFFSET;
+    const float originX_;
+    const float originZ_;
+    const float invCellSize_;   // 셀 좌표 계산에서 나눗셈을 없애기 위한 역수.
 };

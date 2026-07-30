@@ -53,6 +53,11 @@ public:
 
 	bool IsLoaded() const { return navMesh_ != nullptr; }
 
+	// 로드된 타일 전체를 감싸는 경계(서버 좌표계). 맵의 실제 크기가 필요한 곳에서 쓴다
+	// — Map.json 의 size 는 씬에서 채워 넣는 메타데이터라 실제 지오메트리와 다를 수 있다.
+	// 타일이 하나도 없으면 false 를 반환하고 out 은 건드리지 않는다.
+	bool Bounds(float* outMin, float* outMax) const;
+
 	dtNavMesh* mesh() const { return navMesh_; }
 	dtNavMeshQuery* query() const { return navQuery_; }
 	const dtQueryFilter* filter() const { return &filter_; }

@@ -68,13 +68,54 @@ bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 	if (!InitNavigation(movementType))
 		return false;
 
-	gridManager_ = new GridManager(100, 100, 2);
+	gridManager_ = CreateGrid();
 	sendMessageBuilder_ = std::make_shared<send_message>();
 
 	RefreshAoIMode(); // 맵 데이터의 aoi_radius 로 관심영역 사용 여부를 정한다
 
 	InitEcs();
 	return true;
+}
+
+// 공간 분할 셀 크기(월드 단위). 적 탐지 반경(g_fDistance=10)이 셀 5칸이 되도록 잡혀 있다.
+static constexpr int kGridCellSize = 2;
+
+// 그리드가 담지 못하는 좌표는 어떤 셀에도 들어가지 않는다(enterCell 이 조용히 무시한다).
+// 그러면 그 액터는 적 탐지·AoI 구독·스킬 AoE 판정에서 전부 빠지므로,
+// 크기는 반드시 네비메시의 실제 범위에서 뽑는다.
+//
+// Map.json 의 size 는 쓰지 않는다 — 툴이 씬 경계에서 채우는 메타데이터이고 엔진이 참조한 적이
+// 없어서, 실제 지오메트리가 50유닛인 맵에 1000 이 적혀 있는 식으로 어긋나 있다.
+GridManager* Map::CreateGrid() const
+{
+	// 네비메시를 못 읽는 경우(테스트 등)를 위한 기본값. 원점 기준 ±100 을 담는다.
+	constexpr int kFallbackCells = 100;
+
+	float bmin[3], bmax[3];
+	if (navMesh_ == nullptr || !navMesh_->Bounds(bmin, bmax))
+	{
+		LOG.warn("Map {} navmesh 경계를 얻지 못해 기본 그리드({}x{}, 셀 {})를 사용합니다.",
+			mapData_ != nullptr ? mapData_->id : 0, kFallbackCells, kFallbackCells, kGridCellSize);
+		return new GridManager(kFallbackCells, kFallbackCells, kGridCellSize);
+	}
+
+	// 가장자리에 선 액터가 밀려나도 셀 밖으로 나가지 않도록 한 칸씩 여유를 둔다.
+	//
+	// 원점은 반드시 셀 크기의 배수로 내림한다. 네비메시 경계를 그대로 쓰면(예: -28.3)
+	// 셀 경계가 소수점에 걸려, 정수 좌표에 서 있는 액터가 부동소수 오차로 매 틱 셀을 넘나들며
+	// leave+enter 를 반복한다. 실제로 10,000마리 틱이 6.8ms → 7.9ms 로 느려졌다.
+	// 배수로 맞추면 (좌표 - 원점) 이 이진수로 정확히 떨어져 이 흔들림이 사라진다.
+	const float margin = static_cast<float>(kGridCellSize);
+	const float originX = std::floor((bmin[0] - margin) / kGridCellSize) * kGridCellSize;
+	const float originZ = std::floor((bmin[2] - margin) / kGridCellSize) * kGridCellSize;
+	const int width = static_cast<int>(std::ceil((bmax[0] + margin - originX) / kGridCellSize));
+	const int height = static_cast<int>(std::ceil((bmax[2] + margin - originZ) / kGridCellSize));
+
+	LOG.info("Map {} 그리드 {}x{} 셀(셀 크기 {}), 원점 ({:.1f}, {:.1f}), navmesh 범위 x[{:.1f}, {:.1f}] z[{:.1f}, {:.1f}]",
+		mapData_ != nullptr ? mapData_->id : 0, width, height, kGridCellSize,
+		originX, originZ, bmin[0], bmax[0], bmin[2], bmax[2]);
+
+	return new GridManager(width, height, kGridCellSize, originX, originZ);
 }
 
 bool Map::InitNavigation(const std::string& movementType)

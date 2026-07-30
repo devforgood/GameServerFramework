@@ -4,7 +4,9 @@
 //   - 적 탐지: Map::DetectEnemy → getCharactersInViewRange(range 10)
 //   - 위치 갱신: Map::SyncActorState → GridManager::move(셀 이동 시 재등록)
 // 여기서는 Map/World 없이 그리드만 떼어내 밀도별 비용을 잰다.
-// 그리드 설정은 프로덕션과 동일하다(Map::Init 의 GridManager(100, 100, 2)).
+// 셀 크기는 프로덕션과 같은 2 다. 칸 수는 200유닛 맵에 해당하는 고정값으로,
+// 실제 맵은 Map::CreateGrid 가 네비메시 범위에서 뽑는다(맵마다 다르다).
+// 여기서 재는 것은 맵 크기가 아니라 '셀당 밀도'에 따른 비용이므로 고정으로 둔다.
 
 #include <benchmark/benchmark.h>
 

@@ -294,6 +294,9 @@ public static class MapPipeline
         Directory.CreateDirectory(NavMeshFolder);
         string outPath = NavMeshPathOf(sceneName);
 
+        // 네이티브가 로그 파일을 새로 쓰므로, 실패했을 때 '이번 굽기'의 로그만 골라내기 위해 기준 시각을 잡아 둔다.
+        System.DateTime startedAt = System.DateTime.Now;
+
         bool ok = RecastNavigation.Unity.RecastNavigationWrapper.GenerateNavMesh(
             objPath, outPath,
             settings.cellSize, settings.cellHeight,
@@ -305,12 +308,119 @@ public static class MapPipeline
 
         if (!ok)
         {
-            error = "NavMesh 생성에 실패했습니다. 콘솔 로그를 확인하세요.";
+            // 네이티브는 bool 만 돌려주고 실패 이유는 자기 로그 파일에만 남긴다. 그대로 두면
+            // 콘솔에는 "NavMesh generation failed" 한 줄뿐이라 원인을 알 수 없다.
+            error = DescribeBakeFailure(startedAt);
             return false;
         }
 
         AssetDatabase.Refresh();
         return true;
+    }
+
+    // ── NavMesh 예산 ──
+    //
+    // Recast 는 맵 하나를 타일 하나로 굽고(솔로 빌드), 폴리곤 메시 정점 인덱스가 unsigned short 다.
+    // 그래서 컨투어 정점 합계가 65534 를 넘으면 rcBuildPolyMesh 가 실패한다
+    // ("Could not triangulate contours."). 맵이 커서가 아니라 '장애물이 많아서' 걸리는 한계다.
+    public const int MaxContourVerts = 65534;
+
+    // 실측(1000x1000 맵, 2m 큐브 장애물, cellSize 0.3):
+    //   장애물 2000개 → 컨투어 정점 15,136 / 5000개 → 34,026 / 20000개 → 139,372 (실패)
+    // 오브젝트당 약 7 정점으로 거의 선형이었다. cellSize 를 키우면 이 값이 줄지만
+    // (작은 장애물이 셀에 먹혀 사라진다) 비례하지는 않으므로 기본값 기준으로만 추정한다.
+    private const float ContourVertsPerMesh = 7f;
+
+    public struct NavMeshBudget
+    {
+        public int meshCount;
+        public int gridWidth, gridHeight;   // 하이트필드 셀 수
+        public long cellCount;
+        public int estimatedVerts;
+
+        public bool OverBudget => estimatedVerts > MaxContourVerts;
+        public bool NearBudget => !OverBudget && estimatedVerts > MaxContourVerts * 0.7f;
+        public bool HeavyGrid => cellCount > 4_000_000;   // 실측 11M 셀 = 약 13초
+
+        /// <summary>몇 개까지 줄이면 한계 안에 들어오는지(대략).</summary>
+        public int SuggestedMeshCount => SuggestedMaxMeshCount;
+    }
+
+    /// <summary>단일 타일 NavMesh 로 안전하게 구울 수 있는 대략적인 오브젝트 수.</summary>
+    public static int SuggestedMaxMeshCount => Mathf.FloorToInt(MaxContourVerts * 0.7f / ContourVertsPerMesh);
+
+    /// <summary>현재 씬을 이 설정으로 구우면 Recast 한계에 걸리는지 미리 가늠한다.</summary>
+    public static NavMeshBudget EstimateBudget(NavMeshBakeSettings settings)
+    {
+        var budget = new NavMeshBudget { meshCount = CountSceneMeshes() };
+
+        Bounds? bounds = SceneBounds();
+        float cellSize = Mathf.Max(0.01f, settings != null ? settings.cellSize : 0.3f);
+        if (bounds.HasValue)
+        {
+            budget.gridWidth = Mathf.CeilToInt(bounds.Value.size.x / cellSize);
+            budget.gridHeight = Mathf.CeilToInt(bounds.Value.size.z / cellSize);
+            budget.cellCount = (long)budget.gridWidth * budget.gridHeight;
+        }
+
+        budget.estimatedVerts = Mathf.RoundToInt(budget.meshCount * ContourVertsPerMesh);
+        return budget;
+    }
+
+    // 네이티브 로그에서 이번 굽기의 실패 이유를 꺼내 온다.
+    private static string DescribeBakeFailure(System.DateTime startedAt)
+    {
+        const string fallback = "NavMesh 생성에 실패했습니다. 콘솔 로그를 확인하세요.";
+
+        string reason = ReadNativeLogTail(startedAt);
+        if (reason == null)
+            return fallback;
+
+        // 아는 실패는 원인과 해결책까지 붙여 준다(로그만으로는 왜 걸렸는지 알 수 없다).
+        if (reason.Contains("Could not triangulate contours"))
+        {
+            var budget = EstimateBudget(null);
+            return $"NavMesh 정점 수가 Recast 한계({MaxContourVerts})를 넘었습니다 — \"{reason}\"\n" +
+                   $"맵 크기가 아니라 장애물 개수가 원인입니다(현재 메시 {budget.meshCount}개). " +
+                   $"장애물을 {budget.SuggestedMeshCount}개 이하로 줄이거나 Cell size 를 키우세요.";
+        }
+
+        return $"NavMesh 생성에 실패했습니다 — \"{reason}\"";
+    }
+
+    // 네이티브는 작업 폴더의 logs/ 에 recastnavigation_*.log 를 쓴다(유니티에서는 Client/Logs).
+    private static string ReadNativeLogTail(System.DateTime startedAt)
+    {
+        try
+        {
+            var dir = new DirectoryInfo("Logs");
+            if (!dir.Exists)
+                dir = new DirectoryInfo("logs");
+            if (!dir.Exists)
+                return null;
+
+            FileInfo log = dir.GetFiles("recastnavigation_*.log")
+                .Where(f => f.LastWriteTime >= startedAt.AddSeconds(-5))
+                .OrderByDescending(f => f.LastWriteTime)
+                .FirstOrDefault();
+            if (log == null)
+                return null;
+
+            // 컨투어 덤프가 수만 줄이라 마지막 의미 있는 줄만 고른다.
+            string last = null;
+            foreach (string line in File.ReadLines(log.FullName))
+            {
+                string trimmed = line.Trim();
+                if (trimmed.Length == 0 || trimmed.StartsWith("Contour ") || trimmed.StartsWith("==="))
+                    continue;
+                last = trimmed;
+            }
+            return last;
+        }
+        catch (IOException)
+        {
+            return null;   // 네이티브가 아직 쥐고 있을 수 있다. 원인 못 찾으면 기본 메시지로 간다.
+        }
     }
 
     /// <summary>NavMesh 가 씬보다 오래됐는지(씬을 고치고 다시 굽지 않은 상태인지).</summary>

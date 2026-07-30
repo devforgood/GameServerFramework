@@ -269,6 +269,12 @@ public class MapToolWindow : EditorWindow
             if (terrain.preset == TerrainBuilder.Preset.Obstacles)
             {
                 terrain.obstacleCount = EditorGUILayout.IntField("Obstacle count", terrain.obstacleCount);
+                if (terrain.obstacleCount > MapPipeline.SuggestedMaxMeshCount)
+                {
+                    EditorGUILayout.HelpBox(
+                        $"More than about {MapPipeline.SuggestedMaxMeshCount} obstacles will not fit in a single-tile navmesh (step 3).",
+                        MessageType.Warning);
+                }
                 terrain.obstacleSize = EditorGUILayout.FloatField("Obstacle size", terrain.obstacleSize);
                 terrain.rampCount = EditorGUILayout.IntField("Ramp count", terrain.rampCount);
                 terrain.rampHeight = EditorGUILayout.FloatField("Ramp height", terrain.rampHeight);
@@ -317,6 +323,8 @@ public class MapToolWindow : EditorWindow
         else if (stale)
             EditorGUILayout.HelpBox("Scene is newer than the navmesh. Bake again.", MessageType.Warning);
 
+        DrawNavMeshBudget();
+
         showNavMeshSettings = EditorGUILayout.Foldout(showNavMeshSettings, "Details (bake parameters)", true);
         if (showNavMeshSettings)
         {
@@ -337,6 +345,41 @@ public class MapToolWindow : EditorWindow
             BakeNavMesh(sceneName);
 
         EndStep();
+    }
+
+    // Recast 는 맵 하나를 타일 하나로 굽는다. 장애물이 많으면 정점 한계에 걸려 실패하는데,
+    // 굽는 데 수십 초가 걸린 뒤에야 알 수 있으므로 미리 보여 준다.
+    private void DrawNavMeshBudget()
+    {
+        var budget = MapPipeline.EstimateBudget(navMesh);
+        if (budget.meshCount == 0)
+            return;
+
+        EditorGUILayout.LabelField("Estimated cost",
+            $"{budget.gridWidth} x {budget.gridHeight} cells · ~{budget.estimatedVerts:N0} / {MapPipeline.MaxContourVerts:N0} verts");
+
+        if (budget.OverBudget)
+        {
+            EditorGUILayout.HelpBox(
+                $"Too many objects ({budget.meshCount}) for a single-tile navmesh — the bake will fail with " +
+                $"\"Could not triangulate contours.\"\nReduce to about {budget.SuggestedMeshCount} objects, or raise Cell size.",
+                MessageType.Error);
+        }
+        else if (budget.NearBudget)
+        {
+            EditorGUILayout.HelpBox(
+                $"Close to Recast's {MapPipeline.MaxContourVerts:N0} vertex limit for a single-tile navmesh. " +
+                "Adding more obstacles may make the bake fail.",
+                MessageType.Warning);
+        }
+
+        if (budget.HeavyGrid)
+        {
+            EditorGUILayout.HelpBox(
+                $"{budget.cellCount:N0} heightfield cells — the bake will take a while and use a lot of memory. " +
+                "A larger Cell size makes it much cheaper.",
+                MessageType.Info);
+        }
     }
 
     private bool BakeNavMesh(string sceneName)

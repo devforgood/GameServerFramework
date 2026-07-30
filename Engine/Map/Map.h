@@ -73,6 +73,8 @@ private:
 	// Init 을 구성하는 단계들. Init 은 이들을 순서대로 호출하는 오케스트레이터다.
 	// 내비게이션: 맵별 navmesh 로드/정합 검증 + 이동 전략 생성. 실패 시 false.
 	bool InitNavigation(const std::string& movementType);
+	// 공간 분할 그리드: 네비메시 실제 범위에 맞춰 만든다(InitNavigation 이후에 호출해야 한다).
+	GridManager* CreateGrid() const;
 	// ECS: SystemManager 생성, 컴포넌트 등록(engine::RegisterGameComponents), 시스템 등록.
 	void InitEcs();
 

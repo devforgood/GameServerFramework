@@ -120,3 +120,29 @@ bool NavMesh::Load(const char* path)
 
 	return true;
 }
+
+bool NavMesh::Bounds(float* outMin, float* outMax) const
+{
+	if (navMesh_ == nullptr || outMin == nullptr || outMax == nullptr)
+		return false;
+
+	bool found = false;
+	for (int i = 0; i < navMesh_->getMaxTiles(); ++i)
+	{
+		// const 오버로드로 받아야 dtNavMesh 내부 배열을 그대로 볼 수 있다.
+		const dtMeshTile* tile = const_cast<const dtNavMesh*>(navMesh_)->getTile(i);
+		if (tile == nullptr || tile->header == nullptr)
+			continue;   // 비어 있는 타일 슬롯.
+
+		if (!found)
+		{
+			dtVcopy(outMin, tile->header->bmin);
+			dtVcopy(outMax, tile->header->bmax);
+			found = true;
+			continue;
+		}
+		dtVmin(outMin, tile->header->bmin);
+		dtVmax(outMax, tile->header->bmax);
+	}
+	return found;
+}
