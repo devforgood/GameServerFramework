@@ -103,6 +103,10 @@ public:
 	const gamedata::Map* GetMapData() const { return mapData_; }
 	int GetMapId() const;
 
+	// 프로파일링/벤치마크용: 이 맵의 navmesh. 맵의 실제 크기를 알거나(Bounds)
+	// 그 위에서 좌표를 뽑을 때 쓴다. 로드 전이면 nullptr.
+	const NavMesh* GetNavMesh() const { return navMesh_; }
+
 	// 맵 데이터의 첫 번째 player_spawn 위치(클라 좌표계). 없으면 (0,0,0).
 	syncnet::Vec3 GetPlayerSpawnPos() const;
 

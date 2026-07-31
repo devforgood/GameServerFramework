@@ -313,6 +313,15 @@ Map* World::FindMap(int mapId)
 	return itr != mapById_.end() ? itr->second.get() : nullptr;
 }
 
+std::vector<Map*> World::GetMaps() const
+{
+	std::vector<Map*> maps;
+	maps.reserve(mapList_.size());
+	for (const auto& map : mapList_)
+		maps.push_back(map.get());
+	return maps;
+}
+
 bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syncnet::Vec3& outPos, int& outAgentId)
 {
 	if (player == nullptr)

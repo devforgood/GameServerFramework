@@ -83,6 +83,10 @@ public:
 	// 프로파일링/벤치마크용: 첫 번째(기본) 맵 접근자. 맵이 없으면 nullptr.
 	Map* GetPrimaryMap() { return mapList_.empty() ? nullptr : mapList_.front().get(); }
 
+	// 프로파일링/벤치마크용: 로드된 모든 맵. 맵마다 크기가 달라서
+	// (예: 대규모 측정은 가장 넓은 맵에서 해야 한다) 고르려면 목록이 필요하다.
+	std::vector<Map*> GetMaps() const;
+
 	// gamedata 맵 id로 Map 을 찾는다. 없으면 nullptr.
 	Map* FindMap(int mapId);
 

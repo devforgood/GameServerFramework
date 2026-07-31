@@ -5,6 +5,8 @@
 //   - BM_WorldCreate        : 월드 1개 생성 비용(네비메시 로드 + lua 초기화 + 게임모드 부트스트랩)
 //   - BM_WorldSpawnMonsters : 몬스터 N마리 스폰 처리량
 //   - BM_WorldTick          : N마리가 살아있는 상태에서 update(dt) 1회 소요 시간
+//   - BM_LargeMap*          : 가장 넓은 맵의 navmesh 전체에 흩뿌린 상태의 수용량/관심영역
+//                             (위 벤치들은 primary 맵의 좁은 좌표 집합에 몬스터를 쌓는다)
 //
 // 자산(*_navmesh.bin, Monster.xml, Map.json, *.lua, *.json)은 GameDataPath::Resolve() 가
 // 통합 폴더(Client/Assets/Resources/GameData)에서 찾는다. 리포 밖 배포 실행이면 exe 옆 GameData/ 를 쓴다.
@@ -28,11 +30,14 @@
 
 #include "World.h"
 #include "Map.h"
+#include "NavMesh.h"
 #include "Actor.h"
 #include "Player.h"
 #include "INavMovement.h"
 #include "DetourCommon.h"
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include "ResourceLoader.h"
 #include "syncnet_generated.h"
 #include "LogHelper.h"
@@ -125,6 +130,117 @@ namespace
 		return cache.emplace(movement, std::move(out)).first->second;
 	}
 
+	// ── 큰 맵용 스폰 좌표 ──
+	//
+	// ValidSpawns 의 격자 훑기는 primary 맵(약 50유닛) 크기에 맞춰 x:[-26,26] 로 박혀 있다.
+	// 500x500 맵에서는 가운데 1% 만 덮어서, 몬스터를 아무리 늘려도 한 곳에 쌓일 뿐이다.
+	// 그리드/관심영역 수치는 '밀도'가 실제 배치와 비슷해야 의미가 있으므로,
+	// navmesh 폴리곤을 면적 비례로 표본해 맵 전체에 흩뿌린다(맵툴의 스폰 자동 배치와 같은 방식).
+	//
+	// 반환 좌표는 클라 좌표계다 — OnAddAgent 가 내부에서 x 를 반전한다.
+	std::vector<std::array<float, 3>> SampleNavMeshPoints(const NavMesh* navMesh, int count, uint32_t seed)
+	{
+		std::vector<std::array<float, 3>> out;
+		if (navMesh == nullptr || navMesh->mesh() == nullptr || count <= 0)
+			return out;
+
+		// 폴리곤을 부채꼴 분할해 삼각형 + 누적 면적(수평 투영)을 만든다.
+		struct Tri { float a[3], b[3], c[3]; };
+		std::vector<Tri> tris;
+		std::vector<float> cumulative;
+		float totalArea = 0.0f;
+
+		const dtNavMesh* mesh = navMesh->mesh();
+		for (int t = 0; t < mesh->getMaxTiles(); ++t)
+		{
+			const dtMeshTile* tile = mesh->getTile(t);
+			if (tile == nullptr || tile->header == nullptr)
+				continue;
+
+			for (int p = 0; p < tile->header->polyCount; ++p)
+			{
+				const dtPoly& poly = tile->polys[p];
+				// flags 0 은 쿼리 필터에서 제외되는 폴리곤이라 스폰이 실패한다.
+				if (poly.getType() == DT_POLYTYPE_OFFMESH_CONNECTION || poly.flags == 0 || poly.vertCount < 3)
+					continue;
+
+				const float* v0 = &tile->verts[poly.verts[0] * 3];
+				for (int i = 1; i + 1 < poly.vertCount; ++i)
+				{
+					const float* v1 = &tile->verts[poly.verts[i] * 3];
+					const float* v2 = &tile->verts[poly.verts[i + 1] * 3];
+
+					const float area = std::fabs((v1[0] - v0[0]) * (v2[2] - v0[2])
+					                           - (v2[0] - v0[0]) * (v1[2] - v0[2])) * 0.5f;
+					if (area <= 0.0f)
+						continue;
+
+					Tri tri;
+					dtVcopy(tri.a, v0);
+					dtVcopy(tri.b, v1);
+					dtVcopy(tri.c, v2);
+					tris.push_back(tri);
+					totalArea += area;
+					cumulative.push_back(totalArea);
+				}
+			}
+		}
+
+		if (tris.empty())
+			return out;
+
+		// 실행마다 같은 배치가 나오도록 시드를 고정한다(측정 재현성).
+		// 몬스터와 플레이어는 다른 시드를 써야 한다 — 같으면 플레이어가 몬스터 위에 정확히 겹친다.
+		uint32_t rngState = seed;
+		auto next01 = [&rngState]()
+		{
+			rngState = rngState * 1664525u + 1013904223u;
+			return static_cast<float>((rngState >> 8) & 0xFFFFFF) / static_cast<float>(0x1000000);
+		};
+
+		out.reserve(static_cast<size_t>(count));
+		for (int i = 0; i < count; ++i)
+		{
+			const float target = next01() * totalArea;
+			const size_t index = static_cast<size_t>(
+				std::lower_bound(cumulative.begin(), cumulative.end(), target) - cumulative.begin());
+			const Tri& tri = tris[std::min(index, tris.size() - 1)];
+
+			float u = next01(), v = next01();
+			if (u + v > 1.0f) { u = 1.0f - u; v = 1.0f - v; }
+
+			const float x = tri.a[0] + (tri.b[0] - tri.a[0]) * u + (tri.c[0] - tri.a[0]) * v;
+			const float y = tri.a[1] + (tri.b[1] - tri.a[1]) * u + (tri.c[1] - tri.a[1]) * v;
+			const float z = tri.a[2] + (tri.b[2] - tri.a[2]) * u + (tri.c[2] - tri.a[2]) * v;
+
+			// 서버 좌표계 → 클라 좌표계(OnAddAgent 가 다시 반전한다).
+			out.push_back({ -x, y, z });
+		}
+		return out;
+	}
+
+	// navmesh 범위가 가장 넓은 맵. 대규모 측정은 여기서 해야 한다(primary 는 약 50유닛).
+	Map* LargestMap(World& world)
+	{
+		Map* best = nullptr;
+		float bestArea = -1.0f;
+
+		for (Map* map : world.GetMaps())
+		{
+			float bmin[3], bmax[3];
+			if (map == nullptr || map->GetNavMesh() == nullptr || !map->GetNavMesh()->Bounds(bmin, bmax))
+				continue;
+
+			const float area = (bmax[0] - bmin[0]) * (bmax[2] - bmin[2]);
+			if (area > bestArea)
+			{
+				bestArea = area;
+				best = map;
+			}
+		}
+		return best != nullptr ? best : world.GetPrimaryMap();
+	}
+
 	// 월드에 count 마리의 몬스터를 스폰한다. 유효 좌표를 순환 사용한다.
 	// 실제로 스폰된 수를 반환한다(정원/실패 시 count 보다 작을 수 있다).
 	int SpawnMonsters(World& world, int count, const char* movement)
@@ -143,6 +259,53 @@ namespace
 		}
 		return spawned;
 	}
+
+	// 수용량 계열 공통: world.update 를 반복하며 틱 비용과 예산 비율을 카운터에 채운다.
+	// players 가 음수면 플레이어 카운터를 내보내지 않는다(몬스터 전용 벤치).
+	void MeasureTickBudget(benchmark::State& state, World& world, int monsters, int players)
+	{
+		using clock = std::chrono::steady_clock;
+
+		// 워밍업. 스폰 직후 첫 틱은 몬스터 전원이 같은 틱에 배회 목적지를 잡고 경로를 계산해
+		// 정상 틱보다 수십 배 비싸다(넓은 맵 2만 마리에서 약 1초). 이걸 그대로 재면
+		// google benchmark 가 min_time 을 그 한 틱으로 채워 버려서 반복이 1회에 그치고,
+		// '정상 상태 틱 비용'이 아니라 콜드 스타트를 보고하게 된다.
+		// 콜드 스타트도 실제 위험(서버 기동 시 스톨)이라 따로 기록하고, 측정은 안정된 뒤에 한다.
+		const auto coldStart = clock::now();
+		world.update(kTickDt);
+		const double firstTickMs = std::chrono::duration<double, std::milli>(clock::now() - coldStart).count();
+
+		constexpr int kWarmupTicks = 10;
+		for (int i = 0; i < kWarmupTicks; ++i)
+			world.update(kTickDt);
+
+		double totalNs = 0.0;
+		int64_t iters = 0;
+
+		for (auto _ : state)
+		{
+			const auto t0 = clock::now();
+			world.update(kTickDt);
+			const auto t1 = clock::now();
+			totalNs += std::chrono::duration<double, std::nano>(t1 - t0).count();
+			++iters;
+		}
+
+		constexpr double kTickBudgetMs = 100.0; // 10Hz(SIM_RATE) 한 틱 예산
+		const double tickMs = (iters > 0) ? (totalNs / static_cast<double>(iters) / 1e6) : 0.0;
+
+		state.counters["monsters"] = monsters;
+		if (players >= 0)
+			state.counters["players"] = players;
+		state.counters["first_tick_ms"] = firstTickMs; // 스폰 직후 경로 계산이 몰리는 콜드 스타트
+		state.counters["tick_ms"] = tickMs;
+		state.counters["budget_pct"] = tickMs / kTickBudgetMs * 100.0; // 100 을 넘으면 수용 한계 초과
+		state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(monsters));
+	}
+
+	// 큰 맵 벤치의 몬스터/플레이어 표본 시드(서로 겹치지 않게 다른 값을 쓴다).
+	constexpr uint32_t kMonsterSeed = 0x9E3779B9u;
+	constexpr uint32_t kPlayerSeed = 0x85EBCA6Bu;
 } // namespace
 
 // 월드 생성 비용.
@@ -217,26 +380,7 @@ static void BM_WorldTickCapacity(benchmark::State& state)
 	world.Init("waypoint");
 	const int spawned = SpawnMonsters(world, count, "waypoint");
 
-	using clock = std::chrono::steady_clock;
-	double totalNs = 0.0;
-	int64_t iters = 0;
-
-	for (auto _ : state)
-	{
-		const auto t0 = clock::now();
-		world.update(kTickDt);
-		const auto t1 = clock::now();
-		totalNs += std::chrono::duration<double, std::nano>(t1 - t0).count();
-		++iters;
-	}
-
-	constexpr double kTickBudgetMs = 100.0; // 10Hz(SIM_RATE) 한 틱 예산
-	const double tickMs = (iters > 0) ? (totalNs / static_cast<double>(iters) / 1e6) : 0.0;
-
-	state.counters["monsters"] = spawned;
-	state.counters["tick_ms"] = tickMs;
-	state.counters["budget_pct"] = tickMs / kTickBudgetMs * 100.0; // 100 을 넘으면 수용 한계 초과
-	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
+	MeasureTickBudget(state, world, spawned, -1);
 }
 BENCHMARK(BM_WorldTickCapacity)
 	->Arg(10000)->Arg(16000)->Arg(20000)->Arg(24000)->Arg(28000)->Arg(32000)->Arg(40000)->Arg(60000)
@@ -282,27 +426,7 @@ static void BM_WorldTickCapacityEngaged(benchmark::State& state)
 		}
 	}
 
-	using clock = std::chrono::steady_clock;
-	double totalNs = 0.0;
-	int64_t iters = 0;
-
-	for (auto _ : state)
-	{
-		const auto t0 = clock::now();
-		world.update(kTickDt);
-		const auto t1 = clock::now();
-		totalNs += std::chrono::duration<double, std::nano>(t1 - t0).count();
-		++iters;
-	}
-
-	constexpr double kTickBudgetMs = 100.0;
-	const double tickMs = (iters > 0) ? (totalNs / static_cast<double>(iters) / 1e6) : 0.0;
-
-	state.counters["monsters"] = spawned;
-	state.counters["players"] = placed;
-	state.counters["tick_ms"] = tickMs;
-	state.counters["budget_pct"] = tickMs / kTickBudgetMs * 100.0;
-	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
+	MeasureTickBudget(state, world, spawned, placed);
 }
 // 인자: (몬스터 수, 플레이어 수, 관심영역 반경 — 0 이면 맵 데이터 값)
 BENCHMARK(BM_WorldTickCapacityEngaged)
@@ -310,6 +434,94 @@ BENCHMARK(BM_WorldTickCapacityEngaged)
 	->Args({ 30000, 50, 0 })->Args({ 32000, 50, 0 })->Args({ 40000, 50, 0 })
 	// 반경별 비교(맵이 약 50유닛이라 반경 40 이면 사실상 전 맵이 시야다).
 	->Args({ 10000, 50, 20 })->Args({ 10000, 50, 10 })->Args({ 10000, 50, 5 })
+	->Unit(benchmark::kMillisecond)
+	->MinTime(1.0);
+
+// ── 큰 맵: navmesh 전체에 분산 배치한 수용량 ──
+//
+// 위의 두 벤치는 primary 맵(약 50유닛)의 좁은 격자에 몬스터를 쌓는다. 셀당 밀도가
+// 운영과 동떨어지고, 관심영역은 반경이 맵보다 커서 효과가 드러나지 않는다.
+// 여기서는 가장 넓은 맵(navmesh 범위 기준)에 면적 비례로 흩뿌려 잰다.
+static void BM_LargeMapTickCapacity(benchmark::State& state)
+{
+	const int count = static_cast<int>(state.range(0));
+
+	World world;
+	world.Init("waypoint");
+
+	Map* map = LargestMap(world);
+	const auto spawns = SampleNavMeshPoints(map->GetNavMesh(), count, kMonsterSeed);
+
+	int spawned = 0;
+	for (const auto& c : spawns)
+	{
+		syncnet::Vec3 v(c[0], c[1], c[2]);
+		if (map->OnAddAgent(nullptr, syncnet::GameObjectType_Monster, &v))
+			++spawned;
+	}
+
+	state.counters["map_id"] = map->GetMapId();
+	MeasureTickBudget(state, world, spawned, -1);
+}
+BENCHMARK(BM_LargeMapTickCapacity)
+	->Arg(10000)->Arg(20000)->Arg(40000)->Arg(60000)
+	->Unit(benchmark::kMillisecond)
+	->MinTime(1.0);
+
+// 큰 맵 + 교전 + 관심영역 반경 비교.
+// 인자: (몬스터 수, 플레이어 수, 관심영역 반경 — 0 이면 맵 데이터 값)
+static void BM_LargeMapTickCapacityEngaged(benchmark::State& state)
+{
+	const int count = static_cast<int>(state.range(0));
+	const int playerCount = static_cast<int>(state.range(1));
+	const float aoiRadius = static_cast<float>(state.range(2));
+
+	World world;
+	world.Init("waypoint");
+
+	Map* map = LargestMap(world);
+	if (aoiRadius > 0.0f)
+		map->SetAoIRadius(aoiRadius);
+
+	const auto spawns = SampleNavMeshPoints(map->GetNavMesh(), count, kMonsterSeed);
+	int spawned = 0;
+	for (const auto& c : spawns)
+	{
+		syncnet::Vec3 v(c[0], c[1], c[2]);
+		if (map->OnAddAgent(nullptr, syncnet::GameObjectType_Monster, &v))
+			++spawned;
+	}
+
+	// 플레이어도 맵 전체에 흩뿌린다(몬스터와 다른 시드 = 다른 자리).
+	//
+	// World::OnAddAgent 가 아니라 맵에 직접 넣는다 — 스폰 맵이 primary 와 다르면
+	// World 가 SendStateTo 까지 호출하는데, 세션 없는 벤치용 Player 에서는 그 경로가 죽는다.
+	// 그리고 Enter 로 players_ 에 넣어야 SendWorldState 가 실제로 돈다. 비어 있으면
+	// 그 단계가 통째로 조기 반환해서 관심영역 비교가 아무것도 재지 않는다.
+	const auto playerSpots = SampleNavMeshPoints(map->GetNavMesh(), playerCount, kPlayerSeed);
+	std::vector<std::shared_ptr<Player>> players;
+	int placed = 0;
+	for (const auto& c : playerSpots)
+	{
+		syncnet::Vec3 v(c[0], c[1], c[2]);
+		auto player = std::make_shared<Player>();
+		player->SetSpawnMapId(map->GetMapId());
+		map->Enter(player);
+		if (map->OnAddAgent(player, syncnet::GameObjectType_Character, &v))
+		{
+			players.push_back(player);
+			++placed;
+		}
+	}
+
+	state.counters["map_id"] = map->GetMapId();
+	state.counters["aoi"] = aoiRadius;
+	MeasureTickBudget(state, world, spawned, placed);
+}
+BENCHMARK(BM_LargeMapTickCapacityEngaged)
+	->Args({ 10000, 50, 0 })->Args({ 20000, 50, 0 })->Args({ 40000, 50, 0 })
+	// 반경별 비교. 맵이 약 500유닛이라 이제 반경이 실제로 시야를 좁힌다(0 = 맵 전체 브로드캐스트).
+	->Args({ 10000, 50, 100 })->Args({ 10000, 50, 50 })->Args({ 10000, 50, 25 })
 	->Unit(benchmark::kMillisecond)
 	->MinTime(1.0);
 

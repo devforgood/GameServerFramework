@@ -35,6 +35,17 @@ Map::~Map()
 {
 	// 살아있는 액터를 먼저 정리한다. Actor 소멸자(Actor::Clear)가 systemManager_ 를
 	// 역참조하므로, systemManager_ 보다 먼저 파괴되어야 댕글링 포인터 접근을 막는다.
+	//
+	// 액터 목록만 비우면 부족하다 — 남아 있는 플레이어가 자기 캐릭터를 shared_ptr 로
+	// 붙들고 있어서 그 액터는 여기서 죽지 않고 systemManager_ 보다 오래 살아남는다.
+	// (플레이어가 접속한 채로 서버를 내리면 종료 시 크래시하는 경로였다.)
+	for (auto& entry : players_)
+	{
+		if (entry.second != nullptr)
+			entry.second->UnPossess();
+	}
+	players_.clear();
+
 	actorMap_.clear();
 	actorList_.clear();
 
