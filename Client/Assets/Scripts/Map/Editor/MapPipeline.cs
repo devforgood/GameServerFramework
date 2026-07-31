@@ -686,6 +686,217 @@ public static class MapPipeline
         map.size.width = System.Math.Round(bounds.Value.size.x, 2);
         map.size.height = System.Math.Round(bounds.Value.size.z, 2);
     }
+
+    // ── 스폰 지점 자동 배치 ──
+    //
+    // 큰 맵에 스폰을 손으로 찍는 것은 현실적이지 않다(500x500 맵에 몬스터 수백 마리).
+    // 배치는 반드시 navmesh 안이어야 한다 — 서버는 스폰 좌표를 navmesh 로 검증하고
+    // (Map::ValidateMapDataOnNavMesh) 벗어난 지점은 몬스터 스폰이 실패한다.
+
+    /// <summary>흩뿌리기가 만든 컨테이너 이름의 접두사. 다시 뿌릴 때 통째로 지우는 표식이다.</summary>
+    public const string ScatterContainerPrefix = "Scattered_";
+
+    // 창이 들고 있는 편집 버퍼라 리컴파일 후에도 값이 남도록 직렬화 대상으로 둔다
+    // (NavMeshBakeSettings 와 같은 취급).
+    [System.Serializable]
+    public class ScatterSettings
+    {
+        public SpawnType type = SpawnType.Monster;
+        public int count = 200;
+        public float minSpacing = 5f;     // 점 사이 최소 거리(m). 0 이면 검사하지 않는다.
+        public float edgeMargin = 1f;     // navmesh 가장자리/장애물에서 띄울 거리(m).
+        public int seed = 0;              // 0 이면 매번 다른 배치.
+        public bool replaceExisting = true;
+
+        public int monsterId;
+        public int bossId;
+        public int spawnInterval = 30;
+        public int spawnDelay;
+
+        // 비어 있지 않으면 지점마다 여기서 무작위로 고른다(monsterId 대신).
+        public int[] monsterIdPool;
+    }
+
+    /// <summary>
+    /// navmesh 위에 스폰 지점을 무작위로 배치한다. 실제로 놓인 개수는 요청보다 적을 수 있다
+    /// (최소 간격이 빡빡하면 자리가 없다) — 그 사실을 summary 에 담아 돌려준다.
+    /// </summary>
+    public static bool ScatterSpawnPoints(string sceneName, ScatterSettings settings, out string summary, out string error)
+    {
+        summary = null;
+
+        NavMeshSampler sampler = NavMeshSampler.Load(NavMeshPathOf(sceneName), out error);
+        if (sampler == null)
+            return false;
+
+        List<Vector3> points;
+        try
+        {
+            points = sampler.Scatter(settings.count, settings.minSpacing, settings.edgeMargin, settings.seed,
+                progress => !EditorUtility.DisplayCancelableProgressBar(
+                    "Scatter spawns", $"Placing {settings.type} spawns on the navmesh…", progress));
+        }
+        finally
+        {
+            EditorUtility.ClearProgressBar();
+        }
+
+        if (points.Count == 0)
+        {
+            error = "navmesh 위에 놓을 자리를 찾지 못했습니다. Edge margin 을 줄여 보세요.";
+            return false;
+        }
+
+        // 배치 전체를 되돌리기 한 번으로 묶는다.
+        Undo.IncrementCurrentGroup();
+        Undo.SetCurrentGroupName($"Scatter {settings.type} spawns");
+        int undoGroup = Undo.GetCurrentGroup();
+
+        int removed = settings.replaceExisting ? RemoveSpawnsOfType(settings.type) : 0;
+
+        // 마커는 컨테이너 하나 밑에 모은다. 컨테이너만 Undo 에 등록하면 자식 수천 개를
+        // 하나씩 등록하지 않아도 되고, 다시 뿌릴 때도 통째로 지울 수 있다.
+        var container = new GameObject($"{ScatterContainerPrefix}{settings.type}");
+        Undo.RegisterCreatedObjectUndo(container, "Scatter spawns");
+        container.transform.SetParent(MapJsonUpdater.GetOrCreateGroup(MapJsonUpdater.SpawnGroupName), false);
+
+        var others = Object.FindObjectsOfType<SpawnPoint>(true);
+        int existing = others.Count(s => s.spawnType == settings.type);
+
+        // id 를 미리 발급해 둔다. 0 으로 두면 스캔(MapJsonUpdater.UpdateSpawns)이 마커마다
+        // Undo.RecordObject + SetDirty 로 id 를 써 넣는데, 수천 개면 그것만으로 몇 초가 걸린다.
+        // 스캔이 그대로 유지하도록 '기존 id 최대값'과 '전체 개수'를 모두 넘겨서 시작한다
+        // (id 가 없는 기존 마커는 스캔이 1부터 채우므로 개수 위에서 시작해야 겹치지 않는다).
+        int nextId = Mathf.Max(others.Length + points.Count,
+                               others.Select(s => s.id).DefaultIfEmpty(0).Max()) + 1;
+
+        var rng = settings.seed == 0 ? new System.Random() : new System.Random(settings.seed);
+
+        for (int i = 0; i < points.Count; i++)
+        {
+            var comp = MapJsonUpdater.NewSpawnMarker(settings.type, points[i],
+                $"{settings.type}Spawn_{existing + i + 1}", container.transform);
+
+            comp.id = nextId + i;
+
+            // 타입에 안 쓰이는 필드는 0 으로 둔다(SpawnPoint 의 기본값 spawnInterval=30 이
+            // 플레이어 스폰까지 따라 들어가면 Map.json 이 지저분해진다).
+            comp.monsterId = 0;
+            comp.bossId = 0;
+            comp.spawnInterval = 0;
+            comp.spawnDelay = 0;
+
+            switch (settings.type)
+            {
+                case SpawnType.Monster:
+                    comp.monsterId = PickMonsterId(settings, rng);
+                    comp.spawnInterval = settings.spawnInterval;
+                    break;
+                case SpawnType.Boss:
+                    comp.bossId = settings.bossId;
+                    comp.spawnDelay = settings.spawnDelay;
+                    break;
+            }
+        }
+
+        Undo.CollapseUndoOperations(undoGroup);
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+
+        summary = $"{settings.type} 스폰 {points.Count}개 배치" +
+                  (removed > 0 ? $" (기존 {removed}개 제거)" : "") +
+                  (points.Count < settings.count
+                      ? $" — {settings.count}개를 요청했지만 최소 간격 {settings.minSpacing}m 로는 자리가 부족합니다"
+                      : "") +
+                  // Auto sync 가 꺼져 있으면 마커는 씬에만 남는다. 수천 개를 뿌려 놓고
+                  // Map.json 이 그대로인 것을 나중에 알게 되는 일이 없도록 여기서 말해 준다.
+                  (MapJsonAutoSync.Enabled ? "" : " — Auto sync 가 꺼져 있습니다. Register 를 눌러야 Map.json 에 들어갑니다");
+        return true;
+    }
+
+    private static int PickMonsterId(ScatterSettings settings, System.Random rng)
+    {
+        if (settings.monsterIdPool != null && settings.monsterIdPool.Length > 0)
+            return settings.monsterIdPool[rng.Next(settings.monsterIdPool.Length)];
+        return settings.monsterId;
+    }
+
+    private static int RemoveSpawnsOfType(SpawnType type)
+    {
+        var targets = Object.FindObjectsOfType<SpawnPoint>(true).Where(s => s.spawnType == type).ToArray();
+        if (targets.Length == 0)
+            return 0;
+
+        var toDestroy = new List<GameObject>();
+        var covered = new HashSet<SpawnPoint>();
+
+        // 흩뿌리기 컨테이너는 통째로 지운다(수천 개를 하나씩 지우면 눈에 띄게 느리다).
+        // 다른 타입 마커가 섞여 들어간 컨테이너는 건드리지 않는다.
+        foreach (Transform parent in targets
+            .Select(s => s.transform.parent)
+            .Where(p => p != null && p.name.StartsWith(ScatterContainerPrefix))
+            .Distinct())
+        {
+            var children = parent.GetComponentsInChildren<SpawnPoint>(true);
+            if (children.Any(s => s.spawnType != type))
+                continue;
+
+            foreach (var child in children)
+                covered.Add(child);
+            toDestroy.Add(parent.gameObject);
+        }
+
+        foreach (var spawn in targets)
+        {
+            if (!covered.Contains(spawn))
+                toDestroy.Add(spawn.gameObject);
+        }
+
+        foreach (var go in toDestroy)
+            Undo.DestroyObjectImmediate(go);
+
+        return targets.Length;
+    }
+
+    /// <summary>monster.json 의 몬스터 목록(자동 배치에서 id 를 고르는 데 쓴다).</summary>
+    public struct MonsterEntry
+    {
+        public int id;
+        public string name;
+        public int level;
+    }
+
+    public static List<MonsterEntry> LoadMonsterCatalog()
+    {
+        var list = new List<MonsterEntry>();
+
+        string dir = GameDataDir();
+        if (dir == null)
+            return list;
+
+        string path = Path.Combine(dir, "monster.json");
+        if (!File.Exists(path))
+            return list;
+
+        try
+        {
+            var array = Newtonsoft.Json.Linq.JArray.Parse(File.ReadAllText(path));
+            foreach (var entry in array)
+            {
+                list.Add(new MonsterEntry
+                {
+                    id = entry.Value<int>("id"),
+                    name = entry.Value<string>("name"),
+                    level = entry.Value<int>("level"),
+                });
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"[MapTool] monster.json 을 읽지 못했습니다: {e.Message}");
+        }
+
+        return list;
+    }
 }
 
 /// <summary>NavMesh 굽기 파라미터. 서버 이동/충돌 판정이 이 값에 직접 좌우된다.</summary>

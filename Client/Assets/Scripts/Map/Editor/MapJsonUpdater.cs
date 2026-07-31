@@ -727,16 +727,24 @@ public static class MapJsonUpdater
 
     public static void CreateSpawnMarker(SpawnType type)
     {
-        var go = new GameObject($"New{type}Spawn");
-        Undo.RegisterCreatedObjectUndo(go, "Create Spawn Marker");
-        go.transform.SetParent(GetOrCreateGroup(SpawnGroupName), true);
-        go.transform.position = GetPlacementPosition();
+        var comp = NewSpawnMarker(type, GetPlacementPosition(), $"New{type}Spawn", GetOrCreateGroup(SpawnGroupName));
+        Undo.RegisterCreatedObjectUndo(comp.gameObject, "Create Spawn Marker");
+        FinishMarkerCreation(comp.gameObject);
+    }
+
+    // 스폰 마커 하나를 만든다. Undo 등록/선택은 호출 측 몫이다 —
+    // 자동 배치(MapPipeline.ScatterSpawnPoints)는 수천 개를 한 번에 만드는데,
+    // 오브젝트마다 Undo 를 등록하면 그것만으로 수 초가 걸린다(컨테이너 하나만 등록한다).
+    public static SpawnPoint NewSpawnMarker(SpawnType type, Vector3 position, string name, Transform parent)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(parent, true);
+        go.transform.position = position;
         TrySetTag(go, "Spawn");
 
         var comp = go.AddComponent<SpawnPoint>();
         comp.spawnType = type;
-
-        FinishMarkerCreation(go);
+        return comp;
     }
 
     public static void CreateObjectMarker(MapObjectKind kind)

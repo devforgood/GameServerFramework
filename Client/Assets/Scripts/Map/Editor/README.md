@@ -61,6 +61,34 @@ Could not triangulate contours.
 `cellSize` 는 굽는 비용도 좌우합니다. 1000x1000 맵은 0.3 에서 하이트필드가 3339x3340(약 1,100만 셀)이라
 13초가 걸립니다. 셀 수가 400만을 넘으면 창이 알려 줍니다.
 
+## 스폰 지점 자동 배치 (4단계 `Scatter spawns`)
+
+큰 맵에 스폰을 손으로 찍는 것은 현실적이지 않습니다(500x500 맵에 몬스터 수백~수천).
+4단계의 **`Scatter spawns (random, on navmesh)`** 에서 타입/개수를 정하고 누르면
+**NavMesh 위에서만** 무작위로 뽑아 마커를 만듭니다.
+
+씬 지오메트리(레이캐스트·경계 상자)가 아니라 **서버가 읽는 바로 그 navmesh 파일**을 읽습니다.
+서버는 스폰 좌표를 `findNearestPoly` 로 검증하고(`Map::ValidateMapDataOnNavMesh`),
+벗어난 지점은 몬스터 스폰 자체가 실패합니다. 게다가 navmesh 는 에이전트 반경만큼 안쪽으로
+좁혀져 있어서 "바닥 위"와 "이동 가능"이 다릅니다.
+
+| 설정 | 뜻 |
+| --- | --- |
+| `Type` | Player / Monster / Boss |
+| `Count` | 요청 개수. **몬스터는 지점 하나당 한 마리** 스폰됩니다 |
+| `Monster` | `monster.json` 목록에서 선택. `(random)` 은 지점마다 무작위 |
+| `Min spacing` | 점 사이 최소 거리(m). 0 이면 검사하지 않습니다 |
+| `Edge margin` | navmesh 가장자리·장애물에서 띄울 거리(m) |
+| `Seed` | 0 이면 매번 다른 배치. 같은 값이면 같은 배치가 재현됩니다 |
+| `Replace existing` | 같은 타입의 기존 스폰을 지우고 새로 뿌립니다 |
+
+- 점은 **폴리곤 면적에 비례**해 뽑습니다. 삼각형을 균등하게 고르면 잘게 쪼개진 장애물 주변에 몰립니다.
+- 최소 간격이 빡빡하면 요청 개수를 다 채우지 못합니다. 창이 미리 알려 주고, 실제로 놓인 개수를 보고합니다.
+  기준은 육각 충전이 아니라 **무작위 배치의 포화 한계**(`면적 / 1.44·간격²`)입니다 —
+  Arcadia Plains(이동 가능 면적 184,328m²)에서 간격 5m 로 8,000개를 요청했을 때
+  육각 기준으로는 8,514개였지만 실제로는 5,287개에서 멈췄습니다.
+- 마커는 `MapDesign/SpawnPoints/Scattered_{타입}` 아래에 모입니다. 되돌리기는 한 번이면 됩니다.
+
 ## 구성
 
 | 파일 | 역할 |
@@ -68,6 +96,7 @@ Could not triangulate contours.
 | `MapToolWindow.cs` | 창(UI) — 단계 상태 표시와 실행 버튼만. 표기는 영어 |
 | `MapPipeline.cs` | 단계 실행 로직과 경로 규칙(창 상태에 의존하지 않는 정적 API) |
 | `TerrainBuilder.cs` | 지형 생성 |
+| `NavMeshSampler.cs` | 구워 둔 navmesh 를 읽어 그 위에서 좌표를 뽑는다(스폰 자동 배치) |
 | `MapJsonUpdater.cs` | 씬 ⇔ Map.json 변환 라이브러리(아래 문서) |
 | `MapJsonAutoSync.cs` | 씬 열기/편집 시 Map.json 자동 동기화 |
 

@@ -32,7 +32,22 @@ public class MapToolWindow : EditorWindow
     private bool showNavMeshSettings;
     private bool showMarkers;
     private bool showMapFields;
+    private bool showScatter;
     private bool scanMarkers = true;
+
+    // 스폰 자동 배치. navmesh 파일을 읽어야 하므로(수만 폴리곤) OnGUI 마다가 아니라
+    // 폴더가 열릴 때 씬당 한 번만 읽고 들고 있는다.
+    //
+    // 캐시는 모두 [NonSerialized] 다. EditorWindow 의 필드는 스크립트 리컴파일(도메인 리로드)을
+    // 건너 살아남는데, 유니티가 직렬화할 수 있는 것만 살아남는다. 그래서 표시용 string[] 는
+    // 남고 그 짝인 List/일반 클래스는 null 이 되어, 둘이 맞물린 코드가 NRE 로 터진다.
+    private readonly MapPipeline.ScatterSettings scatter = new MapPipeline.ScatterSettings();
+    [System.NonSerialized] private NavMeshSampler scatterSampler;
+    [System.NonSerialized] private string scatterSamplerFor;
+    [System.NonSerialized] private string scatterSamplerError;
+    [System.NonSerialized] private List<MapPipeline.MonsterEntry> monsterCatalog;
+    [System.NonSerialized] private string[] monsterLabels;
+    private int monsterChoice;
 
     // Map.json 필드 편집 버퍼. 화면에서 고치는 값은 여기 담아 두었다가 저장할 때만 파일에 반영한다
     // (저장은 디스크를 다시 읽어 해당 맵의 필드만 덮어쓰므로, 그 사이 자동 저장된 마커 변경을 지우지 않는다).
@@ -59,6 +74,7 @@ public class MapToolWindow : EditorWindow
         showNavMeshSettings = EditorPrefs.GetBool(PrefPrefix + "NavMeshSettings", false);
         showMarkers = EditorPrefs.GetBool(PrefPrefix + "Markers", false);
         showMapFields = EditorPrefs.GetBool(PrefPrefix + "MapFields", false);
+        showScatter = EditorPrefs.GetBool(PrefPrefix + "Scatter", false);
         RefreshMapEntries();
     }
 
@@ -87,6 +103,7 @@ public class MapToolWindow : EditorWindow
         EditorPrefs.SetBool(PrefPrefix + "NavMeshSettings", showNavMeshSettings);
         EditorPrefs.SetBool(PrefPrefix + "Markers", showMarkers);
         EditorPrefs.SetBool(PrefPrefix + "MapFields", showMapFields);
+        EditorPrefs.SetBool(PrefPrefix + "Scatter", showScatter);
     }
 
     private void OnGUI()
@@ -396,6 +413,7 @@ public class MapToolWindow : EditorWindow
             return false;
         }
 
+        scatterSamplerFor = null;   // 새로 구운 navmesh 를 자동 배치가 다시 읽도록
         lastResult = $"NavMesh baked: {MapPipeline.NavMeshPathOf(sceneName)}";
         return true;
     }
@@ -428,8 +446,18 @@ public class MapToolWindow : EditorWindow
         if (GUILayout.Button("Register to Map.json + copy navmesh"))
             RegisterMap(sceneName);
 
+        // Auto sync 는 Markers 안에 접혀 있어서, 꺼져 있으면 마커를 아무리 만들어도
+        // 씬에만 남는다는 사실이 어디에도 보이지 않는다. 여기서 알려 준다.
+        if (!MapJsonAutoSync.Enabled)
+        {
+            EditorGUILayout.HelpBox(
+                "Auto sync is off — marker edits reach Map.json only when you press Register. (Markers > Auto sync)",
+                MessageType.Info);
+        }
+
         DrawMapFields(map);
         DrawMarkerTools(sceneName);
+        DrawScatterTools(sceneName);
 
         EditorGUILayout.LabelField("Deploying to server/client still needs GameDataFlow.", EditorStyles.miniLabel);
         EndStep();
@@ -540,6 +568,129 @@ public class MapToolWindow : EditorWindow
             MapJsonAutoSync.Enabled = newAuto;
 
         EditorGUI.indentLevel--;
+    }
+
+    // 큰 맵에 스폰을 손으로 찍는 것은 현실적이지 않다(500x500 맵에 몬스터 수백 마리).
+    // 배치는 서버가 읽는 navmesh 파일 위에서만 뽑으므로, 스폰 실패나 정합 경고가 나지 않는다.
+    private void DrawScatterTools(string sceneName)
+    {
+        showScatter = EditorGUILayout.Foldout(showScatter, "Scatter spawns (random, on navmesh)", true);
+        if (!showScatter)
+            return;
+
+        EditorGUI.indentLevel++;
+        try
+        {
+            EnsureScatterSampler(sceneName);
+
+            if (scatterSampler == null)
+            {
+                EditorGUILayout.HelpBox(
+                    string.IsNullOrEmpty(scatterSamplerError) ? "Bake the navmesh first (step 3)." : scatterSamplerError,
+                    MessageType.Warning);
+                if (GUILayout.Button("Reload navmesh"))
+                    scatterSamplerFor = null;
+                return;
+            }
+
+            EditorGUILayout.LabelField("Walkable area",
+                $"{scatterSampler.WalkableArea:N0} m² · {scatterSampler.TriangleCount:N0} triangles");
+
+            scatter.type = (SpawnType)EditorGUILayout.EnumPopup("Type", scatter.type);
+            scatter.count = Mathf.Max(1, EditorGUILayout.IntField("Count", scatter.count));
+
+            if (scatter.type == SpawnType.Monster)
+            {
+                DrawMonsterPicker();
+                scatter.spawnInterval = EditorGUILayout.IntField("Spawn interval (s)", scatter.spawnInterval);
+                EditorGUILayout.LabelField("The server spawns one monster per point.", EditorStyles.miniLabel);
+            }
+            else if (scatter.type == SpawnType.Boss)
+            {
+                scatter.bossId = EditorGUILayout.IntField("Boss id", scatter.bossId);
+                scatter.spawnDelay = EditorGUILayout.IntField("Spawn delay (s)", scatter.spawnDelay);
+            }
+
+            scatter.minSpacing = Mathf.Max(0f, EditorGUILayout.FloatField("Min spacing (m)", scatter.minSpacing));
+
+            int capacity = scatterSampler.EstimateCapacity(scatter.minSpacing);
+            if (scatter.minSpacing > 0f)
+                EditorGUILayout.LabelField(" ", $"about {capacity:N0} points fit at this spacing", EditorStyles.miniLabel);
+
+            scatter.edgeMargin = Mathf.Max(0f, EditorGUILayout.FloatField("Edge margin (m)", scatter.edgeMargin));
+            EditorGUILayout.LabelField("Edge margin keeps points away from navmesh borders and obstacles.", EditorStyles.miniLabel);
+            scatter.seed = EditorGUILayout.IntField("Seed (0 = random)", scatter.seed);
+            scatter.replaceExisting = EditorGUILayout.Toggle($"Replace existing {scatter.type} spawns", scatter.replaceExisting);
+
+            if (scatter.count > capacity)
+            {
+                EditorGUILayout.HelpBox(
+                    $"Only about {capacity:N0} points fit at {scatter.minSpacing} m spacing — fewer than {scatter.count:N0} will be placed.",
+                    MessageType.Warning);
+            }
+
+            if (GUILayout.Button($"Scatter {scatter.count} {scatter.type} spawns"))
+                RunScatter(sceneName);
+        }
+        finally
+        {
+            EditorGUI.indentLevel--;
+        }
+    }
+
+    // 몬스터 id 는 0 이면 서버가 스폰하지 못하므로 monster.json 목록에서 고르게 한다.
+    private void DrawMonsterPicker()
+    {
+        // monsterLabels 가 아니라 목록 자체를 기준으로 판단한다 — 둘의 수명이 다르다(아래 필드 선언 참고).
+        if (monsterCatalog == null)
+        {
+            monsterCatalog = MapPipeline.LoadMonsterCatalog();
+            monsterLabels = new[] { "(random)" }
+                .Concat(monsterCatalog.Select(m => $"{m.id}. {m.name} (Lv {m.level})"))
+                .ToArray();
+        }
+
+        if (monsterCatalog.Count == 0)
+        {
+            scatter.monsterId = EditorGUILayout.IntField("Monster id", scatter.monsterId);
+            scatter.monsterIdPool = null;
+            return;
+        }
+
+        monsterChoice = EditorGUILayout.Popup("Monster",
+            Mathf.Clamp(monsterChoice, 0, monsterLabels.Length - 1), monsterLabels);
+
+        if (monsterChoice == 0)
+        {
+            // 섞어 배치: 지점마다 목록에서 무작위로 고른다.
+            scatter.monsterId = 0;
+            scatter.monsterIdPool = monsterCatalog.Select(m => m.id).ToArray();
+        }
+        else
+        {
+            scatter.monsterId = monsterCatalog[monsterChoice - 1].id;
+            scatter.monsterIdPool = null;
+        }
+    }
+
+    private void EnsureScatterSampler(string sceneName)
+    {
+        if (scatterSamplerFor == sceneName)
+            return;
+
+        scatterSamplerFor = sceneName;
+        scatterSampler = NavMeshSampler.Load(MapPipeline.NavMeshPathOf(sceneName), out scatterSamplerError);
+    }
+
+    private void RunScatter(string sceneName)
+    {
+        if (MapPipeline.ScatterSpawnPoints(sceneName, scatter, out string summary, out string error))
+            lastResult = summary;
+        else
+            lastResult = $"Scatter failed: {error}";
+
+        RefreshMapEntries();
+        GUIUtility.ExitGUI();
     }
 
     private bool RegisterMap(string sceneName)
