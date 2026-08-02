@@ -46,6 +46,160 @@ World::~World()
 	}
 }
 
+int World::ValidateGameData(int* outWarnings)
+{
+	auto& resource = ResourceLoader::Instance();
+	const auto& maps = resource.GetMaps();
+
+	int errors = 0;
+	int warnings = 0;
+
+	// 맵 id -> 그 맵으로 들어오는 게이트 수. 0 이면 게이트로는 도달할 수 없는 맵이다.
+	std::unordered_map<int, int> incomingGates;
+
+	// 검사 순서를 고정한다 — GetMaps() 는 unordered_map 이라 순회 순서가 비결정적이고,
+	// 그대로 두면 로그 순서가 실행마다 달라져 비교하기 어렵다.
+	std::vector<const gamedata::Map*> sortedMaps;
+	sortedMaps.reserve(maps.size());
+	for (const auto& pair : maps)
+	{
+		if (pair.second != nullptr)
+			sortedMaps.push_back(pair.second);
+	}
+	std::sort(sortedMaps.begin(), sortedMaps.end(),
+		[](const gamedata::Map* a, const gamedata::Map* b) { return a->id < b->id; });
+
+	for (const gamedata::Map* map : sortedMaps)
+	{
+		const gamedata::GameMode* mode = resource.GetGameMode(map->game_mode_id);
+		if (mode == nullptr)
+		{
+			LOG.error("데이터 정합성: map {}('{}') 의 game_mode_id {} 가 GameMode.json 에 없습니다. "
+				"이 맵은 로드되지 않습니다.", map->id, map->name, map->game_mode_id);
+			++errors;
+		}
+		else if (mode->type == "field" && map->navmesh_path.empty())
+		{
+			LOG.error("데이터 정합성: field 맵 {}('{}') 에 navmesh_path 가 없습니다. "
+				"Map::Init 이 실패해 서버 기동이 중단됩니다.", map->id, map->name);
+			++errors;
+		}
+
+		for (const auto& gate : map->gates)
+		{
+			const gamedata::Map* dest = resource.GetMap(gate.target_map_id);
+			if (dest == nullptr)
+			{
+				LOG.error("데이터 정합성: map {} 의 게이트 {}('{}') 가 존재하지 않는 맵 {} 을 가리킵니다.",
+					map->id, gate.id, gate.name, gate.target_map_id);
+				++errors;
+				continue;
+			}
+
+			++incomingGates[dest->id];
+
+			// target_gate_id 0 은 목적지의 player_spawn 첫 지점 도착이다(World::ChangeMap).
+			if (gate.target_gate_id == 0)
+			{
+				if (dest->spawn_points.player_spawn.empty())
+				{
+					LOG.error("데이터 정합성: map {} 의 게이트 {} 는 map {} 의 player_spawn 으로 도착하는데 "
+						"그 맵에 player_spawn 이 없습니다.", map->id, gate.id, dest->id);
+					++errors;
+				}
+				continue;
+			}
+
+			const bool found = std::any_of(dest->gates.begin(), dest->gates.end(),
+				[&](const gamedata::MapGate& g) { return g.id == gate.target_gate_id; });
+			if (!found)
+			{
+				LOG.error("데이터 정합성: map {} 의 게이트 {} 가 가리키는 map {} 의 게이트 {} 가 없습니다.",
+					map->id, gate.id, dest->id, gate.target_gate_id);
+				++errors;
+			}
+		}
+	}
+
+	// GameMode.maps 는 Map.game_mode_id 의 역방향 사본이다(코드는 game_mode_id 만 읽는다).
+	// 사본이라 어긋나기 쉬우므로 양방향으로 맞춰 본다.
+	for (const gamedata::Map* map : sortedMaps)
+	{
+		const gamedata::GameMode* mode = resource.GetGameMode(map->game_mode_id);
+		if (mode == nullptr)
+			continue; // 위에서 이미 보고했다.
+
+		if (std::find(mode->maps.begin(), mode->maps.end(), map->id) == mode->maps.end())
+		{
+			LOG.warn("데이터 정합성: map {} 의 game_mode_id 는 {} 인데 그 모드의 maps 목록에 빠져 있습니다.",
+				map->id, mode->id);
+			++warnings;
+		}
+	}
+
+	std::vector<const gamedata::GameMode*> sortedModes;
+	sortedModes.reserve(resource.GetGameModes().size());
+	for (const auto& pair : resource.GetGameModes())
+	{
+		if (pair.second != nullptr)
+			sortedModes.push_back(pair.second);
+	}
+	std::sort(sortedModes.begin(), sortedModes.end(),
+		[](const gamedata::GameMode* a, const gamedata::GameMode* b) { return a->id < b->id; });
+
+	for (const gamedata::GameMode* mode : sortedModes)
+	{
+		for (int mapId : mode->maps)
+		{
+			const gamedata::Map* map = resource.GetMap(mapId);
+			if (map == nullptr)
+			{
+				LOG.warn("데이터 정합성: game mode {}('{}') 의 maps 에 존재하지 않는 맵 {} 이 있습니다.",
+					mode->id, mode->name, mapId);
+				++warnings;
+			}
+			else if (map->game_mode_id != mode->id)
+			{
+				LOG.warn("데이터 정합성: game mode {} 의 maps 에 map {} 이 있지만 그 맵의 game_mode_id 는 {} 입니다.",
+					mode->id, mapId, map->game_mode_id);
+				++warnings;
+			}
+		}
+	}
+
+	// 들어오는 게이트가 없는 맵. field 맵 중 가장 작은 id 는 로그인 스폰 맵(GetPrimaryMap)이라
+	// 게이트 없이도 도달하므로 제외한다.
+	int primaryFieldMapId = 0;
+	for (const gamedata::Map* map : sortedMaps)
+	{
+		const gamedata::GameMode* mode = resource.GetGameMode(map->game_mode_id);
+		if (mode != nullptr && mode->type == "field")
+		{
+			primaryFieldMapId = map->id; // sortedMaps 는 id 오름차순이라 첫 field 맵이 primary
+			break;
+		}
+	}
+
+	for (const gamedata::Map* map : sortedMaps)
+	{
+		if (map->id == primaryFieldMapId || incomingGates[map->id] > 0)
+			continue;
+
+		LOG.warn("데이터 정합성: map {}('{}') 으로 들어오는 게이트가 없습니다 — 플레이어가 도달할 수 없습니다.",
+			map->id, map->name);
+		++warnings;
+	}
+
+	if (errors == 0 && warnings == 0)
+		LOG.info("데이터 정합성 확인: Map.json / GameMode.json 참조가 모두 맞습니다.");
+	else
+		LOG.warn("데이터 정합성: 오류 {}건, 경고 {}건 — 위 로그를 확인하세요.", errors, warnings);
+
+	if (outWarnings != nullptr)
+		*outWarnings = warnings;
+	return errors;
+}
+
 void World::Init(const std::string& movementOverride)
 {
 	Monster::Initialize(GameDataPath::Resolve() + "mob.lua");
@@ -53,6 +207,9 @@ void World::Init(const std::string& movementOverride)
 
 	// 게임 모드용 공유 lua 상태 생성 + 호스트 함수(GM_*) 등록.
 	GameMode::InitializeLua();
+
+	// 맵을 로드하기 전에 데이터 참조를 검사한다(문제는 로그로만 남기고 계속 진행).
+	ValidateGameData();
 
 	randomUtil_ = new RandomUtil();
 	timeStamp_ = new TimeStamp();

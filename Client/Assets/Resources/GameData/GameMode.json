@@ -19,7 +19,7 @@
       "respawn_enabled": true,
       "respawn_time": 10
     },
-    "maps": [1, 2, 3, 4, 5],
+    "maps": [1, 2, 13, 14, 15],
     "rewards": {
       "exp_multiplier": 1.0,
       "gold_multiplier": 1.0,
@@ -46,7 +46,7 @@
       "respawn_enabled": false,
       "respawn_time": 0
     },
-    "maps": [6, 7, 8],
+    "maps": [6],
     "rewards": {
       "exp_multiplier": 2.0,
       "gold_multiplier": 3.0,

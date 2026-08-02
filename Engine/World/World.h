@@ -69,6 +69,21 @@ public:
 	// movementOverride 가 비어있지 않으면 게임 모드 데이터의 이동 전략 대신
 	// 해당 전략("crowd"/"waypoint")을 강제한다(벤치마크/테스트용).
 	void Init(const std::string& movementOverride = "");
+
+	// Map.json <-> GameMode.json 의 참조 정합성을 검사한다. Init 이 맵을 로드하기 전에
+	// 호출한다. 반환값은 오류 수이고, outWarnings 가 있으면 경고 수를 채운다.
+	//
+	//   오류  = 런타임에 실제로 깨지는 참조. 없는 game_mode_id/맵/게이트를 가리키거나
+	//           field 맵에 navmesh 가 없는 경우.
+	//   경고  = 데이터는 성립하지만 의도와 다른 상태. GameMode.maps 불일치(코드가 읽지
+	//           않는 역방향 사본이라 어긋나도 동작은 한다), 들어오는 게이트가 없어
+	//           도달할 수 없는 맵.
+	//
+	// 여기서 서버를 멈추지는 않는다. 잘못된 맵은 어차피 로드 대상에서 빠지는데, 그게
+	// 조용히 일어나는 것이 문제였다(모드 3/4 를 지운 뒤 그 모드를 가리키던 맵들이 아무
+	// 경고 없이 사라져 있었다). 치명적인 것(field 맵 navmesh 누락)은 Map::Init 이 따로
+	// 기동을 중단시킨다.
+	static int ValidateGameData(int* outWarnings = nullptr);
 	void update(float deltaTime);
 
 	// 로드된 모든 맵의 monster_spawn 마커 위치에 몬스터를 스폰한다.

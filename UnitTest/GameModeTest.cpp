@@ -5,9 +5,13 @@
 #include <string>
 #include <vector>
 
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_sinks.h"
+
 #include "GameData/ResourceLoader.h"
 #include "GameMode.h"
 #include "GameModeFactory.h"
+#include "World.h"
 
 namespace
 {
@@ -22,6 +26,18 @@ namespace
             return p;
         }
         return "";
+    }
+
+    // World::ValidateGameData 는 LOG("net") 로거를 쓴다(등록 안 돼 있으면 null 역참조).
+    void EnsureNetLogger()
+    {
+        if (!spdlog::get("net"))
+        {
+            auto logger = std::make_shared<spdlog::logger>(
+                "net", std::make_shared<spdlog::sinks::stdout_sink_mt>());
+            logger->set_level(spdlog::level::debug);
+            spdlog::register_logger(logger);
+        }
     }
 }
 
@@ -54,6 +70,31 @@ TEST_F(GameModeTest, OnlyFieldAndRaidRemain)
     EXPECT_NE(loader.GetGameMode(2), nullptr); // Raid
     EXPECT_EQ(loader.GetGameMode(3), nullptr); // Dungeon 제거됨
     EXPECT_EQ(loader.GetGameMode(4), nullptr); // Arena 제거됨
+}
+
+// Map.json 과 GameMode.json 이 서로를 가리키는 id 가 전부 맞아야 한다.
+// 모드 3/4(Dungeon/Arena)를 지웠을 때 그 모드를 가리키던 맵들이 아무 경고 없이
+// 로드 대상에서 빠져 있던 적이 있어서, 그 상태를 테스트로 고정한다.
+//
+// 경고(도달 불가 맵 등)는 검사만 하고 실패시키지 않는다. 인스턴스 맵으로 들어가는
+// 게이트가 없는 것은 데이터 오류가 아니라 아직 만들지 않은 콘텐츠라서다.
+TEST_F(GameModeTest, MapAndGameModeReferencesAreConsistent)
+{
+    EnsureNetLogger();
+    int warnings = 0;
+    EXPECT_EQ(World::ValidateGameData(&warnings), 0)
+        << "Map.json / GameMode.json 참조 정합성 오류 — 위 로그를 확인하세요.";
+}
+
+TEST_F(GameModeTest, EveryMapHasAnExistingGameMode)
+{
+    auto& loader = ResourceLoader::Instance();
+    for (const auto& [id, mapData] : loader.GetMaps())
+    {
+        EXPECT_NE(loader.GetGameMode(mapData->game_mode_id), nullptr)
+            << "map " << id << " ('" << mapData->name << "') 의 game_mode_id "
+            << mapData->game_mode_id << " 가 GameMode.json 에 없습니다.";
+    }
 }
 
 TEST_F(GameModeTest, FieldDataMatches)
