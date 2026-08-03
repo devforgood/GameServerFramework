@@ -159,9 +159,39 @@ public class Session : MonoBehaviour
             case GameMessages.TreeDebugSync:
                 TreeDebugRepository.Apply(recv_msg.Msg<TreeDebugSync>().Value);
                 break;
+            case GameMessages.EnterGate:
+                OnEnterGatePush(recv_msg);
+                break;
         }
 
         connection.CompleteResponse(recv_msg);
+    }
+
+    // 서버가 먼저 보낸 EnterGate(= 강제 이동 통보)를 처리한다.
+    // 내가 요청한 게이트 이동의 응답은 id 가 붙어 있고 CompleteResponse 가 처리하므로 여기서 건너뛴다.
+    // (레이드 종료로 인스턴스가 파괴될 때 서버가 플레이어를 출구 맵으로 내보내는 경로다.)
+    void OnEnterGatePush(GameMessage recv_msg)
+    {
+        if (recv_msg.Id != 0)
+            return;
+
+        if (recv_msg.Result != StatusCode.Success)
+        {
+            Debug.LogWarning("Forced move push with non-success result. ignored.");
+            return;
+        }
+
+        EnterGate enterGate = recv_msg.Msg<EnterGate>().Value;
+
+        var destMap = GameManager.Instance.resource.GetMapById(enterGate.MapId);
+        if (destMap == null)
+        {
+            Debug.LogError($"Forced move: destination map id {enterGate.MapId} not found in loaded map data.");
+            return;
+        }
+
+        string destScene = !string.IsNullOrEmpty(destMap.scene) ? destMap.scene : destMap.name;
+        mapTransition.ForcedMove(enterGate.MapId, enterGate.GateId, enterGate.AgentId, destScene);
     }
 
     // ── 접속 ──

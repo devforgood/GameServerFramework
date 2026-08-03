@@ -82,6 +82,23 @@ public class MapTransition
     }
 
     /// <summary>
+    /// 서버가 밀어 준 맵 이동을 처리한다. 요청-응답이 아니라 통보라서 대기 중인 콜백이 없다.
+    /// (레이드가 끝나 인스턴스가 파괴될 때 서버가 플레이어를 출구 맵으로 내보내는 경로.)
+    /// 서버는 이미 목적지 맵에 캐릭터를 재생성해 둔 상태이므로, 클라는 씬만 맞추면 된다.
+    /// </summary>
+    public void ForcedMove(int mapId, int gateId, int agentId, string sceneName)
+    {
+        // 진행 중이던 자발적 이동이 있어도 서버 통보가 우선이다 — 서버 쪽 캐릭터는 이미 옮겨졌다.
+        isChangingMap = true;
+
+        Debug.Log($"Forced move by server. mapId:{mapId}, gateId:{gateId}, new agentId:{agentId}, scene:'{sceneName}'");
+        GateEntered?.Invoke(agentId);
+
+        suppressWarpOnNextSceneLoad = gateId != 0;
+        LoadMapScene(sceneName);
+    }
+
+    /// <summary>
     /// 맵 씬을 로드한다. 로드가 끝날 때까지 네트워크 동기화 처리를 멈춰(OnSceneLoaded 에서 재개),
     /// 로드 전에 도착한 새 맵 상태가 씬 전환으로 파괴되지 않게 한다.
     /// </summary>

@@ -111,6 +111,19 @@
         "target_map_id": 13,
         "target_gate_id": 1,
         "required_level": 1
+      },
+      {
+        "id": 2,
+        "name": "Lair Entrance",
+        "type": "one_way",
+        "position": {
+          "x": 18.39,
+          "y": 0.0,
+          "z": 8.3
+        },
+        "target_map_id": 6,
+        "target_gate_id": 0,
+        "required_level": 1
       }
     ],
     "spawn_points": {
@@ -165,27 +178,27 @@
   {
     "id": 6,
     "name": "Dragon's Lair",
-    "scene": "Dragon's Lair",
+    "scene": "Arcadia Plains",
     "name_id": "map_dragon_lair_name",
     "desc_id": "map_dragon_lair_desc",
     "game_mode_id": 2,
     "size": {
-      "width": 800.0,
-      "height": 800.0
+      "width": 501.92,
+      "height": 501.96
     },
     "gates": [
       {
         "id": 1,
-        "name": "Lair Entrance",
+        "name": "Lair Exit",
         "type": "one_way",
         "position": {
-          "x": 50.0,
-          "y": 0.0,
-          "z": 400.0
+          "x": -125.8,
+          "y": 0.2,
+          "z": 26.57
         },
         "target_map_id": 2,
         "target_gate_id": 1,
-        "required_level": 20
+        "required_level": 1
       }
     ],
     "spawn_points": {
@@ -193,9 +206,9 @@
         {
           "id": 1,
           "position": {
-            "x": 100.0,
-            "y": 0.0,
-            "z": 400.0
+            "x": -108.61,
+            "y": 0.2,
+            "z": 13.42
           },
           "monster_id": 0,
           "spawn_interval": 0,
@@ -205,9 +218,9 @@
         {
           "id": 2,
           "position": {
-            "x": 150.0,
-            "y": 0.0,
-            "z": 400.0
+            "x": -98.67,
+            "y": 0.2,
+            "z": -2.76
           },
           "monster_id": 0,
           "spawn_interval": 0,
@@ -220,9 +233,9 @@
         {
           "id": 3,
           "position": {
-            "x": 700.0,
-            "y": 0.0,
-            "z": 400.0
+            "x": -201.87,
+            "y": 0.2,
+            "z": 18.98
           },
           "monster_id": 0,
           "spawn_interval": 0,
@@ -232,43 +245,10 @@
       ]
     },
     "objects": {
-      "static_objects": [
-        {
-          "id": 6,
-          "type": "boss_platform",
-          "name": "Dragon Platform",
-          "position": {
-            "x": 700.0,
-            "y": 0.0,
-            "z": 400.0
-          },
-          "size": {
-            "x": 100.0,
-            "y": 10.0,
-            "z": 100.0
-          },
-          "collision": true
-        },
-        {
-          "id": 7,
-          "type": "decoration",
-          "name": "Dragon Bones",
-          "position": {
-            "x": 300.0,
-            "y": 0.0,
-            "z": 300.0
-          },
-          "size": {
-            "x": 30.0,
-            "y": 5.0,
-            "z": 30.0
-          },
-          "collision": false
-        }
-      ],
+      "static_objects": [],
       "movable_objects": []
     },
-    "navmesh_path": "",
+    "navmesh_path": "Arcadia Plains_navmesh.bin",
     "aoi_radius": 0
   },
   {

@@ -136,6 +136,7 @@
     <ClCompile Include="ServerManagerTest.cpp" />
     <ClCompile Include="PlayerRepositoryTest.cpp" />
     <ClCompile Include="ResourceTest.cpp" />
+    <ClCompile Include="GameModeInstanceTest.cpp" />
     <ClCompile Include="GameModeTest.cpp" />
     <ClCompile Include="MapNavMeshTest.cpp" />
     <ClCompile Include="SkillSystemTest.cpp" />

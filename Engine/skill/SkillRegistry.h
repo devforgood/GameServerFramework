@@ -14,9 +14,12 @@ public:
 	static SkillRegistry& Instance();
 
 	// 캐시에 없으면 SkillFactory 로 생성한다. 데이터에 없는 id 면 nullptr.
+	// 리소스가 다시 로드돼 gamedata 포인터가 갈렸으면 여기서 자동으로 다시 묶는다.
 	Skill* Get(int skillId);
 
-	// 리소스 리로드/테스트용: 캐시를 비운다. (gamedata 포인터가 갈리므로 리로드 후 필수)
+	// 캐시를 비운다. 이제는 Get 이 gamedata 를 스스로 다시 묶으므로 리로드 후에
+	// 반드시 부를 필요는 없다. code_name 이 바뀌어 스킬 클래스 자체를 다시 골라야 할 때만
+	// 의미가 있다(같은 id 를 다른 구현으로 바꾼 경우).
 	void Clear();
 
 private:

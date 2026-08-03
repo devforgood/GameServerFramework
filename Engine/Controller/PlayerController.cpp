@@ -395,9 +395,12 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 	);
 
 	// 응답 이후에 새 맵의 액터 상태를 동기화한다(클라가 맵 교체를 마친 뒤 받도록).
+	// 목적지는 캐릭터가 실제로 들어간 맵에서 가져온다 — 인스턴스(레이드 등)는 방금
+	// 새로 만들어진 것이라 FindMap(mapId) 으로는 찾을 수 없다.
 	if (status == syncnet::StatusCode::StatusCode_Success)
 	{
-		Map* destMap = world_->FindMap(msg->mapId());
+		auto& character = player_->GetCharacter();
+		Map* destMap = character != nullptr ? character->GetMap() : nullptr;
 		if (destMap != nullptr)
 			destMap->SendStateTo(player_);
 	}

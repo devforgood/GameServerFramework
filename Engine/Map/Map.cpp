@@ -16,10 +16,16 @@
 #include "INavMovement.h"
 #include "NavMovementFactory.h"
 #include "BTDebugSync.h"
+#include "GameMode.h"
+#include "GameModeFactory.h"
+#include "GridManager.h"
 
 
 //const float g_fDistance = std::powf(10.0f, 2);
 const float g_fDistance = 10.0f;
+
+// 부활 시 회복할 체력. Actor::health_ 의 초기값과 같다(최대 체력 개념이 아직 없다).
+static constexpr int kRespawnHealth = 100;
 
 Map::Map(World* world)
 {
@@ -76,7 +82,18 @@ bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 {
 	mapData_ = mapData;
 
-	if (!InitNavigation(movementType))
+	// 게임 모드를 먼저 만든다 — 이동 전략(movement)을 여기서 읽는다.
+	if (mapData_ != nullptr)
+		gameMode_.reset(GameModeFactory::Create(mapData_->game_mode_id));
+
+	// 이동 전략은 맵이 속한 게임 모드가 정한다(모드마다 다를 수 있다). 호출 측이
+	// 명시하면(벤치마크/테스트) 그쪽이 우선하고, 둘 다 없으면 NavMovementFactory 가
+	// crowd 로 폴백한다.
+	std::string resolvedMovement = movementType;
+	if (resolvedMovement.empty() && gameMode_ != nullptr && gameMode_->gamedata != nullptr)
+		resolvedMovement = gameMode_->gamedata->movement;
+
+	if (!InitNavigation(resolvedMovement))
 		return false;
 
 	gridManager_ = CreateGrid();
@@ -85,6 +102,14 @@ bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 	RefreshAoIMode(); // 맵 데이터의 aoi_radius 로 관심영역 사용 여부를 정한다
 
 	InitEcs();
+
+	// 진행 로직(lua) 시작. on_start 가 보스를 스폰할 수 있으므로 그리드/ECS 가 준비된 뒤에 부른다.
+	if (gameMode_ != nullptr)
+	{
+		gameMode_->SetMap(this);
+		gameMode_->LoadScript();
+		gameMode_->Start();
+	}
 	return true;
 }
 
@@ -647,11 +672,12 @@ int Map::ValidateMapDataOnNavMesh(const gamedata::Map* mapData, const NavMesh* n
 void Map::update(float deltaTime)
 {
 	//LOG.info("World update begin");
-	// 4단계로 분리해 호출한다. 단계별 메서드는 프로파일링/벤치마크에서 개별 측정할 수 있도록
-	// public 으로 노출돼 있다. 호출 순서/동작은 기존과 동일하다.
+	// 단계별 메서드는 프로파일링/벤치마크에서 개별 측정할 수 있도록 public 으로 노출돼 있다.
+	// 호출 순서/동작은 여기서 순서대로 부르는 것과 동일하다.
 	UpdateActors(deltaTime);
 	UpdateMovement(deltaTime);
 	UpdateSystems(deltaTime);
+	UpdateGameMode(deltaTime);
 	SendWorldState();
 	//LOG.info("World update end");
 }
@@ -673,6 +699,160 @@ void Map::UpdateMovement(float deltaTime)
 void Map::UpdateSystems(float deltaTime)
 {
 	systemManager_->Update(deltaTime);
+}
+
+// 단계 4: 게임 모드 진행.
+//
+// lua 는 게임 상태를 직접 못 읽는다 — GM_IsBossDead / GM_GetAlivePlayerCount 같은 조회
+// 함수는 GameMode 에 저장된 값을 돌려줄 뿐이다. 그 값을 실제 월드에서 채우는 곳이 여기다.
+void Map::UpdateGameMode(float deltaTime)
+{
+	if (gameMode_ == nullptr || gameMode_->IsEnded())
+		return;
+
+	// 보스 처치 판정. 액터가 사라졌거나 사망 상태면 처치로 본다.
+	if (bossActorId_ >= 0 && !gameMode_->boss_dead())
+	{
+		auto boss = FindActor(bossActorId_);
+		if (boss == nullptr
+			|| boss->GetState() == syncnet::AIState::AIState_Dead
+			|| boss->GetState() == syncnet::AIState::AIState_Destroyed)
+		{
+			gameMode_->set_boss_dead(true);
+			LOG.info("Map {} 보스(actor {}) 처치", GetMapId(), bossActorId_);
+		}
+	}
+
+	// 플레이어 사망 판정. 체력이 0 이하로 떨어지는 순간 한 번만 처리한다.
+	// 생존 수를 먼저 갱신해야 lua 의 전멸 판정(GM_GetAlivePlayerCount)이 맞는다.
+	for (auto& entry : players_)
+	{
+		if (entry.second == nullptr)
+			continue;
+		auto character = entry.second->GetCharacter();
+		if (character == nullptr || character->GetHealth() > 0)
+			continue;
+		if (deadPlayers_.find(entry.first) != deadPlayers_.end())
+			continue;
+
+		deadPlayers_.insert(entry.first);
+		character->SetState(syncnet::AIState::AIState_Dead);
+		gameMode_->set_alive_player_count(CountAlivePlayers());
+		LOG.info("Map {} 플레이어 {} 사망(생존 {}명)", GetMapId(), entry.first, gameMode_->alive_player_count());
+		gameMode_->OnPlayerDead(entry.second.get());
+	}
+
+	// 부활 대기 시간 소진. on_player_dead 가 방금 넣은 항목도 여기서 함께 줄어든다.
+	for (auto itr = pendingRespawns_.begin(); itr != pendingRespawns_.end(); )
+	{
+		itr->second -= deltaTime;
+		if (itr->second > 0.0f)
+		{
+			++itr;
+			continue;
+		}
+		const long playerId = itr->first;
+		itr = pendingRespawns_.erase(itr);
+		RespawnPlayer(playerId);
+	}
+
+	gameMode_->Update(deltaTime);
+}
+
+std::vector<std::shared_ptr<Player>> Map::GetPlayers() const
+{
+	std::vector<std::shared_ptr<Player>> result;
+	result.reserve(players_.size());
+	for (const auto& entry : players_)
+	{
+		if (entry.second != nullptr)
+			result.push_back(entry.second);
+	}
+	return result;
+}
+
+int Map::CountAlivePlayers()
+{
+	int alive = 0;
+	for (auto& entry : players_)
+	{
+		if (entry.second == nullptr)
+			continue;
+		auto character = entry.second->GetCharacter();
+		if (character != nullptr && character->GetHealth() > 0)
+			++alive;
+	}
+	return alive;
+}
+
+void Map::SchedulePlayerRespawn(long playerId, float seconds)
+{
+	// 0 이하면 다음 틱에 바로 되살린다(즉시 부활 설정).
+	pendingRespawns_[playerId] = seconds > 0.0f ? seconds : 0.0f;
+}
+
+void Map::RespawnPlayer(long playerId)
+{
+	deadPlayers_.erase(playerId);
+
+	auto player = FindPlayer(playerId);
+	if (player == nullptr)
+		return;
+	auto character = player->GetCharacter();
+	if (character == nullptr)
+		return;
+
+	// 스폰 지점으로 되돌린다. GetPlayerSpawnPos 는 클라 좌표계라 서버 좌표계로 변환한다.
+	const syncnet::Vec3 spawn = GetPlayerSpawnPos();
+	Vector3 serverPos(&spawn);
+	movement_->TeleportAgent(character->GetActorId(), serverPos.pos());
+	character->SetPosition(serverPos.x, serverPos.y, serverPos.z);
+	gridManager_->move(character.get(), serverPos.x, serverPos.z);
+
+	character->SetHealth(kRespawnHealth);
+	character->SetState(syncnet::AIState::AIState_Patrol); // 살아있는 기본 상태
+
+	if (gameMode_ != nullptr)
+		gameMode_->set_alive_player_count(CountAlivePlayers());
+
+	LOG.info("Map {} 플레이어 {} 부활(pos {}, {}, {})",
+		GetMapId(), playerId, spawn.x(), spawn.y(), spawn.z());
+}
+
+int Map::SpawnBoss(int bossId)
+{
+	if (mapData_ == nullptr)
+		return -1;
+
+	// 보스 위치는 boss_spawn 마커. 없으면 스폰하지 않는다 — 아무 데나 세우면
+	// navmesh 밖이나 입구 한복판에 나올 수 있다.
+	if (mapData_->spawn_points.boss_spawn.empty())
+	{
+		LOG.error("Map {} boss_spawn 마커가 없어 보스 {} 를 스폰할 수 없습니다.", GetMapId(), bossId);
+		return -1;
+	}
+
+	const auto& marker = mapData_->spawn_points.boss_spawn.front();
+	syncnet::Vec3 pos(
+		static_cast<float>(marker.position.x),
+		static_cast<float>(marker.position.y),
+		static_cast<float>(marker.position.z));
+
+	auto boss = OnAddAgent(nullptr, syncnet::GameObjectType::GameObjectType_Monster, &pos);
+	if (boss == nullptr)
+	{
+		LOG.error("Map {} 보스 {} 스폰 실패(위치 {}, {}, {})",
+			GetMapId(), bossId, marker.position.x, marker.position.y, marker.position.z);
+		return -1;
+	}
+
+	// 보스 체력은 게임 모드 데이터가 정한다(없으면 몬스터 기본값 유지).
+	if (gameMode_ != nullptr && gameMode_->gamedata != nullptr && gameMode_->gamedata->boss_info.boss_hp > 0)
+		boss->SetHealth(gameMode_->gamedata->boss_info.boss_hp);
+
+	bossActorId_ = boss->GetActorId();
+	LOG.info("Map {} 보스 {} 스폰(actor {}, hp {})", GetMapId(), bossId, bossActorId_, boss->GetHealth());
+	return bossActorId_;
 }
 
 // 프로파일링용: 모든 액터에 대해 DetectEnemy 만 1회씩 호출(적 탐지 비용 격리 측정).
@@ -830,6 +1010,7 @@ void Map::OnRemoveAgent(int agent_id)
 		{
 			players_.erase(itr_player);
 		}
+		ForgetPlayerModeState(character->GetPlayerId());
 	}
 
 	// 사라지는 액터는 그 자리를 보고 있던 플레이어들의 시야에서도 빠진다.
@@ -955,6 +1136,13 @@ void Map::Enter(std::shared_ptr<Player> player)
 		return;
 	}
 	players_.insert(std::make_pair(player->GetPlayerId(), player));
+
+	// 진행 로직에 입장을 알린다. 생존 수를 먼저 채워야 on_player_join 안에서 조회해도 맞는다.
+	if (gameMode_ != nullptr)
+	{
+		gameMode_->set_alive_player_count(CountAlivePlayers());
+		gameMode_->OnPlayerJoin(player.get());
+	}
 }
 
 void Map::SendStateTo(std::shared_ptr<Player> player)
@@ -1011,6 +1199,18 @@ void Map::leave(std::shared_ptr<Player> player)
 	}
 	UnsubscribeViewer(player->GetPlayerId());
 	players_.erase(itr);
+	ForgetPlayerModeState(player->GetPlayerId());
+}
+
+// 맵을 떠난 플레이어의 사망/부활 대기 상태를 지운다. 남겨 두면 다른 맵으로 간 뒤에도
+// 여기서 부활 타이머가 돌아 엉뚱한 맵의 스폰 지점으로 순간이동시킨다.
+void Map::ForgetPlayerModeState(long playerId)
+{
+	deadPlayers_.erase(playerId);
+	pendingRespawns_.erase(playerId);
+
+	if (gameMode_ != nullptr)
+		gameMode_->set_alive_player_count(CountAlivePlayers());
 }
 
 std::shared_ptr<Player> Map::FindPlayer(long player_id)

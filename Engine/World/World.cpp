@@ -214,21 +214,13 @@ void World::Init(const std::string& movementOverride)
 	randomUtil_ = new RandomUtil();
 	timeStamp_ = new TimeStamp();
 
-	// 기본 게임 모드 부트스트랩(현재는 Field, id=1).
-	// 추후 매치메이킹/세션이 모드 id 를 결정하도록 확장한다.
-	gameMode_.reset(GameModeFactory::Create(1));
-
-	// 게임 모드 데이터가 지정한 이동 전략으로 맵의 네비게이션을 초기화한다.
-	// 미지정 시 NavMovementFactory 가 crowd 로 폴백한다.
-	std::string movementType;
-	if (gameMode_ && gameMode_->gamedata)
-		movementType = gameMode_->gamedata->movement;
-
-	// 명시적 오버라이드가 있으면 게임 모드 설정보다 우선한다(벤치마크/테스트).
-	if (!movementOverride.empty())
-		movementType = movementOverride;
+	// 이동 전략은 각 맵이 자기 게임 모드 데이터에서 읽는다(Map::Init). 여기서 넘기는 값은
+	// 명시적 오버라이드이며, 비어 있지 않으면 맵 설정보다 우선한다(벤치마크/테스트).
+	const std::string& movementType = movementOverride;
 
 	// 로드된 맵 데이터 중 field 타입(소속 게임 모드 type == "field") 맵을 모두 로드한다.
+	// field 가 아닌 맵(raid 등 인스턴스)은 여기서 만들지 않는다 — 플레이어가 입장할 때
+	// CreateInstance 로 매번 새로 만든다.
 	auto& resource = ResourceLoader::Instance();
 	std::vector<const gamedata::Map*> fieldMaps;
 	for (const auto& pair : resource.GetMaps())
@@ -263,18 +255,133 @@ void World::Init(const std::string& movementOverride)
 		mapById_[mapData->id] = map;
 	}
 
-	if (gameMode_ && !mapList_.empty())
-	{
-		gameMode_->SetMap(mapList_.front().get());
-		gameMode_->LoadScript();
-		gameMode_->Start();
-	}
+	// 이동 전략을 오버라이드했으면 인스턴스도 같은 값으로 만들어야 한다(벤치마크/테스트).
+	movementOverride_ = movementOverride;
 }
 
 void World::SpawnMapMonsters()
 {
 	for (auto& map : mapList_)
 		map->SpawnMonstersFromData();
+}
+
+Map* World::CreateInstance(int mapId)
+{
+	const gamedata::Map* mapData = ResourceLoader::Instance().GetMap(mapId);
+	if (mapData == nullptr)
+	{
+		LOG.error("World::CreateInstance map {} 데이터가 없습니다.", mapId);
+		return nullptr;
+	}
+
+	auto map = std::make_shared<Map>(this);
+	map->SetInstanceId(nextInstanceId_);
+
+	// Init 이 게임 모드를 만들고 on_start 까지 부른다(레이드는 여기서 보스가 스폰된다).
+	if (!map->Init(movementOverride_, mapData))
+	{
+		LOG.error("World::CreateInstance map {} 초기화 실패(navmesh 확인).", mapId);
+		return nullptr;
+	}
+
+	map->SpawnMonstersFromData();
+
+	++nextInstanceId_;
+	instances_.push_back(map);
+	LOG.info("인스턴스 생성: map {} instance {} (현재 {}개)", mapId, map->GetInstanceId(), instances_.size());
+	return map.get();
+}
+
+bool World::FindInstanceExit(const gamedata::Map* data, int& outMapId, int& outGateId)
+{
+	// 인스턴스의 출구는 그 맵의 첫 게이트다(Dragon's Lair 의 "Lair Entrance" 처럼
+	// 인스턴스 맵의 게이트는 밖으로 나가는 문 하나뿐이다).
+	if (data == nullptr || data->gates.empty())
+		return false;
+
+	outMapId = data->gates.front().target_map_id;
+	outGateId = data->gates.front().target_gate_id;
+	return true;
+}
+
+void World::EvictInstancePlayers(Map* instance)
+{
+	if (instance == nullptr)
+		return;
+
+	int exitMapId = 0;
+	int exitGateId = 0;
+	if (!FindInstanceExit(instance->GetMapData(), exitMapId, exitGateId))
+	{
+		LOG.error("인스턴스 map {} 에 나갈 게이트가 없어 플레이어를 내보내지 못했습니다.",
+			instance->GetMapId());
+		return;
+	}
+
+	// ChangeMap 이 players_ 를 건드리므로 목록을 먼저 복사해 두고 순회한다.
+	for (auto& player : instance->GetPlayers())
+	{
+		syncnet::Vec3 outPos(0, 0, 0);
+		int outAgentId = 0;
+		if (!ChangeMap(player, exitMapId, exitGateId, outPos, outAgentId))
+		{
+			LOG.error("인스턴스 퇴장 실패: player {} -> map {} gate {}",
+				player->GetPlayerId(), exitMapId, exitGateId);
+			continue;
+		}
+
+		// 클라가 요청하지 않은 이동이므로 EnterGate 를 그대로 밀어 준다(id 0 = 서버 통보).
+		// 클라는 응답 대기 콜백이 아니라 메시지 종류로 받아 처리한다(Session.OnReceive).
+		player->Send(
+			syncnet::CreateEnterGate
+			, syncnet::GameMessages::GameMessages_EnterGate
+			, 0
+			, syncnet::StatusCode::StatusCode_Success
+			, exitMapId
+			, exitGateId
+			, &outPos
+			, outAgentId
+		);
+
+		auto& character = player->GetCharacter();
+		Map* destMap = character != nullptr ? character->GetMap() : nullptr;
+		if (destMap != nullptr)
+			destMap->SendStateTo(player);
+	}
+}
+
+void World::CleanupInstances()
+{
+	for (auto itr = instances_.begin(); itr != instances_.end(); )
+	{
+		Map* instance = itr->get();
+		GameMode* mode = instance->GetGameMode();
+		const bool ended = (mode != nullptr && mode->IsEnded());
+		const bool empty = (instance->GetPlayerCount() == 0);
+
+		if (!ended && !empty)
+		{
+			++itr;
+			continue;
+		}
+
+		if (ended && !empty)
+		{
+			// 진행이 끝났는데 아직 사람이 남아 있으면 밖으로 내보낸 뒤에 파괴한다.
+			// 내보내기에 실패하면(나갈 게이트가 없는 등) 파괴하지 않는다 — 여기서 맵을
+			// 지우면 남은 캐릭터가 갈 곳을 잃는다.
+			EvictInstancePlayers(instance);
+			if (instance->GetPlayerCount() > 0)
+			{
+				++itr;
+				continue;
+			}
+		}
+
+		LOG.info("인스턴스 파괴: map {} instance {} (사유: {})",
+			instance->GetMapId(), instance->GetInstanceId(), ended ? "진행 종료" : "인원 없음");
+		itr = instances_.erase(itr);
+	}
 }
 
 void World::update(float deltaTime)
@@ -285,8 +392,10 @@ void World::update(float deltaTime)
 	for (std::list<std::shared_ptr<Map>>::iterator itr = mapList_.begin();itr!= mapList_.end();++itr)
 		(*itr)->update(deltaTime);
 
-	if (gameMode_)
-		gameMode_->Update(deltaTime);
+	for (auto& instance : instances_)
+		instance->update(deltaTime);
+
+	CleanupInstances();
 
 	TickReconnectGrace(deltaTime);
 }
@@ -494,11 +603,25 @@ bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syn
 		return false;
 	}
 
+	// 상시 맵이면 그것을 쓰고, 인스턴스 모드(field 가 아닌 모드)면 새로 하나 만든다.
+	// 인스턴스는 mapById_ 에 없으므로 FindMap 으로는 절대 찾히지 않는다.
 	Map* destMap = FindMap(mapId);
 	if (destMap == nullptr)
 	{
-		LOG.error("World::ChangeMap error map {} not found", mapId);
-		return false;
+		const gamedata::Map* pending = ResourceLoader::Instance().GetMap(mapId);
+		const gamedata::GameMode* destMode =
+			pending != nullptr ? ResourceLoader::Instance().GetGameMode(pending->game_mode_id) : nullptr;
+
+		if (destMode == nullptr || destMode->type == "field")
+		{
+			// field 맵인데 상시 목록에 없다 = 기동 때 로드에 실패했거나 데이터가 없다.
+			LOG.error("World::ChangeMap error map {} not found", mapId);
+			return false;
+		}
+
+		destMap = CreateInstance(mapId);
+		if (destMap == nullptr)
+			return false;
 	}
 
 	const gamedata::Map* destData = destMap->GetMapData();

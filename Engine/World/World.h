@@ -23,6 +23,9 @@ class GameMode;
 namespace engine {
 	class SystemManager;
 }
+namespace gamedata {
+	struct Map;
+}
 
 class World
 {
@@ -32,9 +35,21 @@ private:
 	TimeStamp* timeStamp_;
 
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
+
+	// 상시 맵(field). 서버 기동 시 전부 만들어 두고 모든 플레이어가 공유한다.
 	std::list<std::shared_ptr<Map>> mapList_;
-	// gamedata 맵 id -> Map. 게이트 이동 등 id 기반 라우팅에 사용.
+	// gamedata 맵 id -> 상시 Map. 게이트 이동 등 id 기반 라우팅에 사용.
 	std::unordered_map<int, std::shared_ptr<Map>> mapById_;
+
+	// 인스턴스 맵(raid 등 field 가 아닌 모드). 플레이어가 입장할 때 만들어지고,
+	// 진행 로직이 종료를 선언하거나 마지막 플레이어가 나가면 파괴된다.
+	// 같은 mapId 로 여러 개가 동시에 존재할 수 있어 id 로 색인하지 않는다.
+	std::list<std::shared_ptr<Map>> instances_;
+	int nextInstanceId_ = 1;
+
+	// Init 에 넘어온 이동 전략 오버라이드. 나중에 만드는 인스턴스도 같은 값을 써야
+	// 벤치마크/테스트가 의도한 전략으로 돈다. 비어 있으면 맵의 게임 모드 설정을 따른다.
+	std::string movementOverride_;
 
 	// 재접속 핸드오버 대기: 세션이 끊긴 플레이어를 즉시 제거하지 않고 유예 시간 동안
 	// 캐릭터를 월드에 유지한다. 키는 플레이어 고유 uuid(재접속 토큰).
@@ -59,7 +74,14 @@ private:
 	// 캐릭터가 월드에서 최종 제거되기 직전에 마지막 위치를 lastLocations_ 에 기록한다.
 	void RememberLastLocation(const std::shared_ptr<Player>& player);
 
-	std::unique_ptr<GameMode> gameMode_;
+	// 진행이 끝났거나 빈 인스턴스를 정리한다. 매 틱 update 에서 호출.
+	void CleanupInstances();
+
+	// 종료된 인스턴스에 남은 플레이어를 출구 게이트 밖으로 내보낸다.
+	void EvictInstancePlayers(Map* instance);
+
+	// 인스턴스 맵의 출구(첫 게이트)를 찾는다. 없으면 false.
+	static bool FindInstanceExit(const gamedata::Map* data, int& outMapId, int& outGateId);
 
 
 public:
@@ -102,8 +124,18 @@ public:
 	// (예: 대규모 측정은 가장 넓은 맵에서 해야 한다) 고르려면 목록이 필요하다.
 	std::vector<Map*> GetMaps() const;
 
-	// gamedata 맵 id로 Map 을 찾는다. 없으면 nullptr.
+	// gamedata 맵 id로 상시(field) Map 을 찾는다. 없으면 nullptr.
+	// 인스턴스 맵은 여기서 찾을 수 없다 — 같은 mapId 로 여러 개가 동시에 살아 있어서
+	// id 만으로는 어느 것인지 정할 수 없다. 인스턴스는 플레이어의 캐릭터가 가진
+	// Map* 로만 접근한다.
 	Map* FindMap(int mapId);
+
+	// mapId 맵의 인스턴스를 새로 만든다(raid 등 field 가 아닌 모드 전용).
+	// 몬스터 스폰과 게임 모드 시작까지 마친 Map* 을 반환하며, 실패 시 nullptr.
+	Map* CreateInstance(int mapId);
+
+	// 진단/테스트용: 현재 살아 있는 인스턴스 수.
+	size_t GetInstanceCount() const { return instances_.size(); }
 
 	// 플레이어의 캐릭터를 mapId 맵의 gateId 게이트 위치로 이동시킨다.
 	// 성공 시 outPos 에 도착 위치, outAgentId 에 (재생성된) 새 actor id 를 채우고 true 를 반환한다.

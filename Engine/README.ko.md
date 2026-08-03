@@ -30,6 +30,39 @@
 - **액터 & AI**: 비헤이비어 트리로 구동되는 Actor/Character/Monster 엔티티 (BT 디버깅 및 Lua 스크립팅 포함)
 - **플레이어 성장**: 데이터 로드/세이브를 갖춘 아이템 · 스킬 · 퀘스트 · **레벨** 시스템
 - **영속화**: 생성된 DAO/VO와 변경 추적을 지원하는 SQL 클라이언트
+- **게임 모드**: 맵마다 붙는 진행 로직(lua). 상시(field) 맵과 입장 시 생성되는 인스턴스(raid 등)
+
+## 🎮 게임 모드와 인스턴스
+
+맵 하나에 게임 모드 하나가 붙는다(`Map::gameMode_`). 어떤 모드인지는 `Map.json` 의
+`game_mode_id` 가 정하고, 진행 로직은 `GameMode.json` 의 `script` 가 가리키는 lua 파일이
+맡는다. C++ 는 라이프사이클 시점마다 lua 함수를 부르고, lua 는 전역 `GM_*` 호스트 함수로
+상태를 조회/조작한다.
+
+### 상시 맵과 인스턴스
+
+| | 상시(field) | 인스턴스(field 아님) |
+| --- | --- | --- |
+| 생성 | `World::Init` 이 기동 시 전부 | `World::CreateInstance` — 게이트로 들어가는 순간 |
+| 공유 | 모든 플레이어가 한 맵 | 입장할 때마다 새 사본 |
+| 조회 | `World::FindMap(mapId)` | id 로 못 찾는다(같은 mapId 로 여러 개가 산다). 캐릭터의 `GetMap()` 으로만 접근 |
+| 파괴 | 없음 | 진행 종료 또는 마지막 인원 퇴장 시 (`World::CleanupInstances`) |
+
+진행이 끝났는데 사람이 남아 있으면 인스턴스 맵의 첫 게이트(출구)로 내보낸 뒤 파괴한다.
+클라가 요청하지 않은 이동이라 서버가 `EnterGate` 를 id 0 으로 밀어 통보한다.
+
+### lua 계약 (없는 함수는 호출하지 않는다)
+
+| 훅 | 호출 시점 |
+| --- | --- |
+| `on_start(mode)` | `Map::Init` 끝 — 여기서 `GM_SpawnBoss` 로 보스를 세운다 |
+| `on_player_join(mode, player)` | `Map::Enter` |
+| `on_player_dead(mode, player)` | 캐릭터 체력이 0 이하가 된 틱(플레이어당 1회) |
+| `on_update(mode, dt)` → `check_end(mode)` | 매 틱 `Map::UpdateGameMode` |
+| `on_end(mode)` | `check_end` 가 true 를 반환한 뒤 1회 |
+
+lua 가 읽는 상태(`GM_IsBossDead` / `GM_GetAlivePlayerCount`)는 `Map::UpdateGameMode` 가
+매 틱 실제 월드에서 채운다. 보스는 스폰한 액터가 사라지거나 사망 상태가 되면 처치로 본다.
 
 ## 🏗️ 아키텍처
 

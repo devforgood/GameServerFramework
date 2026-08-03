@@ -2,6 +2,7 @@
 #include <vector>
 #include <list>
 #include <unordered_map>
+#include <unordered_set>
 #include <memory>
 #include <string>
 #include "syncnet_generated.h"
@@ -26,6 +27,7 @@ namespace engine {
 class World;
 class NavMesh;
 class INavMovement;
+class GameMode;
 namespace gamedata {
 	struct Map;
 }
@@ -82,6 +84,29 @@ private:
 	// 브로드캐스트 대기열(actorPendingUpdates_)에 누적한다. Destroyed 상태는 제거 목록에 수집.
 	void SyncActorState(engine::StateComponent& state, engine::PositionComponent& position);
 
+	// 부활 대기가 끝난 플레이어를 스폰 지점에 되살린다.
+	void RespawnPlayer(long playerId);
+
+	// 맵을 떠난 플레이어의 사망/부활 대기 상태를 지운다.
+	void ForgetPlayerModeState(long playerId);
+
+	// ── 게임 모드 ──
+	// 이 맵에서 진행 중인 모드. Init 이 맵 데이터의 game_mode_id 로 만든다.
+	// field 맵은 서버가 사는 동안 하나가 유지되고, instance 맵은 인스턴스마다 새로 생긴다.
+	std::unique_ptr<GameMode> gameMode_;
+
+	// 0 이면 상시(field) 맵, 1 이상이면 입장할 때 만들어진 인스턴스다.
+	int instanceId_ = 0;
+
+	// GM_SpawnBoss 로 스폰한 보스 액터 id(-1 이면 없음).
+	int bossActorId_ = -1;
+
+	// 사망 처리를 플레이어당 한 번만 하기 위한 집합(플레이어 id).
+	std::unordered_set<long> deadPlayers_;
+
+	// 부활 대기: 플레이어 id -> 남은 시간(초).
+	std::unordered_map<long, float> pendingRespawns_;
+
 
 	GridManager* gridManager_;
 
@@ -127,6 +152,36 @@ public:
 	void UpdateActors(float deltaTime);
 	void UpdateMovement(float deltaTime);
 	void UpdateSystems(float deltaTime);
+
+	// 진행 로직 단계: 보스 처치/플레이어 사망 판정과 부활 타이머를 처리한 뒤
+	// 게임 모드 lua(on_update -> check_end)를 돌린다.
+	void UpdateGameMode(float deltaTime);
+
+	// ── 게임 모드 연동 ──
+	// 이 맵의 진행 모드. 모드 데이터가 없는 맵(테스트 등)은 nullptr.
+	GameMode* GetGameMode() const { return gameMode_.get(); }
+
+	// 인스턴스 식별자. 0 이면 상시 맵이고, 1 이상이면 입장할 때 만들어진 인스턴스다.
+	// 같은 mapId 로 여러 인스턴스가 동시에 존재할 수 있어 구분자가 필요하다.
+	int  GetInstanceId() const { return instanceId_; }
+	void SetInstanceId(int id) { instanceId_ = id; }
+	bool IsInstance() const { return instanceId_ != 0; }
+
+	size_t GetPlayerCount() const { return players_.size(); }
+	std::vector<std::shared_ptr<Player>> GetPlayers() const;
+
+	// boss_spawn 마커에 보스를 스폰한다. 액터 id 를 반환하며 실패 시 -1.
+	// 스폰한 보스는 UpdateGameMode 가 사망을 감시한다.
+	int SpawnBoss(int bossId);
+
+	// GM_SpawnBoss 로 스폰된 보스의 액터 id. 아직 없으면 -1.
+	int GetBossActorId() const { return bossActorId_; }
+
+	// 캐릭터 체력이 남아 있는 플레이어 수. lua 의 전멸 판정에 쓰인다.
+	int CountAlivePlayers();
+
+	// seconds 뒤에 플레이어를 스폰 지점에 되살린다(GM_SchedulePlayerRespawn).
+	void SchedulePlayerRespawn(long playerId, float seconds);
 
 	// 프로파일링용: 모든 액터에 대해 DetectEnemy 를 1회씩 호출하고 탐지 성공 수를 반환한다.
 	// BehaviorTree tick 안에서 적 탐지(그리드 쿼리)가 차지하는 비용을 격리 측정하기 위한 훅.

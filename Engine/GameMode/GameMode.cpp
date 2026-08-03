@@ -4,6 +4,18 @@
 #include <lua.hpp>
 
 #include "Common.h" // gamedata::GameMode 전체 정의
+#include "LogHelper.h"
+#include "Map.h"
+#include "Player.h"
+#include "Character.h"
+#include "PlayerLevel.h"
+
+namespace
+{
+	// 인스턴스 클리어 기본 보상 경험치. 모드 데이터의 exp_multiplier 를 곱해 지급한다.
+	// (몬스터 처치 경험치 PlayerLevel::kExpPerKill 이 50 인 것과 맞춘 값이다.)
+	constexpr int kClearBaseExp = 500;
+}
 
 lua_State* GameMode::L_ = nullptr;
 std::string GameMode::scriptBasePath_ = GameDataPath::Resolve();
@@ -294,14 +306,19 @@ namespace
 		return 1;
 	}
 
-	// --- 보스/플레이어 (TODO: Map/World 연동) ---
+	// --- 보스/플레이어 ---
 	int GM_SpawnBoss(lua_State* L)
 	{
 		GameMode* m = ArgMode(L);
 		const int bossId = static_cast<int>(lua_tointeger(L, 2));
-		// TODO: Map 에 보스 몬스터를 스폰한다. 현재는 로그만 출력.
-		std::cout << "[GameMode] SpawnBoss id=" << bossId << std::endl;
-		(void)m;
+		if (m == nullptr || m->GetMap() == nullptr)
+		{
+			// 맵 없이 도는 환경(단위 테스트 등)에서는 스폰할 대상이 없다.
+			LOG.debug("[GameMode] SpawnBoss id={} 무시(맵 없음)", bossId);
+			return 0;
+		}
+
+		m->GetMap()->SpawnBoss(bossId);
 		return 0;
 	}
 	int GM_IsBossDead(lua_State* L)
@@ -319,18 +336,52 @@ namespace
 	int GM_SchedulePlayerRespawn(lua_State* L)
 	{
 		GameMode* m = ArgMode(L);
+		Player* player = static_cast<Player*>(lua_touserdata(L, 2));
 		const double secs = lua_tonumber(L, 3);
-		// TODO: respawn 을 스케줄링한다. 현재는 로그만 출력.
-		std::cout << "[GameMode] SchedulePlayerRespawn in " << secs << "s" << std::endl;
-		(void)m;
+		if (m == nullptr || m->GetMap() == nullptr || player == nullptr)
+		{
+			LOG.debug("[GameMode] SchedulePlayerRespawn 무시(맵/플레이어 없음)");
+			return 0;
+		}
+
+		m->GetMap()->SchedulePlayerRespawn(player->GetPlayerId(), static_cast<float>(secs));
 		return 0;
 	}
 	int GM_GrantRewards(lua_State* L)
 	{
 		GameMode* m = ArgMode(L);
-		// TODO: rewards 배수에 따라 보상을 지급한다. 현재는 로그만 출력.
-		std::cout << "[GameMode] GrantRewards" << std::endl;
-		(void)m;
+		if (m == nullptr || m->gamedata == nullptr || m->GetMap() == nullptr)
+		{
+			LOG.debug("[GameMode] GrantRewards 무시(맵/데이터 없음)");
+			return 0;
+		}
+
+		// 클리어 보상. 아직 지급 대상은 경험치뿐이라 exp_multiplier 만 쓴다.
+		// (gold/drop 은 인벤토리·드랍 테이블이 붙은 뒤에 이어서 처리한다.)
+		const double expMul = m->gamedata->rewards.exp_multiplier;
+		const int exp = static_cast<int>(kClearBaseExp * (expMul > 0.0 ? expMul : 1.0));
+
+		int granted = 0;
+		for (const auto& player : m->GetMap()->GetPlayers())
+		{
+			if (player == nullptr)
+				continue;
+			auto character = player->GetCharacter();
+			if (character == nullptr)
+				continue;
+
+			// 죽은 채로 남아 있는 플레이어에게는 주지 않는다.
+			if (character->GetHealth() <= 0)
+				continue;
+
+			if (auto* level = player->GetComponent<PlayerLevel>())
+			{
+				level->GainExp(exp);
+				++granted;
+			}
+		}
+
+		LOG.info("[GameMode] 클리어 보상 지급: 경험치 {} x {}명 (배수 {})", exp, granted, expMul);
 		return 0;
 	}
 } // namespace
