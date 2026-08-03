@@ -46213,20 +46213,20 @@ PrefabInstance:
       propertyPath: gateName
       value: Gate1
       objectReference: {fileID: 0}
-    - target: {fileID: 4868245414168183788, guid: 3b800daeecf266347b1fee9a04190f94,
-        type: 3}
-      propertyPath: targetMapId
-      value: 14
-      objectReference: {fileID: 0}
-    - target: {fileID: 4868245414168183788, guid: 3b800daeecf266347b1fee9a04190f94,
-        type: 3}
-      propertyPath: targetGateId
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 4868245414168183789, guid: 3b800daeecf266347b1fee9a04190f94,
         type: 3}
       propertyPath: m_Name
       value: Gate
+      objectReference: {fileID: 0}
+    - target: {fileID: 4868245414168183788, guid: 3b800daeecf266347b1fee9a04190f94,
+        type: 3}
+      propertyPath: id
+      value: 1005
+      objectReference: {fileID: 0}
+    - target: {fileID: 4868245414168183788, guid: 3b800daeecf266347b1fee9a04190f94,
+        type: 3}
+      propertyPath: targetId
+      value: 1006
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3b800daeecf266347b1fee9a04190f94, type: 3}

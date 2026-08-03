@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System.Collections.Generic;
@@ -51,17 +51,22 @@ public static class MapJsonUpdater
     [System.Serializable]
     public class GateInfo
     {
-        public int id;
+        public int id;        // 데이터 전체에서 유일
         public string name;
-        public string type;   // "two_way"(짝 필수) | "one_way"(인스턴스 입구, target_gate_id 0 = player_spawn 도착)
+        public string type;   // "two_way"(짝 필수) | "one_way"(인스턴스 입구, 스폰 지점을 가리켜도 된다)
         public Vec3 position;
-        public int target_map_id;
-        public int target_gate_id;
+        public int target_id; // 도착 지점 마커 id(게이트 또는 player_spawn). 목적지 맵은 그 마커의 소속 맵이다.
         public int required_level;
 
         [JsonExtensionData]
         public IDictionary<string, JToken> extra;
     }
+
+    // id 종류별 시작 번호. 종류마다 별도의 인덱스 테이블이라 종류 안에서만 유일하면 되지만,
+    // 사람이 JSON 을 볼 때 무엇의 id 인지 바로 알 수 있도록 범위를 띄워 둔다.
+    public const int GateIdBase = 1000;
+    public const int SpawnIdBase = 10000;
+    public const int ObjectIdBase = 100000;
 
     // Gate.gateType(enum) ↔ Map.json gates[].type(문자열) 변환.
     public const string GateTypeTwoWay = "two_way";
@@ -228,7 +233,7 @@ public static class MapJsonUpdater
         }
     }
 
-    // 게이트 참조 무결성 검사: dangling target_map_id/target_gate_id, 맵 내 게이트 id 중복을 경고한다.
+    // 게이트 참조 무결성 검사: 게이트/스폰 id 전역 중복, dangling target_id, two_way 짝 어긋남을 경고한다.
     // 저장을 막지는 않는다(작업 중간 상태 저장 허용). 발견한 문제 수를 반환한다.
     public static int ValidateMapReferences(List<MapData> maps)
     {
@@ -247,17 +252,79 @@ public static class MapJsonUpdater
             }
         }
 
+        // 씬 이름이 겹치면 씬↔맵 짝짓기(FindMapForScene)가 첫 매치를 집어, 그 씬을 편집할 때마다
+        // 엉뚱한 맵 데이터를 덮어쓴다. 조용히 지나가면 데이터가 사라지므로 반드시 경고한다.
+        var mapByScene = new Dictionary<string, MapData>(System.StringComparer.OrdinalIgnoreCase);
         foreach (var map in maps)
         {
-            var seenGateIds = new HashSet<int>();
+            string scene = !string.IsNullOrEmpty(map.scene) ? map.scene : map.name;
+            if (string.IsNullOrEmpty(scene))
+                continue;
+            if (mapByScene.TryGetValue(scene, out var other))
+            {
+                Debug.LogWarning($"[MapValidate] 씬 '{scene}' 을 맵 '{other.name}'({other.id}) 와 '{map.name}'({map.id}) 가 함께 씁니다 — 씬 스캔이 둘 중 하나만 갱신하고 다른 쪽을 덮어씁니다");
+                problems++;
+            }
+            else
+            {
+                mapByScene[scene] = map;
+            }
+        }
+
+        // 게이트/스폰 id 는 데이터 전체에서 유일해야 한다(맵 안이 아니라).
+        // 겹치면 ResourceLoader 의 id 인덱스에서 서로를 덮어써 엉뚱한 곳으로 이동한다.
+        var gateById = new Dictionary<int, (GateInfo gate, MapData map)>();
+        var spawnOwnerById = new Dictionary<int, MapData>();
+
+        foreach (var map in maps)
+        {
             foreach (var gate in map.gates)
             {
-                if (!seenGateIds.Add(gate.id))
+                if (gate.id > 0 && gateById.TryGetValue(gate.id, out var dup))
                 {
-                    Debug.LogWarning($"[MapValidate] 맵 '{map.name}'({map.id}) 안에 게이트 id {gate.id} 중복 (게이트 '{gate.name}')");
+                    Debug.LogWarning($"[MapValidate] 게이트 id {gate.id} 중복: 맵 '{dup.map.name}'({dup.map.id}) '{dup.gate.name}' / 맵 '{map.name}'({map.id}) '{gate.name}'");
                     problems++;
                 }
+                else if (gate.id > 0)
+                {
+                    gateById[gate.id] = (gate, map);
+                }
+            }
 
+            var allSpawns = map.spawn_points.player_spawn
+                .Concat(map.spawn_points.monster_spawn)
+                .Concat(map.spawn_points.boss_spawn);
+            foreach (var spawn in allSpawns)
+            {
+                if (spawn.id <= 0)
+                    continue; // 0 은 아직 발급 전
+                if (spawnOwnerById.TryGetValue(spawn.id, out var owner))
+                {
+                    Debug.LogWarning($"[MapValidate] 스폰 id {spawn.id} 중복: 맵 '{owner.name}'({owner.id}) / 맵 '{map.name}'({map.id})");
+                    problems++;
+                }
+                else
+                {
+                    spawnOwnerById[spawn.id] = map;
+                }
+            }
+        }
+
+        // player_spawn 만 게이트의 도착 지점이 될 수 있다.
+        var playerSpawnOwner = new Dictionary<int, MapData>();
+        foreach (var map in maps)
+        {
+            foreach (var spawn in map.spawn_points.player_spawn)
+            {
+                if (spawn.id > 0)
+                    playerSpawnOwner[spawn.id] = map;
+            }
+        }
+
+        foreach (var map in maps)
+        {
+            foreach (var gate in map.gates)
+            {
                 string gateLabel = $"맵 '{map.name}'({map.id}) 게이트 '{gate.name}'(id:{gate.id})";
 
                 if (gate.type != GateTypeTwoWay && gate.type != GateTypeOneWay)
@@ -266,48 +333,34 @@ public static class MapJsonUpdater
                     problems++;
                 }
 
-                if (!mapById.TryGetValue(gate.target_map_id, out var targetMap))
+                if (gate.target_id == gate.id)
                 {
-                    Debug.LogWarning($"[MapValidate] {gateLabel} → 존재하지 않는 맵 {gate.target_map_id} 참조");
+                    Debug.LogWarning($"[MapValidate] {gateLabel} → target_id 가 자기 자신입니다");
                     problems++;
+                    continue;
                 }
-                else if (gate.type == GateTypeOneWay && gate.target_gate_id == 0)
+
+                bool targetIsGate = gateById.TryGetValue(gate.target_id, out var target);
+                bool targetIsSpawn = playerSpawnOwner.ContainsKey(gate.target_id);
+
+                if (!targetIsGate && !targetIsSpawn)
                 {
-                    // one_way + target_gate_id 0 = 목적지 맵의 player_spawn 지점 도착(레이드 등 인스턴스 입구).
-                    if (targetMap.spawn_points.player_spawn.Count == 0)
-                    {
-                        Debug.LogWarning($"[MapValidate] {gateLabel} → target_gate_id 0(스폰 지점 도착)인데 맵 '{targetMap.name}'({targetMap.id})에 player_spawn 이 없습니다");
-                        problems++;
-                    }
-                }
-                else if (!targetMap.gates.Any(g => g.id == gate.target_gate_id))
-                {
-                    Debug.LogWarning($"[MapValidate] {gateLabel} → 맵 '{targetMap.name}'({targetMap.id})에 없는 게이트 {gate.target_gate_id} 참조");
+                    Debug.LogWarning($"[MapValidate] {gateLabel} → target_id {gate.target_id} 에 해당하는 게이트/player_spawn 이 없습니다");
                     problems++;
                 }
                 else if (gate.type == GateTypeTwoWay)
                 {
-                    // 양방향 게이트는 짝이어야 한다: 상대도 two_way 이고 이 게이트를 되가리켜야 한다.
-                    var back = targetMap.gates.First(g => g.id == gate.target_gate_id);
-                    if (back.type != GateTypeTwoWay || back.target_map_id != map.id || back.target_gate_id != gate.id)
+                    // 양방향 게이트는 짝이어야 한다: 상대도 게이트이고, two_way 이며 이 게이트를 되가리킨다.
+                    if (!targetIsGate)
                     {
-                        Debug.LogWarning($"[MapValidate] {gateLabel} → two_way 짝 불일치: 맵 '{targetMap.name}'({targetMap.id}) 게이트 {gate.target_gate_id} 가 two_way 로 이 게이트를 되가리켜야 합니다");
+                        Debug.LogWarning($"[MapValidate] {gateLabel} → two_way 는 스폰 지점이 아니라 짝이 되는 게이트를 가리켜야 합니다 (target_id {gate.target_id})");
                         problems++;
                     }
-                }
-            }
-
-            // 스폰 id는 맵 내에서 타입 구분 없이 유일해야 한다 (0은 미발급 상태라 검사 제외).
-            var seenSpawnIds = new HashSet<int>();
-            var allSpawns = map.spawn_points.player_spawn
-                .Concat(map.spawn_points.monster_spawn)
-                .Concat(map.spawn_points.boss_spawn);
-            foreach (var spawn in allSpawns)
-            {
-                if (spawn.id > 0 && !seenSpawnIds.Add(spawn.id))
-                {
-                    Debug.LogWarning($"[MapValidate] 맵 '{map.name}'({map.id}) 안에 스폰 id {spawn.id} 중복");
-                    problems++;
+                    else if (target.gate.type != GateTypeTwoWay || target.gate.target_id != gate.id)
+                    {
+                        Debug.LogWarning($"[MapValidate] {gateLabel} → two_way 짝 불일치: 맵 '{target.map.name}'({target.map.id}) 게이트 {gate.target_id} 가 two_way 로 이 게이트를 되가리켜야 합니다");
+                        problems++;
+                    }
                 }
             }
         }
@@ -348,22 +401,23 @@ public static class MapJsonUpdater
         var objects = Object.FindObjectsOfType<MapObjectMarker>(true)
             .OrderBy(o => o.name, System.StringComparer.OrdinalIgnoreCase).ToArray();
 
-        UpdateGates(map, gates);
-        UpdateSpawns(map, spawns);
+        UpdateGates(map, gates, allMaps);
+        UpdateSpawns(map, spawns, allMaps);
         UpdateObjects(map, objects, allMaps);
         DetectNavMesh(map, sceneName);
     }
 
-    private static void UpdateGates(MapData map, Gate[] gateComponents)
+    private static void UpdateGates(MapData map, Gate[] gateComponents, List<MapData> allMaps)
     {
         var oldGates = map.gates;
         map.gates = new List<GateInfo>();
 
         // 게이트 id는 컴포넌트가 직접 보유한다(MapObjectMarker.objectId와 동일 방식).
-        // id는 맵 내부에서 지역적으로 유일하면 된다(target_gate_id는 (target_map_id, gate.id) 쌍으로 해석됨).
-        // 0(또는 중복)이면 새 id를 발급하고 컴포넌트에 다시 써서 고정한다.
-        var claimed = new HashSet<int>();
-        int nextId = 1;
+        // id는 데이터 전체에서 유일해야 한다 — ResourceLoader 가 게이트 id 인덱스를 만들기
+        // 때문에, 다른 맵과 겹치면 서로를 덮어써서 엉뚱한 맵으로 이동하게 된다.
+        // 0(또는 다른 맵이 이미 쓰는 값)이면 새 id를 발급하고 컴포넌트에 다시 써서 고정한다.
+        var claimed = CollectIds(allMaps, map, m => m.gates.Select(g => g.id));
+        int nextId = GateIdBase + 1;
 
         foreach (var comp in gateComponents)
         {
@@ -386,12 +440,33 @@ public static class MapJsonUpdater
                 name = gateName,
                 type = GateTypeToJson(comp.gateType),
                 position = new Vec3(comp.transform.position),
-                target_map_id = comp.targetMapId,
-                target_gate_id = comp.targetGateId,
+                target_id = comp.targetId,
                 required_level = comp.requiredLevel,
                 extra = old?.extra
             });
         }
+    }
+
+    // 지금 다시 만드는 맵을 뺀 나머지 맵들이 이미 쓰고 있는 id 집합.
+    // 이 맵의 기존 id 는 컴포넌트가 그대로 들고 있으므로 여기서 제외해야 매 스캔마다 번호가 바뀌지 않는다.
+    private static HashSet<int> CollectIds(
+        List<MapData> allMaps, MapData exclude, System.Func<MapData, IEnumerable<int>> selector)
+    {
+        var claimed = new HashSet<int>();
+        if (allMaps == null)
+            return claimed;
+
+        foreach (var other in allMaps)
+        {
+            if (ReferenceEquals(other, exclude))
+                continue;
+            foreach (int id in selector(other))
+            {
+                if (id > 0)
+                    claimed.Add(id);
+            }
+        }
+        return claimed;
     }
 
     // 다음 스캔에서도 id가 유지되도록 컴포넌트에 id를 기록해 둔다.
@@ -404,10 +479,11 @@ public static class MapJsonUpdater
         EditorUtility.SetDirty(gate);
     }
 
-    private static void UpdateSpawns(MapData map, SpawnPoint[] spawnComponents)
+    private static void UpdateSpawns(MapData map, SpawnPoint[] spawnComponents, List<MapData> allMaps)
     {
         // 스폰 id는 게이트와 동일하게 컴포넌트가 보유한다(이름 변경 시 페어링이 밀리지 않도록).
-        // id는 맵 내에서 스폰 타입 구분 없이 유일하다. 0(또는 중복)이면 새 id를 발급해 컴포넌트에 기록한다.
+        // 게이트와 마찬가지로 데이터 전체에서 유일해야 한다. 스폰 타입 세 종류는 한 번호대를
+        // 공유한다 — 유니티 쪽은 SpawnPoint 컴포넌트 하나라 종류를 나눠 세면 헷갈린다.
         var oldAll = map.spawn_points.player_spawn
             .Concat(map.spawn_points.monster_spawn)
             .Concat(map.spawn_points.boss_spawn).ToList();
@@ -416,8 +492,11 @@ public static class MapJsonUpdater
         map.spawn_points.monster_spawn.Clear();
         map.spawn_points.boss_spawn.Clear();
 
-        var claimed = new HashSet<int>();
-        int nextId = 1;
+        var claimed = CollectIds(allMaps, map, m => m.spawn_points.player_spawn
+            .Concat(m.spawn_points.monster_spawn)
+            .Concat(m.spawn_points.boss_spawn)
+            .Select(s => s.id));
+        int nextId = SpawnIdBase + 1;
 
         foreach (var comp in spawnComponents)
         {
@@ -472,7 +551,7 @@ public static class MapJsonUpdater
         int nextId = allMaps
             .SelectMany(m => m.objects.static_objects.Select(o => o.id)
                 .Concat(m.objects.movable_objects.Select(o => o.id)))
-            .DefaultIfEmpty(0).Max() + 1;
+            .DefaultIfEmpty(ObjectIdBase).Max() + 1;
 
         foreach (var marker in markers)
         {
@@ -626,8 +705,7 @@ public static class MapJsonUpdater
             comp.id = gate.id;
             comp.gateName = gate.name;
             comp.gateType = GateTypeFromJson(gate.type);
-            comp.targetMapId = gate.target_map_id;
-            comp.targetGateId = gate.target_gate_id;
+            comp.targetId = gate.target_id;
             comp.requiredLevel = gate.required_level;
             created++;
         }

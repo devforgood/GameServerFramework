@@ -140,6 +140,12 @@ public:
 	// (벤치마크/테스트는 World::Init 만 호출하므로 몬스터가 자동 스폰되지 않는다).
 	int SpawnMonstersFromData();
 
+	// 게이트의 target_id(전역 유일 마커 id)가 가리키는 도착 지점을 푼다.
+	// 마커는 게이트일 수도 스폰 지점일 수도 있다 — 둘 다 parent 로 소속 맵을 알 수 있어서
+	// 목적지 맵 id 를 따로 들고 다닐 필요가 없다.
+	// 찾으면 outMap/outPos(클라 좌표계)를 채우고 true, 없으면 false.
+	static bool ResolveGateTarget(int targetId, const gamedata::Map*& outMap, syncnet::Vec3& outPos);
+
 	// Map.json(클라 씬 좌표)의 게이트/스폰 위치가 서버 navmesh 위에 있는지 검증한다.
 	// 씬과 navmesh가 어긋나면 마커가 메시 밖에 놓이므로 정합 이상을 로드 시점에 잡아낸다.
 	// 어긋난 마커 수를 반환한다(경고 로그만 남기고 로드는 막지 않는다).

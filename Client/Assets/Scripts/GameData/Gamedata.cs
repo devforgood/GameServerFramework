@@ -44,6 +44,10 @@ namespace Gamedata
     {
         public int id;
         public double value;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다(JsonUtility 가 건드리지 않도록 NonSerialized).
+        [NonSerialized] public Item parent;
     }
 
 
@@ -146,9 +150,12 @@ namespace Gamedata
         public string name;
         public MapGatePosition position;
         public int required_level;
-        public int target_gate_id;
-        public int target_map_id;
+        public int target_id;
         public string type;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다(JsonUtility 가 건드리지 않도록 NonSerialized).
+        [NonSerialized] public Map parent;
     }
 
 
@@ -180,6 +187,10 @@ namespace Gamedata
         public System.Collections.Generic.List<MapObjectsMovableObjectPatrolPath> patrol_path;
         public MapObjectsMovableObjectPosition position;
         public string type;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다(JsonUtility 가 건드리지 않도록 NonSerialized).
+        [NonSerialized] public Map parent;
     }
 
 
@@ -212,6 +223,10 @@ namespace Gamedata
         public MapObjectsStaticObjectPosition position;
         public MapObjectsStaticObjectSize size;
         public string type;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다(JsonUtility 가 건드리지 않도록 NonSerialized).
+        [NonSerialized] public Map parent;
     }
 
 
@@ -249,6 +264,10 @@ namespace Gamedata
         public MapSpawnPointsBossSpawnPosition position;
         public int spawn_delay;
         public int spawn_interval;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다(JsonUtility 가 건드리지 않도록 NonSerialized).
+        [NonSerialized] public Map parent;
     }
 
 
@@ -270,6 +289,10 @@ namespace Gamedata
         public MapSpawnPointsMonsterSpawnPosition position;
         public int spawn_delay;
         public int spawn_interval;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다(JsonUtility 가 건드리지 않도록 NonSerialized).
+        [NonSerialized] public Map parent;
     }
 
 
@@ -291,6 +314,10 @@ namespace Gamedata
         public MapSpawnPointsPlayerSpawnPosition position;
         public int spawn_delay;
         public int spawn_interval;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다(JsonUtility 가 건드리지 않도록 NonSerialized).
+        [NonSerialized] public Map parent;
     }
 
 

@@ -620,6 +620,35 @@ int Map::SpawnMonstersFromData()
 	return spawned;
 }
 
+bool Map::ResolveGateTarget(int targetId, const gamedata::Map*& outMap, syncnet::Vec3& outPos)
+{
+	auto& resource = ResourceLoader::Instance();
+
+	// 게이트 위 도착(양방향 통로의 짝 게이트).
+	if (const gamedata::MapGate* gate = resource.GetMapGate(targetId))
+	{
+		outMap = gate->parent;
+		outPos = syncnet::Vec3(
+			static_cast<float>(gate->position.x),
+			static_cast<float>(gate->position.y),
+			static_cast<float>(gate->position.z));
+		return outMap != nullptr;
+	}
+
+	// 스폰 지점 도착(레이드 등 인스턴스 입구는 짝 게이트가 없다).
+	if (const gamedata::MapSpawnPointsPlayerSpawn* spawn = resource.GetMapSpawnPointsPlayerSpawn(targetId))
+	{
+		outMap = spawn->parent;
+		outPos = syncnet::Vec3(
+			static_cast<float>(spawn->position.x),
+			static_cast<float>(spawn->position.y),
+			static_cast<float>(spawn->position.z));
+		return outMap != nullptr;
+	}
+
+	return false;
+}
+
 int Map::ValidateMapDataOnNavMesh(const gamedata::Map* mapData, const NavMesh* navMesh)
 {
 	if (mapData == nullptr || navMesh == nullptr || !navMesh->IsLoaded())

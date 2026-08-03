@@ -6,11 +6,19 @@
 
 namespace gamedata
 {
+    // 전방 선언 — id 를 가진 중첩 오브젝트의 parent 포인터가 아직 정의되지 않은
+    // 상위 구조체를 가리킨다(예: MapGate::parent -> const Map*).
+{% for s in structs %}    struct {{ s.name }};
+{% endfor %}
 {% for s in structs %}
     struct {{ s.name }}
     {
 {% for f in s.fields %}        {{ f.cpp_type }} {{ f.name }}{{ f.cpp_init }};
-{% endfor %}    };
+{% endfor %}{% if s.parent_type %}
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다. 덕분에 id 하나로 소속 맵/아이템까지 따라갈 수 있다.
+        const {{ s.parent_type }}* parent = nullptr;
+{% endif %}    };
 
 {% endfor %}
 {% for s in structs %}

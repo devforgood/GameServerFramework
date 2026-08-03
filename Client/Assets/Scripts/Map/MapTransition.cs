@@ -40,10 +40,11 @@ public class MapTransition
     }
 
     /// <summary>
-    /// 게이트 이동을 서버에 요청한다. 성공 응답 시 목적지 맵 씬을 로드한다.
+    /// 게이트 이동을 서버에 요청한다. 보내는 것은 "내가 밟은 게이트 id" 하나뿐이고,
+    /// 목적지는 서버가 그 게이트의 target_id 로 정해 응답의 mapId 로 알려준다.
     /// (씬 단위 이동. 프리팹 단위 로드는 추후 최적화로 진행 예정.)
     /// </summary>
-    public void EnterGate(int mapId, int gateId, string sceneName)
+    public void EnterGate(int gateId)
     {
         if (isChangingMap)
         {
@@ -53,8 +54,8 @@ public class MapTransition
         isChangingMap = true;
 
         int messageId = connection.NextMessageId();
-        Debug.Log($"EnterGate request mapId:{mapId}, gateId:{gateId}, scene:{sceneName}");
-        connection.Send(PacketFactory.CreateEnterGateMessage(messageId, mapId, gateId), response =>
+        Debug.Log($"EnterGate request gateId:{gateId}");
+        connection.Send(PacketFactory.CreateEnterGateMessage(messageId, gateId), response =>
         {
             if (response.MsgType == GameMessages.EnterGate && response.Result == StatusCode.Success)
             {
@@ -64,14 +65,22 @@ public class MapTransition
                 if (enterGate.Pos.HasValue)
                     destPos = new Vector3(enterGate.Pos.Value.X, enterGate.Pos.Value.Y, enterGate.Pos.Value.Z);
 
-                Debug.Log($"EnterGate Success. new agentId:{enterGate.AgentId}, pos({destPos.x},{destPos.y},{destPos.z})");
+                var destMap = GameManager.Instance.resource.GetMapById(enterGate.MapId);
+                if (destMap == null)
+                {
+                    Debug.LogError($"EnterGate: 서버가 알려준 맵 {enterGate.MapId} 이 로드된 맵 데이터에 없습니다.");
+                    isChangingMap = false;
+                    return;
+                }
+
+                Debug.Log($"EnterGate Success. mapId:{enterGate.MapId}, new agentId:{enterGate.AgentId}, pos({destPos.x},{destPos.y},{destPos.z})");
                 GateEntered?.Invoke(enterGate.AgentId);
 
-                // 게이트 위 도착(gateId != 0)일 때만 재이동 억제가 필요하다.
-                // 스폰 지점 도착(gateId 0, one_way 인스턴스 입구)은 게이트 위가 아니다.
-                suppressWarpOnNextSceneLoad = enterGate.GateId != 0;
+                // 응답의 GateId 는 '도착 지점 마커' id 다(요청에 보낸 '밟은 게이트'와 다르다).
+                suppressWarpOnNextSceneLoad = ArrivesOnGate(enterGate.GateId);
 
-                LoadMapScene(sceneName);
+                // 맵 데이터에 연동된 씬 이름을 사용한다(없으면 맵 이름으로 폴백).
+                LoadMapScene(!string.IsNullOrEmpty(destMap.scene) ? destMap.scene : destMap.name);
             }
             else
             {
@@ -81,20 +90,27 @@ public class MapTransition
         });
     }
 
+    // 도착 지점이 게이트인가. 게이트 위에 내려놓으면 도착 즉시 트리거가 재발동하므로
+    // 밖으로 걸어 나갈 때까지 재이동을 억제해야 한다(스폰 지점 도착은 그럴 필요가 없다).
+    private static bool ArrivesOnGate(int arrivalMarkerId)
+    {
+        return GameManager.Instance.resource.GetGateById(arrivalMarkerId) != null;
+    }
+
     /// <summary>
     /// 서버가 밀어 준 맵 이동을 처리한다. 요청-응답이 아니라 통보라서 대기 중인 콜백이 없다.
     /// (레이드가 끝나 인스턴스가 파괴될 때 서버가 플레이어를 출구 맵으로 내보내는 경로.)
     /// 서버는 이미 목적지 맵에 캐릭터를 재생성해 둔 상태이므로, 클라는 씬만 맞추면 된다.
     /// </summary>
-    public void ForcedMove(int mapId, int gateId, int agentId, string sceneName)
+    public void ForcedMove(int mapId, int arrivalMarkerId, int agentId, string sceneName)
     {
         // 진행 중이던 자발적 이동이 있어도 서버 통보가 우선이다 — 서버 쪽 캐릭터는 이미 옮겨졌다.
         isChangingMap = true;
 
-        Debug.Log($"Forced move by server. mapId:{mapId}, gateId:{gateId}, new agentId:{agentId}, scene:'{sceneName}'");
+        Debug.Log($"Forced move by server. mapId:{mapId}, arrival:{arrivalMarkerId}, new agentId:{agentId}, scene:'{sceneName}'");
         GateEntered?.Invoke(agentId);
 
-        suppressWarpOnNextSceneLoad = gateId != 0;
+        suppressWarpOnNextSceneLoad = ArrivesOnGate(arrivalMarkerId);
         LoadMapScene(sceneName);
     }
 

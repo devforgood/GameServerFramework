@@ -29,19 +29,19 @@ namespace
 			std::chrono::system_clock::now().time_since_epoch()).count();
 	}
 
-	// 현재 맵의 게이트 중 (targetMapId, targetGateId) 목적지로 향하는 게이트를 찾는다.
-	// 클라는 목적지만 보내므로, 출발 게이트가 실제 존재하는지는 서버가 역추적으로 검증한다.
-	const gamedata::MapGate* FindGateTo(Map* map, int targetMapId, int targetGateId)
+	// 클라가 밟았다고 주장하는 게이트를 찾는다. 게이트 id 는 전역 유일이라 바로 조회되지만,
+	// 그 게이트가 정말 이 플레이어가 있는 맵의 것인지(=parent)는 서버가 확인해야 한다.
+	// 확인하지 않으면 아무 게이트 id 나 보내 임의의 맵으로 순간이동할 수 있다.
+	const gamedata::MapGate* FindGateInMap(Map* map, int gateId)
 	{
 		if (map == nullptr || map->GetMapData() == nullptr)
 			return nullptr;
 
-		for (const auto& gate : map->GetMapData()->gates)
-		{
-			if (gate.target_map_id == targetMapId && gate.target_gate_id == targetGateId)
-				return &gate;
-		}
-		return nullptr;
+		const gamedata::MapGate* gate = ResourceLoader::Instance().GetMapGate(gateId);
+		if (gate == nullptr || gate->parent != map->GetMapData())
+			return nullptr;
+
+		return gate;
 	}
 }
 
@@ -311,10 +311,14 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 
 void PlayerController::handle(const syncnet::EnterGate* msg)
 {
-	LOG.info("EnterGate mapId :{}, gateId :{}", msg->mapId(), msg->gateId());
+	// 클라는 자기가 밟은 게이트 id 만 보낸다. 목적지는 그 게이트의 target_id 가 정하므로
+	// 클라가 목적지를 고를 수 없다(요청의 mapId 는 쓰지 않고, 응답에 도착한 맵을 담아 준다).
+	LOG.info("EnterGate gateId :{}", msg->gateId());
 
 	syncnet::Vec3 outPos(0, 0, 0);
 	int outAgentId = 0;
+	int outMapId = 0;
+	int outTargetId = 0; // 도착 지점 마커(게이트 또는 player_spawn) id
 	auto status = syncnet::StatusCode::StatusCode_Success;
 	const uint64_t nowMs = NowMs();
 
@@ -337,8 +341,8 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 	{
 		auto& character = player_->GetCharacter();
 
-		// 현재 맵에 해당 목적지로 가는 게이트가 실제로 있어야 한다(임의 맵 순간이동 차단).
-		const gamedata::MapGate* srcGate = FindGateTo(character->GetMap(), msg->mapId(), msg->gateId());
+		// 보낸 게이트가 실제로 이 플레이어가 있는 맵의 게이트여야 한다(임의 맵 순간이동 차단).
+		const gamedata::MapGate* srcGate = FindGateInMap(character->GetMap(), msg->gateId());
 
 		// 게이트 위치는 Map.json(클라 좌표계) 기준이므로 서버 좌표계로 변환해 거리 비교한다.
 		float distSq = 0.0f;
@@ -355,8 +359,8 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 
 		if (srcGate == nullptr)
 		{
-			LOG.error("EnterGate rejected: no gate to map {} gate {} in current map (player {})",
-				msg->mapId(), msg->gateId(), player_->GetPlayerId());
+			LOG.error("EnterGate rejected: gate {} is not in the player's current map (player {})",
+				msg->gateId(), player_->GetPlayerId());
 			status = syncnet::StatusCode::StatusCode_Failed;
 		}
 		else if (distSq > kGateEnterMaxDistance * kGateEnterMaxDistance)
@@ -371,7 +375,7 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 				player_->GetPlayerId(), playerLevel, srcGate->required_level, srcGate->id);
 			status = syncnet::StatusCode::StatusCode_Failed;
 		}
-		else if (!world_->ChangeMap(player_, msg->mapId(), msg->gateId(), outPos, outAgentId))
+		else if (!world_->ChangeMap(player_, srcGate->target_id, outMapId, outPos, outAgentId))
 		{
 			status = syncnet::StatusCode::StatusCode_Failed;
 		}
@@ -379,17 +383,20 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 		{
 			// 이동에 성공한 경우에만 쿨타임을 갱신한다(실패한 요청은 쿨타임을 소모하지 않음).
 			player_->MarkGateMoved(nowMs);
+			outTargetId = srcGate->target_id;
 		}
 	}
 
 	// 응답을 먼저 보낸다. 클라는 이 응답으로 맵 프리팹을 교체하고 기존 액터를 정리한다.
+	// 응답의 mapId 는 서버가 정한 도착 맵(클라가 씬을 고르는 근거),
+	// gateId 는 도착 지점 마커 id 다(요청의 '밟은 게이트'와 의미가 다르다).
 	player_->Send(
 		syncnet::CreateEnterGate
 		, syncnet::GameMessages::GameMessages_EnterGate
 		, lastMessageId_
 		, status
-		, msg->mapId()
-		, msg->gateId()
+		, outMapId
+		, outTargetId
 		, &outPos
 		, outAgentId
 	);

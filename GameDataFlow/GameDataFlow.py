@@ -57,6 +57,7 @@ def main():
     tables = [t for t in meta.get("tables", []) if t.get("enabled", True)]
 
     all_structs = []          # combined C++/C# model structs (across all tables)
+    all_indexes = []          # id 를 가진 중첩 오브젝트의 인덱스 서술자
     seen_struct_names = set()
     table_names = []          # top-level table class names (for C# list wrappers)
 
@@ -81,7 +82,7 @@ def main():
 
         # Infer the data model from the JSON itself.
         try:
-            structs = build_structs(data, table_name)
+            structs, indexes = build_structs(data, table_name)
         except Exception as e:
             print(f"{RED}[ERROR] schema inference failed for {table_name}: {e}{RESET}")
             continue
@@ -90,6 +91,7 @@ def main():
             if s['name'] not in seen_struct_names:
                 seen_struct_names.add(s['name'])
                 all_structs.append(s)
+        all_indexes.extend(indexes)
         table_names.append(table_name)
 
         # Factory / base-class code generation (C++ + C#).
@@ -102,7 +104,7 @@ def main():
     # C++ data model + loader
     try:
         generate_gamedata_header(ENGINE_GAMEDATA_DIR, all_structs)
-        generate_resource_loader(ENGINE_GAMEDATA_DIR, tables)
+        generate_resource_loader(ENGINE_GAMEDATA_DIR, tables, all_indexes)
         print(f"{GREEN}[OK] Generated C++ gamedata.h + ResourceLoader{RESET}")
     except Exception as e:
         print(f"{RED}[ERROR] Failed to generate C++ model/loader: {e}{RESET}")

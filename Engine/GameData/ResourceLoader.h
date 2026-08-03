@@ -32,6 +32,24 @@ private:
     std::deque<gamedata::MonsterData> storage_monsters;
     std::unordered_map<long, const gamedata::MonsterData*> monsters;
 
+    // id 를 가진 중첩 오브젝트(게이트, 스폰 지점 등)의 인덱스.
+    // 이 id 들은 파일 전체에서 유일하므로 소속 맵을 몰라도 바로 찾을 수 있고,
+    // 찾은 오브젝트의 parent 가 소속 상위 데이터를 돌려준다.
+
+    std::unordered_map<long, const gamedata::ItemItemOption*> item_item_options;
+
+    std::unordered_map<long, const gamedata::MapGate*> map_gates;
+
+    std::unordered_map<long, const gamedata::MapObjectsMovableObject*> map_objects_movable_objects;
+
+    std::unordered_map<long, const gamedata::MapObjectsStaticObject*> map_objects_static_objects;
+
+    std::unordered_map<long, const gamedata::MapSpawnPointsBossSpawn*> map_spawn_points_boss_spawns;
+
+    std::unordered_map<long, const gamedata::MapSpawnPointsMonsterSpawn*> map_spawn_points_monster_spawns;
+
+    std::unordered_map<long, const gamedata::MapSpawnPointsPlayerSpawn*> map_spawn_points_player_spawns;
+
 public:
     static ResourceLoader& Instance() {
         static ResourceLoader instance;
@@ -60,8 +78,33 @@ public:
     const std::unordered_map<long, const gamedata::MonsterData*>& GetMonsterDatas() const { return monsters; }
     const gamedata::MonsterData* GetMonsterData(long id) const { auto itr = monsters.find(id); return itr != monsters.end() ? itr->second : nullptr; }
 
+
+    const std::unordered_map<long, const gamedata::ItemItemOption*>& GetItemItemOptions() const { return item_item_options; }
+    const gamedata::ItemItemOption* GetItemItemOption(long id) const { auto itr = item_item_options.find(id); return itr != item_item_options.end() ? itr->second : nullptr; }
+
+    const std::unordered_map<long, const gamedata::MapGate*>& GetMapGates() const { return map_gates; }
+    const gamedata::MapGate* GetMapGate(long id) const { auto itr = map_gates.find(id); return itr != map_gates.end() ? itr->second : nullptr; }
+
+    const std::unordered_map<long, const gamedata::MapObjectsMovableObject*>& GetMapObjectsMovableObjects() const { return map_objects_movable_objects; }
+    const gamedata::MapObjectsMovableObject* GetMapObjectsMovableObject(long id) const { auto itr = map_objects_movable_objects.find(id); return itr != map_objects_movable_objects.end() ? itr->second : nullptr; }
+
+    const std::unordered_map<long, const gamedata::MapObjectsStaticObject*>& GetMapObjectsStaticObjects() const { return map_objects_static_objects; }
+    const gamedata::MapObjectsStaticObject* GetMapObjectsStaticObject(long id) const { auto itr = map_objects_static_objects.find(id); return itr != map_objects_static_objects.end() ? itr->second : nullptr; }
+
+    const std::unordered_map<long, const gamedata::MapSpawnPointsBossSpawn*>& GetMapSpawnPointsBossSpawns() const { return map_spawn_points_boss_spawns; }
+    const gamedata::MapSpawnPointsBossSpawn* GetMapSpawnPointsBossSpawn(long id) const { auto itr = map_spawn_points_boss_spawns.find(id); return itr != map_spawn_points_boss_spawns.end() ? itr->second : nullptr; }
+
+    const std::unordered_map<long, const gamedata::MapSpawnPointsMonsterSpawn*>& GetMapSpawnPointsMonsterSpawns() const { return map_spawn_points_monster_spawns; }
+    const gamedata::MapSpawnPointsMonsterSpawn* GetMapSpawnPointsMonsterSpawn(long id) const { auto itr = map_spawn_points_monster_spawns.find(id); return itr != map_spawn_points_monster_spawns.end() ? itr->second : nullptr; }
+
+    const std::unordered_map<long, const gamedata::MapSpawnPointsPlayerSpawn*>& GetMapSpawnPointsPlayerSpawns() const { return map_spawn_points_player_spawns; }
+    const gamedata::MapSpawnPointsPlayerSpawn* GetMapSpawnPointsPlayerSpawn(long id) const { auto itr = map_spawn_points_player_spawns.find(id); return itr != map_spawn_points_player_spawns.end() ? itr->second : nullptr; }
+
 private:
     ResourceLoader() = default;
     ~ResourceLoader();
     void ClearResources();
+
+    // 로드 직후 중첩 오브젝트의 parent 를 연결하고 id 인덱스를 채운다.
+    void BuildIndexes();
 };

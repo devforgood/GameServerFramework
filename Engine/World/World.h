@@ -80,8 +80,8 @@ private:
 	// 종료된 인스턴스에 남은 플레이어를 출구 게이트 밖으로 내보낸다.
 	void EvictInstancePlayers(Map* instance);
 
-	// 인스턴스 맵의 출구(첫 게이트)를 찾는다. 없으면 false.
-	static bool FindInstanceExit(const gamedata::Map* data, int& outMapId, int& outGateId);
+	// 인스턴스 맵의 출구를 찾는다. 첫 게이트가 가리키는 target_id 를 돌려준다. 없으면 false.
+	static bool FindInstanceExit(const gamedata::Map* data, int& outTargetId);
 
 
 public:
@@ -137,9 +137,10 @@ public:
 	// 진단/테스트용: 현재 살아 있는 인스턴스 수.
 	size_t GetInstanceCount() const { return instances_.size(); }
 
-	// 플레이어의 캐릭터를 mapId 맵의 gateId 게이트 위치로 이동시킨다.
-	// 성공 시 outPos 에 도착 위치, outAgentId 에 (재생성된) 새 actor id 를 채우고 true 를 반환한다.
-	bool ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syncnet::Vec3& outPos, int& outAgentId);
+	// 플레이어의 캐릭터를 targetId(전역 유일 마커 id — 게이트 또는 player_spawn)로 이동시킨다.
+	// 목적지 맵은 마커의 parent 로 정해지므로 따로 받지 않는다.
+	// 성공 시 outMapId/outPos(도착 위치)/outAgentId(재생성된 새 actor id)를 채우고 true.
+	bool ChangeMap(std::shared_ptr<Player> player, int targetId, int& outMapId, syncnet::Vec3& outPos, int& outAgentId);
 
 	RandomUtil* random_util() { return randomUtil_; }
 

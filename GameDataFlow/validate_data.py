@@ -6,7 +6,10 @@
 
 검사 항목:
   1) 모든 엔트리는 객체이며 정수 id 를 가져야 한다.
-  2) 테이블 안에서 id 는 유일해야 한다.
+  2) id 는 같은 종류의 오브젝트끼리 파일 전체에서 유일해야 한다.
+     최상위 엔트리뿐 아니라 중첩 오브젝트(게이트, 스폰 지점 등)도 마찬가지다 —
+     ResourceLoader 가 종류마다 id 인덱스 테이블을 만들기 때문에, 맵 안에서만
+     유일하면 다른 맵의 같은 id 가 인덱스에서 서로를 덮어쓴다.
   3) 필드명 오타 의심: 같은 경로에서 편집거리(전치 포함) 1 이하인 두 필드명이
      한 객체에 함께 등장한 적이 없으면 오타로 본다.
      - min_damage/max_damage 처럼 한 객체에 공존하는 쌍은 의도된 별개 필드로 허용.
@@ -17,14 +20,15 @@
      빈 문자열/0 을 쓰거나 필드를 생략한다(생략은 양쪽 로더 모두 허용).
   5) (Map 전용) 게이트 타입/참조 검증:
      - type 은 'two_way'(양방향) 또는 'one_way'(단방향)여야 한다.
-     - two_way: 상대 게이트가 존재하고, 그 게이트도 two_way 이며 이 게이트를
+     - target_id 는 도착 지점을 가리키는 전역 유일 id 다. 게이트이거나 player_spawn
+       이어야 하며(둘 다 parent 로 소속 맵을 알 수 있어서 목적지 맵 id 가 따로 필요없다),
+       자기 자신을 가리킬 수 없다.
+     - two_way: 상대가 게이트여야 하고, 그 게이트도 two_way 이며 이 게이트를
        되가리켜야 한다(입구/출구 짝). 짝이 어긋나면 한쪽 방향 이동이 조용히 실패한다.
-     - one_way: 레이드 등 인스턴스 던전 입구용. target_gate_id 가 0 이면 목적지
-       맵의 player_spawn 지점에 도착하므로 목적지에 player_spawn 이 있어야 하고,
-       0 이 아니면 해당 게이트가 목적지 맵에 존재해야 한다.
+     - one_way: 레이드 등 인스턴스 던전 입구용. 짝이 필요 없고 스폰 지점을 가리켜도 된다.
 """
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 
 def _osa_distance(a, b):
@@ -55,16 +59,60 @@ def _strip_digits(s):
 GATE_TYPES = {'two_way', 'one_way'}
 
 
-def _validate_map_gates(table_name, entries):
-    """Map 테이블 전용: 게이트 type 유효성과 맵 간 참조/짝(pairing)을 검증한다."""
+def _validate_map_spawn_ids(table_name, entries):
+    """Map 전용: 스폰 지점 세 종류(player/monster/boss)는 하나의 id 공간을 공유한다.
+
+    생성되는 구조체는 종류마다 달라서 경로별 검사(규칙 2)로는 서로 간의 충돌을 못 잡는다.
+    하지만 유니티 쪽은 SpawnPoint 컴포넌트 하나라 맵툴이 종류 구분 없이 번호를 매기므로,
+    종류가 달라도 겹치면 다음 스캔에서 번호가 밀려 씬과 JSON 이 어긋난다.
+    """
     errors = []
-    maps_by_id = {e.get('id'): e for e in entries if isinstance(e, dict)}
+    owner = {}  # id -> (맵 id, 종류)
+
+    for m in entries:
+        if not isinstance(m, dict):
+            continue
+        spawn_points = m.get('spawn_points') or {}
+        for kind in ('player_spawn', 'monster_spawn', 'boss_spawn'):
+            for s in spawn_points.get(kind) or []:
+                if not isinstance(s, dict):
+                    continue
+                spawn_id = s.get('id')
+                if not isinstance(spawn_id, int) or isinstance(spawn_id, bool) or spawn_id <= 0:
+                    continue
+                if spawn_id in owner:
+                    prev_map, prev_kind = owner[spawn_id]
+                    errors.append(
+                        f"{table_name}: 스폰 id {spawn_id} 중복 — "
+                        f"맵 {prev_map}/{prev_kind} 와 맵 {m.get('id')}/{kind}. "
+                        f"스폰 지점은 종류가 달라도 id 를 공유합니다(맵툴이 한 번호대로 발급).")
+                else:
+                    owner[spawn_id] = (m.get('id'), kind)
+
+    return errors
+
+
+def _validate_map_gates(table_name, entries):
+    """Map 테이블 전용: 게이트 type 유효성과 target_id 참조/짝(pairing)을 검증한다."""
+    errors = []
+
+    # target_id 는 전역 유일 id 다. 게이트든 스폰 지점이든 바로 찾을 수 있어야 한다.
+    gates_by_id = {}       # id -> (게이트, 소속 맵)
+    spawns_by_id = {}      # id -> 소속 맵 (player_spawn 만: 도착 지점이 될 수 있는 마커)
+    for m in entries:
+        if not isinstance(m, dict):
+            continue
+        for g in m.get('gates') or []:
+            if isinstance(g, dict):
+                gates_by_id[g.get('id')] = (g, m)
+        for s in (m.get('spawn_points') or {}).get('player_spawn') or []:
+            if isinstance(s, dict):
+                spawns_by_id[s.get('id')] = m
 
     for m in entries:
         if not isinstance(m, dict):
             continue
         map_id = m.get('id')
-        seen_gate_ids = set()
         for g in m.get('gates') or []:
             if not isinstance(g, dict):
                 continue
@@ -74,9 +122,6 @@ def _validate_map_gates(table_name, entries):
             if not isinstance(gate_id, int) or isinstance(gate_id, bool) or gate_id <= 0:
                 errors.append(f"{label} — 게이트 id 는 1 이상의 정수여야 합니다")
                 continue
-            if gate_id in seen_gate_ids:
-                errors.append(f"{label} — 맵 안에서 게이트 id 가 중복됩니다")
-            seen_gate_ids.add(gate_id)
 
             gate_type = g.get('type')
             if gate_type not in GATE_TYPES:
@@ -84,38 +129,30 @@ def _validate_map_gates(table_name, entries):
                     f"{label} — type 은 'two_way' 또는 'one_way' 여야 합니다 (현재: {gate_type!r})")
                 continue
 
-            target_map_id = g.get('target_map_id')
-            target_gate_id = g.get('target_gate_id')
-            target_map = maps_by_id.get(target_map_id)
-            if target_map is None:
-                errors.append(f"{label} — 존재하지 않는 target_map_id {target_map_id}")
+            target_id = g.get('target_id')
+            if target_id == gate_id:
+                errors.append(f"{label} — target_id 가 자기 자신입니다")
                 continue
 
-            target_gates = {tg.get('id'): tg
-                            for tg in (target_map.get('gates') or []) if isinstance(tg, dict)}
+            target_gate = gates_by_id.get(target_id)
+            target_spawn_map = spawns_by_id.get(target_id)
+            if target_gate is None and target_spawn_map is None:
+                errors.append(
+                    f"{label} — target_id {target_id} 에 해당하는 게이트/player_spawn 이 없습니다")
+                continue
 
             if gate_type == 'two_way':
-                back = target_gates.get(target_gate_id)
-                if back is None:
+                if target_gate is None:
                     errors.append(
-                        f"{label} — two_way 인데 맵 {target_map_id} 에 게이트 {target_gate_id} 가 없습니다")
-                elif (back.get('type') != 'two_way'
-                      or back.get('target_map_id') != map_id
-                      or back.get('target_gate_id') != gate_id):
+                        f"{label} — two_way 게이트는 스폰 지점이 아니라 짝이 되는 게이트를 "
+                        f"가리켜야 합니다 (target_id {target_id} 는 player_spawn)")
+                    continue
+                back, back_map = target_gate
+                if back.get('type') != 'two_way' or back.get('target_id') != gate_id:
                     errors.append(
                         f"{label} — two_way 게이트는 짝을 이뤄야 합니다: "
-                        f"맵 {target_map_id} 게이트 {target_gate_id} 가 two_way 로 "
-                        f"이 게이트(맵 {map_id}, 게이트 {gate_id})를 되가리켜야 합니다")
-            else:  # one_way
-                if target_gate_id == 0:
-                    spawn_points = target_map.get('spawn_points') or {}
-                    if not (spawn_points.get('player_spawn') or []):
-                        errors.append(
-                            f"{label} — target_gate_id 0(스폰 지점 도착)인데 "
-                            f"맵 {target_map_id} 에 player_spawn 이 없습니다")
-                elif target_gate_id not in target_gates:
-                    errors.append(
-                        f"{label} — 맵 {target_map_id} 에 게이트 {target_gate_id} 가 없습니다")
+                        f"맵 {back_map.get('id')} 게이트 {target_id} 가 two_way 로 "
+                        f"이 게이트({gate_id})를 되가리켜야 합니다")
 
     return errors
 
@@ -127,8 +164,7 @@ def validate_table(table_name, entries):
     if not isinstance(entries, list):
         return [f"{table_name}: 최상위가 배열이 아닙니다"]
 
-    # 1) & 2) id 검사
-    ids = []
+    # 1) 최상위 엔트리는 객체이고 정수 id 를 가져야 한다.
     for i, entry in enumerate(entries):
         if not isinstance(entry, dict):
             errors.append(f"{table_name}[{i}]: 엔트리가 객체가 아닙니다")
@@ -136,11 +172,33 @@ def validate_table(table_name, entries):
         entry_id = entry.get('id')
         if not isinstance(entry_id, int) or isinstance(entry_id, bool):
             errors.append(f"{table_name}[{i}]: 정수 'id' 필드가 필요합니다")
-        else:
-            ids.append(entry_id)
-    duplicated = sorted({x for x in ids if ids.count(x) > 1})
-    if duplicated:
-        errors.append(f"{table_name}: 중복 id {duplicated}")
+
+    # 2) id 는 같은 종류(같은 JSON 경로 = 같은 생성 구조체)끼리 파일 전체에서 유일해야 한다.
+    #    경로별로 모아 보면 최상위 테이블과 중첩 오브젝트를 같은 규칙으로 검사할 수 있다.
+    ids_by_path = defaultdict(list)
+
+    def collect_ids(obj, path):
+        if isinstance(obj, dict):
+            if 'id' in obj and isinstance(obj['id'], int) and not isinstance(obj['id'], bool):
+                ids_by_path[path].append(obj['id'])
+            for key, value in obj.items():
+                collect_ids(value, f"{path}.{key}")
+        elif isinstance(obj, list):
+            for item in obj:
+                collect_ids(item, path + '[]')
+
+    for entry in entries:
+        collect_ids(entry, table_name)
+
+    for path in sorted(ids_by_path):
+        path_ids = ids_by_path[path]
+        counts = Counter(path_ids)
+        duplicated = sorted(x for x, c in counts.items() if c > 1)
+        if duplicated:
+            errors.append(
+                f"{table_name}: {path} 의 id 가 중복됩니다 {duplicated} — "
+                f"id 는 같은 종류끼리 파일 전체에서 유일해야 합니다 "
+                f"(ResourceLoader 가 종류마다 id 인덱스를 만든다).")
 
     # 4) null 값 금지 (Unity JsonUtility 는 null 에서 파싱 전체가 실패한다)
     def find_nulls(obj, path):
@@ -158,8 +216,9 @@ def validate_table(table_name, entries):
     for i, entry in enumerate(entries):
         find_nulls(entry, f"{table_name}[{i}]")
 
-    # 5) Map 전용: 게이트 타입/참조/짝 검증
+    # 5) Map 전용: 스폰 id 공유 공간 + 게이트 타입/참조/짝 검증
     if table_name == "Map":
+        errors.extend(_validate_map_spawn_ids(table_name, entries))
         errors.extend(_validate_map_gates(table_name, entries))
 
     # 3) 필드명 오타 의심 검사 (중첩 객체 포함, 경로 단위로 비교)

@@ -59,8 +59,9 @@ namespace
 		return found;
 	}
 
-	// mapId 로 들어가는 게이트를 가진 field 맵과 그 게이트를 찾는다.
-	const gamedata::Map* FindEntranceTo(int mapId, int& outGateId)
+	// mapId 로 들어가는 게이트를 가진 맵과 그 게이트를 찾는다.
+	// 게이트의 target_id 는 전역 유일 마커 id 라, 그 마커의 parent 가 목적지 맵이다.
+	const gamedata::Map* FindEntranceTo(int mapId, const gamedata::MapGate*& outGate)
 	{
 		for (const auto& [id, m] : ResourceLoader::Instance().GetMaps())
 		{
@@ -68,9 +69,11 @@ namespace
 				continue;
 			for (const auto& g : m->gates)
 			{
-				if (g.target_map_id != mapId)
+				const gamedata::Map* dest = nullptr;
+				syncnet::Vec3 unused(0, 0, 0);
+				if (!Map::ResolveGateTarget(g.target_id, dest, unused) || dest->id != mapId)
 					continue;
-				outGateId = g.target_gate_id;
+				outGate = &g;
 				return m;
 			}
 		}
@@ -84,7 +87,7 @@ protected:
 	std::unique_ptr<World> world_;
 	const gamedata::Map* instanceData_ = nullptr;
 	const gamedata::Map* entranceData_ = nullptr;
-	int entranceGateId_ = 0;
+	const gamedata::MapGate* entranceGate_ = nullptr;
 
 	void SetUp() override
 	{
@@ -105,7 +108,7 @@ protected:
 		ASSERT_TRUE(std::filesystem::exists(dataPath + instanceData_->navmesh_path))
 			<< "인스턴스 맵 navmesh 파일이 없습니다: " << instanceData_->navmesh_path;
 
-		entranceData_ = FindEntranceTo(instanceData_->id, entranceGateId_);
+		entranceData_ = FindEntranceTo(instanceData_->id, entranceGate_);
 		ASSERT_NE(entranceData_, nullptr)
 			<< "맵 " << instanceData_->id << " 로 들어가는 게이트가 없습니다.";
 
@@ -128,17 +131,10 @@ protected:
 		auto player = std::make_shared<Player>();
 
 		// 입구 맵에 player_spawn 이 없을 수 있으므로 인스턴스로 가는 게이트 위치에 세운다.
-		syncnet::Vec3 pos(0, 0, 0);
-		for (const auto& g : entranceData_->gates)
-		{
-			if (g.target_map_id != instanceData_->id)
-				continue;
-			pos = syncnet::Vec3(
-				static_cast<float>(g.position.x),
-				static_cast<float>(g.position.y),
-				static_cast<float>(g.position.z));
-			break;
-		}
+		syncnet::Vec3 pos(
+			static_cast<float>(entranceGate_->position.x),
+			static_cast<float>(entranceGate_->position.y),
+			static_cast<float>(entranceGate_->position.z));
 
 		if (entrance->OnAddAgent(player, syncnet::GameObjectType_Character, &pos) == nullptr)
 			return nullptr;
@@ -151,7 +147,8 @@ protected:
 	{
 		syncnet::Vec3 outPos(0, 0, 0);
 		int outAgentId = 0;
-		if (!world_->ChangeMap(player, instanceData_->id, entranceGateId_, outPos, outAgentId))
+		int outMapId = 0;
+		if (!world_->ChangeMap(player, entranceGate_->target_id, outMapId, outPos, outAgentId))
 			return nullptr;
 
 		auto& character = player->GetCharacter();
@@ -218,8 +215,9 @@ TEST_F(GameModeInstanceTest, EmptyInstanceIsDestroyed)
 	// 인스턴스의 출구 게이트로 되돌아 나간다.
 	syncnet::Vec3 outPos(0, 0, 0);
 	int outAgentId = 0;
-	const auto& exitGate = instanceData_->gates.front();
-	ASSERT_TRUE(world_->ChangeMap(player, exitGate.target_map_id, exitGate.target_gate_id, outPos, outAgentId));
+	int outMapId = 0;
+	ASSERT_TRUE(world_->ChangeMap(player, instanceData_->gates.front().target_id,
+		outMapId, outPos, outAgentId));
 
 	world_->update(0.1f);
 	EXPECT_EQ(world_->GetInstanceCount(), 0u);
@@ -323,9 +321,13 @@ TEST_F(GameModeInstanceTest, BossKillEndsInstanceAndEvictsPlayer)
 	world_->update(0.1f);
 	EXPECT_EQ(world_->GetInstanceCount(), 0u);
 
+	const gamedata::Map* exitMap = nullptr;
+	syncnet::Vec3 exitPos(0, 0, 0);
+	ASSERT_TRUE(Map::ResolveGateTarget(instanceData_->gates.front().target_id, exitMap, exitPos));
+
 	auto& character = player->GetCharacter();
 	ASSERT_NE(character, nullptr) << "퇴장 후 캐릭터가 사라졌습니다.";
-	EXPECT_EQ(character->GetMap()->GetMapId(), instanceData_->gates.front().target_map_id);
+	EXPECT_EQ(character->GetMap()->GetMapId(), exitMap->id);
 	EXPECT_FALSE(character->GetMap()->IsInstance());
 }
 

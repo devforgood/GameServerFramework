@@ -81,11 +81,12 @@ public static class PacketFactory
         return builder.SizedByteArray();
     }
 
-    public static byte[] CreateEnterGateMessage(int messageId, int mapId, int gateId)
+    // 요청에는 "내가 밟은 게이트 id" 만 담는다. 목적지는 서버가 그 게이트의 target_id 로
+    // 정하고, 도착한 맵을 응답의 mapId 로 알려준다.
+    public static byte[] CreateEnterGateMessage(int messageId, int gateId)
     {
         var builder = new FlatBufferBuilder(1024);
         syncnet.EnterGate.StartEnterGate(builder);
-        syncnet.EnterGate.AddMapId(builder, mapId);
         syncnet.EnterGate.AddGateId(builder, gateId);
         var offset = syncnet.EnterGate.EndEnterGate(builder);
         var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.EnterGate, offset.Value, messageId);

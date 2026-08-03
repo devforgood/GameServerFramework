@@ -68,6 +68,30 @@ void ResourceLoader::ClearResources()
     {{ table.map_name }}.clear();
     storage_{{ table.map_name }}.clear();
 {% endfor %}
+{% for index in indexes %}
+    {{ index.map_name }}.clear();
+{% endfor %}
+}
+
+// 중첩 오브젝트의 parent 를 연결하고 id 인덱스를 채운다.
+// 저장소는 deque 라 원소 주소가 고정되므로 포인터를 그대로 보관해도 된다.
+void ResourceLoader::BuildIndexes()
+{
+{% for index in indexes %}
+    {{ index.map_name }}.clear();
+    for (auto& root : storage_{{ index.table_map_name }})
+{%- for level in index.levels %}
+    for (auto& {{ level.var }} : {{ level.expr }})
+{%- endfor %}
+    {
+        {{ index.element_var }}.parent = &{{ index.owner_var }};
+        long id = static_cast<long>({{ index.element_var }}.id);
+        if ({{ index.map_name }}.count(id)) {
+            printf("[WARN] {{ index.struct }} duplicate id=%ld — id 는 파일 전체에서 유일해야 합니다.\n", id);
+        }
+        {{ index.map_name }}[id] = &{{ index.element_var }};
+    }
+{% endfor %}
 }
 
 bool ResourceLoader::LoadResources(const std::string& basePath)
@@ -98,5 +122,8 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
     storage_{{ table.map_name }} = std::move(tmp_storage_{{ table.map_name }});
     {{ table.map_name }} = std::move(tmp_{{ table.map_name }});
 {% endfor %}
+
+    // 중첩 오브젝트의 parent/인덱스는 저장소가 제자리에 놓인 뒤에 만든다.
+    BuildIndexes();
     return true;
 }

@@ -6,6 +6,38 @@
 
 namespace gamedata
 {
+    // 전방 선언 — id 를 가진 중첩 오브젝트의 parent 포인터가 아직 정의되지 않은
+    // 상위 구조체를 가리킨다(예: MapGate::parent -> const Map*).
+    struct SkillEffect;
+    struct Skill;
+    struct ItemItemOption;
+    struct Item;
+    struct Quest;
+    struct GameModeBossInfo;
+    struct GameModeRewards;
+    struct GameModeRules;
+    struct GameMode;
+    struct MapGatePosition;
+    struct MapGate;
+    struct MapObjectsMovableObjectPatrolPath;
+    struct MapObjectsMovableObjectPosition;
+    struct MapObjectsMovableObject;
+    struct MapObjectsStaticObjectPosition;
+    struct MapObjectsStaticObjectSize;
+    struct MapObjectsStaticObject;
+    struct MapObjects;
+    struct MapSize;
+    struct MapSpawnPointsBossSpawnPosition;
+    struct MapSpawnPointsBossSpawn;
+    struct MapSpawnPointsMonsterSpawnPosition;
+    struct MapSpawnPointsMonsterSpawn;
+    struct MapSpawnPointsPlayerSpawnPosition;
+    struct MapSpawnPointsPlayerSpawn;
+    struct MapSpawnPoints;
+    struct Map;
+    struct Level;
+    struct MonsterData;
+
 
     struct SkillEffect
     {
@@ -43,6 +75,10 @@ namespace gamedata
     {
         int id = 0;
         double value = 0.0;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다. 덕분에 id 하나로 소속 맵/아이템까지 따라갈 수 있다.
+        const Item* parent = nullptr;
     };
 
 
@@ -137,9 +173,12 @@ namespace gamedata
         std::string name;
         MapGatePosition position;
         int required_level = 0;
-        int target_gate_id = 0;
-        int target_map_id = 0;
+        int target_id = 0;
         std::string type;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다. 덕분에 id 하나로 소속 맵/아이템까지 따라갈 수 있다.
+        const Map* parent = nullptr;
     };
 
 
@@ -168,6 +207,10 @@ namespace gamedata
         std::vector<MapObjectsMovableObjectPatrolPath> patrol_path;
         MapObjectsMovableObjectPosition position;
         std::string type;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다. 덕분에 id 하나로 소속 맵/아이템까지 따라갈 수 있다.
+        const Map* parent = nullptr;
     };
 
 
@@ -197,6 +240,10 @@ namespace gamedata
         MapObjectsStaticObjectPosition position;
         MapObjectsStaticObjectSize size;
         std::string type;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다. 덕분에 id 하나로 소속 맵/아이템까지 따라갈 수 있다.
+        const Map* parent = nullptr;
     };
 
 
@@ -230,6 +277,10 @@ namespace gamedata
         MapSpawnPointsBossSpawnPosition position;
         int spawn_delay = 0;
         int spawn_interval = 0;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다. 덕분에 id 하나로 소속 맵/아이템까지 따라갈 수 있다.
+        const Map* parent = nullptr;
     };
 
 
@@ -249,6 +300,10 @@ namespace gamedata
         MapSpawnPointsMonsterSpawnPosition position;
         int spawn_delay = 0;
         int spawn_interval = 0;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다. 덕분에 id 하나로 소속 맵/아이템까지 따라갈 수 있다.
+        const Map* parent = nullptr;
     };
 
 
@@ -268,6 +323,10 @@ namespace gamedata
         MapSpawnPointsPlayerSpawnPosition position;
         int spawn_delay = 0;
         int spawn_interval = 0;
+
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다. 덕분에 id 하나로 소속 맵/아이템까지 따라갈 수 있다.
+        const Map* parent = nullptr;
     };
 
 
@@ -448,8 +507,7 @@ namespace gamedata
         if (j.contains("name") && !j.at("name").is_null()) j.at("name").get_to(o.name);
         if (j.contains("position") && !j.at("position").is_null()) j.at("position").get_to(o.position);
         if (j.contains("required_level") && !j.at("required_level").is_null()) j.at("required_level").get_to(o.required_level);
-        if (j.contains("target_gate_id") && !j.at("target_gate_id").is_null()) j.at("target_gate_id").get_to(o.target_gate_id);
-        if (j.contains("target_map_id") && !j.at("target_map_id").is_null()) j.at("target_map_id").get_to(o.target_map_id);
+        if (j.contains("target_id") && !j.at("target_id").is_null()) j.at("target_id").get_to(o.target_id);
         if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
     }
 

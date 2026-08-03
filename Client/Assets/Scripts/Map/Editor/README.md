@@ -157,7 +157,7 @@ Auto Sync를 끄고 씬을 연 뒤 **Scan Scene → JSON** + **Save Map JSON**�
 
 | 컴포넌트 | 기록 위치 | 주요 필드 |
 | --- | --- | --- |
-| `Gate` | `gates` | id, gateName, targetMapId, targetGateId, requiredLevel |
+| `Gate` | `gates` | id, gateName, gateType, targetId, requiredLevel |
 | `SpawnPoint` | `spawn_points.player/monster/boss_spawn` | spawnType, monsterId, spawnInterval, bossId, spawnDelay |
 | `MapObjectMarker` | `objects.static_objects` / `objects.movable_objects` | kind, objectType, collision, damage, lootTableId, movementRange, movementSpeed, patrolPath |
 
@@ -193,17 +193,22 @@ Auto Sync를 끄고 씬을 연 뒤 **Scan Scene → JSON** + **Save Map JSON**�
 
 `Gate` 컴포넌트는 Map.json의 `gates[]` 항목과 1:1로 대응합니다.
 
-- `id` — 게이트 고유 id(`gates[].id`). 0이면 Scan 시 자동 발급되어 컴포넌트에 기록됩니다(맵 내부에서 유일).
+- `id` — 게이트 고유 id(`gates[].id`). **데이터 전체에서 유일**합니다.
+  0이면 Scan 시 자동 발급(1000번대)되어 컴포넌트에 기록됩니다.
 - `gateName` — `gates[].name`. 비우면 GameObject 이름을 사용합니다.
-- `targetMapId` / `targetGateId` — 목적지 맵/게이트의 **id**(`target_map_id` / `target_gate_id`).
-  이름이 아니라 id를 직접 지정하므로 스캔 순서·이름 변경과 무관하게 참조가 안정적입니다.
+- `gateType` — `gates[].type`. `TwoWay` 는 짝이 되는 게이트가 서로를 가리켜야 하고,
+  `OneWay` 는 인스턴스 던전 입구용이라 짝이 필요 없습니다.
+- `targetId` — 도착 지점의 **전역 유일 id**(`target_id`). 게이트 id 이거나 player_spawn id 입니다.
+  목적지 맵은 그 마커가 속한 맵으로 정해지므로 목적지 맵 id 를 따로 적지 않습니다.
 - `requiredLevel` — `required_level`.
 
 두 맵을 서로 연결할 때는:
 
 1. 맵 A, B를 각각 스캔/저장 → 각 게이트에 id가 발급됩니다.
-2. 연결하려는 게이트의 인스펙터에 상대 맵/게이트의 **id**를 `Target Map Id` / `Target Gate Id`로 입력합니다.
+2. 연결하려는 게이트의 인스펙터에 도착 지점의 **id**를 `Target Id` 로 입력합니다.
    (id는 **All Maps** 섹션 또는 Map.json에서 확인)
+3. `TwoWay` 면 상대 게이트의 `Target Id` 도 이 게이트의 id 로 맞춰 짝을 만듭니다.
+   레이드 등 인스턴스 입구는 `OneWay` 로 두고 목적지의 player_spawn id 를 가리키면 됩니다.
 
 ## 저장과 배포
 
@@ -233,11 +238,11 @@ Client(Resources)/Game/UnitTest로 배포하려면 `GameDataFlow/GameDataFlow.py
   "size": { "width": 1000.0, "height": 1000.0 },
   "gates": [
     {
-      "id": 1,
+      "id": 1001,
       "name": "Village to Forest Gate",
+      "type": "two_way",
       "position": { "x": 950.0, "y": 0.0, "z": 500.0 },
-      "target_map_id": 2,
-      "target_gate_id": 1,
+      "target_id": 1002,
       "required_level": 1
     }
   ],

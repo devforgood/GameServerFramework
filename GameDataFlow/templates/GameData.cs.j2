@@ -9,7 +9,11 @@ namespace Gamedata
     public class {{ s.name }}
     {
 {% for f in s.fields %}        public {{ f.cs_type }} {{ f.name }};
-{% endfor %}    }
+{% endfor %}{% if s.parent_type %}
+        // 이 오브젝트를 소유한 상위 데이터. JSON 필드가 아니라 ResourceLoader 가
+        // 로드 직후 연결한다(JsonUtility 가 건드리지 않도록 NonSerialized).
+        [NonSerialized] public {{ s.parent_type }} parent;
+{% endif %}    }
 
 {% endfor %}
 {% for table in tables %}

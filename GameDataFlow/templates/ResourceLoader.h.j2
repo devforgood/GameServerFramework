@@ -14,6 +14,12 @@ private:
     std::deque<gamedata::{{ table.name }}> storage_{{ table.map_name }};
     std::unordered_map<long, const gamedata::{{ table.name }}*> {{ table.map_name }};
 {% endfor %}
+    // id 를 가진 중첩 오브젝트(게이트, 스폰 지점 등)의 인덱스.
+    // 이 id 들은 파일 전체에서 유일하므로 소속 맵을 몰라도 바로 찾을 수 있고,
+    // 찾은 오브젝트의 parent 가 소속 상위 데이터를 돌려준다.
+{% for index in indexes %}
+    std::unordered_map<long, const gamedata::{{ index.struct }}*> {{ index.map_name }};
+{% endfor %}
 public:
     static ResourceLoader& Instance() {
         static ResourceLoader instance;
@@ -24,8 +30,15 @@ public:
     const std::unordered_map<long, const gamedata::{{ table.name }}*>& Get{{ table.name }}s() const { return {{ table.map_name }}; }
     const gamedata::{{ table.name }}* Get{{ table.name }}(long id) const { auto itr = {{ table.map_name }}.find(id); return itr != {{ table.map_name }}.end() ? itr->second : nullptr; }
 {% endfor %}
+{% for index in indexes %}
+    const std::unordered_map<long, const gamedata::{{ index.struct }}*>& Get{{ index.struct }}s() const { return {{ index.map_name }}; }
+    const gamedata::{{ index.struct }}* Get{{ index.struct }}(long id) const { auto itr = {{ index.map_name }}.find(id); return itr != {{ index.map_name }}.end() ? itr->second : nullptr; }
+{% endfor %}
 private:
     ResourceLoader() = default;
     ~ResourceLoader();
     void ClearResources();
+
+    // 로드 직후 중첩 오브젝트의 parent 를 연결하고 id 인덱스를 채운다.
+    void BuildIndexes();
 };

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System.Collections.Generic;
@@ -210,16 +210,14 @@ public static class MapJsonAutoSync
         if (comp.id != info.id
             || comp.gateName != gateName
             || comp.gateType != gateType
-            || comp.targetMapId != info.target_map_id
-            || comp.targetGateId != info.target_gate_id
+            || comp.targetId != info.target_id
             || comp.requiredLevel != info.required_level)
         {
             Undo.RecordObject(comp, "Map Auto Sync");
             comp.id = info.id;
             comp.gateName = gateName;
             comp.gateType = gateType;
-            comp.targetMapId = info.target_map_id;
-            comp.targetGateId = info.target_gate_id;
+            comp.targetId = info.target_id;
             comp.requiredLevel = info.required_level;
             EditorUtility.SetDirty(comp);
             changed = 1;

@@ -87,37 +87,20 @@ int World::ValidateGameData(int* outWarnings)
 
 		for (const auto& gate : map->gates)
 		{
-			const gamedata::Map* dest = resource.GetMap(gate.target_map_id);
-			if (dest == nullptr)
+			// target_id 는 전역 유일 마커 id 다(게이트 또는 player_spawn). 목적지 맵은
+			// 그 마커의 parent 로 정해진다.
+			const gamedata::Map* dest = nullptr;
+			syncnet::Vec3 unusedPos(0, 0, 0);
+			if (!Map::ResolveGateTarget(gate.target_id, dest, unusedPos))
 			{
-				LOG.error("데이터 정합성: map {} 의 게이트 {}('{}') 가 존재하지 않는 맵 {} 을 가리킵니다.",
-					map->id, gate.id, gate.name, gate.target_map_id);
+				LOG.error("데이터 정합성: map {} 의 게이트 {}('{}') 의 target_id {} 에 해당하는 "
+					"게이트/player_spawn 이 없습니다.",
+					map->id, gate.id, gate.name, gate.target_id);
 				++errors;
 				continue;
 			}
 
 			++incomingGates[dest->id];
-
-			// target_gate_id 0 은 목적지의 player_spawn 첫 지점 도착이다(World::ChangeMap).
-			if (gate.target_gate_id == 0)
-			{
-				if (dest->spawn_points.player_spawn.empty())
-				{
-					LOG.error("데이터 정합성: map {} 의 게이트 {} 는 map {} 의 player_spawn 으로 도착하는데 "
-						"그 맵에 player_spawn 이 없습니다.", map->id, gate.id, dest->id);
-					++errors;
-				}
-				continue;
-			}
-
-			const bool found = std::any_of(dest->gates.begin(), dest->gates.end(),
-				[&](const gamedata::MapGate& g) { return g.id == gate.target_gate_id; });
-			if (!found)
-			{
-				LOG.error("데이터 정합성: map {} 의 게이트 {} 가 가리키는 map {} 의 게이트 {} 가 없습니다.",
-					map->id, gate.id, dest->id, gate.target_gate_id);
-				++errors;
-			}
 		}
 	}
 
@@ -292,15 +275,14 @@ Map* World::CreateInstance(int mapId)
 	return map.get();
 }
 
-bool World::FindInstanceExit(const gamedata::Map* data, int& outMapId, int& outGateId)
+bool World::FindInstanceExit(const gamedata::Map* data, int& outTargetId)
 {
-	// 인스턴스의 출구는 그 맵의 첫 게이트다(Dragon's Lair 의 "Lair Entrance" 처럼
+	// 인스턴스의 출구는 그 맵의 첫 게이트다(Dragon's Lair 의 "Lair Exit" 처럼
 	// 인스턴스 맵의 게이트는 밖으로 나가는 문 하나뿐이다).
 	if (data == nullptr || data->gates.empty())
 		return false;
 
-	outMapId = data->gates.front().target_map_id;
-	outGateId = data->gates.front().target_gate_id;
+	outTargetId = data->gates.front().target_id;
 	return true;
 }
 
@@ -309,9 +291,8 @@ void World::EvictInstancePlayers(Map* instance)
 	if (instance == nullptr)
 		return;
 
-	int exitMapId = 0;
-	int exitGateId = 0;
-	if (!FindInstanceExit(instance->GetMapData(), exitMapId, exitGateId))
+	int exitTargetId = 0;
+	if (!FindInstanceExit(instance->GetMapData(), exitTargetId))
 	{
 		LOG.error("인스턴스 map {} 에 나갈 게이트가 없어 플레이어를 내보내지 못했습니다.",
 			instance->GetMapId());
@@ -323,10 +304,11 @@ void World::EvictInstancePlayers(Map* instance)
 	{
 		syncnet::Vec3 outPos(0, 0, 0);
 		int outAgentId = 0;
-		if (!ChangeMap(player, exitMapId, exitGateId, outPos, outAgentId))
+		int outMapId = 0;
+		if (!ChangeMap(player, exitTargetId, outMapId, outPos, outAgentId))
 		{
-			LOG.error("인스턴스 퇴장 실패: player {} -> map {} gate {}",
-				player->GetPlayerId(), exitMapId, exitGateId);
+			LOG.error("인스턴스 퇴장 실패: player {} -> target {}",
+				player->GetPlayerId(), exitTargetId);
 			continue;
 		}
 
@@ -337,8 +319,8 @@ void World::EvictInstancePlayers(Map* instance)
 			, syncnet::GameMessages::GameMessages_EnterGate
 			, 0
 			, syncnet::StatusCode::StatusCode_Success
-			, exitMapId
-			, exitGateId
+			, outMapId
+			, exitTargetId
 			, &outPos
 			, outAgentId
 		);
@@ -588,7 +570,7 @@ std::vector<Map*> World::GetMaps() const
 	return maps;
 }
 
-bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syncnet::Vec3& outPos, int& outAgentId)
+bool World::ChangeMap(std::shared_ptr<Player> player, int targetId, int& outMapId, syncnet::Vec3& outPos, int& outAgentId)
 {
 	if (player == nullptr)
 	{
@@ -603,15 +585,24 @@ bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syn
 		return false;
 	}
 
+	// 도착 지점과 목적지 맵을 target_id 하나로 푼다. 마커(게이트/스폰 지점)가 parent 로
+	// 소속 맵을 들고 있어서, 어느 맵인지 따로 받을 필요가 없다.
+	const gamedata::Map* destData = nullptr;
+	syncnet::Vec3 arrivalPos(0, 0, 0);
+	if (!Map::ResolveGateTarget(targetId, destData, arrivalPos))
+	{
+		LOG.error("World::ChangeMap error target {} not found (게이트/player_spawn 아님)", targetId);
+		return false;
+	}
+
+	const int mapId = destData->id;
+
 	// 상시 맵이면 그것을 쓰고, 인스턴스 모드(field 가 아닌 모드)면 새로 하나 만든다.
 	// 인스턴스는 mapById_ 에 없으므로 FindMap 으로는 절대 찾히지 않는다.
 	Map* destMap = FindMap(mapId);
 	if (destMap == nullptr)
 	{
-		const gamedata::Map* pending = ResourceLoader::Instance().GetMap(mapId);
-		const gamedata::GameMode* destMode =
-			pending != nullptr ? ResourceLoader::Instance().GetGameMode(pending->game_mode_id) : nullptr;
-
+		const gamedata::GameMode* destMode = ResourceLoader::Instance().GetGameMode(destData->game_mode_id);
 		if (destMode == nullptr || destMode->type == "field")
 		{
 			// field 맵인데 상시 목록에 없다 = 기동 때 로드에 실패했거나 데이터가 없다.
@@ -622,53 +613,6 @@ bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syn
 		destMap = CreateInstance(mapId);
 		if (destMap == nullptr)
 			return false;
-	}
-
-	const gamedata::Map* destData = destMap->GetMapData();
-	if (destData == nullptr)
-	{
-		LOG.error("World::ChangeMap error map {} has no data", mapId);
-		return false;
-	}
-
-	// 도착 위치를 결정한다(Map.json = 클라 좌표계).
-	// gateId 0 은 단방향(one_way) 게이트의 스폰 지점 도착이다: 레이드 같은 인스턴스
-	// 던전 입구는 목적지에 짝 게이트가 없으므로 player_spawn 첫 지점에 내려준다.
-	syncnet::Vec3 arrivalPos(0, 0, 0);
-	if (gateId == 0)
-	{
-		if (destData->spawn_points.player_spawn.empty())
-		{
-			LOG.error("World::ChangeMap error map {} has no player_spawn (gate 0 arrival)", mapId);
-			return false;
-		}
-		const auto& spawnPos = destData->spawn_points.player_spawn.front().position;
-		arrivalPos = syncnet::Vec3(
-			static_cast<float>(spawnPos.x),
-			static_cast<float>(spawnPos.y),
-			static_cast<float>(spawnPos.z));
-	}
-	else
-	{
-		// 목적지 맵에서 gateId 게이트를 찾아 도착 위치를 얻는다.
-		const gamedata::MapGate* gate = nullptr;
-		for (const auto& g : destData->gates)
-		{
-			if (g.id == gateId)
-			{
-				gate = &g;
-				break;
-			}
-		}
-		if (gate == nullptr)
-		{
-			LOG.error("World::ChangeMap error gate {} not found in map {}", gateId, mapId);
-			return false;
-		}
-		arrivalPos = syncnet::Vec3(
-			static_cast<float>(gate->position.x),
-			static_cast<float>(gate->position.y),
-			static_cast<float>(gate->position.z));
 	}
 
 	Map* oldMap = character->GetMap();
@@ -698,10 +642,11 @@ bool World::ChangeMap(std::shared_ptr<Player> player, int mapId, int gateId, syn
 	// 응답 전송 이후에 별도로 수행한다.
 	destMap->Enter(player);
 
+	outMapId = mapId;
 	outPos = arrivalPos;
 	outAgentId = newActor->GetActorId();
-	LOG.info("World::ChangeMap success: player {} -> map {} gate {}, newAgentId {}, pos({},{},{})",
-		player->GetPlayerId(), mapId, gateId, outAgentId, outPos.x(), outPos.y(), outPos.z());
+	LOG.info("World::ChangeMap success: player {} -> map {} target {}, newAgentId {}, pos({},{},{})",
+		player->GetPlayerId(), mapId, targetId, outAgentId, outPos.x(), outPos.y(), outPos.z());
 	return true;
 }
 

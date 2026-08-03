@@ -249,9 +249,10 @@ public class Session : MonoBehaviour
         skills.Cast(skillId, pos, type);
     }
 
-    public void EnterGate(int mapId, int gateId, string sceneName)
+    /// <summary>밟은 게이트 id 를 서버에 알린다. 목적지는 서버가 정한다.</summary>
+    public void EnterGate(int gateId)
     {
-        mapTransition.EnterGate(mapId, gateId, sceneName);
+        mapTransition.EnterGate(gateId);
     }
 
     /// <summary>특정 몬스터의 BT 정의(+현재 상태)를 서버에 요청한다.</summary>

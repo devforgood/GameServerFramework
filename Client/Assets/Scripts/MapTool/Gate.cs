@@ -17,16 +17,14 @@ public class Gate : MonoBehaviour
     // Map.json의 gates[] 항목과 1:1로 대응한다.
     // (이전에는 이름 기반(destinationMapName/GateName)이라 JSON(id 기반)과 스키마가 어긋났다.)
     [Header("Gate (Map.json 스키마)")]
-    [Tooltip("게이트 고유 id. Map.json의 gates[].id. 0이면 Scan 시 자동 발급되어 컴포넌트에 기록된다.")]
+    [Tooltip("게이트 고유 id. Map.json의 gates[].id. 데이터 전체에서 유일하다. 0이면 Scan 시 자동 발급되어 컴포넌트에 기록된다.")]
     public int id;
     [Tooltip("게이트 이름. Map.json의 gates[].name. 비우면 GameObject 이름을 사용한다.")]
     public string gateName;
-    [Tooltip("게이트 타입. Map.json의 gates[].type. TwoWay는 목적지 게이트와 짝(상호 참조) 필수, OneWay는 인스턴스 던전 입구용(Target Gate Id 0이면 목적지 player_spawn 도착).")]
+    [Tooltip("게이트 타입. Map.json의 gates[].type. TwoWay는 목적지 게이트와 짝(상호 참조) 필수, OneWay는 인스턴스 던전 입구용(스폰 지점을 가리켜도 된다).")]
     public GateType gateType = GateType.TwoWay;
-    [Tooltip("목적지 맵 id. Map.json의 target_map_id.")]
-    public int targetMapId;
-    [Tooltip("목적지 게이트 id. Map.json의 target_gate_id. OneWay 게이트는 0이면 목적지 맵의 player_spawn 도착.")]
-    public int targetGateId;
+    [Tooltip("도착 지점의 전역 유일 id. Map.json의 target_id. 게이트 id 이거나 player_spawn id 다 — 목적지 맵은 그 마커가 속한 맵으로 정해진다.")]
+    public int targetId;
     [Tooltip("게이트 이용에 필요한 레벨. Map.json의 required_level.")]
     public int requiredLevel = 1;
 
@@ -63,25 +61,16 @@ public class Gate : MonoBehaviour
             return;
         }
 
-        if (targetMapId <= 0)
+        if (id <= 0)
         {
-            Debug.LogWarning($"Gate '{gateName}' has no targetMapId.");
+            Debug.LogWarning($"Gate '{gateName}' has no id. (맵툴에서 Scan 을 실행해 id 를 발급하세요)");
             return;
         }
 
-        // Map.json에 기록된 target_map_id 로 목적지 맵을 직접 조회한다(이름 해석 불필요).
-        var resource = GameManager.Instance.resource;
-        var destMap = resource.GetMapById(targetMapId);
-        if (destMap == null)
-        {
-            Debug.LogError($"Gate '{gateName}': destination map id {targetMapId} not found in loaded map data.");
-            return;
-        }
-
-        // 맵 데이터에 연동된 씬 이름을 사용한다(없으면 맵 이름으로 폴백).
-        string destScene = !string.IsNullOrEmpty(destMap.scene) ? destMap.scene : destMap.name;
-        Debug.Log($"[Gate] '{gateName}': dest mapId:{targetMapId}, gateId:{targetGateId}, scene:'{destScene}'. requesting EnterGate.");
-        Session.Instance.EnterGate(targetMapId, targetGateId, destScene);
+        // 서버에는 "내가 밟은 게이트"만 알린다. 목적지는 그 게이트의 target_id 가 정하므로
+        // 클라가 목적지를 고를 수 없고, 응답의 mapId 로 씬을 정한다.
+        Debug.Log($"[Gate] '{gateName}'(id {id}): requesting EnterGate. target_id:{targetId}");
+        Session.Instance.EnterGate(id);
     }
 
     // 로컬 플레이어가 게이트 밖으로 나가면 재이동 억제를 해제한다.

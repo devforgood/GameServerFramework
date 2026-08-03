@@ -86,6 +86,112 @@ void ResourceLoader::ClearResources()
     monsters.clear();
     storage_monsters.clear();
 
+
+    item_item_options.clear();
+
+    map_gates.clear();
+
+    map_objects_movable_objects.clear();
+
+    map_objects_static_objects.clear();
+
+    map_spawn_points_boss_spawns.clear();
+
+    map_spawn_points_monster_spawns.clear();
+
+    map_spawn_points_player_spawns.clear();
+
+}
+
+// 중첩 오브젝트의 parent 를 연결하고 id 인덱스를 채운다.
+// 저장소는 deque 라 원소 주소가 고정되므로 포인터를 그대로 보관해도 된다.
+void ResourceLoader::BuildIndexes()
+{
+
+    item_item_options.clear();
+    for (auto& root : storage_items)
+    for (auto& lv0 : root.item_options)
+    {
+        lv0.parent = &root;
+        long id = static_cast<long>(lv0.id);
+        if (item_item_options.count(id)) {
+            printf("[WARN] ItemItemOption duplicate id=%ld — id 는 파일 전체에서 유일해야 합니다.\n", id);
+        }
+        item_item_options[id] = &lv0;
+    }
+
+    map_gates.clear();
+    for (auto& root : storage_maps)
+    for (auto& lv0 : root.gates)
+    {
+        lv0.parent = &root;
+        long id = static_cast<long>(lv0.id);
+        if (map_gates.count(id)) {
+            printf("[WARN] MapGate duplicate id=%ld — id 는 파일 전체에서 유일해야 합니다.\n", id);
+        }
+        map_gates[id] = &lv0;
+    }
+
+    map_objects_movable_objects.clear();
+    for (auto& root : storage_maps)
+    for (auto& lv0 : root.objects.movable_objects)
+    {
+        lv0.parent = &root;
+        long id = static_cast<long>(lv0.id);
+        if (map_objects_movable_objects.count(id)) {
+            printf("[WARN] MapObjectsMovableObject duplicate id=%ld — id 는 파일 전체에서 유일해야 합니다.\n", id);
+        }
+        map_objects_movable_objects[id] = &lv0;
+    }
+
+    map_objects_static_objects.clear();
+    for (auto& root : storage_maps)
+    for (auto& lv0 : root.objects.static_objects)
+    {
+        lv0.parent = &root;
+        long id = static_cast<long>(lv0.id);
+        if (map_objects_static_objects.count(id)) {
+            printf("[WARN] MapObjectsStaticObject duplicate id=%ld — id 는 파일 전체에서 유일해야 합니다.\n", id);
+        }
+        map_objects_static_objects[id] = &lv0;
+    }
+
+    map_spawn_points_boss_spawns.clear();
+    for (auto& root : storage_maps)
+    for (auto& lv0 : root.spawn_points.boss_spawn)
+    {
+        lv0.parent = &root;
+        long id = static_cast<long>(lv0.id);
+        if (map_spawn_points_boss_spawns.count(id)) {
+            printf("[WARN] MapSpawnPointsBossSpawn duplicate id=%ld — id 는 파일 전체에서 유일해야 합니다.\n", id);
+        }
+        map_spawn_points_boss_spawns[id] = &lv0;
+    }
+
+    map_spawn_points_monster_spawns.clear();
+    for (auto& root : storage_maps)
+    for (auto& lv0 : root.spawn_points.monster_spawn)
+    {
+        lv0.parent = &root;
+        long id = static_cast<long>(lv0.id);
+        if (map_spawn_points_monster_spawns.count(id)) {
+            printf("[WARN] MapSpawnPointsMonsterSpawn duplicate id=%ld — id 는 파일 전체에서 유일해야 합니다.\n", id);
+        }
+        map_spawn_points_monster_spawns[id] = &lv0;
+    }
+
+    map_spawn_points_player_spawns.clear();
+    for (auto& root : storage_maps)
+    for (auto& lv0 : root.spawn_points.player_spawn)
+    {
+        lv0.parent = &root;
+        long id = static_cast<long>(lv0.id);
+        if (map_spawn_points_player_spawns.count(id)) {
+            printf("[WARN] MapSpawnPointsPlayerSpawn duplicate id=%ld — id 는 파일 전체에서 유일해야 합니다.\n", id);
+        }
+        map_spawn_points_player_spawns[id] = &lv0;
+    }
+
 }
 
 bool ResourceLoader::LoadResources(const std::string& basePath)
@@ -170,5 +276,8 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
     storage_monsters = std::move(tmp_storage_monsters);
     monsters = std::move(tmp_monsters);
 
+
+    // 중첩 오브젝트의 parent/인덱스는 저장소가 제자리에 놓인 뒤에 만든다.
+    BuildIndexes();
     return true;
 }

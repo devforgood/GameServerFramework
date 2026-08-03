@@ -15,8 +15,11 @@ def generate_gamedata_header(out_dir, structs):
         f.write(template.render(structs=structs))
 
 
-def generate_resource_loader(out_dir, tables):
-    """Write the C++ ResourceLoader (.h/.cpp) that loads the *.json tables."""
+def generate_resource_loader(out_dir, tables, indexes):
+    """Write the C++ ResourceLoader (.h/.cpp) that loads the *.json tables.
+
+    indexes: id 를 가진 중첩 오브젝트의 인덱스 서술자(schema_infer.build_structs 가 만든다).
+    """
     os.makedirs(out_dir, exist_ok=True)
     env = _env()
 
@@ -26,13 +29,20 @@ def generate_resource_loader(out_dir, tables):
         'output_file': t['output_file'],
     } for t in tables if t.get('enabled', True)]
 
+    storage_of = {t['name']: t['map_name'] for t in render_tables}
+    render_indexes = []
+    for index in indexes:
+        entry = dict(index)
+        entry['table_map_name'] = storage_of[index['table']]
+        render_indexes.append(entry)
+
     template_h = env.get_template('ResourceLoader.h.j2')
     with open(os.path.join(out_dir, 'ResourceLoader.h'), 'w', encoding='utf-8') as f:
-        f.write(template_h.render(tables=render_tables))
+        f.write(template_h.render(tables=render_tables, indexes=render_indexes))
 
     template_cpp = env.get_template('ResourceLoader.cpp.j2')
     with open(os.path.join(out_dir, 'ResourceLoader.cpp'), 'w', encoding='utf-8') as f:
-        f.write(template_cpp.render(tables=render_tables))
+        f.write(template_cpp.render(tables=render_tables, indexes=render_indexes))
 
 
 def generate_csharp_model(out_path, structs, table_names):

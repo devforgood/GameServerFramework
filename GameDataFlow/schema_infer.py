@@ -16,6 +16,20 @@ def _pascal(s):
     return ''.join(part.capitalize() for part in s.split('_') if part)
 
 
+def _snake(name):
+    """PascalCase -> snake_case (MapSpawnPointsPlayerSpawn -> map_spawn_points_player_spawn)."""
+    out = []
+    for i, ch in enumerate(name):
+        if ch.isupper() and i > 0:
+            out.append('_')
+        out.append(ch.lower())
+    return ''.join(out)
+
+
+def _plural(snake):
+    return snake + ('es' if snake.endswith(('s', 'x', 'z', 'ch', 'sh')) else 's')
+
+
 def _singular(name):
     # Strip a trailing plural 's' from a derived struct name (Gates -> Gate).
     return name[:-1] if name.endswith('s') and not name.endswith('ss') else name
@@ -187,14 +201,97 @@ def infer_table(entries):
     return _resolve_unknown(node)
 
 
-def build_structs(entries, table_name):
-    """Return an ordered list of struct descriptors for one table.
+def _has_int_id(node):
+    """정수 'id' 필드를 가진 오브젝트 노드인가. 인덱스 테이블을 만들 대상의 기준이다."""
+    if node['kind'] != 'object':
+        return False
+    field = node['fields'].get('id')
+    return field is not None and field['kind'] == 'scalar' and field['ctype'] == 'int'
 
-    The last entry is always the top-level table struct (named `table_name`);
-    nested structs precede it.
+
+def _collect_indexes(node, steps, owner, owner_depth, out):
+    """id 를 가진 중첩 오브젝트마다 (루트에서 그곳까지의 접근 경로 + 소유자)를 모은다.
+
+    소유자는 'id 를 가진 가장 가까운 조상'이다 — 게이트/스폰 지점이면 그 맵,
+    item_options 면 그 아이템. 이 값이 생성된 구조체의 parent 포인터 타입이 된다.
+    steps 는 [{'field': 이름, 'array': 배열인가}] 로, 템플릿이 루프를 펼치는 데 쓴다.
+    """
+    if node['kind'] != 'object':
+        return
+
+    for key in sorted(node['fields']):
+        child = node['fields'][key]
+
+        if child['kind'] == 'array' and child['element']['kind'] == 'object':
+            element = child['element']
+            child_steps = steps + [{'field': key, 'array': True}]
+            child_owner, child_depth = owner, owner_depth
+
+            if _has_int_id(element):
+                out.append({
+                    'struct': element['name'],
+                    'owner': owner,
+                    'owner_depth': owner_depth,
+                    'map_name': _plural(_snake(element['name'])),
+                    'steps': child_steps,
+                })
+                child_owner, child_depth = element['name'], len(child_steps)
+
+            _collect_indexes(element, child_steps, child_owner, child_depth, out)
+
+        elif child['kind'] == 'object':
+            _collect_indexes(child, steps + [{'field': key, 'array': False}],
+                             owner, owner_depth, out)
+
+
+def _build_levels(steps):
+    """접근 경로를 중첩 루프로 펼친다.
+
+    [{'spawn_points', False}, {'player_spawn', True}] ->
+        [{'var': 'lv0', 'expr': 'root.spawn_points.player_spawn', 'depth': 2}]
+    배열이 아닌 단계는 앞 단계의 표현식에 그대로 이어 붙고, 배열 단계에서만 루프가 하나 생긴다.
+    """
+    levels = []
+    prefix = 'root'
+    pending = []
+    for i, step in enumerate(steps):
+        pending.append(step['field'])
+        if step['array']:
+            var = 'lv%d' % len(levels)
+            levels.append({'var': var,
+                           'expr': prefix + '.' + '.'.join(pending),
+                           'depth': i + 1})
+            prefix = var
+            pending = []
+    return levels
+
+
+def build_structs(entries, table_name):
+    """Return (structs, indexes) for one table.
+
+    structs: 구조체 서술자 목록. 중첩 구조체가 먼저 오고 마지막이 테이블 구조체다.
+             id 를 가진 중첩 구조체에는 parent_type 이 채워진다.
+    indexes: id 를 가진 중첩 구조체마다의 인덱스 서술자(ResourceLoader 가 테이블을 만든다).
     """
     root = infer_table(entries)
     _assign_names(root, table_name)
+
+    indexes = []
+    _collect_indexes(root, [], table_name, 0, indexes)
+    for index in indexes:
+        index['levels'] = _build_levels(index['steps'])
+        # 소유자 변수: 깊이 0 이면 테이블 원소(root), 아니면 그 깊이에서 끝나는 루프 변수.
+        index['owner_var'] = 'root'
+        for level in index['levels']:
+            if level['depth'] == index['owner_depth']:
+                index['owner_var'] = level['var']
+        index['element_var'] = index['levels'][-1]['var']
+        index['table'] = table_name
+
+    parent_of = {index['struct']: index['owner'] for index in indexes}
+
     out = []
     _collect(root, out, set())
-    return out
+    for struct in out:
+        struct['parent_type'] = parent_of.get(struct['name'])
+    return out, indexes

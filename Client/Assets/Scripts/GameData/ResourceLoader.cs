@@ -95,8 +95,42 @@ namespace Assets.Scripts.GameData
             ParseTable<Gamedata.MonsterDataList, Gamedata.MonsterData>((TextAsset)monsterReq.asset, "GameData/monster", l => l.items, m => m.id, MonsterDatas);
             ParseTable<Gamedata.MapList, Gamedata.Map>((TextAsset)mapReq.asset, "GameData/Map", l => l.items, m => m.id, Maps);
 
+            BuildMapIndexes();
+
             // 게임 데이터 로드가 완료되었음을 로그로 남김
             Debug.Log("ResourceLoader: Game data loaded successfully.");
+        }
+
+        /// <summary>
+        /// 맵 안의 id 보유 오브젝트(게이트/스폰 지점)에 parent 를 연결하고 id 인덱스를 만든다.
+        /// 이 id 들은 파일 전체에서 유일하므로 소속 맵을 몰라도 바로 찾을 수 있다.
+        /// (서버 ResourceLoader::BuildIndexes 와 같은 역할)
+        /// </summary>
+        private void BuildMapIndexes()
+        {
+            MapGates.Clear();
+            PlayerSpawns.Clear();
+
+            foreach (var map in Maps.Values)
+            {
+                if (map.gates != null)
+                {
+                    foreach (var gate in map.gates)
+                    {
+                        gate.parent = map;
+                        MapGates[gate.id] = gate;
+                    }
+                }
+
+                if (map.spawn_points?.player_spawn != null)
+                {
+                    foreach (var spawn in map.spawn_points.player_spawn)
+                    {
+                        spawn.parent = map;
+                        PlayerSpawns[spawn.id] = spawn;
+                    }
+                }
+            }
         }
 
         public Dictionary<int, Gamedata.Skill> Skills = new Dictionary<int, Gamedata.Skill>();
@@ -106,10 +140,35 @@ namespace Assets.Scripts.GameData
         public Dictionary<int, Gamedata.MonsterData> MonsterDatas = new Dictionary<int, Gamedata.MonsterData>();
         public Dictionary<int, Gamedata.Map> Maps = new Dictionary<int, Gamedata.Map>();
 
-        /// <summary>맵 id로 맵 데이터를 찾는다(게이트의 target_map_id 해석용). 없으면 null.</summary>
+        // 맵 안 오브젝트의 전역 id 인덱스. BuildMapIndexes 가 채운다.
+        public Dictionary<int, Gamedata.MapGate> MapGates = new Dictionary<int, Gamedata.MapGate>();
+        public Dictionary<int, Gamedata.MapSpawnPointsPlayerSpawn> PlayerSpawns
+            = new Dictionary<int, Gamedata.MapSpawnPointsPlayerSpawn>();
+
+        /// <summary>맵 id로 맵 데이터를 찾는다. 없으면 null.</summary>
         public Gamedata.Map GetMapById(int id)
         {
             return Maps.TryGetValue(id, out var map) ? map : null;
+        }
+
+        /// <summary>게이트 id(전역 유일)로 게이트를 찾는다. 없으면 null.</summary>
+        public Gamedata.MapGate GetGateById(int id)
+        {
+            return MapGates.TryGetValue(id, out var gate) ? gate : null;
+        }
+
+        /// <summary>
+        /// 게이트의 target_id 가 가리키는 도착 지점의 맵을 찾는다.
+        /// 마커는 게이트일 수도 player_spawn 일 수도 있고, 둘 다 parent 로 소속 맵을 안다.
+        /// 없으면 null.
+        /// </summary>
+        public Gamedata.Map GetTargetMap(int targetId)
+        {
+            if (MapGates.TryGetValue(targetId, out var gate))
+                return gate.parent;
+            if (PlayerSpawns.TryGetValue(targetId, out var spawn))
+                return spawn.parent;
+            return null;
         }
 
         /// <summary>맵 이름으로 맵 데이터를 찾는다. 없으면 null.</summary>
