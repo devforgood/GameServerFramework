@@ -299,6 +299,13 @@ ZoneGraph::Route ZoneGraph::FindRoute(int fromMapId, const syncnet::Vec3& fromPo
 {
 	Route route;
 
+	// 출발/목적 맵 중 하나라도 그래프에 없으면 탐색할 것이 없다. 이 검사가 없으면
+	// 없는 맵 id 하나에 '도달 가능한 정점 전부 훑기'(최악 비용)를 그대로 물게 된다
+	// — 클라가 보낸 값으로 조회하는 자리라면 그게 곧 부하가 된다.
+	if (fromMapId != toMapId &&
+		(nodesByMap_.count(fromMapId) == 0 || nodesByMap_.count(toMapId) == 0))
+		return route;
+
 	const int nodeCount = static_cast<int>(nodes_.size());
 	const int start = nodeCount;        // 출발 위치를 나타내는 임시 정점.
 	const int goal = nodeCount + 1;     // 목적지 위치를 나타내는 임시 정점.
