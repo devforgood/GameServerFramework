@@ -147,6 +147,9 @@
     <ClCompile Include="Map\Map.cpp">
       <Filter>Map</Filter>
     </ClCompile>
+    <ClCompile Include="Map\ZoneGraph.cpp">
+      <Filter>Map</Filter>
+    </ClCompile>
     <ClCompile Include="Item\ItemFactory.cpp">
       <Filter>Item</Filter>
     </ClCompile>
@@ -417,6 +420,9 @@
       <Filter>Quest</Filter>
     </ClInclude>
     <ClInclude Include="Map\Map.h">
+      <Filter>Map</Filter>
+    </ClInclude>
+    <ClInclude Include="Map\ZoneGraph.h">
       <Filter>Map</Filter>
     </ClInclude>
     <ClInclude Include="Map\MapFactory.h">

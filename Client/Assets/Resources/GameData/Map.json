@@ -24,6 +24,7 @@
         "required_level": 1
       }
     ],
+    "gate_links": [],
     "spawn_points": {
       "player_spawn": [
         {
@@ -123,6 +124,13 @@
         "required_level": 1
       }
     ],
+    "gate_links": [
+      {
+        "from_id": 1002,
+        "to_id": 1003,
+        "cost": 43.81
+      }
+    ],
     "spawn_points": {
       "player_spawn": [],
       "monster_spawn": [
@@ -197,6 +205,7 @@
         "required_level": 1
       }
     ],
+    "gate_links": [],
     "spawn_points": {
       "player_spawn": [
         {
@@ -339,6 +348,7 @@
         "required_level": 1
       }
     ],
+    "gate_links": [],
     "spawn_points": {
       "player_spawn": [
         {
@@ -426,6 +436,7 @@
         "required_level": 1
       }
     ],
+    "gate_links": [],
     "spawn_points": {
       "player_spawn": [],
       "monster_spawn": [
@@ -487,6 +498,7 @@
       "height": 501.96
     },
     "gates": [],
+    "gate_links": [],
     "spawn_points": {
       "player_spawn": [
         {

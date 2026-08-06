@@ -135,6 +135,15 @@ namespace Gamedata
 
 
     [Serializable]
+    public class MapGateLink
+    {
+        public double cost;
+        public int from_id;
+        public int to_id;
+    }
+
+
+    [Serializable]
     public class MapGatePosition
     {
         public double x;
@@ -336,6 +345,7 @@ namespace Gamedata
         public int aoi_radius;
         public string desc_id;
         public int game_mode_id;
+        public System.Collections.Generic.List<MapGateLink> gate_links;
         public System.Collections.Generic.List<MapGate> gates;
         public int id;
         public string name;

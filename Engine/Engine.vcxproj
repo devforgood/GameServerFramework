@@ -179,6 +179,7 @@
     <ClCompile Include="AI\LuaObject.cpp" />
     <ClCompile Include="Quest\MainQuest.cpp" />
     <ClCompile Include="Map\Map.cpp" />
+    <ClCompile Include="Map\ZoneGraph.cpp" />
     <ClCompile Include="Item\ItemFactory.cpp" />
     <ClCompile Include="Actor\Monster.cpp" />
     <ClCompile Include="AI\MonsterBT.cpp" />
@@ -278,6 +279,7 @@
     <ClInclude Include="AI\LuaObject.h" />
     <ClInclude Include="Quest\MainQuest.h" />
     <ClInclude Include="Map\Map.h" />
+    <ClInclude Include="Map\ZoneGraph.h" />
     <ClInclude Include="Map\MapFactory.h" />
     <ClInclude Include="System\MathHelper.h" />
     <ClInclude Include="Message\GameMessage.h" />

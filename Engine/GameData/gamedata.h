@@ -17,6 +17,7 @@ namespace gamedata
     struct GameModeRewards;
     struct GameModeRules;
     struct GameMode;
+    struct MapGateLink;
     struct MapGatePosition;
     struct MapGate;
     struct MapObjectsMovableObjectPatrolPath;
@@ -156,6 +157,14 @@ namespace gamedata
         GameModeRules rules;
         std::string script;
         std::string type;
+    };
+
+
+    struct MapGateLink
+    {
+        double cost = 0.0;
+        int from_id = 0;
+        int to_id = 0;
     };
 
 
@@ -343,6 +352,7 @@ namespace gamedata
         int aoi_radius = 0;
         std::string desc_id;
         int game_mode_id = 0;
+        std::vector<MapGateLink> gate_links;
         std::vector<MapGate> gates;
         int id = 0;
         std::string name;
@@ -490,6 +500,14 @@ namespace gamedata
         if (j.contains("rules") && !j.at("rules").is_null()) j.at("rules").get_to(o.rules);
         if (j.contains("script") && !j.at("script").is_null()) j.at("script").get_to(o.script);
         if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, MapGateLink& o)
+    {
+        if (j.contains("cost") && !j.at("cost").is_null()) j.at("cost").get_to(o.cost);
+        if (j.contains("from_id") && !j.at("from_id").is_null()) j.at("from_id").get_to(o.from_id);
+        if (j.contains("to_id") && !j.at("to_id").is_null()) j.at("to_id").get_to(o.to_id);
     }
 
 
@@ -653,6 +671,7 @@ namespace gamedata
         if (j.contains("aoi_radius") && !j.at("aoi_radius").is_null()) j.at("aoi_radius").get_to(o.aoi_radius);
         if (j.contains("desc_id") && !j.at("desc_id").is_null()) j.at("desc_id").get_to(o.desc_id);
         if (j.contains("game_mode_id") && !j.at("game_mode_id").is_null()) j.at("game_mode_id").get_to(o.game_mode_id);
+        if (j.contains("gate_links") && !j.at("gate_links").is_null()) j.at("gate_links").get_to(o.gate_links);
         if (j.contains("gates") && !j.at("gates").is_null()) j.at("gates").get_to(o.gates);
         if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("name") && !j.at("name").is_null()) j.at("name").get_to(o.name);

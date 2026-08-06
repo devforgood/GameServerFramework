@@ -445,6 +445,40 @@ public static class MapJsonUpdater
                 extra = old?.extra
             });
         }
+
+        WarnMovedGateLinks(map, oldGates);
+    }
+
+    // gate_links(존 그래프가 쓰는 맵 안 도보 비용)는 게이트 위치에서 나온 값이라, 게이트를
+    // 옮기면 낡는다. 이 툴은 navmesh 거리를 재지 못해 고쳐 주지는 못하므로 알리기만 한다
+    // (서버는 기동 시 실측값과 비교해 어긋나면 테스트가 잡는다).
+    private static void WarnMovedGateLinks(MapData map, List<GateInfo> oldGates)
+    {
+        if (map.extra == null || !map.extra.TryGetValue("gate_links", out JToken links) || links == null)
+            return;
+
+        foreach (var gate in map.gates)
+        {
+            var old = oldGates.Find(g => g.id == gate.id);
+            if (old == null || old.position == null || gate.position == null)
+                continue;   // 새로 생긴 게이트는 비교할 이전 위치가 없다.
+            if (old.position.x == gate.position.x &&
+                old.position.y == gate.position.y &&
+                old.position.z == gate.position.z)
+                continue;
+
+            foreach (var link in links)
+            {
+                int from = (int?)link["from_id"] ?? 0;
+                int to = (int?)link["to_id"] ?? 0;
+                if (from != gate.id && to != gate.id)
+                    continue;
+
+                Debug.LogWarning(
+                    $"[MapValidate] 맵 {map.id} 게이트 {gate.id} 가 움직였습니다 — " +
+                    $"gate_links {from} -> {to} 의 cost 를 다시 재야 합니다");
+            }
+        }
     }
 
     // 지금 다시 만드는 맵을 뺀 나머지 맵들이 이미 쓰고 있는 id 집합.

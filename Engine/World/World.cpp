@@ -16,6 +16,7 @@
 #include "ActorFactory.h"
 #include "Common.h"
 #include "Map.h"
+#include "NavMesh.h"
 #include "GameMode.h"
 #include "GameModeFactory.h"
 
@@ -240,6 +241,32 @@ void World::Init(const std::string& movementOverride)
 
 	// 이동 전략을 오버라이드했으면 인스턴스도 같은 값으로 만들어야 한다(벤치마크/테스트).
 	movementOverride_ = movementOverride;
+
+	// 맵을 넘나드는 경로 탐색용 그래프. 도보 비용을 각 맵의 navmesh 로 실측하므로
+	// 맵을 다 만든 뒤에 빌드해야 한다.
+	RebuildZoneGraph();
+	zoneGraph_.LogSummary();
+}
+
+void World::RebuildZoneGraph()
+{
+	zoneGraph_.Build(MakeWalkCostFn());
+}
+
+ZoneGraph::WalkCostFn World::MakeWalkCostFn()
+{
+	return [this](int mapId, const syncnet::Vec3& from, const syncnet::Vec3& to, float& outCost)
+	{
+		Map* map = FindMap(mapId);
+		const NavMesh* nav = (map != nullptr) ? map->GetNavMesh() : nullptr;
+		if (nav == nullptr || !nav->IsLoaded())
+			return false;   // 인스턴스 맵 등 지금 로드돼 있지 않은 맵.
+
+		// Map.json 은 클라 좌표계 — navmesh 질의는 서버 좌표계로 x 를 뒤집어야 한다.
+		const float start[3] = { Vector3::convert_x(from.x()), from.y(), from.z() };
+		const float end[3] = { Vector3::convert_x(to.x()), to.y(), to.z() };
+		return nav->PathLength(start, end, outCost);
+	};
 }
 
 void World::SpawnMapMonsters()

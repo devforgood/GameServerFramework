@@ -157,6 +157,65 @@ def _validate_map_gates(table_name, entries):
     return errors
 
 
+def _validate_map_gate_links(table_name, entries):
+    """Map 테이블 전용: gate_links(존 그래프의 도보 가중치) 검증.
+
+    gate_links 는 '같은 맵 안에서 이 마커에서 저 마커까지 걸어가는 비용' 이다. 서버는 맵의
+    navmesh 로 이 값을 직접 재지만, 재지 못하는 맵(인스턴스처럼 기동 시 로드되지 않는 맵)이나
+    디자이너가 경로를 유도하고 싶을 때 여기에 적은 값이 실측값을 덮어쓴다.
+
+    덮어쓰기이기 때문에 잘못된 항목은 조용히 라우팅을 망가뜨린다 — 다른 맵의 마커를 가리키면
+    간선이 아예 안 생기고, 음수 비용은 다익스트라를 망친다. 그래서 여기서 막는다.
+    """
+    errors = []
+
+    for m in entries:
+        if not isinstance(m, dict):
+            continue
+
+        map_id = m.get('id')
+        # 이 맵 안의 마커 id — 도보 간선의 양 끝이 될 수 있는 것들.
+        local_ids = set()
+        for g in m.get('gates') or []:
+            if isinstance(g, dict):
+                local_ids.add(g.get('id'))
+        for s in (m.get('spawn_points') or {}).get('player_spawn') or []:
+            if isinstance(s, dict):
+                local_ids.add(s.get('id'))
+
+        seen_pairs = set()
+        for i, link in enumerate(m.get('gate_links') or []):
+            label = f"{table_name}: 맵 {map_id} gate_links[{i}]"
+            if not isinstance(link, dict):
+                errors.append(f"{label} — 항목이 객체가 아닙니다")
+                continue
+
+            from_id = link.get('from_id')
+            to_id = link.get('to_id')
+            cost = link.get('cost')
+
+            if from_id == to_id:
+                errors.append(f"{label} — from_id 와 to_id 가 같습니다 ({from_id})")
+                continue
+
+            for field, value in (('from_id', from_id), ('to_id', to_id)):
+                if value not in local_ids:
+                    errors.append(
+                        f"{label} — {field} {value} 는 맵 {map_id} 의 마커가 아닙니다. "
+                        f"gate_links 는 같은 맵 안의 도보 비용만 적을 수 있습니다")
+
+            if not isinstance(cost, (int, float)) or isinstance(cost, bool) or cost < 0:
+                errors.append(f"{label} — cost 는 0 이상의 숫자여야 합니다 (현재: {cost!r})")
+
+            # 방향이 반대여도 같은 통로다. 둘 다 적으면 어느 쪽이 이기는지 데이터만 보고 알 수 없다.
+            pair = frozenset((from_id, to_id))
+            if pair in seen_pairs:
+                errors.append(f"{label} — {from_id} <-> {to_id} 구간이 중복 기록됐습니다")
+            seen_pairs.add(pair)
+
+    return errors
+
+
 def validate_table(table_name, entries):
     """오류 메시지 리스트를 반환한다(비어 있으면 통과)."""
     errors = []
@@ -220,6 +279,7 @@ def validate_table(table_name, entries):
     if table_name == "Map":
         errors.extend(_validate_map_spawn_ids(table_name, entries))
         errors.extend(_validate_map_gates(table_name, entries))
+        errors.extend(_validate_map_gate_links(table_name, entries))
 
     # 3) 필드명 오타 의심 검사 (중첩 객체 포함, 경로 단위로 비교)
     field_paths = defaultdict(set)  # (path, name) -> 등장한 객체 인스턴스 id 집합

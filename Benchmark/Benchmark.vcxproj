@@ -152,6 +152,7 @@
     <ClCompile Include="GameObjectAllocBenchmark.cpp" />
     <ClCompile Include="GridBenchmark.cpp" />
     <ClCompile Include="WorldBenchmark.cpp" />
+    <ClCompile Include="ZoneGraphBenchmark.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Engine\Engine.vcxproj">

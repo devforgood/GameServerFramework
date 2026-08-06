@@ -210,6 +210,22 @@ Auto Sync를 끄고 씬을 연 뒤 **Scan Scene → JSON** + **Save Map JSON**�
 3. `TwoWay` 면 상대 게이트의 `Target Id` 도 이 게이트의 id 로 맞춰 짝을 만듭니다.
    레이드 등 인스턴스 입구는 `OneWay` 로 두고 목적지의 player_spawn id 를 가리키면 됩니다.
 
+## gate_links (존 그래프 가중치)
+
+`gates[]` 옆에 있는 `gate_links[]` 는 **같은 맵 안에서 이 마커에서 저 마커까지 걸어가는
+비용**입니다. 서버의 존 그래프(맵을 넘나드는 경로 탐색)가 쓰는 가중치로,
+`{ "from_id": 1002, "to_id": 1003, "cost": 43.81 }` 형태입니다.
+
+이 툴은 `gate_links` 를 만들지도 고치지도 않습니다(그대로 보존만 합니다). 서버가 맵의
+navmesh 로 직접 재기 때문에 보통은 **비워 두면 됩니다**. 적어야 하는 경우는 둘 뿐입니다.
+
+- 서버가 기동 시 로드하지 않는 맵(레이드 등 인스턴스) — 잴 navmesh 가 없습니다.
+- 실제 거리와 다르게 경로를 유도하고 싶을 때(적힌 값이 실측값을 이깁니다).
+
+적어 둔 뒤 **게이트를 옮기면 값이 낡습니다**. 그 경우 Scan 시 경고가 뜨고, 서버 쪽
+단위 테스트(`ZoneGraphNavMeshTest.RecordedGateLinkMatchesMeasuredCost`)가 실측값과
+어긋난 것을 잡습니다.
+
 ## 저장과 배포
 
 **Save Map JSON**은 `GameData/Map.json`에만 기록합니다.

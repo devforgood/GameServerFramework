@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include "syncnet_generated.h"
+#include "Map/ZoneGraph.h"
 
 class GameSession;
 class Monster;
@@ -83,6 +84,14 @@ private:
 	// 인스턴스 맵의 출구를 찾는다. 첫 게이트가 가리키는 target_id 를 돌려준다. 없으면 false.
 	static bool FindInstanceExit(const gamedata::Map* data, int& outTargetId);
 
+	// 맵 사이 광역 경로 탐색용 그래프. Init 이 맵을 다 만든 뒤 한 번 빌드한다
+	// (도보 비용을 각 맵의 navmesh 로 실측하므로 맵 로드보다 뒤여야 한다).
+	ZoneGraph zoneGraph_;
+
+	// 그래프 빌드에 넘길 도보 비용 측정 함수를 만든다. mapId 맵이 로드돼 있으면
+	// 그 navmesh 위의 실제 이동 거리를, 아니면 실패를 반환한다.
+	ZoneGraph::WalkCostFn MakeWalkCostFn();
+
 
 public:
 	World();
@@ -141,6 +150,23 @@ public:
 	// 목적지 맵은 마커의 parent 로 정해지므로 따로 받지 않는다.
 	// 성공 시 outMapId/outPos(도착 위치)/outAgentId(재생성된 새 actor id)를 채우고 true.
 	bool ChangeMap(std::shared_ptr<Player> player, int targetId, int& outMapId, syncnet::Vec3& outPos, int& outAgentId);
+
+	// ── 광역 경로 탐색 ──
+	// navmesh 는 맵 하나의 지형만 안다. 맵을 넘나드는 이동은 ZoneGraph 가 "어느 게이트를
+	// 어떤 순서로 밟을지"를 정하고, 구간마다 걷는 것은 그 맵의 navmesh 가 맡는다.
+	const ZoneGraph& GetZoneGraph() const { return zoneGraph_; }
+
+	// 존 그래프를 다시 만든다. Init 이 맵을 다 만든 뒤 한 번 호출하며, 맵 구성이 바뀌었을 때
+	// (또는 빌드 비용을 측정할 때) 다시 부를 수 있다. 도보 비용은 현재 로드된 맵의 navmesh 로 잰다.
+	void RebuildZoneGraph();
+
+	// fromPos(fromMapId) 에서 toPos(toMapId) 까지 맵 경계를 넘어가는 최단 경로.
+	// level 이 1 이상이면 required_level 이 그보다 높은 게이트는 쓰지 않는다.
+	ZoneGraph::Route FindRoute(int fromMapId, const syncnet::Vec3& fromPos,
+		int toMapId, const syncnet::Vec3& toPos, int level = 0) const
+	{
+		return zoneGraph_.FindRoute(fromMapId, fromPos, toMapId, toPos, level);
+	}
 
 	RandomUtil* random_util() { return randomUtil_; }
 

@@ -121,6 +121,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="SyntheticMaps.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
@@ -137,6 +138,7 @@
     <ClCompile Include="PlayerRepositoryTest.cpp" />
     <ClCompile Include="ResourceTest.cpp" />
     <ClCompile Include="GameModeInstanceTest.cpp" />
+    <ClCompile Include="ZoneGraphTest.cpp" />
     <ClCompile Include="GameModeTest.cpp" />
     <ClCompile Include="MapNavMeshTest.cpp" />
     <ClCompile Include="SkillSystemTest.cpp" />

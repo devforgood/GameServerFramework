@@ -53,6 +53,14 @@ public:
 
 	bool IsLoaded() const { return navMesh_ != nullptr; }
 
+	// 두 지점 사이의 실제 도보 거리(서버 좌표계). 직선 거리가 아니라 navmesh 위를
+	// 돌아가는 경로의 길이라, 벽이나 절벽을 사이에 둔 두 지점은 훨씬 큰 값이 나온다.
+	// 존 그래프의 게이트 간 가중치를 재는 데 쓴다.
+	//
+	// 경로가 끊겨 있으면(도달 불가) false 를 반환한다 — 부분 경로 길이를 돌려주면
+	// 갈 수 없는 구간이 싼 간선으로 보여 라우팅이 통째로 어긋난다.
+	bool PathLength(const float* startPos, const float* endPos, float& outLength) const;
+
 	// 로드된 타일 전체를 감싸는 경계(서버 좌표계). 맵의 실제 크기가 필요한 곳에서 쓴다
 	// — Map.json 의 size 는 씬에서 채워 넣는 메타데이터라 실제 지오메트리와 다를 수 있다.
 	// 타일이 하나도 없으면 false 를 반환하고 out 은 건드리지 않는다.

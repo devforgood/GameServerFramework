@@ -121,6 +121,46 @@ bool NavMesh::Load(const char* path)
 	return true;
 }
 
+bool NavMesh::PathLength(const float* startPos, const float* endPos, float& outLength) const
+{
+	if (navQuery_ == nullptr || startPos == nullptr || endPos == nullptr)
+		return false;
+
+	dtPolyRef startRef = 0, endRef = 0;
+	float startPt[3], endPt[3];
+	navQuery_->findNearestPoly(startPos, queryHalfExtents_, &filter_, &startRef, startPt);
+	navQuery_->findNearestPoly(endPos, queryHalfExtents_, &filter_, &endRef, endPt);
+	if (startRef == 0 || endRef == 0)
+		return false;   // 둘 중 하나가 navmesh 밖이다.
+
+	constexpr int kMaxPolys = 512;
+	constexpr int kMaxCorners = 512;
+
+	dtPolyRef polys[kMaxPolys];
+	int npolys = 0;
+	if (dtStatusFailed(navQuery_->findPath(startRef, endRef, startPt, endPt, &filter_, polys, &npolys, kMaxPolys))
+		|| npolys == 0)
+		return false;
+
+	// 마지막 폴리곤이 목적지가 아니면 부분 경로다 — 두 지점은 이어져 있지 않다.
+	if (polys[npolys - 1] != endRef)
+		return false;
+
+	float corners[kMaxCorners * 3];
+	int ncorners = 0;
+	if (dtStatusFailed(navQuery_->findStraightPath(startPt, endPt, polys, npolys,
+			corners, nullptr, nullptr, &ncorners, kMaxCorners, 0))
+		|| ncorners < 2)
+		return false;
+
+	float length = 0.0f;
+	for (int i = 1; i < ncorners; ++i)
+		length += dtVdist(&corners[(i - 1) * 3], &corners[i * 3]);
+
+	outLength = length;
+	return true;
+}
+
 bool NavMesh::Bounds(float* outMin, float* outMax) const
 {
 	if (navMesh_ == nullptr || outMin == nullptr || outMax == nullptr)
