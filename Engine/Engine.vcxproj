@@ -78,7 +78,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Npc;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -96,7 +96,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Npc;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -114,7 +114,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4251;4267;4819</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Npc;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -134,7 +134,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4251;4267;4819</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Npc;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -196,6 +196,7 @@
     <ClCompile Include="Player\PlayerRepository.cpp" />
     <ClCompile Include="Player\PlayerItem.cpp" />
     <ClCompile Include="Player\PlayerQuest.cpp" />
+    <ClCompile Include="Player\PlayerWallet.cpp" />
     <ClCompile Include="Player\PlayerSaveData.h" />
     <ClCompile Include="Player\PlayerSkill.cpp" />
     <ClCompile Include="Player\PlayerLevel.cpp" />
@@ -203,6 +204,8 @@
     <ClCompile Include="Quest\QuestFactory.cpp" />
     <ClCompile Include="Quest\RepeatedQuest.cpp" />
     <ClCompile Include="Quest\QuestRegistry.cpp" />
+    <ClCompile Include="Npc\Npc.cpp" />
+    <ClCompile Include="Npc\NpcFactory.cpp" />
     <ClCompile Include="Quest\SubQuest.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="skill\Skill.cpp" />
@@ -302,13 +305,18 @@
     <ClInclude Include="Player\PlayerItem.h" />
     <ClInclude Include="Player\PlayerLoadData.h" />
     <ClInclude Include="Player\PlayerQuest.h" />
+    <ClInclude Include="Player\PlayerWallet.h" />
+    <ClInclude Include="SQL\SqlScript.h" />
     <ClInclude Include="Player\PlayerSkill.h" />
     <ClInclude Include="Player\PlayerLevel.h" />
     <ClInclude Include="Quest\Quest.h" />
     <ClInclude Include="Quest\QuestFactory.h" />
     <ClInclude Include="Quest\RepeatedQuest.h" />
     <ClInclude Include="Quest\QuestRegistry.h" />
+    <ClInclude Include="Npc\Npc.h" />
+    <ClInclude Include="Npc\NpcFactory.h" />
     <ClInclude Include="Quest\QuestObjective.h" />
+    <ClInclude Include="Quest\QuestPolicy.h" />
     <ClInclude Include="Quest\SubQuest.h" />
     <ClInclude Include="Message\SendMessage.h" />
     <ClInclude Include="Server.h" />

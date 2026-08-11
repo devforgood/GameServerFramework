@@ -117,5 +117,9 @@ public:
 	std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> GetStrand();
 
 	void SavePlayerData();
+
+private:
+	// 이번 틱에 바뀐 퀘스트를 한 통으로 묶어 클라에 보낸다(PlayerQuest 가 모아 둔다).
+	void SendQuestSync();
 };
 

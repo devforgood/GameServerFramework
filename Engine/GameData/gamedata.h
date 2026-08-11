@@ -20,6 +20,8 @@ namespace gamedata
     struct QuestStage;
     struct QuestTime;
     struct Quest;
+    struct NpcPosition;
+    struct Npc;
     struct GameModeBossInfo;
     struct GameModeRewards;
     struct GameModeRules;
@@ -172,6 +174,7 @@ namespace gamedata
         int chain_step = 0;
         std::string code_name;
         std::string desc_id;
+        bool disabled = false;
         int end_npc_id = 0;
         int id = 0;
         int level = 0;
@@ -187,6 +190,26 @@ namespace gamedata
         std::vector<QuestStage> stages;
         int start_npc_id = 0;
         QuestTime time;
+    };
+
+
+    struct NpcPosition
+    {
+        double x = 0.0;
+        double y = 0.0;
+        double z = 0.0;
+    };
+
+
+    struct Npc
+    {
+        int id = 0;
+        double interact_range = 0.0;
+        int map_id = 0;
+        std::string name;
+        std::string name_id;
+        NpcPosition position;
+        std::string type;
     };
 
 
@@ -586,6 +609,7 @@ namespace gamedata
         if (j.contains("chain_step") && !j.at("chain_step").is_null()) j.at("chain_step").get_to(o.chain_step);
         if (j.contains("code_name") && !j.at("code_name").is_null()) j.at("code_name").get_to(o.code_name);
         if (j.contains("desc_id") && !j.at("desc_id").is_null()) j.at("desc_id").get_to(o.desc_id);
+        if (j.contains("disabled") && !j.at("disabled").is_null()) j.at("disabled").get_to(o.disabled);
         if (j.contains("end_npc_id") && !j.at("end_npc_id").is_null()) j.at("end_npc_id").get_to(o.end_npc_id);
         if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("level") && !j.at("level").is_null()) j.at("level").get_to(o.level);
@@ -601,6 +625,26 @@ namespace gamedata
         if (j.contains("stages") && !j.at("stages").is_null()) j.at("stages").get_to(o.stages);
         if (j.contains("start_npc_id") && !j.at("start_npc_id").is_null()) j.at("start_npc_id").get_to(o.start_npc_id);
         if (j.contains("time") && !j.at("time").is_null()) j.at("time").get_to(o.time);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, NpcPosition& o)
+    {
+        if (j.contains("x") && !j.at("x").is_null()) j.at("x").get_to(o.x);
+        if (j.contains("y") && !j.at("y").is_null()) j.at("y").get_to(o.y);
+        if (j.contains("z") && !j.at("z").is_null()) j.at("z").get_to(o.z);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, Npc& o)
+    {
+        if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
+        if (j.contains("interact_range") && !j.at("interact_range").is_null()) j.at("interact_range").get_to(o.interact_range);
+        if (j.contains("map_id") && !j.at("map_id").is_null()) j.at("map_id").get_to(o.map_id);
+        if (j.contains("name") && !j.at("name").is_null()) j.at("name").get_to(o.name);
+        if (j.contains("name_id") && !j.at("name_id").is_null()) j.at("name_id").get_to(o.name_id);
+        if (j.contains("position") && !j.at("position").is_null()) j.at("position").get_to(o.position);
+        if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
     }
 
 

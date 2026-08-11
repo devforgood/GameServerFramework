@@ -24,5 +24,9 @@ public:
 	void handle(const syncnet::UseSkill* msg);
 	void handle(const syncnet::EnterGate* msg);
 	void handle(const syncnet::TreeDebugRequest* msg);
+	void handle(const syncnet::Interact* msg);
+	void handle(const syncnet::QuestAccept* msg);
+	void handle(const syncnet::QuestComplete* msg);
+	void handle(const syncnet::QuestAbandon* msg);
 };
 

@@ -141,15 +141,20 @@ def generate_factory(server_src_dir, client_cs_dir, table_name, items):
 
     env = Environment(loader=FileSystemLoader('templates'))
 
-    # Factory.h 생성
+    # Factory.h 생성. 없으면 베이스 클래스 옆에 만든다(루트에 흩어지면 헤더를 가린다).
+    factory_dir = _new_file_dir(server_src_dir, table_name)
     template_h = env.get_template('Factory.h.j2')
     h_path = _resolve_path(server_src_dir, f'{table_name}Factory.h')
+    if not os.path.exists(h_path):
+        h_path = os.path.join(factory_dir, f'{table_name}Factory.h')
     with open(h_path, 'w', encoding='utf-8') as f:
         f.write(template_h.render(table_name=table_name))
 
     # Factory.cpp 생성
     template_cpp = env.get_template('Factory.cpp.j2')
     cpp_path = _resolve_path(server_src_dir, f'{table_name}Factory.cpp')
+    if not os.path.exists(cpp_path):
+        cpp_path = os.path.join(factory_dir, f'{table_name}Factory.cpp')
     with open(cpp_path, 'w', encoding='utf-8') as f:
         f.write(template_cpp.render(
             table_name=table_name,

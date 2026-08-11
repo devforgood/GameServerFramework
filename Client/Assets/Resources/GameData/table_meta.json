@@ -23,6 +23,14 @@
       "enabled": true
     },
     {
+      "name": "Npc",
+      "json_path": "npc.json",
+      "repeated_field": "npcs",
+      "output_file": "npc.json",
+      "description": "NPC definitions: placement and interaction range. Quest talk objectives point at these ids",
+      "enabled": true
+    },
+    {
       "name": "GameMode",
       "json_path": "GameMode.json",
       "repeated_field": "game_modes",

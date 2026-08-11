@@ -36,7 +36,7 @@ void PlayerDAO::Update(const PlayerVO& vo) {
         stmt->setString(param_idx++, vo.name);
         stmt->setInt(param_idx++, vo.level);
         
-        stmt->setInt(param_idx++, vo.id);
+        stmt->setInt64(param_idx++, vo.id);
 
         stmt->execute();
     }
@@ -54,7 +54,7 @@ void PlayerDAO::Delete(const PlayerVO& vo) {
             conn_->prepareStatement("DELETE FROM player WHERE id = ?")
         );
 
-        stmt->setInt(1, vo.id);
+        stmt->setInt64(1, vo.id);
         stmt->execute();
     }
     catch (const sql::SQLException& e) {
@@ -65,17 +65,17 @@ void PlayerDAO::Delete(const PlayerVO& vo) {
     }
 }
 
-bool PlayerDAO::Select(int id, PlayerVO& out_vo) {
+bool PlayerDAO::Select(long long id, PlayerVO& out_vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement("SELECT id, name, level FROM player WHERE id = ?")
         );
 
-        stmt->setInt(1, id);
+        stmt->setInt64(1, id);
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
         if (res->next()) {
-            out_vo.id = res->getInt("id");
+            out_vo.id = res->getInt64("id");
             out_vo.name = res->getString("name");
             out_vo.level = res->getInt("level");
         } else {
@@ -95,17 +95,18 @@ bool PlayerDAO::Select(int id, PlayerVO& out_vo) {
 
 // ----------------------------------------
 
-ItemDAO::ItemDAO(sql::Connection* conn)
+PlayerItemDAO::PlayerItemDAO(sql::Connection* conn)
     : conn_(conn) {}
 
-void ItemDAO::Insert(const ItemVO& vo) {
+void PlayerItemDAO::Insert(const PlayerItemVO& vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("INSERT INTO item (player_id, level) VALUES (?, ?)")
+            conn_->prepareStatement("INSERT INTO player_item (character_id, item_id, count) VALUES (?, ?, ?)")
         );
 
-        stmt->setInt(1, vo.player_id);
-        stmt->setInt(2, vo.level);
+        stmt->setInt64(1, vo.character_id);
+        stmt->setInt(2, vo.item_id);
+        stmt->setInt(3, vo.count);
 
         stmt->execute();
     }
@@ -117,21 +118,21 @@ void ItemDAO::Insert(const ItemVO& vo) {
     }
 }
 
-void ItemDAO::Update(const ItemVO& vo) {
+void PlayerItemDAO::Update(const PlayerItemVO& vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement(
-                "UPDATE item "
-                "SET player_id = ?, level = ? "
-                "WHERE id = ?"
+                "UPDATE player_item "
+                "SET count = ? "
+                "WHERE character_id = ? AND item_id = ?"
             )
         );
 
         int param_idx = 1;
-        stmt->setInt(param_idx++, vo.player_id);
-        stmt->setInt(param_idx++, vo.level);
+        stmt->setInt(param_idx++, vo.count);
         
-        stmt->setInt(param_idx++, vo.id);
+        stmt->setInt64(param_idx++, vo.character_id);
+        stmt->setInt(param_idx++, vo.item_id);
 
         stmt->execute();
     }
@@ -143,13 +144,14 @@ void ItemDAO::Update(const ItemVO& vo) {
     }
 }
 
-void ItemDAO::Delete(const ItemVO& vo) {
+void PlayerItemDAO::Delete(const PlayerItemVO& vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("DELETE FROM item WHERE id = ?")
+            conn_->prepareStatement("DELETE FROM player_item WHERE character_id = ? AND item_id = ?")
         );
 
-        stmt->setInt(1, vo.id);
+        stmt->setInt64(1, vo.character_id);
+        stmt->setInt(2, vo.item_id);
         stmt->execute();
     }
     catch (const sql::SQLException& e) {
@@ -160,19 +162,20 @@ void ItemDAO::Delete(const ItemVO& vo) {
     }
 }
 
-bool ItemDAO::Select(int id, ItemVO& out_vo) {
+bool PlayerItemDAO::Select(long long character_id, int item_id, PlayerItemVO& out_vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("SELECT id, player_id, level FROM item WHERE id = ?")
+            conn_->prepareStatement("SELECT character_id, item_id, count FROM player_item WHERE character_id = ? AND item_id = ?")
         );
 
-        stmt->setInt(1, id);
+        stmt->setInt64(1, character_id);
+        stmt->setInt(2, item_id);
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
         if (res->next()) {
-            out_vo.id = res->getInt("id");
-            out_vo.player_id = res->getInt("player_id");
-            out_vo.level = res->getInt("level");
+            out_vo.character_id = res->getInt64("character_id");
+            out_vo.item_id = res->getInt("item_id");
+            out_vo.count = res->getInt("count");
         } else {
             return false;
         }
@@ -186,21 +189,21 @@ bool ItemDAO::Select(int id, ItemVO& out_vo) {
     return true;
 }
 
-std::vector<ItemVO> ItemDAO::SelectByIndex(int player_id) {
+std::vector<PlayerItemVO> PlayerItemDAO::SelectByIndex(long long character_id) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("SELECT id, player_id, level FROM item WHERE player_id = ?")
+            conn_->prepareStatement("SELECT character_id, item_id, count FROM player_item WHERE character_id = ?")
         );
 
-        stmt->setInt(1, player_id);
+        stmt->setInt64(1, character_id);
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
-        std::vector<ItemVO> results;
+        std::vector<PlayerItemVO> results;
         while (res->next()) {
-            ItemVO obj;
-            obj.id = res->getInt("id");
-            obj.player_id = res->getInt("player_id");
-            obj.level = res->getInt("level");
+            PlayerItemVO obj;
+            obj.character_id = res->getInt64("character_id");
+            obj.item_id = res->getInt("item_id");
+            obj.count = res->getInt("count");
             results.push_back(obj);
         }
         return results;
@@ -211,22 +214,22 @@ std::vector<ItemVO> ItemDAO::SelectByIndex(int player_id) {
     catch (const std::exception& e) {
         throw std::runtime_error(std::string("error: ") + e.what());
     }
-    return std::vector<ItemVO>();
+    return std::vector<PlayerItemVO>();
 }
 
 
 // ----------------------------------------
 
-SkillDAO::SkillDAO(sql::Connection* conn)
+PlayerSkillDAO::PlayerSkillDAO(sql::Connection* conn)
     : conn_(conn) {}
 
-void SkillDAO::Insert(const SkillVO& vo) {
+void PlayerSkillDAO::Insert(const PlayerSkillVO& vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("INSERT INTO skill (player_id, skill_id, level) VALUES (?, ?, ?)")
+            conn_->prepareStatement("INSERT INTO player_skill (character_id, skill_id, level) VALUES (?, ?, ?)")
         );
 
-        stmt->setInt(1, vo.player_id);
+        stmt->setInt64(1, vo.character_id);
         stmt->setInt(2, vo.skill_id);
         stmt->setInt(3, vo.level);
 
@@ -240,22 +243,21 @@ void SkillDAO::Insert(const SkillVO& vo) {
     }
 }
 
-void SkillDAO::Update(const SkillVO& vo) {
+void PlayerSkillDAO::Update(const PlayerSkillVO& vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement(
-                "UPDATE skill "
-                "SET player_id = ?, skill_id = ?, level = ? "
-                "WHERE id = ?"
+                "UPDATE player_skill "
+                "SET level = ? "
+                "WHERE character_id = ? AND skill_id = ?"
             )
         );
 
         int param_idx = 1;
-        stmt->setInt(param_idx++, vo.player_id);
-        stmt->setInt(param_idx++, vo.skill_id);
         stmt->setInt(param_idx++, vo.level);
         
-        stmt->setInt(param_idx++, vo.id);
+        stmt->setInt64(param_idx++, vo.character_id);
+        stmt->setInt(param_idx++, vo.skill_id);
 
         stmt->execute();
     }
@@ -267,13 +269,14 @@ void SkillDAO::Update(const SkillVO& vo) {
     }
 }
 
-void SkillDAO::Delete(const SkillVO& vo) {
+void PlayerSkillDAO::Delete(const PlayerSkillVO& vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("DELETE FROM skill WHERE id = ?")
+            conn_->prepareStatement("DELETE FROM player_skill WHERE character_id = ? AND skill_id = ?")
         );
 
-        stmt->setInt(1, vo.id);
+        stmt->setInt64(1, vo.character_id);
+        stmt->setInt(2, vo.skill_id);
         stmt->execute();
     }
     catch (const sql::SQLException& e) {
@@ -284,18 +287,18 @@ void SkillDAO::Delete(const SkillVO& vo) {
     }
 }
 
-bool SkillDAO::Select(int id, SkillVO& out_vo) {
+bool PlayerSkillDAO::Select(long long character_id, int skill_id, PlayerSkillVO& out_vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("SELECT id, player_id, skill_id, level FROM skill WHERE id = ?")
+            conn_->prepareStatement("SELECT character_id, skill_id, level FROM player_skill WHERE character_id = ? AND skill_id = ?")
         );
 
-        stmt->setInt(1, id);
+        stmt->setInt64(1, character_id);
+        stmt->setInt(2, skill_id);
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
         if (res->next()) {
-            out_vo.id = res->getInt("id");
-            out_vo.player_id = res->getInt("player_id");
+            out_vo.character_id = res->getInt64("character_id");
             out_vo.skill_id = res->getInt("skill_id");
             out_vo.level = res->getInt("level");
         } else {
@@ -311,20 +314,19 @@ bool SkillDAO::Select(int id, SkillVO& out_vo) {
     return true;
 }
 
-std::vector<SkillVO> SkillDAO::SelectByIndex(int player_id) {
+std::vector<PlayerSkillVO> PlayerSkillDAO::SelectByIndex(long long character_id) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("SELECT id, player_id, skill_id, level FROM skill WHERE player_id = ?")
+            conn_->prepareStatement("SELECT character_id, skill_id, level FROM player_skill WHERE character_id = ?")
         );
 
-        stmt->setInt(1, player_id);
+        stmt->setInt64(1, character_id);
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
-        std::vector<SkillVO> results;
+        std::vector<PlayerSkillVO> results;
         while (res->next()) {
-            SkillVO obj;
-            obj.id = res->getInt("id");
-            obj.player_id = res->getInt("player_id");
+            PlayerSkillVO obj;
+            obj.character_id = res->getInt64("character_id");
             obj.skill_id = res->getInt("skill_id");
             obj.level = res->getInt("level");
             results.push_back(obj);
@@ -337,8 +339,101 @@ std::vector<SkillVO> SkillDAO::SelectByIndex(int player_id) {
     catch (const std::exception& e) {
         throw std::runtime_error(std::string("error: ") + e.what());
     }
-    return std::vector<SkillVO>();
+    return std::vector<PlayerSkillVO>();
 }
+
+
+// ----------------------------------------
+
+PlayerWalletDAO::PlayerWalletDAO(sql::Connection* conn)
+    : conn_(conn) {}
+
+void PlayerWalletDAO::Insert(const PlayerWalletVO& vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("INSERT INTO player_wallet (character_id, gold) VALUES (?, ?)")
+        );
+
+        stmt->setInt64(1, vo.character_id);
+        stmt->setInt64(2, vo.gold);
+
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+void PlayerWalletDAO::Update(const PlayerWalletVO& vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement(
+                "UPDATE player_wallet "
+                "SET gold = ? "
+                "WHERE character_id = ?"
+            )
+        );
+
+        int param_idx = 1;
+        stmt->setInt64(param_idx++, vo.gold);
+        
+        stmt->setInt64(param_idx++, vo.character_id);
+
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+void PlayerWalletDAO::Delete(const PlayerWalletVO& vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("DELETE FROM player_wallet WHERE character_id = ?")
+        );
+
+        stmt->setInt64(1, vo.character_id);
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+bool PlayerWalletDAO::Select(long long character_id, PlayerWalletVO& out_vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("SELECT character_id, gold FROM player_wallet WHERE character_id = ?")
+        );
+
+        stmt->setInt64(1, character_id);
+
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        if (res->next()) {
+            out_vo.character_id = res->getInt64("character_id");
+            out_vo.gold = res->getInt64("gold");
+        } else {
+            return false;
+        }
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+    return true;
+}
+
 
 
 // ----------------------------------------
@@ -352,7 +447,7 @@ void QuestActiveDAO::Insert(const QuestActiveVO& vo) {
             conn_->prepareStatement("INSERT INTO quest_active (character_id, quest_id, state, stage, progress1, progress2, progress3, accept_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
         );
 
-        stmt->setInt(1, vo.character_id);
+        stmt->setInt64(1, vo.character_id);
         stmt->setInt(2, vo.quest_id);
         stmt->setInt(3, vo.state);
         stmt->setInt(4, vo.stage);
@@ -389,7 +484,7 @@ void QuestActiveDAO::Update(const QuestActiveVO& vo) {
         stmt->setInt(param_idx++, vo.progress3);
         stmt->setString(param_idx++, toMySQLDateTime(vo.accept_time));
         
-        stmt->setInt(param_idx++, vo.character_id);
+        stmt->setInt64(param_idx++, vo.character_id);
         stmt->setInt(param_idx++, vo.quest_id);
 
         stmt->execute();
@@ -408,7 +503,7 @@ void QuestActiveDAO::Delete(const QuestActiveVO& vo) {
             conn_->prepareStatement("DELETE FROM quest_active WHERE character_id = ? AND quest_id = ?")
         );
 
-        stmt->setInt(1, vo.character_id);
+        stmt->setInt64(1, vo.character_id);
         stmt->setInt(2, vo.quest_id);
         stmt->execute();
     }
@@ -420,18 +515,18 @@ void QuestActiveDAO::Delete(const QuestActiveVO& vo) {
     }
 }
 
-bool QuestActiveDAO::Select(int character_id, int quest_id, QuestActiveVO& out_vo) {
+bool QuestActiveDAO::Select(long long character_id, int quest_id, QuestActiveVO& out_vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement("SELECT character_id, quest_id, state, stage, progress1, progress2, progress3, accept_time FROM quest_active WHERE character_id = ? AND quest_id = ?")
         );
 
-        stmt->setInt(1, character_id);
+        stmt->setInt64(1, character_id);
         stmt->setInt(2, quest_id);
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
         if (res->next()) {
-            out_vo.character_id = res->getInt("character_id");
+            out_vo.character_id = res->getInt64("character_id");
             out_vo.quest_id = res->getInt("quest_id");
             out_vo.state = res->getInt("state");
             out_vo.stage = res->getInt("stage");
@@ -452,19 +547,19 @@ bool QuestActiveDAO::Select(int character_id, int quest_id, QuestActiveVO& out_v
     return true;
 }
 
-std::vector<QuestActiveVO> QuestActiveDAO::SelectByIndex(int character_id) {
+std::vector<QuestActiveVO> QuestActiveDAO::SelectByIndex(long long character_id) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement("SELECT character_id, quest_id, state, stage, progress1, progress2, progress3, accept_time FROM quest_active WHERE character_id = ?")
         );
 
-        stmt->setInt(1, character_id);
+        stmt->setInt64(1, character_id);
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
         std::vector<QuestActiveVO> results;
         while (res->next()) {
             QuestActiveVO obj;
-            obj.character_id = res->getInt("character_id");
+            obj.character_id = res->getInt64("character_id");
             obj.quest_id = res->getInt("quest_id");
             obj.state = res->getInt("state");
             obj.stage = res->getInt("stage");
@@ -497,7 +592,7 @@ void QuestStateDAO::Insert(const QuestStateVO& vo) {
             conn_->prepareStatement("INSERT INTO quest_state (character_id, flags) VALUES (?, ?)")
         );
 
-        stmt->setInt(1, vo.character_id);
+        stmt->setInt64(1, vo.character_id);
         stmt->setString(2, vo.flags);
 
         stmt->execute();
@@ -523,7 +618,7 @@ void QuestStateDAO::Update(const QuestStateVO& vo) {
         int param_idx = 1;
         stmt->setString(param_idx++, vo.flags);
         
-        stmt->setInt(param_idx++, vo.character_id);
+        stmt->setInt64(param_idx++, vo.character_id);
 
         stmt->execute();
     }
@@ -541,7 +636,7 @@ void QuestStateDAO::Delete(const QuestStateVO& vo) {
             conn_->prepareStatement("DELETE FROM quest_state WHERE character_id = ?")
         );
 
-        stmt->setInt(1, vo.character_id);
+        stmt->setInt64(1, vo.character_id);
         stmt->execute();
     }
     catch (const sql::SQLException& e) {
@@ -552,17 +647,17 @@ void QuestStateDAO::Delete(const QuestStateVO& vo) {
     }
 }
 
-bool QuestStateDAO::Select(int character_id, QuestStateVO& out_vo) {
+bool QuestStateDAO::Select(long long character_id, QuestStateVO& out_vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement("SELECT character_id, flags FROM quest_state WHERE character_id = ?")
         );
 
-        stmt->setInt(1, character_id);
+        stmt->setInt64(1, character_id);
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
         if (res->next()) {
-            out_vo.character_id = res->getInt("character_id");
+            out_vo.character_id = res->getInt64("character_id");
             out_vo.flags = res->getString("flags");
         } else {
             return false;

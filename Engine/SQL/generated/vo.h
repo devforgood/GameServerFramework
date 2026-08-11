@@ -4,29 +4,34 @@
 
 
 struct PlayerVO {
-    int id;
+    long long id;
     std::string name;
     int level;
 };
 // ----------------------------------------
 
-struct ItemVO {
-    int id;
-    int player_id;
-    int level;
+struct PlayerItemVO {
+    long long character_id;
+    int item_id;
+    int count;
 };
 // ----------------------------------------
 
-struct SkillVO {
-    int id;
-    int player_id;
+struct PlayerSkillVO {
+    long long character_id;
     int skill_id;
     int level;
 };
 // ----------------------------------------
 
+struct PlayerWalletVO {
+    long long character_id;
+    long long gold;
+};
+// ----------------------------------------
+
 struct QuestActiveVO {
-    int character_id;
+    long long character_id;
     int quest_id;
     int state;
     int stage;
@@ -38,6 +43,6 @@ struct QuestActiveVO {
 // ----------------------------------------
 
 struct QuestStateVO {
-    int character_id;
+    long long character_id;
     std::string flags;
 };

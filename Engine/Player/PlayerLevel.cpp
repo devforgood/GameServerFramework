@@ -54,7 +54,7 @@ void PlayerLevel::Load(std::any data)
 {
     const auto& load_data = std::any_cast<const PlayerLoadData&>(data);
 
-    characterId_ = load_data.player.id;
+    characterId_ = static_cast<int>(load_data.player.id);
     name_ = load_data.player.name;
     level_ = load_data.player.level > 0 ? load_data.player.level : 1;
 

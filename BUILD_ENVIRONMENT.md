@@ -28,10 +28,16 @@ flatbuffer\flatc.exe
 
 For `syncnet.fbs`, this old FlatBuffers 1.12 compiler may fail when writing directly to the target output directories. The reliable workflow is to generate into the `flatbuffer` directory, then copy the generated files:
 
+There are **two** C++ copies of the generated header and both must be updated. `Engine`
+compiles against `Engine\flatbuffers\syncnet_generated.h` (its include path), while `Game`
+uses `Game\syncnet_generated.h`. Updating only one leaves the Engine building against a stale
+protocol — it still compiles, so nothing tells you until the new messages silently do nothing.
+
 ```powershell
 cd flatbuffer
 .\flatc.exe --cpp -o . --gen-all syncnet.fbs
 Copy-Item -LiteralPath .\syncnet_generated.h -Destination ..\Game\syncnet_generated.h -Force
+Copy-Item -LiteralPath .\syncnet_generated.h -Destination ..\Engine\flatbuffers\syncnet_generated.h -Force
 Remove-Item -LiteralPath .\syncnet_generated.h
 
 .\flatc.exe --csharp -o . --gen-all syncnet.fbs

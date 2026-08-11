@@ -3,8 +3,12 @@
 #include "PlayerSaveData.h"
 #include "PlayerEventBroker.h"
 #include "PlayerLevel.h"
+#include "PlayerItem.h"
+#include "PlayerSkill.h"
+#include "PlayerWallet.h"
 #include "GameObject.h"
 #include "QuestRegistry.h"
+#include "QuestPolicy.h"
 #include "GameData/gamedata.h"
 #include <algorithm>
 
@@ -208,6 +212,7 @@ void PlayerQuest::applyMatched(const Quest& quest, QuestActiveVO& vo,
 		return;
 
 	markDirty();
+	markSync(quest.GetId());
 
 	const int progress[Quest::kMaxObjectivesPerStage] = {
 		vo.progress1, vo.progress2, vo.progress3
@@ -236,6 +241,7 @@ void PlayerQuest::advanceStage(const Quest& quest, QuestActiveVO& vo)
 	// 마지막 스테이지까지 끝났다. 완료 NPC 를 찾아가면 보상을 받는다.
 	vo.state = static_cast<int>(QuestState::ReadyToComplete);
 	markDirty();
+	markSync(quest.GetId());
 }
 
 void PlayerQuest::tryCompleteByNpc(int npc_id)
@@ -320,6 +326,7 @@ QuestAcceptResult PlayerQuest::AcceptQuest(int quest_id)
 	}
 
 	markDirty();
+	markSync(quest_id);
 	publish(EventQuestAccepted{ characterId_, quest_id });
 
 	// 수락 시점에 이미 만족한 레벨 목표를 반영한다(수락 후 레벨이 오를 때까지
@@ -352,6 +359,10 @@ bool PlayerQuest::CompleteQuest(int quest_id, int reward_choice)
 		(reward_choice < 0 || reward_choice >= static_cast<int>(choices.size())))
 		return false;
 
+	// 회수를 먼저 한다. 보상 지급이 EventItemAcquired 를 발행하는데, 그 전에 비워야
+	// 방금 받은 보상 아이템이 퀘스트 아이템 회수에 휩쓸리지 않는다.
+	discardQuestItems(quest_id);
+
 	grantRewards(*quest, reward_choice);
 	setCompleted(quest_id);
 
@@ -374,6 +385,8 @@ bool PlayerQuest::CompleteQuest(int quest_id, int reward_choice)
 	}
 
 	markDirty();
+	pushUnique(syncCompleted_, quest_id);
+	markRemovedFromLog(quest_id);
 	publish(EventQuestCompleted{ characterId_, quest_id });
 	return true;
 }
@@ -393,8 +406,120 @@ bool PlayerQuest::AbandonQuest(int quest_id)
 		return false; // 진행 중이 아니라 다음 수락을 기다리는 행이다
 
 	activeQuests_.Remove(quest_id);
+	discardQuestItems(quest_id);
+	markDirty();
+	markRemovedFromLog(quest_id);
+	return true;
+}
+
+// ============================================================
+// 운영(GM) 조작 — 정상 경로의 조건 검사를 건너뛴다.
+// ============================================================
+
+bool PlayerQuest::GmForceAccept(int quest_id)
+{
+	Quest* quest = QuestRegistry::Instance().Get(quest_id);
+	if (quest == nullptr || quest->gamedata == nullptr)
+		return false;
+
+	if (QuestActiveVO* existing = activeQuests_.Modify(quest_id))
+	{
+		resetActiveRow(*existing);
+	}
+	else
+	{
+		QuestActiveVO vo{};
+		vo.character_id = characterId_;
+		vo.quest_id = quest_id;
+		resetActiveRow(vo);
+		if (!activeQuests_.Add(quest_id, vo))
+			return false;
+	}
+
+	markDirty();
+	markSync(quest_id);
+	publish(EventQuestAccepted{ characterId_, quest_id });
+	return true;
+}
+
+bool PlayerQuest::GmForceComplete(int quest_id, int reward_choice)
+{
+	Quest* quest = QuestRegistry::Instance().Get(quest_id);
+	if (quest == nullptr || quest->gamedata == nullptr)
+		return false;
+
+	// 진행 중이 아니면 진행 중으로 만든 뒤 끝낸다(문의 대응에서 흔한 경우다).
+	if (activeQuests_.Find(quest_id) == nullptr && !GmForceAccept(quest_id))
+		return false;
+
+	QuestActiveVO* vo = activeQuests_.Modify(quest_id);
+	if (vo == nullptr)
+		return false;
+
+	vo->stage = quest->StageCount();
+	vo->state = static_cast<int>(QuestState::ReadyToComplete);
+	markDirty();
+
+	// 선택 보상이 있는데 고르지 않았으면 첫 번째로 준다(GM 이 지정하면 그 값을 쓴다).
+	const auto& choices = quest->gamedata->rewards.choice_items;
+	const int choice = (!choices.empty() && reward_choice < 0) ? 0 : reward_choice;
+
+	return CompleteQuest(quest_id, choice);
+}
+
+bool PlayerQuest::GmSetProgress(int quest_id, int stage, int progress1, int progress2, int progress3)
+{
+	const Quest* quest = QuestRegistry::Instance().Get(quest_id);
+	if (quest == nullptr)
+		return false;
+
+	if (stage < 1 || stage > quest->StageCount())
+		return false;
+
+	QuestActiveVO* vo = activeQuests_.Modify(quest_id);
+	if (vo == nullptr)
+		return false;
+
+	vo->stage = stage;
+	vo->progress1 = progress1;
+	vo->progress2 = progress2;
+	vo->progress3 = progress3;
+	vo->state = static_cast<int>(QuestState::InProgress);
+	markDirty();
+	markSync(quest_id);
+
+	// 세운 값만으로 스테이지가 끝나 있으면 정상 경로와 같게 넘어가야 한다.
+	const int progress[Quest::kMaxObjectivesPerStage] = { progress1, progress2, progress3 };
+	if (quest->IsStageComplete(stage, progress, Quest::kMaxObjectivesPerStage))
+		advanceStage(*quest, *vo);
+
+	return true;
+}
+
+bool PlayerQuest::GmResetQuest(int quest_id)
+{
+	const bool had_row = activeQuests_.Find(quest_id) != nullptr;
+
+	if (had_row)
+	{
+		activeQuests_.Remove(quest_id);
+		markRemovedFromLog(quest_id);
+	}
+
+	discardQuestItems(quest_id);
+	clearCompleted(quest_id);
 	markDirty();
 	return true;
+}
+
+void PlayerQuest::discardQuestItems(int quest_id)
+{
+	if (game_object == nullptr)
+		return;
+	// 퀘스트 전용 아이템은 그 퀘스트가 끝나면 쓸 데가 없다. 남겨 두면 인벤토리만
+	// 채우고, 다시 수락했을 때 목표가 이미 채워진 채로 시작한다.
+	if (auto* inventory = game_object->GetComponent<PlayerItem>())
+		inventory->RemoveQuestItems(quest_id);
 }
 
 // ============================================================
@@ -435,6 +560,7 @@ void PlayerQuest::expireTimedOutQuests()
 
 		vo->state = static_cast<int>(QuestState::Failed);
 		markDirty();
+		markSync(quest_id);
 		publish(EventQuestFailed{ characterId_, quest_id });
 	}
 }
@@ -468,6 +594,7 @@ void PlayerQuest::clearFinishedCooldowns()
 		// 다시 받을 수 있게 된 행은 지운다. 완료 사실은 완료 비트가 기억한다.
 		activeQuests_.Remove(quest_id);
 		markDirty();
+		markRemovedFromLog(quest_id);
 	}
 }
 
@@ -483,8 +610,9 @@ void PlayerQuest::grantRewards(const Quest& quest, int reward_choice)
 
 	QuestRewardGrant grant;
 	grant.quest_id = quest.GetId();
-	grant.exp = rewards->exp;
-	grant.gold = rewards->gold;
+	// 이벤트 기간 배율은 지급 시점에 곱한다(데이터를 다시 배포하지 않아도 되도록).
+	grant.exp = QuestPolicy::Instance().ApplyExp(rewards->exp);
+	grant.gold = QuestPolicy::Instance().ApplyGold(rewards->gold);
 
 	for (const auto& item : rewards->items)
 		grant.items.emplace_back(item.item_id, item.count);
@@ -497,13 +625,37 @@ void PlayerQuest::grantRewards(const Quest& quest, int reward_choice)
 
 	grant.skill_ids = rewards->skill_ids;
 
-	// 경험치는 받아 줄 컴포넌트가 이미 있다. 나머지는 대기열에 남긴다.
-	if (grant.exp > 0 && game_object != nullptr)
+	if (game_object != nullptr)
 	{
-		if (auto* level = game_object->GetComponent<PlayerLevel>())
-			level->GainExp(grant.exp);
+		if (grant.exp > 0)
+		{
+			if (auto* level = game_object->GetComponent<PlayerLevel>())
+				level->GainExp(grant.exp);
+		}
+
+		if (grant.gold > 0)
+		{
+			if (auto* wallet = game_object->GetComponent<PlayerWallet>())
+				wallet->AddGold(grant.gold);
+		}
+
+		if (auto* inventory = game_object->GetComponent<PlayerItem>())
+		{
+			// 아이템 지급은 EventItemAcquired 를 발행한다. 다른 퀘스트의 수집 목표가
+			// 여기서 함께 올라갈 수 있는데, 실제로 인벤토리에 들어갔으므로 맞는 동작이다.
+			for (const auto& [item_id, count] : grant.items)
+				inventory->AddItem(item_id, count);
+		}
+
+		if (auto* skills = game_object->GetComponent<PlayerSkill>())
+		{
+			for (int skill_id : grant.skill_ids)
+				skills->LearnSkill(skill_id);
+		}
 	}
 
+	// 무엇을 줬는지는 따로 남긴다 — 클라이언트에 보여줄 보상 목록이자,
+	// 컴포넌트가 아직 없는 보상 종류를 잃지 않기 위한 기록이다.
 	pendingRewards_.push_back(std::move(grant));
 }
 
@@ -577,15 +729,20 @@ int PlayerQuest::GetLevel() const
 
 bool PlayerQuest::HasItem(int item_id) const
 {
-	// 인벤토리 컴포넌트가 아직 보유 조회를 제공하지 않는다. 확인할 수 없는 조건을
-	// 통과시키면 조건이 있으나 마나 하므로, 생길 때까지는 막는다.
-	return false;
+	if (game_object == nullptr)
+		return false;
+	auto* inventory = game_object->GetComponent<PlayerItem>();
+	// 인벤토리가 없으면 보유 여부를 확인할 방법이 없다. 확인할 수 없는 조건을
+	// 통과시키면 조건이 있으나 마나 하므로 막는다.
+	return inventory != nullptr && inventory->Has(item_id);
 }
 
 bool PlayerQuest::HasSkill(int skill_id) const
 {
-	// HasItem 과 같은 이유. PlayerSkill 이 보유 스킬 조회를 제공하면 여기서 넘긴다.
-	return false;
+	if (game_object == nullptr)
+		return false;
+	auto* skills = game_object->GetComponent<PlayerSkill>();
+	return skills != nullptr && skills->Has(skill_id);
 }
 
 // ============================================================
@@ -596,7 +753,7 @@ void PlayerQuest::Load(std::any data)
 {
 	const auto& load_data = std::any_cast<const PlayerLoadData&>(data);
 
-	characterId_ = load_data.player.id;
+	characterId_ = static_cast<int>(load_data.player.id);
 	cachedLevel_ = load_data.player.level > 0 ? load_data.player.level : 1;
 
 	// 진행 중 퀘스트를 기존(Persisted) 상태로 로드
@@ -641,6 +798,21 @@ void PlayerQuest::setCompleted(int quest_id)
 	markDirty();
 }
 
+void PlayerQuest::clearCompleted(int quest_id)
+{
+	const size_t byte_idx = static_cast<size_t>(quest_id) / 8;
+	if (byte_idx >= completedBits_.size())
+		return;
+
+	const uint8_t mask = static_cast<uint8_t>(1 << (quest_id % 8));
+	if ((completedBits_[byte_idx] & mask) == 0)
+		return;
+
+	completedBits_[byte_idx] &= static_cast<uint8_t>(~mask);
+	questState_.MarkDirty();
+	markDirty();
+}
+
 void PlayerQuest::resetActiveRow(QuestActiveVO& vo)
 {
 	vo.character_id = characterId_;
@@ -658,6 +830,49 @@ QuestStateVO PlayerQuest::buildStateVO() const
 	vo.character_id = characterId_;
 	vo.flags.assign(completedBits_.begin(), completedBits_.end());
 	return vo;
+}
+
+void PlayerQuest::pushUnique(std::vector<int>& list, int quest_id)
+{
+	if (std::find(list.begin(), list.end(), quest_id) == list.end())
+		list.push_back(quest_id);
+}
+
+void PlayerQuest::markRemovedFromLog(int quest_id)
+{
+	pushUnique(syncRemoved_, quest_id);
+
+	// 사라진 퀘스트를 "바뀐 퀘스트"로도 보내면 클라가 지운 뒤 다시 만든다.
+	syncChanged_.erase(
+		std::remove(syncChanged_.begin(), syncChanged_.end(), quest_id),
+		syncChanged_.end());
+}
+
+bool PlayerQuest::HasPendingSync() const
+{
+	return !syncChanged_.empty() || !syncRemoved_.empty() || !syncCompleted_.empty();
+}
+
+void PlayerQuest::DrainSync(
+	std::vector<int>& changed, std::vector<int>& removed, std::vector<int>& completed)
+{
+	changed = std::move(syncChanged_);
+	removed = std::move(syncRemoved_);
+	completed = std::move(syncCompleted_);
+	syncChanged_.clear();
+	syncRemoved_.clear();
+	syncCompleted_.clear();
+}
+
+void PlayerQuest::MarkAllForSync()
+{
+	std::vector<int> quest_ids;
+	activeQuests_.CollectKeys(quest_ids);
+	for (int quest_id : quest_ids)
+	{
+		if (IsActive(quest_id))
+			markSync(quest_id);
+	}
 }
 
 int PlayerQuest::readProgress(const QuestActiveVO& vo, int slot)

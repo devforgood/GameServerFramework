@@ -60,6 +60,21 @@ public:
 	// 이벤트를 거치지 않고 직접 진행도를 올린다(GM 도구, 아직 이벤트가 없는 시스템용).
 	void ReportProgress(QuestObjectiveType type, int target_id, int amount);
 
+	// ---- 운영(GM) 조작
+	// 모두 정상 경로의 조건 검사를 건너뛴다. 문의 대응/QA 용이며 호출한 쪽이 권한을 확인해야 한다.
+
+	// 조건과 상관없이 진행 중으로 만든다(진행도는 초기화). 데이터에 없는 퀘스트면 false.
+	bool GmForceAccept(int quest_id);
+
+	// 남은 스테이지를 건너뛰고 완료 처리한다. 보상은 정상 완료와 같게 지급된다.
+	bool GmForceComplete(int quest_id, int reward_choice = -1);
+
+	// 스테이지와 진행도를 직접 세운다. 채워지면 스테이지 전환/완료 판정도 그대로 탄다.
+	bool GmSetProgress(int quest_id, int stage, int progress1, int progress2 = 0, int progress3 = 0);
+
+	// 진행 기록과 완료 플래그를 모두 지워 "한 번도 안 받은" 상태로 되돌린다.
+	bool GmResetQuest(int quest_id);
+
 	// ---- 조회
 	bool IsActive(int quest_id) const;
 	bool IsCompleted(int quest_id) const;
@@ -71,6 +86,15 @@ public:
 	// 지급 확정된 보상을 꺼낸다(꺼내면 목록은 비워진다).
 	std::vector<QuestRewardGrant> TakePendingRewards();
 	const std::vector<QuestRewardGrant>& GetPendingRewards() const { return pendingRewards_; }
+
+	// ---- 클라 동기화
+	// 매 이벤트마다 메시지를 보내면 처치 한 번에 한 통씩 나간다. 바뀐 퀘스트 id 만 모아
+	// 두고 틱 끝에 한 번 내보낸다.
+	bool HasPendingSync() const;
+	void DrainSync(std::vector<int>& changed, std::vector<int>& removed, std::vector<int>& completed);
+
+	// 로그인 직후처럼 전체를 다시 내려줘야 할 때, 진행 중인 모든 퀘스트를 동기화 대상으로 올린다.
+	void MarkAllForSync();
 
 	// 제한 시간/쿨타임 판정에 쓸 현재 시각. 테스트에서 시간을 흘려보내기 위해 교체할 수 있다.
 	void SetClock(std::function<std::chrono::system_clock::time_point()> clock)
@@ -110,9 +134,19 @@ private:
 	void clearFinishedCooldowns();
 
 	void grantRewards(const Quest& quest, int reward_choice);
+
+	// 이 퀘스트 전용 아이템을 인벤토리에서 회수한다(완료/포기 시).
+	void discardQuestItems(int quest_id);
+
 	void publish(const EventMessage& message);
 
+	// 동기화 대기 목록에 중복 없이 넣는다.
+	static void pushUnique(std::vector<int>& list, int quest_id);
+	void markSync(int quest_id) { pushUnique(syncChanged_, quest_id); }
+	void markRemovedFromLog(int quest_id);
+
 	void setCompleted(int quest_id);
+	void clearCompleted(int quest_id);
 	void resetActiveRow(QuestActiveVO& vo);
 	QuestStateVO buildStateVO() const;
 
@@ -129,6 +163,11 @@ private:
 	std::vector<uint8_t> completedBits_;
 
 	std::vector<QuestRewardGrant> pendingRewards_;
+
+	// 다음 틱에 클라로 내보낼 변경분.
+	std::vector<int> syncChanged_;
+	std::vector<int> syncRemoved_;
+	std::vector<int> syncCompleted_;
 
 	std::function<std::chrono::system_clock::time_point()> clock_;
 

@@ -91,6 +91,11 @@ bool Quest::IsAutoComplete() const
 	return gamedata != nullptr && gamedata->auto_complete;
 }
 
+bool Quest::IsEnabled() const
+{
+	return gamedata != nullptr && !gamedata->disabled;
+}
+
 QuestAcceptResult Quest::CanAccept(const IQuestOwner& owner) const
 {
 	if (gamedata == nullptr)
@@ -100,6 +105,9 @@ QuestAcceptResult Quest::CanAccept(const IQuestOwner& owner) const
 
 	if (owner.IsQuestActive(quest_id))
 		return QuestAcceptResult::AlreadyActive;
+
+	if (!IsEnabled())
+		return QuestAcceptResult::Disabled;
 
 	// 반복 퀘스트만 완료 후 다시 받을 수 있다.
 	if (owner.IsQuestCompleted(quest_id) && !IsRepeatable())

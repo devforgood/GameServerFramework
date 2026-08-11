@@ -20,6 +20,7 @@ enum class QuestAcceptResult
 	AlreadyActive,      // 이미 진행 중
 	AlreadyCompleted,   // 이미 완료했고 반복 불가
 	OnCooldown,         // 반복 가능하지만 아직 쿨타임
+	Disabled,           // 운영이 내려둔 퀘스트(데이터의 disabled)
 	LevelTooLow,
 	LevelTooHigh,
 	PrerequisiteQuest,  // 선행 퀘스트 미완료
@@ -100,6 +101,10 @@ public:
 	virtual QuestResetType GetResetType() const;
 
 	bool IsAutoComplete() const;
+
+	// 운영이 내려둔 퀘스트인가(데이터의 disabled). 내려도 이미 진행 중인 퀘스트는
+	// 그대로 끝낼 수 있고, 새로 받는 것만 막는다 — 진행분을 빼앗지 않기 위해서다.
+	bool IsEnabled() const;
 
 	// 수락 가능 여부. 레벨/선행 퀘스트/보유 아이템·스킬을 모두 확인한다.
 	QuestAcceptResult CanAccept(const IQuestOwner& owner) const;

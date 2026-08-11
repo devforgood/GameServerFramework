@@ -29,7 +29,12 @@
         "logic": "and",
         "desc_id": "quest_goblin_hunt_stage1_desc",
         "objectives": [
-          { "type": "talk", "target_id": 2001, "count": 1, "desc_id": "quest_goblin_hunt_obj_talk_elder" }
+          {
+            "type": "talk",
+            "target_id": 2001,
+            "count": 1,
+            "desc_id": "quest_goblin_hunt_obj_talk_elder"
+          }
         ]
       },
       {
@@ -37,8 +42,18 @@
         "logic": "and",
         "desc_id": "quest_goblin_hunt_stage2_desc",
         "objectives": [
-          { "type": "kill", "target_id": 3, "count": 10, "desc_id": "quest_goblin_hunt_obj_kill_goblin" },
-          { "type": "collect", "target_id": 100, "count": 5, "desc_id": "quest_goblin_hunt_obj_collect_ear" }
+          {
+            "type": "kill",
+            "target_id": 3,
+            "count": 10,
+            "desc_id": "quest_goblin_hunt_obj_kill_goblin"
+          },
+          {
+            "type": "collect",
+            "target_id": 100,
+            "count": 5,
+            "desc_id": "quest_goblin_hunt_obj_collect_ear"
+          }
         ]
       },
       {
@@ -46,7 +61,12 @@
         "logic": "and",
         "desc_id": "quest_goblin_hunt_stage3_desc",
         "objectives": [
-          { "type": "talk", "target_id": 2001, "count": 1, "desc_id": "quest_goblin_hunt_obj_report" }
+          {
+            "type": "talk",
+            "target_id": 2001,
+            "count": 1,
+            "desc_id": "quest_goblin_hunt_obj_report"
+          }
         ]
       }
     ],
@@ -60,11 +80,20 @@
       "exp": 500,
       "gold": 200,
       "items": [
-        { "item_id": 1, "count": 5 }
+        {
+          "item_id": 1,
+          "count": 5
+        }
       ],
       "choice_items": [
-        { "item_id": 4, "count": 1 },
-        { "item_id": 5, "count": 1 }
+        {
+          "item_id": 4,
+          "count": 1
+        },
+        {
+          "item_id": 5,
+          "count": 1
+        }
       ],
       "skill_ids": []
     }
@@ -88,7 +117,9 @@
     "chain_id": 10,
     "chain_step": 2,
     "prerequisites": {
-      "completed_quest_ids": [1001],
+      "completed_quest_ids": [
+        1001
+      ],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -99,7 +130,12 @@
         "logic": "and",
         "desc_id": "quest_goblin_chief_stage1_desc",
         "objectives": [
-          { "type": "kill", "target_id": 4, "count": 1, "desc_id": "quest_goblin_chief_obj_kill_chief" }
+          {
+            "type": "kill",
+            "target_id": 4,
+            "count": 1,
+            "desc_id": "quest_goblin_chief_obj_kill_chief"
+          }
         ]
       },
       {
@@ -107,7 +143,12 @@
         "logic": "and",
         "desc_id": "quest_goblin_chief_stage2_desc",
         "objectives": [
-          { "type": "talk", "target_id": 2001, "count": 1, "desc_id": "quest_goblin_chief_obj_report" }
+          {
+            "type": "talk",
+            "target_id": 2001,
+            "count": 1,
+            "desc_id": "quest_goblin_chief_obj_report"
+          }
         ]
       }
     ],
@@ -121,7 +162,10 @@
       "exp": 1200,
       "gold": 500,
       "items": [
-        { "item_id": 3, "count": 2 }
+        {
+          "item_id": 3,
+          "count": 2
+        }
       ],
       "choice_items": [],
       "skill_ids": []
@@ -157,7 +201,12 @@
         "logic": "and",
         "desc_id": "quest_wolf_pelt_stage1_desc",
         "objectives": [
-          { "type": "collect", "target_id": 101, "count": 5, "desc_id": "quest_wolf_pelt_obj_collect" }
+          {
+            "type": "collect",
+            "target_id": 101,
+            "count": 5,
+            "desc_id": "quest_wolf_pelt_obj_collect"
+          }
         ]
       }
     ],
@@ -171,7 +220,10 @@
       "exp": 300,
       "gold": 150,
       "items": [
-        { "item_id": 1, "count": 3 }
+        {
+          "item_id": 1,
+          "count": 3
+        }
       ],
       "choice_items": [],
       "skill_ids": []
@@ -207,8 +259,18 @@
         "logic": "or",
         "desc_id": "quest_field_cleanup_stage1_desc",
         "objectives": [
-          { "type": "kill", "target_id": 1, "count": 10, "desc_id": "quest_field_cleanup_obj_slime" },
-          { "type": "kill", "target_id": 2, "count": 5, "desc_id": "quest_field_cleanup_obj_wolf" }
+          {
+            "type": "kill",
+            "target_id": 1,
+            "count": 10,
+            "desc_id": "quest_field_cleanup_obj_slime"
+          },
+          {
+            "type": "kill",
+            "target_id": 2,
+            "count": 5,
+            "desc_id": "quest_field_cleanup_obj_wolf"
+          }
         ]
       }
     ],
@@ -256,8 +318,18 @@
         "logic": "and",
         "desc_id": "quest_first_steps_stage1_desc",
         "objectives": [
-          { "type": "reach", "target_id": 2, "count": 1, "desc_id": "quest_first_steps_obj_reach_forest" },
-          { "type": "level", "target_id": 0, "count": 3, "desc_id": "quest_first_steps_obj_level3" }
+          {
+            "type": "reach",
+            "target_id": 2,
+            "count": 1,
+            "desc_id": "quest_first_steps_obj_reach_forest"
+          },
+          {
+            "type": "level",
+            "target_id": 0,
+            "count": 3,
+            "desc_id": "quest_first_steps_obj_level3"
+          }
         ]
       }
     ],
@@ -271,7 +343,10 @@
       "exp": 150,
       "gold": 50,
       "items": [
-        { "item_id": 1, "count": 2 }
+        {
+          "item_id": 1,
+          "count": 2
+        }
       ],
       "choice_items": [],
       "skill_ids": []
@@ -296,7 +371,9 @@
     "chain_id": 0,
     "chain_step": 0,
     "prerequisites": {
-      "completed_quest_ids": [1003],
+      "completed_quest_ids": [
+        1003
+      ],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -307,7 +384,12 @@
         "logic": "and",
         "desc_id": "quest_daily_wolf_stage1_desc",
         "objectives": [
-          { "type": "kill", "target_id": 2, "count": 10, "desc_id": "quest_daily_wolf_obj_kill" }
+          {
+            "type": "kill",
+            "target_id": 2,
+            "count": 10,
+            "desc_id": "quest_daily_wolf_obj_kill"
+          }
         ]
       }
     ],
@@ -321,7 +403,10 @@
       "exp": 400,
       "gold": 300,
       "items": [
-        { "item_id": 2, "count": 1 }
+        {
+          "item_id": 2,
+          "count": 1
+        }
       ],
       "choice_items": [],
       "skill_ids": []
@@ -346,7 +431,9 @@
     "chain_id": 0,
     "chain_step": 0,
     "prerequisites": {
-      "completed_quest_ids": [1002],
+      "completed_quest_ids": [
+        1002
+      ],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -357,7 +444,12 @@
         "logic": "and",
         "desc_id": "quest_ancient_letter_stage1_desc",
         "objectives": [
-          { "type": "collect", "target_id": 102, "count": 1, "desc_id": "quest_ancient_letter_obj_collect" }
+          {
+            "type": "collect",
+            "target_id": 102,
+            "count": 1,
+            "desc_id": "quest_ancient_letter_obj_collect"
+          }
         ]
       },
       {
@@ -365,7 +457,12 @@
         "logic": "and",
         "desc_id": "quest_ancient_letter_stage2_desc",
         "objectives": [
-          { "type": "talk", "target_id": 2001, "count": 1, "desc_id": "quest_ancient_letter_obj_report" }
+          {
+            "type": "talk",
+            "target_id": 2001,
+            "count": 1,
+            "desc_id": "quest_ancient_letter_obj_report"
+          }
         ]
       }
     ],
@@ -379,8 +476,66 @@
       "exp": 800,
       "gold": 400,
       "items": [
-        { "item_id": 3, "count": 1 }
+        {
+          "item_id": 3,
+          "count": 1
+        }
       ],
+      "choice_items": [],
+      "skill_ids": []
+    },
+    "disabled": false
+  },
+  {
+    "id": 9001,
+    "code_name": "SubQuest",
+    "category": "kill",
+    "name_id": "quest_event_preview_name",
+    "desc_id": "quest_event_preview_desc",
+    "level": 1,
+    "min_level": 1,
+    "max_level": 0,
+    "priority": 0,
+    "map_id": 13,
+    "start_npc_id": 2002,
+    "end_npc_id": 2002,
+    "shareable": true,
+    "recommended_party_size": 1,
+    "auto_complete": false,
+    "chain_id": 0,
+    "chain_step": 0,
+    "disabled": true,
+    "prerequisites": {
+      "completed_quest_ids": [],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_event_preview_stage1_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 1,
+            "count": 3,
+            "desc_id": "quest_event_preview_obj_kill"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 100,
+      "gold": 50,
+      "items": [],
       "choice_items": [],
       "skill_ids": []
     }

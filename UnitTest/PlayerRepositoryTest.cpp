@@ -34,8 +34,8 @@ TEST(PlayerRepositoryTest, EmptySaveDataTouchesNoConnection)
 TEST(PlayerRepositoryTest, EmptyCollectionsIssueNoQuery)
 {
     PlayerSaveData data{};
-    data.items = std::vector<ItemVO>{};
-    data.skills = std::vector<SkillVO>{};
+    data.items = std::vector<DbRecord<PlayerItemVO>>{};
+    data.skills = std::vector<DbRecord<PlayerSkillVO>>{};
     data.quest_actives = std::vector<DbRecord<QuestActiveVO>>{};
     // player / quest_state 는 단일 레코드라 set 되면 즉시 기록되므로 비워둔다.
 

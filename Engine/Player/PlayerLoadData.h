@@ -5,8 +5,9 @@
 
 struct PlayerLoadData {
     PlayerVO player;
-    std::vector<ItemVO> items;
-    std::vector<SkillVO> skills;
+    std::vector<PlayerItemVO> items;
+    std::vector<PlayerSkillVO> skills;
+    PlayerWalletVO wallet;
     std::vector<QuestActiveVO> quest_actives;
     QuestStateVO quest_state;
 };

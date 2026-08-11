@@ -6,7 +6,7 @@
 
 ## 구성
 
-```
+```text
 QuestDefinition (데이터)          PlayerQuestState (플레이어별)
   quest.json                        quest_active  / quest_state 테이블
       |                                   ^
@@ -85,20 +85,17 @@ QuestDefinition (데이터)          PlayerQuestState (플레이어별)
 
 | type | target_id | 진행 방식 | 발행하는 곳 |
 | --- | --- | --- | --- |
-| `kill` | monster.json 의 종류 | 누적 | `EventActorDead.victim_data_id` |
-| `level` | (쓰지 않음) | 최고값 — `count` 가 도달 목표 레벨 | `EventLevelUp` |
+| `kill` | monster.json 의 종류 | 누적 | `EventActorDead.victim_data_id` (`Monster::NotifyKilledBy`) |
+| `level` | (쓰지 않음) | 최고값 — `count` 가 도달 목표 레벨 | `EventLevelUp` (`PlayerLevel::GainExp`) |
 | `reach` | Map.json 의 맵 | 누적 | `EventAreaEntered` (`Map::OnAddAgent`) |
-| `collect` | item.json 의 아이템 | 누적 | `EventItemAcquired` — **인벤토리 시스템 대기** |
-| `use_item` | item.json 의 아이템 | 누적 | `EventItemUsed` — **대기** |
-| `use_skill` | skill.json 의 스킬 | 누적 | `EventSkillUsed` — **대기** |
-| `talk` | NPC id | 누적 | `EventNpcInteracted` — **NPC 시스템 대기** |
-| `interact` | Map.json 의 오브젝트 | 누적 | `EventObjectInteracted` — **대기** |
-
-"대기" 로 표시된 종류는 서버가 이미 처리할 수 있지만 아직 그 이벤트를 발행하는 시스템이
-없다. 해당 시스템이 생기면 이벤트 한 줄만 발행하면 되고, 퀘스트 쪽은 손대지 않는다.
-그 전까지는 `PlayerQuest::ReportProgress` 로 직접 밀어 넣을 수 있다(GM 도구/테스트).
+| `collect` | item.json 의 아이템 | 누적 | `EventItemAcquired` (`PlayerItem::AddItem`) |
+| `use_item` | item.json 의 아이템 | 누적 | `EventItemUsed` (`PlayerItem::UseItem`) |
+| `use_skill` | skill.json 의 스킬 | 누적 | `EventSkillUsed` (`PlayerController::handle(UseSkill)`) |
+| `talk` | npc.json 의 NPC | 누적 | `EventNpcInteracted` (`PlayerController::handle(Interact)`) |
+| `interact` | Map.json 의 오브젝트 | 누적 | `EventObjectInteracted` (같은 `Interact` 핸들러) |
 
 `target_id` 가 0 이면 대상을 가리지 않는 와일드카드다(예: 아무 몬스터나 10마리).
+이벤트를 거치지 않고 직접 밀어 넣으려면 `PlayerQuest::ReportProgress` 를 쓴다(테스트/도구).
 
 ### 목표 종류를 추가하려면
 
@@ -109,7 +106,7 @@ QuestDefinition (데이터)          PlayerQuestState (플레이어별)
 
 ## 상태 기계
 
-```
+```text
                  AcceptQuest
   (없음) ───────────────────────> InProgress
                                     │  목표 달성 → 다음 스테이지
@@ -145,32 +142,76 @@ QuestDefinition (데이터)          PlayerQuestState (플레이어별)
 
 ### 기존 DB 마이그레이션
 
-`stage` 컬럼이 새로 생겼다. 이미 돌고 있는 DB 에는 다음을 적용한다.
+`stage` 컬럼이 새로 생겼지만 **손으로 할 일은 없다**. 생성되는 `create_tables.sql` 이
+`CREATE TABLE IF NOT EXISTS` 뒤에 컬럼마다 멱등한 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
+를 붙이고, 서버 기동 때 `SqlClientManager::create_tables` 가 이를 한 문장씩 실행한다.
 
-```sql
-ALTER TABLE `quest_active` ADD COLUMN `stage` TINYINT NOT NULL DEFAULT 1 AFTER `state`;
-```
+이전에는 `CREATE TABLE IF NOT EXISTS` 뿐이라 **이미 있는 테이블은 영영 갱신되지 않았다**.
+게다가 커넥션에 `allowMultiQueries` 가 없어 `;` 로 이어 붙인 스크립트를 통째로 넘기면
+드라이버가 거부한다 — 그래서 `sql_script::Split` 으로 잘라 하나씩 보낸다.
 
 컬럼이 없던 시절의 행은 `stage = 0` 으로 읽히는데, `PlayerQuest::Load` 가 1로 올린다.
 
 ## 보상
 
-경험치는 `PlayerLevel::GainExp` 로 바로 들어간다. 골드/아이템/스킬은 아직 받아 줄
-컴포넌트가 없어서 `PlayerQuest::TakePendingRewards()` 대기열에 쌓인다. 인벤토리와 지갑이
-생기면 그쪽이 이 대기열을 꺼내 가면 된다 — 없는 시스템을 있는 척 호출해 보상이 조용히
-사라지는 것보다 낫다.
+지급은 완료 시점에 실제 컴포넌트로 들어간다.
+
+| 보상 | 받는 곳 |
+| --- | --- |
+| exp | `PlayerLevel::GainExp` |
+| gold | `PlayerWallet::AddGold` |
+| items / choice_items | `PlayerItem::AddItem` |
+| skill_ids | `PlayerSkill::LearnSkill` |
+
+`PlayerQuest::TakePendingRewards()` 는 "무엇을 줬는지"의 기록이다 — 클라이언트에 보여 줄
+보상 목록이자, 아직 받아 줄 컴포넌트가 없는 보상 종류가 조용히 사라지지 않게 하는 장치다.
+
+보상 아이템 지급은 `EventItemAcquired` 를 발행하므로 다른 퀘스트의 수집 목표가 함께
+올라갈 수 있다. 실제로 인벤토리에 들어갔으니 맞는 동작이다.
 
 선택 보상은 `choice_items` 의 0-based 인덱스로 고른다(`CompleteQuest(id, index)`).
 선택 보상이 있는 퀘스트는 완료 NPC 와 대화하는 것만으로 끝나지 않는다 — 무엇을 줄지
 정할 수 없기 때문이다. 클라이언트가 선택을 담아 완료를 요청해야 한다.
 
+### 퀘스트 아이템
+
+`item.json` 에서 `type: "quest"` + `quest_id` 로 표시한다(`no_trade` / `no_sell` 도 함께).
+퀘스트를 완료하거나 포기하면 `PlayerItem::RemoveQuestItems` 로 회수된다 — 남겨 두면
+인벤토리만 채우고, 다시 수락했을 때 목표가 이미 채워진 채로 시작한다.
+
+회수는 보상 지급보다 **먼저** 한다. 순서가 반대면 방금 받은 보상 아이템이 회수에 휩쓸린다.
+
+## 네트워크 프로토콜
+
+| 메시지 | 방향 | 내용 |
+| --- | --- | --- |
+| `Interact` | C→S / 응답 | NPC·오브젝트 상호작용. 서버가 같은 맵 + 거리(`interact_range`)를 검증하고 `EventNpcInteracted` / `EventObjectInteracted` 를 발행한다 |
+| `QuestAccept` | C→S / 응답 | 수락. 실패 사유는 `QuestAcceptResult` → `StatusCode` 로 좁혀 돌려준다 |
+| `QuestComplete` | C→S / 응답 | 완료. `rewardChoice` 로 선택 보상을 고른다 |
+| `QuestAbandon` | C→S / 응답 | 포기 |
+| `QuestSync` | S→C | 바뀐 퀘스트(`quests`), 목록에서 빠진 것(`removed`), 이번에 완료된 것(`completed`) |
+
+`QuestSync` 는 매 이벤트마다 보내지 않는다. `PlayerQuest` 가 바뀐 퀘스트 id 만 모아 두고
+`Player::Update` 가 틱마다 한 통으로 내보낸다(처치 한 번에 메시지 한 통이 나가지 않도록).
+로그인 직후에는 `MarkAllForSync()` 로 진행 중인 전체가 한 번 나간다.
+
+## 운영(GM)
+
+데이터만 바꿔서 라이브 서비스를 조정할 수 있어야 한다.
+
+- **퀘스트 on/off**: `quest.json` 의 `disabled: true`. 새로 받는 것만 막고, **이미 진행 중인
+  퀘스트는 그대로 끝낼 수 있다** — 진행분을 빼앗지 않기 위해서다.
+- **보상 배율**: `QuestPolicy::Instance().SetExpMultiplier / SetGoldMultiplier`. 지급 시점에
+  곱하므로 데이터 재배포가 필요 없다. 배율 때문에 보상이 0 이 되지는 않는다(최소 1).
+- **플레이어 조작**: `PlayerQuest::GmForceAccept / GmForceComplete / GmSetProgress / GmResetQuest`.
+  모두 정상 경로의 조건 검사를 건너뛴다 — 호출한 쪽이 권한을 확인해야 한다.
+
 ## 아직 없는 것
 
-이 단계는 데이터 스키마와 서버 코어까지다. 다음이 남아 있다.
-
-- 네트워크 프로토콜(`syncnet.fbs` 에 퀘스트 메시지 없음)과 클라이언트 UI
-- 대화(Dialog) 시스템, 선택지에 따른 분기
-- 파티 공유(킬 크레딧 공유, 진행 동기화)
-- 호위/보호 목표와 그에 따른 실패 조건
-- GM 도구(강제 완료/진행도 수정/퀘스트 on-off)
-- 인벤토리·NPC 시스템 연동(위 "대기" 목표들)
+- 대화(Dialog) 시스템과 선택지에 따른 분기 — 별도 서브시스템
+- 파티 공유(킬 크레딧 공유, 진행 동기화) — 파티 시스템 자체가 아직 없다
+- 호위/보호 목표와 그에 따른 실패 조건 — NPC 가 액터로 스폰되어야 성립한다
+  (현재 NPC 는 위치와 상호작용 반경만 가진 정적 데이터다)
+- 클라이언트 퀘스트 UI (프로토콜과 생성 코드는 준비돼 있다)
+- 보유 스킬과 시전 권한의 연결 — `SkillSet::InitFromResources` 가 아직 모든 스킬을 준다.
+  `PlayerSkill` 은 "무엇을 배웠는가"만 기록하며 선행조건/보상에 쓰인다

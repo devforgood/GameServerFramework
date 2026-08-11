@@ -74,6 +74,9 @@ void ResourceLoader::ClearResources()
     quests.clear();
     storage_quests.clear();
 
+    npcs.clear();
+    storage_npcs.clear();
+
     game_modes.clear();
     storage_game_modes.clear();
 
@@ -206,6 +209,9 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
     std::deque<gamedata::Quest> tmp_storage_quests;
     std::unordered_map<long, const gamedata::Quest*> tmp_quests;
 
+    std::deque<gamedata::Npc> tmp_storage_npcs;
+    std::unordered_map<long, const gamedata::Npc*> tmp_npcs;
+
     std::deque<gamedata::GameMode> tmp_storage_game_modes;
     std::unordered_map<long, const gamedata::GameMode*> tmp_game_modes;
 
@@ -231,6 +237,9 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
 
     tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::Quest>,
         basePath + "quest.json", std::ref(tmp_storage_quests), std::ref(tmp_quests)));
+
+    tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::Npc>,
+        basePath + "npc.json", std::ref(tmp_storage_npcs), std::ref(tmp_npcs)));
 
     tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::GameMode>,
         basePath + "GameMode.json", std::ref(tmp_storage_game_modes), std::ref(tmp_game_modes)));
@@ -263,6 +272,9 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
 
     storage_quests = std::move(tmp_storage_quests);
     quests = std::move(tmp_quests);
+
+    storage_npcs = std::move(tmp_storage_npcs);
+    npcs = std::move(tmp_npcs);
 
     storage_game_modes = std::move(tmp_storage_game_modes);
     game_modes = std::move(tmp_game_modes);

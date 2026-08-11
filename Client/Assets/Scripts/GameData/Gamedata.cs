@@ -142,6 +142,7 @@ namespace Gamedata
         public int chain_step;
         public string code_name;
         public string desc_id;
+        public bool disabled;
         public int end_npc_id;
         public int id;
         public int level;
@@ -157,6 +158,28 @@ namespace Gamedata
         public System.Collections.Generic.List<QuestStage> stages;
         public int start_npc_id;
         public QuestTime time;
+    }
+
+
+    [Serializable]
+    public class NpcPosition
+    {
+        public double x;
+        public double y;
+        public double z;
+    }
+
+
+    [Serializable]
+    public class Npc
+    {
+        public int id;
+        public double interact_range;
+        public int map_id;
+        public string name;
+        public string name_id;
+        public NpcPosition position;
+        public string type;
     }
 
 
@@ -481,6 +504,14 @@ namespace Gamedata
     public class QuestList
     {
         public List<Quest> items;
+    }
+
+
+    // Wrapper so UnityEngine.JsonUtility can parse the top-level JSON array.
+    [Serializable]
+    public class NpcList
+    {
+        public List<Npc> items;
     }
 
 

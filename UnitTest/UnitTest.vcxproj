@@ -128,6 +128,7 @@
   <ItemGroup>
     <ClCompile Include="ComponentPatternTest.cpp" />
     <ClCompile Include="PlayerQuestTest.cpp" />
+    <ClCompile Include="PlayerInventoryTest.cpp" />
     <ClCompile Include="PlayerLevelTest.cpp" />
     <ClCompile Include="ECSTest.cpp" />
     <ClCompile Include="EventBrokerTest.cpp" />

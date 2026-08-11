@@ -15,6 +15,11 @@ union GameMessages
   TreeDebugSync,
   EnterGate,
   TreeDebugRequest,
+  Interact,
+  QuestAccept,
+  QuestComplete,
+  QuestAbandon,
+  QuestSync,
 } // Optionally add more tables.
 
 enum StatusCode:short
@@ -197,6 +202,42 @@ table EnterGate {
   gateId:int;
   pos:Vec3;
   agentId:int = 0;
+}
+
+// NPC 또는 맵 오브젝트와의 상호작용 요청.
+// targetId 는 npc.json 의 NPC id 이거나 Map.json 오브젝트 id 다(id 공간이 겹치지 않는다).
+// 서버가 같은 맵인지와 거리를 검증하고, 통과하면 퀘스트 목표(talk/interact)가 진행된다.
+table Interact {
+  targetId:int;
+}
+
+table QuestAccept {
+  questId:int;
+}
+
+table QuestComplete {
+  questId:int;
+  // 선택 보상의 0-based 인덱스. 선택 보상이 없는 퀘스트는 -1.
+  rewardChoice:int = -1;
+}
+
+table QuestAbandon {
+  questId:int;
+}
+
+// 진행 중인 퀘스트 한 건의 상태. progress 는 현재 스테이지의 목표 순서대로다.
+table QuestInfo {
+  questId:int;
+  state:byte = 0;   // 0 InProgress, 1 ReadyToComplete, 2 Failed, 3 Cooldown
+  stage:int = 0;
+  progress:[int];
+}
+
+// 서버 -> 클라 퀘스트 동기화. 바뀐 것만 실어 보낸다(로그인 직후에는 전체).
+table QuestSync {
+  quests:[QuestInfo];  // 새로 생겼거나 상태가 바뀐 퀘스트
+  removed:[int];       // 진행 목록에서 사라진 퀘스트 id(완료/포기/쿨타임)
+  completed:[int];     // 이번에 완료 처리된 퀘스트 id (완료 연출용)
 }
 
 root_type GameMessage;

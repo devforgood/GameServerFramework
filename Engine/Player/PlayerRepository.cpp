@@ -14,16 +14,32 @@ namespace
     using LoaderFunc = std::function<void(sql::Connection*, long, PlayerLoadData&)>;
     using SaverFunc = std::function<void(sql::Connection*, const PlayerSaveData&)>;
 
+    // DbRecord 의 action 을 DAO 호출로 옮긴다. 생성된 DAO 는 모두 같은 이름의
+    // Insert/Update/Delete 를 가지므로 테이블마다 같은 코드를 반복할 이유가 없다.
+    template<typename TDao, typename TVO>
+    void ApplyRecord(TDao& dao, const DbRecord<TVO>& record)
+    {
+        switch (record.action)
+        {
+        case DbAction::Insert: dao.Insert(record.vo); break;
+        case DbAction::Update: dao.Update(record.vo); break;
+        case DbAction::Remove: dao.Delete(record.vo); break;
+        }
+    }
+
     // 읽기: 테이블별로 PlayerLoadData 를 채운다.
     const std::vector<LoaderFunc> kLoaders = {
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
             PlayerDAO(conn).Select(id, data.player);
         },
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
-            data.items = ItemDAO(conn).SelectByIndex(id);
+            data.items = PlayerItemDAO(conn).SelectByIndex(id);
         },
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
-            data.skills = SkillDAO(conn).SelectByIndex(id);
+            data.skills = PlayerSkillDAO(conn).SelectByIndex(id);
+        },
+        [](sql::Connection* conn, long id, PlayerLoadData& data) {
+            PlayerWalletDAO(conn).Select(id, data.wallet);
         },
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
             data.quest_actives = QuestActiveDAO(conn).SelectByIndex(id);
@@ -42,17 +58,24 @@ namespace
         [](sql::Connection* conn, const PlayerSaveData& data) {
             if (data.items)
             {
-                ItemDAO item_dao(conn);
-                for (const auto& vo : *data.items)
-                    item_dao.Update(vo);
+                PlayerItemDAO item_dao(conn);
+                for (const auto& record : *data.items)
+                    ApplyRecord(item_dao, record);
             }
         },
         [](sql::Connection* conn, const PlayerSaveData& data) {
             if (data.skills)
             {
-                SkillDAO skill_dao(conn);
-                for (const auto& vo : *data.skills)
-                    skill_dao.Update(vo);
+                PlayerSkillDAO skill_dao(conn);
+                for (const auto& record : *data.skills)
+                    ApplyRecord(skill_dao, record);
+            }
+        },
+        [](sql::Connection* conn, const PlayerSaveData& data) {
+            if (data.wallet)
+            {
+                PlayerWalletDAO wallet_dao(conn);
+                ApplyRecord(wallet_dao, *data.wallet);
             }
         },
         [](sql::Connection* conn, const PlayerSaveData& data) {

@@ -13,6 +13,8 @@
 #include "Server.h"
 #include "Common.h" // gamedata::Map/MapGate 전체 정의
 #include "PlayerLevel.h"
+#include "PlayerEventBroker.h"
+#include "PlayerQuest.h"
 #include "BTDebugManager.h"
 
 namespace
@@ -22,6 +24,23 @@ namespace
 
 	// 게이트 이용 허용 최대 거리(서버 좌표, xz 평면). 클라 트리거 박스 크기 + 이동 동기화 지연을 감안한 여유값.
 	constexpr float kGateEnterMaxDistance = 5.0f;
+
+	// NPC/오브젝트 상호작용 허용 거리 기본값. NPC 데이터에 interact_range 가 있으면 그 값이 이긴다.
+	constexpr float kInteractMaxDistance = 3.0f;
+
+	// 퀘스트 수락 실패 사유를 클라가 구분할 수 있는 선에서 상태 코드로 옮긴다.
+	// 세부 사유는 서버 로그에 남는다(프로토콜에 사유 코드를 늘리기 전까지).
+	syncnet::StatusCode ToStatusCode(QuestAcceptResult result)
+	{
+		switch (result)
+		{
+		case QuestAcceptResult::Ok:               return syncnet::StatusCode::StatusCode_Success;
+		case QuestAcceptResult::NotFound:         return syncnet::StatusCode::StatusCode_NotFound;
+		case QuestAcceptResult::AlreadyActive:
+		case QuestAcceptResult::AlreadyCompleted: return syncnet::StatusCode::StatusCode_AlreadyExists;
+		default:                                  return syncnet::StatusCode::StatusCode_Failed;
+		}
+	}
 
 	uint64_t NowMs()
 	{
@@ -60,6 +79,10 @@ void PlayerController::handle(const syncnet::GameMessage* msg)
 	case syncnet::GameMessages::GameMessages_UseSkill:			handle(msg->msg_as_UseSkill()); break;
 	case syncnet::GameMessages::GameMessages_EnterGate:			handle(msg->msg_as_EnterGate()); break;
 	case syncnet::GameMessages::GameMessages_TreeDebugRequest:	handle(msg->msg_as_TreeDebugRequest()); break;
+	case syncnet::GameMessages::GameMessages_Interact:			handle(msg->msg_as_Interact()); break;
+	case syncnet::GameMessages::GameMessages_QuestAccept:		handle(msg->msg_as_QuestAccept()); break;
+	case syncnet::GameMessages::GameMessages_QuestComplete:		handle(msg->msg_as_QuestComplete()); break;
+	case syncnet::GameMessages::GameMessages_QuestAbandon:		handle(msg->msg_as_QuestAbandon()); break;
 	}
 }
 
@@ -307,6 +330,13 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 	);
 	builder_ptr->Finish(send_msg);
 	character->GetMap()->SendBroadcast(builder_ptr, player_);
+
+	// 서버가 실제로 시전을 인정한 뒤에만 알린다(스킬 사용 퀘스트가 이 이벤트를 센다).
+	if (auto* broker = player_->GetComponent<PlayerEventBroker>())
+	{
+		broker->publish(EventSkillUsed{
+			static_cast<int>(player_->GetPlayerId()), msg->skillId() });
+	}
 }
 
 void PlayerController::handle(const syncnet::EnterGate* msg)
@@ -420,4 +450,162 @@ void PlayerController::handle(const syncnet::TreeDebugRequest* msg)
 	// 다음 맵 틱의 SendTreeDebugSync 브로드캐스트에 정의+현재 상태가 실려 나간다.
 	BTDebugManager::Instance().PublishMonsterSnapshot(msg->monsterId());
 #endif
+}
+
+void PlayerController::handle(const syncnet::Interact* msg)
+{
+	auto status = syncnet::StatusCode::StatusCode_Success;
+
+	if (!player_ || !player_->GetCharacter())
+	{
+		LOG.error("Interact error: player or character is null");
+		status = syncnet::StatusCode::StatusCode_Failed;
+	}
+	else
+	{
+		auto& character = player_->GetCharacter();
+		Map* map = character->GetMap();
+		const int targetId = msg->targetId();
+
+		// 목표 위치와 소속 맵을 찾는다. NPC(npc.json)와 맵 오브젝트(Map.json)는 id 공간이
+		// 겹치지 않으므로 어느 쪽인지 id 하나로 갈린다.
+		bool found = false;
+		bool isNpc = false;
+		int targetMapId = 0;
+		double tx = 0, ty = 0, tz = 0;
+		float range = kInteractMaxDistance;
+
+		auto& resource = ResourceLoader::Instance();
+		if (const gamedata::Npc* npc = resource.GetNpc(targetId))
+		{
+			found = true;
+			isNpc = true;
+			targetMapId = npc->map_id;
+			tx = npc->position.x; ty = npc->position.y; tz = npc->position.z;
+			if (npc->interact_range > 0.0)
+				range = static_cast<float>(npc->interact_range);
+		}
+		else if (const gamedata::MapObjectsStaticObject* obj = resource.GetMapObjectsStaticObject(targetId))
+		{
+			found = true;
+			targetMapId = obj->parent != nullptr ? obj->parent->id : 0;
+			tx = obj->position.x; ty = obj->position.y; tz = obj->position.z;
+		}
+		else if (const gamedata::MapObjectsMovableObject* obj = resource.GetMapObjectsMovableObject(targetId))
+		{
+			// 움직이는 오브젝트는 데이터의 시작 위치만 알 수 있다. 실제 위치와 벌어질 수
+			// 있으므로 이동 반경만큼 거리 허용치를 넓힌다.
+			found = true;
+			targetMapId = obj->parent != nullptr ? obj->parent->id : 0;
+			tx = obj->position.x; ty = obj->position.y; tz = obj->position.z;
+			range += static_cast<float>(obj->movement_range);
+		}
+
+		if (!found)
+		{
+			LOG.error("Interact rejected: unknown target {} (player {})", targetId, player_->GetPlayerId());
+			status = syncnet::StatusCode::StatusCode_NotFound;
+		}
+		else if (map == nullptr || map->GetMapId() != targetMapId)
+		{
+			LOG.error("Interact rejected: target {} is in map {}, player {} is elsewhere",
+				targetId, targetMapId, player_->GetPlayerId());
+			status = syncnet::StatusCode::StatusCode_Failed;
+		}
+		else
+		{
+			// 데이터 좌표는 클라 좌표계다. 게이트 판정과 같은 방식으로 변환해 비교한다.
+			const Vector3& pos = character->GetPosition();
+			const float dx = pos.x - Vector3::convert_x(static_cast<float>(tx));
+			const float dz = pos.z - static_cast<float>(tz);
+			const float distSq = dx * dx + dz * dz;
+
+			if (distSq > range * range)
+			{
+				LOG.info("Interact rejected: player {} too far from target {} (dist {:.1f}, max {:.1f})",
+					player_->GetPlayerId(), targetId, std::sqrt(distSq), range);
+				status = syncnet::StatusCode::StatusCode_Failed;
+			}
+			else if (auto* broker = player_->GetComponent<PlayerEventBroker>())
+			{
+				const int playerId = static_cast<int>(player_->GetPlayerId());
+				if (isNpc)
+					broker->publish(EventNpcInteracted{ playerId, targetId });
+				else
+					broker->publish(EventObjectInteracted{ playerId, targetId });
+			}
+		}
+	}
+
+	player_->Send(
+		syncnet::CreateInteract
+		, syncnet::GameMessages::GameMessages_Interact
+		, lastMessageId_
+		, status
+		, msg->targetId()
+	);
+}
+
+void PlayerController::handle(const syncnet::QuestAccept* msg)
+{
+	auto* quests = player_ != nullptr ? player_->GetComponent<PlayerQuest>() : nullptr;
+	if (quests == nullptr)
+	{
+		LOG.error("QuestAccept error: PlayerQuest component missing");
+		return;
+	}
+
+	const QuestAcceptResult result = quests->AcceptQuest(msg->questId());
+	LOG.info("QuestAccept questId:{} result:{}", msg->questId(), static_cast<int>(result));
+
+	player_->Send(
+		syncnet::CreateQuestAccept
+		, syncnet::GameMessages::GameMessages_QuestAccept
+		, lastMessageId_
+		, ToStatusCode(result)
+		, msg->questId()
+	);
+}
+
+void PlayerController::handle(const syncnet::QuestComplete* msg)
+{
+	auto* quests = player_ != nullptr ? player_->GetComponent<PlayerQuest>() : nullptr;
+	if (quests == nullptr)
+	{
+		LOG.error("QuestComplete error: PlayerQuest component missing");
+		return;
+	}
+
+	const bool ok = quests->CompleteQuest(msg->questId(), msg->rewardChoice());
+	LOG.info("QuestComplete questId:{} choice:{} ok:{}", msg->questId(), msg->rewardChoice(), ok);
+
+	player_->Send(
+		syncnet::CreateQuestComplete
+		, syncnet::GameMessages::GameMessages_QuestComplete
+		, lastMessageId_
+		, ok ? syncnet::StatusCode::StatusCode_Success : syncnet::StatusCode::StatusCode_Failed
+		, msg->questId()
+		, msg->rewardChoice()
+	);
+}
+
+void PlayerController::handle(const syncnet::QuestAbandon* msg)
+{
+	auto* quests = player_ != nullptr ? player_->GetComponent<PlayerQuest>() : nullptr;
+	if (quests == nullptr)
+	{
+		LOG.error("QuestAbandon error: PlayerQuest component missing");
+		return;
+	}
+
+	const bool ok = quests->AbandonQuest(msg->questId());
+	LOG.info("QuestAbandon questId:{} ok:{}", msg->questId(), ok);
+
+	player_->Send(
+		syncnet::CreateQuestAbandon
+		, syncnet::GameMessages::GameMessages_QuestAbandon
+		, lastMessageId_
+		, ok ? syncnet::StatusCode::StatusCode_Success : syncnet::StatusCode::StatusCode_Failed
+		, msg->questId()
+	);
 }

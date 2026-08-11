@@ -26,7 +26,7 @@ public:
     void Delete(const PlayerVO& vo);
 
     // Select by primary key
-    bool Select(int id, PlayerVO& out_vo);
+    bool Select(long long id, PlayerVO& out_vo);
 
     // Select by index columns (if any)
 
@@ -38,19 +38,19 @@ private:
 
 // ----------------------------------------
 
-class ItemDAO {
+class PlayerItemDAO {
 public:
-    ItemDAO(sql::Connection* conn);
+    PlayerItemDAO(sql::Connection* conn);
 
-    void Insert(const ItemVO& vo);
-    void Update(const ItemVO& vo);
-    void Delete(const ItemVO& vo);
+    void Insert(const PlayerItemVO& vo);
+    void Update(const PlayerItemVO& vo);
+    void Delete(const PlayerItemVO& vo);
 
     // Select by primary key
-    bool Select(int id, ItemVO& out_vo);
+    bool Select(long long character_id, int item_id, PlayerItemVO& out_vo);
 
     // Select by index columns (if any)
-    std::vector<ItemVO> SelectByIndex(int player_id);
+    std::vector<PlayerItemVO> SelectByIndex(long long character_id);
 
 private:
     sql::Connection* conn_;
@@ -60,19 +60,40 @@ private:
 
 // ----------------------------------------
 
-class SkillDAO {
+class PlayerSkillDAO {
 public:
-    SkillDAO(sql::Connection* conn);
+    PlayerSkillDAO(sql::Connection* conn);
 
-    void Insert(const SkillVO& vo);
-    void Update(const SkillVO& vo);
-    void Delete(const SkillVO& vo);
+    void Insert(const PlayerSkillVO& vo);
+    void Update(const PlayerSkillVO& vo);
+    void Delete(const PlayerSkillVO& vo);
 
     // Select by primary key
-    bool Select(int id, SkillVO& out_vo);
+    bool Select(long long character_id, int skill_id, PlayerSkillVO& out_vo);
 
     // Select by index columns (if any)
-    std::vector<SkillVO> SelectByIndex(int player_id);
+    std::vector<PlayerSkillVO> SelectByIndex(long long character_id);
+
+private:
+    sql::Connection* conn_;
+};
+
+
+
+// ----------------------------------------
+
+class PlayerWalletDAO {
+public:
+    PlayerWalletDAO(sql::Connection* conn);
+
+    void Insert(const PlayerWalletVO& vo);
+    void Update(const PlayerWalletVO& vo);
+    void Delete(const PlayerWalletVO& vo);
+
+    // Select by primary key
+    bool Select(long long character_id, PlayerWalletVO& out_vo);
+
+    // Select by index columns (if any)
 
 private:
     sql::Connection* conn_;
@@ -91,10 +112,10 @@ public:
     void Delete(const QuestActiveVO& vo);
 
     // Select by primary key
-    bool Select(int character_id, int quest_id, QuestActiveVO& out_vo);
+    bool Select(long long character_id, int quest_id, QuestActiveVO& out_vo);
 
     // Select by index columns (if any)
-    std::vector<QuestActiveVO> SelectByIndex(int character_id);
+    std::vector<QuestActiveVO> SelectByIndex(long long character_id);
 
 private:
     sql::Connection* conn_;
@@ -113,7 +134,7 @@ public:
     void Delete(const QuestStateVO& vo);
 
     // Select by primary key
-    bool Select(int character_id, QuestStateVO& out_vo);
+    bool Select(long long character_id, QuestStateVO& out_vo);
 
     // Select by index columns (if any)
 

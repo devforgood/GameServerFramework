@@ -17,3 +17,20 @@ CREATE TABLE IF NOT EXISTS `{{ table.name }}`
 
 {% endfor %}
 );
+
+{#
+  위 CREATE 는 IF NOT EXISTS 라서 이미 있는 테이블에는 아무것도 하지 않는다.
+  스키마에 컬럼이 추가되면 기존 DB 는 그대로 남아, 서버가 없는 컬럼을 읽으려다 죽는다.
+  그래서 컬럼마다 멱등한 ADD COLUMN 을 붙여 기동 때마다 스키마를 맞춘다
+  (MariaDB 의 ADD COLUMN IF NOT EXISTS 는 이미 있으면 조용히 넘어간다).
+
+  생성되는 SQL 의 주석은 ASCII 로만 쓴다 — 이 파일은 그대로 DB 드라이버에 넘어가므로
+  연결 문자셋에 따라 비ASCII 바이트가 문제를 일으킬 수 있다.
+#}
+-- Reconcile columns added to the schema after this table was first created.
+{% for col in table.columns %}
+{% if not col.auto_increment %}
+ALTER TABLE `{{ table.name }}` ADD COLUMN IF NOT EXISTS {{ "%-20s" | format("`" ~ col.name ~ "`") }} {{ "%-15s" | format(col.type) }}{% if not col.nullable %} NOT NULL{% endif %}{% if col.default is not none %} DEFAULT {{ col.default }}{% endif %}{% if not loop.first %} AFTER `{{ table.columns[loop.index0 - 1].name }}`{% endif %};
+
+{% endif %}
+{% endfor %}

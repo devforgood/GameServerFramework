@@ -13,6 +13,7 @@
 #include "PlayerItem.h"
 #include "PlayerSkill.h"
 #include "PlayerLevel.h"
+#include "PlayerWallet.h"
 #include "PlayerSaveData.h"
 #include "PlayerEventBroker.h"
 #include "PlayerEventBrokerProxy.h"
@@ -32,6 +33,7 @@ Player::Player()
 	this->AddComponent<PlayerItem>();
 	this->AddComponent<PlayerSkill>();
 	this->AddComponent<PlayerLevel>();
+	this->AddComponent<PlayerWallet>();
 }
 
 Player::~Player() 
@@ -127,12 +129,21 @@ void Player::OnLoadedData(const PlayerLoadData & data)
 	{
 		component.Load(data);
 	});
+
+	// 접속하지 않은 사이에 지난 시간을 정산한다(제한 시간 만료, 일일 리셋 등).
+	if (auto* broker = GetComponent<PlayerEventBroker>())
+		broker->publish(EventPlayerJoined{ static_cast<int>(playerId_) });
+
+	// 로그인 직후에는 진행 중인 퀘스트 전체를 클라에 내려준다(다음 Update 에서 한 통으로).
+	if (auto* quests = GetComponent<PlayerQuest>())
+		quests->MarkAllForSync();
 }
 
 void Player::Update(float dt)
 {
 	GameObject::Update(dt);
 
+	SendQuestSync();
 
 	// 1분마다 플레이어 데이터를 디비에 저장하는 로직
 	playerLazySaveAcc_ += dt;
@@ -141,6 +152,56 @@ void Player::Update(float dt)
 		SavePlayerData();
 		playerLazySaveAcc_ -= 60.0f;
 	}
+}
+
+void Player::SendQuestSync()
+{
+	auto* quests = GetComponent<PlayerQuest>();
+	if (quests == nullptr || !quests->HasPendingSync())
+		return;
+
+	std::vector<int> changed;
+	std::vector<int> removed;
+	std::vector<int> completed;
+	quests->DrainSync(changed, removed, completed);
+
+	auto builder_ptr = std::make_shared<send_message>();
+
+	std::vector<flatbuffers::Offset<syncnet::QuestInfo>> infos;
+	infos.reserve(changed.size());
+	for (int quest_id : changed)
+	{
+		const QuestActiveVO* vo = quests->GetActiveQuest(quest_id);
+		if (vo == nullptr)
+			continue; // 모아 두는 사이에 사라졌다 — removed 로 이미 나간다
+
+		const int progress[] = { vo->progress1, vo->progress2, vo->progress3 };
+		infos.push_back(syncnet::CreateQuestInfo(
+			*builder_ptr,
+			quest_id,
+			static_cast<int8_t>(vo->state),
+			vo->stage,
+			builder_ptr->CreateVector(progress, 3)));
+	}
+
+	if (infos.empty() && removed.empty() && completed.empty())
+		return;
+
+	auto payload = syncnet::CreateQuestSync(
+		*builder_ptr,
+		builder_ptr->CreateVector(infos),
+		builder_ptr->CreateVector(removed),
+		builder_ptr->CreateVector(completed));
+
+	auto send_msg = syncnet::CreateGameMessage(
+		*builder_ptr,
+		syncnet::GameMessages::GameMessages_QuestSync,
+		payload.Union(),
+		0 /* 요청/응답 짝이 아니라 알림이므로 0 */,
+		syncnet::StatusCode::StatusCode_Success);
+	builder_ptr->Finish(send_msg);
+
+	Send(builder_ptr);
 }
 
 std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Player::GetStrand()

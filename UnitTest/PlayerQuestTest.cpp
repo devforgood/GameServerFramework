@@ -4,6 +4,9 @@
 #include <filesystem>
 #include "PlayerQuest.h"
 #include "PlayerLevel.h"
+#include "PlayerItem.h"
+#include "PlayerSkill.h"
+#include "PlayerWallet.h"
 #include "PlayerLoadData.h"
 #include "PlayerSaveData.h"
 #include "DbRecord.h"
@@ -12,6 +15,7 @@
 #include "EventMessage.h"
 #include "Quest.h"
 #include "QuestRegistry.h"
+#include "QuestPolicy.h"
 #include "GameData/ResourceLoader.h"
 #include "gamedata.h"
 
@@ -41,6 +45,7 @@ constexpr int kFieldCleanup = 1004;    // SubQuest, or 목표 + auto_complete
 constexpr int kFirstSteps = 1005;      // SubQuest, reach + level + auto_complete
 constexpr int kDailyWolf = 2001;       // RepeatedQuest
 constexpr int kAncientLetter = 3001;   // LimitedTimeQuest
+constexpr int kDisabledEvent = 9001;   // 운영이 내려둔(disabled) 퀘스트
 
 constexpr int kGoblinMonsterId = 3;
 constexpr int kOrcMonsterId = 4;
@@ -492,6 +497,163 @@ TEST_F(PlayerQuestTest, Complete_ExpGoesToPlayerLevel)
 	EXPECT_EQ(level->GetExp(), before + 200);
 }
 
+TEST_F(PlayerQuestTest, Complete_DeliversItemsAndGoldToComponents)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerItem* inventory = go.AddComponent<PlayerItem>();
+	PlayerWallet* wallet = go.AddComponent<PlayerWallet>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+
+	const PlayerLoadData load = MakeNewPlayerData();
+	inventory->Load(load);
+	wallet->Load(load);
+	quest->Load(load);
+
+	AdvanceToKillStage(*quest);
+	quest->ReportProgress(QuestObjectiveType::Kill, kGoblinMonsterId, 10);
+	quest->ReportProgress(QuestObjectiveType::Collect, kGoblinEarItemId, 5);
+	quest->ReportProgress(QuestObjectiveType::Talk, kElderNpcId, 1);
+
+	ASSERT_TRUE(quest->CompleteQuest(kGoblinHunt, 0)); // 첫 번째 선택 보상(검 id 4)
+
+	// 고정 보상 포션 5개 + 고른 검 1개가 실제로 인벤토리에 들어가야 한다.
+	EXPECT_EQ(inventory->GetCount(1), 5);
+	EXPECT_EQ(inventory->GetCount(4), 1);
+	EXPECT_EQ(wallet->GetGold(), 200);
+}
+
+TEST_F(PlayerQuestTest, Complete_DiscardsQuestItemsButKeepsRewards)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerItem* inventory = go.AddComponent<PlayerItem>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+
+	const PlayerLoadData load = MakeNewPlayerData();
+	inventory->Load(load);
+	quest->Load(load);
+
+	ASSERT_EQ(quest->AcceptQuest(kGoblinHunt), QuestAcceptResult::Ok);
+	quest->ReportProgress(QuestObjectiveType::Talk, kElderNpcId, 1);
+
+	// 수집 목표는 인벤토리 획득 이벤트로 올라간다.
+	quest->ReportProgress(QuestObjectiveType::Kill, kGoblinMonsterId, 10);
+	inventory->AddItem(kGoblinEarItemId, 5);
+	ASSERT_EQ(quest->GetStage(kGoblinHunt), 3);
+
+	quest->ReportProgress(QuestObjectiveType::Talk, kElderNpcId, 1);
+	ASSERT_TRUE(quest->CompleteQuest(kGoblinHunt, 0));
+
+	// 퀘스트 전용 아이템은 회수되고, 보상은 남는다.
+	EXPECT_EQ(inventory->GetCount(kGoblinEarItemId), 0);
+	EXPECT_EQ(inventory->GetCount(1), 5);
+	EXPECT_EQ(inventory->GetCount(4), 1);
+}
+
+TEST_F(PlayerQuestTest, Abandon_DiscardsQuestItems)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerItem* inventory = go.AddComponent<PlayerItem>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+
+	const PlayerLoadData load = MakeNewPlayerData();
+	inventory->Load(load);
+	quest->Load(load);
+
+	ASSERT_EQ(quest->AcceptQuest(kWolfPelt), QuestAcceptResult::Ok);
+	inventory->AddItem(101, 3); // 늑대 가죽 (quest 1003 전용)
+
+	ASSERT_TRUE(quest->AbandonQuest(kWolfPelt));
+	EXPECT_EQ(inventory->GetCount(101), 0);
+}
+
+TEST_F(PlayerQuestTest, Progress_CollectAdvancesFromInventoryEvent)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerItem* inventory = go.AddComponent<PlayerItem>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+
+	const PlayerLoadData load = MakeNewPlayerData();
+	inventory->Load(load);
+	quest->Load(load);
+
+	AdvanceToKillStage(*quest);
+
+	inventory->AddItem(kGoblinEarItemId, 2);
+	EXPECT_EQ(quest->GetProgress(kGoblinHunt, 1), 2);
+
+	inventory->AddItem(kGoblinEarItemId, 9); // 목표치 5 를 넘겨도 5 로 잘린다
+	EXPECT_EQ(quest->GetProgress(kGoblinHunt, 1), 5);
+}
+
+TEST_F(PlayerQuestTest, Sync_CollectsChangedRemovedAndCompleted)
+{
+	PlayerQuest quest;
+	quest.Load(MakeNewPlayerData());
+
+	std::vector<int> changed, removed, completed;
+
+	ASSERT_EQ(quest.AcceptQuest(kFieldCleanup), QuestAcceptResult::Ok);
+	ASSERT_TRUE(quest.HasPendingSync());
+	quest.DrainSync(changed, removed, completed);
+	EXPECT_EQ(changed, std::vector<int>{ kFieldCleanup });
+	EXPECT_TRUE(removed.empty());
+	EXPECT_TRUE(completed.empty());
+	EXPECT_FALSE(quest.HasPendingSync()); // 꺼내면 비워진다
+
+	// auto_complete 퀘스트가 끝나면 목록에서 빠지고 완료로 보고된다.
+	quest.ReportProgress(QuestObjectiveType::Kill, kSlimeMonsterId, 10);
+	quest.DrainSync(changed, removed, completed);
+	EXPECT_TRUE(changed.empty()); // 사라진 퀘스트를 변경으로도 보내면 클라가 다시 만든다
+	EXPECT_EQ(removed, std::vector<int>{ kFieldCleanup });
+	EXPECT_EQ(completed, std::vector<int>{ kFieldCleanup });
+}
+
+TEST_F(PlayerQuestTest, Sync_MarkAllRestoresLogOnLogin)
+{
+	std::vector<QuestActiveVO> actives;
+	actives.push_back(MakeQuestVO(1001, kGoblinHunt, 0, 2, 5, 3, 0));
+
+	PlayerQuest quest;
+	quest.Load(MakeExistingPlayerData(1001, actives, std::string{}));
+	EXPECT_FALSE(quest.HasPendingSync());
+
+	quest.MarkAllForSync();
+
+	std::vector<int> changed, removed, completed;
+	quest.DrainSync(changed, removed, completed);
+	EXPECT_EQ(changed, std::vector<int>{ kGoblinHunt });
+}
+
+TEST_F(PlayerQuestTest, Prerequisite_ItemAndSkillCheckRealComponents)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerItem* inventory = go.AddComponent<PlayerItem>();
+	PlayerSkill* skills = go.AddComponent<PlayerSkill>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+
+	const PlayerLoadData load = MakeNewPlayerData();
+	inventory->Load(load);
+	skills->Load(load);
+	quest->Load(load);
+
+	// IQuestOwner 조회가 실제 컴포넌트를 본다(데이터에 아이템/스킬 선행조건이 없어
+	// 조회 자체를 직접 확인한다).
+	const IQuestOwner& owner = *quest;
+	EXPECT_FALSE(owner.HasItem(1));
+	EXPECT_FALSE(owner.HasSkill(1));
+
+	inventory->AddItem(1, 1);
+	skills->LearnSkill(1);
+
+	EXPECT_TRUE(owner.HasItem(1));
+	EXPECT_TRUE(owner.HasSkill(1));
+}
+
 TEST_F(PlayerQuestTest, Abandon_MainQuestIsRefused)
 {
 	PlayerQuest quest;
@@ -711,6 +873,128 @@ TEST_F(PlayerQuestTest, Event_QuestAcceptedAndCompletedArePublished)
 
 	quest->ReportProgress(QuestObjectiveType::Kill, kSlimeMonsterId, 10);
 	EXPECT_EQ(listener.completed, 1);
+}
+
+// ============================================================
+// 운영(GM)
+// ============================================================
+
+TEST_F(PlayerQuestTest, Gm_DisabledQuestCannotBeAcceptedNormally)
+{
+	PlayerQuest quest;
+	quest.Load(MakeNewPlayerData());
+
+	// 9001 은 데이터에서 내려둔 퀘스트다.
+	EXPECT_FALSE(QuestRegistry::Instance().Get(kDisabledEvent)->IsEnabled());
+	EXPECT_EQ(quest.AcceptQuest(kDisabledEvent), QuestAcceptResult::Disabled);
+	EXPECT_FALSE(quest.IsActive(kDisabledEvent));
+}
+
+TEST_F(PlayerQuestTest, Gm_ForceAcceptBypassesConditions)
+{
+	PlayerQuest quest;
+	quest.Load(MakeNewPlayerData(1001, 1)); // 레벨 1 — 1002 는 레벨/선행 모두 미달
+
+	// 레벨을 먼저 보므로 레벨 사유가 나온다(둘 다 미달인 상태를 만든 것이 요점).
+	ASSERT_EQ(quest.AcceptQuest(kGoblinChief), QuestAcceptResult::LevelTooLow);
+
+	EXPECT_TRUE(quest.GmForceAccept(kGoblinChief));
+	EXPECT_TRUE(quest.IsActive(kGoblinChief));
+	EXPECT_EQ(quest.GetStage(kGoblinChief), 1);
+
+	// 내려둔 퀘스트도 운영은 넣을 수 있다.
+	EXPECT_TRUE(quest.GmForceAccept(kDisabledEvent));
+	EXPECT_TRUE(quest.IsActive(kDisabledEvent));
+}
+
+TEST_F(PlayerQuestTest, Gm_ForceCompleteSkipsRemainingStages)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerItem* inventory = go.AddComponent<PlayerItem>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+
+	const PlayerLoadData load = MakeNewPlayerData();
+	inventory->Load(load);
+	quest->Load(load);
+
+	// 수락조차 하지 않은 상태에서 바로 완료시킨다(문의 대응에서 흔한 경우).
+	EXPECT_TRUE(quest->GmForceComplete(kGoblinHunt));
+
+	EXPECT_TRUE(quest->IsCompleted(kGoblinHunt));
+	EXPECT_FALSE(quest->IsActive(kGoblinHunt));
+	// 선택 보상을 지정하지 않으면 첫 번째(검 id 4)를 준다.
+	EXPECT_EQ(inventory->GetCount(4), 1);
+}
+
+TEST_F(PlayerQuestTest, Gm_SetProgressAdvancesStageWhenFilled)
+{
+	PlayerQuest quest;
+	quest.Load(MakeNewPlayerData());
+	ASSERT_EQ(quest.AcceptQuest(kGoblinHunt), QuestAcceptResult::Ok);
+
+	// 스테이지 2 의 두 목표를 한 번에 채워 준다 -> 스테이지 3 으로 넘어가야 한다.
+	EXPECT_TRUE(quest.GmSetProgress(kGoblinHunt, 2, 10, 5));
+	EXPECT_EQ(quest.GetStage(kGoblinHunt), 3);
+
+	// 스테이지 범위를 벗어나면 거절한다.
+	EXPECT_FALSE(quest.GmSetProgress(kGoblinHunt, 99, 1));
+	EXPECT_FALSE(quest.GmSetProgress(kGoblinHunt, 0, 1));
+}
+
+TEST_F(PlayerQuestTest, Gm_ResetClearsProgressAndCompletion)
+{
+	PlayerQuest quest;
+	quest.Load(MakeNewPlayerData());
+	ASSERT_TRUE(quest.GmForceComplete(kFieldCleanup));
+	ASSERT_TRUE(quest.IsCompleted(kFieldCleanup));
+
+	EXPECT_TRUE(quest.GmResetQuest(kFieldCleanup));
+
+	EXPECT_FALSE(quest.IsCompleted(kFieldCleanup));
+	EXPECT_FALSE(quest.IsActive(kFieldCleanup));
+	// 한 번도 안 받은 상태이므로 정상 경로로 다시 받을 수 있어야 한다.
+	EXPECT_EQ(quest.AcceptQuest(kFieldCleanup), QuestAcceptResult::Ok);
+}
+
+TEST_F(PlayerQuestTest, Gm_RewardMultipliersApplyAtGrantTime)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerWallet* wallet = go.AddComponent<PlayerWallet>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+
+	const PlayerLoadData load = MakeNewPlayerData();
+	wallet->Load(load);
+	quest->Load(load);
+
+	QuestPolicy::Instance().SetExpMultiplier(2.0);
+	QuestPolicy::Instance().SetGoldMultiplier(3.0);
+
+	ASSERT_EQ(quest->AcceptQuest(kFieldCleanup), QuestAcceptResult::Ok); // exp 200 / gold 100
+	quest->ReportProgress(QuestObjectiveType::Kill, kSlimeMonsterId, 10);
+	ASSERT_TRUE(quest->IsCompleted(kFieldCleanup));
+
+	const auto rewards = quest->TakePendingRewards();
+	ASSERT_EQ(rewards.size(), 1u);
+	EXPECT_EQ(rewards[0].exp, 400);
+	EXPECT_EQ(rewards[0].gold, 300);
+	EXPECT_EQ(wallet->GetGold(), 300);
+
+	QuestPolicy::Instance().Reset(); // 전역이므로 다른 테스트에 새지 않게 되돌린다
+}
+
+TEST_F(PlayerQuestTest, Gm_RewardMultiplierNeverZeroesAReward)
+{
+	QuestPolicy::Instance().SetExpMultiplier(0.001);
+	EXPECT_EQ(QuestPolicy::Instance().ApplyExp(200), 1); // 0 이 되어 보상이 사라지면 안 된다
+	EXPECT_EQ(QuestPolicy::Instance().ApplyExp(0), 0);   // 원래 없던 보상은 그대로 없다
+
+	// 0 이하 배율은 무시하고 1배로 되돌린다.
+	QuestPolicy::Instance().SetExpMultiplier(-5.0);
+	EXPECT_EQ(QuestPolicy::Instance().GetExpMultiplier(), 1.0);
+
+	QuestPolicy::Instance().Reset();
 }
 
 // ============================================================

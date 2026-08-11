@@ -24,7 +24,9 @@ CPP_SET_FUNC = {
 }
 
 def map_cpp_type(mysql_type):
-    for key in MYSQL_TO_CPP:
+    # 긴 이름부터 본다. "INT" 가 "BIGINT" 의 부분 문자열이라 짧은 것부터 맞추면
+    # BIGINT 컬럼이 int 로 생성되어 64비트 값이 조용히 잘린다.
+    for key in sorted(MYSQL_TO_CPP, key=len, reverse=True):
         if key in mysql_type:
             return MYSQL_TO_CPP[key]
     return "std::string"
@@ -102,13 +104,13 @@ def render_templates(tables):
 
     for table in tables:
 
-        with open(f"{pathname}/vo.h", "a") as f:
+        with open(f"{pathname}/vo.h", "a", encoding="utf-8") as f:
             f.write(env.get_template("vo.h.j2").render(table=table, include_header=is_first_file))
 
-        with open(f"{pathname}/{table['file_name']}.h", "a") as f:
+        with open(f"{pathname}/{table['file_name']}.h", "a", encoding="utf-8") as f:
             f.write(env.get_template("dao.h.j2").render(class_name=table["class_name"], table=table, include_header=is_first_file))
 
-        with open(f"{pathname}/{table['file_name']}.cpp", "a") as f:
+        with open(f"{pathname}/{table['file_name']}.cpp", "a", encoding="utf-8") as f:
             f.write(env.get_template("dao.cpp.j2").render(class_name=table["class_name"], table=table, include_header=is_first_file))
 
         create_sqls.append(env.get_template("create_table.sql.j2").render(table=table))
@@ -123,7 +125,7 @@ def render_templates(tables):
     sql_out_dirs = [pathname, "../Game/SQL/generated"]
     for out_dir in sql_out_dirs:
         os.makedirs(out_dir, exist_ok=True)
-        with open(f"{out_dir}/create_tables.sql", "w") as f:
+        with open(f"{out_dir}/create_tables.sql", "w", encoding="utf-8") as f:
             f.write(create_sql_text)
 
 if __name__ == "__main__":

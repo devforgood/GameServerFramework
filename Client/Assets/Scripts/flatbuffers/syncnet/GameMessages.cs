@@ -20,6 +20,11 @@ public enum GameMessages : byte
   TreeDebugSync = 10,
   EnterGate = 11,
   TreeDebugRequest = 12,
+  Interact = 13,
+  QuestAccept = 14,
+  QuestComplete = 15,
+  QuestAbandon = 16,
+  QuestSync = 17,
 };
 
 

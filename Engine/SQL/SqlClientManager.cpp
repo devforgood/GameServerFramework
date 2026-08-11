@@ -1,9 +1,12 @@
 #include "SqlClientManager.h"
 #include "SqlClient.h" // SqlClient 헤더 파일 포함
+#include "SqlScript.h"
 #include <fstream> // std::ifstream
 #include <sstream> // std::stringstream
 #include <memory> // std::unique_ptr
 #include <iostream> // std::cerr
+#include <string>
+#include <vector>
 #include <mariadb/conncpp.hpp>
 #include "LogHelper.h"
 
@@ -20,43 +23,63 @@ void SqlClientManager::init()
 
 bool SqlClientManager::create_tables()
 {
-    try {
-        // create_tables.sql 파일을 읽어 SQL 문자열로 만듭니다.
-        std::ifstream file("SQL/generated/create_tables.sql");
-        if (file)
-        {
-            std::stringstream buffer;
-            buffer << file.rdbuf();
-            std::string sql = buffer.str();
-
-            // SqlClient의 Connection을 통해 SQL 실행
-            sql::Connection* conn = sqlClientPtr->getConnection();
-            if (conn)
-            {
-                std::unique_ptr<sql::Statement> stmt(conn->createStatement());
-                stmt->execute(sql);
-            }
-        }
-        else
-        {
-            // 파일이 없을 경우 로깅 등 처리
-            // 예: std::cerr << "create_tables.sql 파일을 찾을 수 없습니다." << std::endl;
-            LOG.error("create_tables.sql file not found.");
-            return false;
-        }
-    }
-    catch (sql::SQLException& e)
+    std::ifstream file("SQL/generated/create_tables.sql");
+    if (!file)
     {
-        // SQL 예외 처리
-		LOG.error("SQLException: " + std::string(e.what()));
+        LOG.error("create_tables.sql file not found.");
         return false;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    const std::vector<std::string> statements = sql_script::Split(buffer.str());
+
+    sql::Connection* conn = nullptr;
+    try
+    {
+        conn = sqlClientPtr->getConnection();
     }
     catch (std::exception& e)
     {
-		// 일반 예외 처리
-		LOG.error("Exception: " + std::string(e.what()));
+        LOG.error("create_tables: connection failed: " + std::string(e.what()));
         return false;
     }
 
+    if (conn == nullptr)
+    {
+        LOG.error("create_tables: no database connection.");
+        return false;
+    }
+
+    // 문장마다 따로 잡는다. 스키마를 맞추는 ALTER 하나가 실패해도(예: 이미 다른 타입으로
+    // 존재하는 컬럼) 나머지 테이블 생성까지 통째로 날리면 안 된다.
+    int failed = 0;
+    for (const std::string& statement : statements)
+    {
+        try
+        {
+            std::unique_ptr<sql::Statement> stmt(conn->createStatement());
+            stmt->execute(statement);
+        }
+        catch (sql::SQLException& e)
+        {
+            ++failed;
+            LOG.error("create_tables: [{}] 실패: {}", statement, e.what());
+        }
+        catch (std::exception& e)
+        {
+            ++failed;
+            LOG.error("create_tables: [{}] 실패: {}", statement, e.what());
+        }
+    }
+
+    if (failed > 0)
+    {
+        LOG.error("create_tables: {}개 문장이 실패했습니다(전체 {}).",
+            failed, static_cast<int>(statements.size()));
+        return false;
+    }
+
+    LOG.info("create_tables: {}개 문장 적용 완료.", static_cast<int>(statements.size()));
     return true;
 }

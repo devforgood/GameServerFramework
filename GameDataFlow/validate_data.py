@@ -232,7 +232,7 @@ OBJECTIVE_TARGET_TABLE = {
     'use_item': 'Item',
     'use_skill': 'Skill',
     'reach': 'Map',
-    'talk': None,      # NPC 테이블이 아직 없다. 있으면 여기 연결한다.
+    'talk': 'Npc',
     'interact': None,  # 맵 오브젝트 id — 맵 안에 있으므로 전역 검사는 생략
     'level': None,     # count 가 도달 목표 레벨이다
 }
@@ -476,6 +476,14 @@ def _validate_quests(table_name, entries, tables):
         map_id = entry.get('map_id', 0)
         if map_id and map_ids is not None and map_id not in map_ids:
             errors.append(f"{label} — map_id {map_id} 가 Map 테이블에 없습니다")
+
+        # 시작/완료 NPC 가 실제로 없으면 퀘스트를 받거나 끝낼 방법이 사라진다.
+        npc_ids = _ids_of(tables, 'Npc')
+        if npc_ids is not None:
+            for field in ('start_npc_id', 'end_npc_id'):
+                npc_id = entry.get(field, 0)
+                if npc_id and npc_id not in npc_ids:
+                    errors.append(f"{label} — {field} {npc_id} 가 Npc 테이블에 없습니다")
 
         chain_id = entry.get('chain_id', 0)
         if chain_id:
