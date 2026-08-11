@@ -59,26 +59,104 @@ namespace Gamedata
         public int id;
         public System.Collections.Generic.List<ItemItemOption> item_options;
         public string name_id;
+        public bool no_sell;
+        public bool no_trade;
+        public int quest_id;
         public string type;
+    }
+
+
+    [Serializable]
+    public class QuestPrerequisites
+    {
+        public System.Collections.Generic.List<int> blocked_quest_ids;
+        public System.Collections.Generic.List<int> completed_quest_ids;
+        public System.Collections.Generic.List<int> item_ids;
+        public System.Collections.Generic.List<int> skill_ids;
+    }
+
+
+    [Serializable]
+    public class QuestRewardsChoiceItem
+    {
+        public int count;
+        public int item_id;
+    }
+
+
+    [Serializable]
+    public class QuestRewardsItem
+    {
+        public int count;
+        public int item_id;
+    }
+
+
+    [Serializable]
+    public class QuestRewards
+    {
+        public System.Collections.Generic.List<QuestRewardsChoiceItem> choice_items;
+        public int exp;
+        public int gold;
+        public System.Collections.Generic.List<QuestRewardsItem> items;
+        public System.Collections.Generic.List<int> skill_ids;
+    }
+
+
+    [Serializable]
+    public class QuestStageObjective
+    {
+        public int count;
+        public string desc_id;
+        public int target_id;
+        public string type;
+    }
+
+
+    [Serializable]
+    public class QuestStage
+    {
+        public string desc_id;
+        public string logic;
+        public System.Collections.Generic.List<QuestStageObjective> objectives;
+        public int step;
+    }
+
+
+    [Serializable]
+    public class QuestTime
+    {
+        public int cooldown_seconds;
+        public int limit_seconds;
+        public bool repeatable;
+        public string reset_type;
     }
 
 
     [Serializable]
     public class Quest
     {
+        public bool auto_complete;
+        public string category;
+        public int chain_id;
+        public int chain_step;
         public string code_name;
         public string desc_id;
+        public int end_npc_id;
         public int id;
-        public bool is_repeatable;
-        public int level_requirement;
+        public int level;
+        public int map_id;
+        public int max_level;
+        public int min_level;
         public string name_id;
-        public int objective_count;
-        public int objective_target_id;
-        public string objective_type;
-        public int reward_exp;
-        public int reward_gold;
-        public System.Collections.Generic.List<int> reward_item_ids;
-        public string type;
+        public QuestPrerequisites prerequisites;
+        public int priority;
+        public int recommended_party_size;
+        public QuestRewards rewards;
+        public bool shareable;
+        public System.Collections.Generic.List<QuestStage> stages;
+        public int start_npc_id;
+        public QuestTime time;
     }
 
 

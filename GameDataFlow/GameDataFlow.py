@@ -56,23 +56,33 @@ def main():
 
     tables = [t for t in meta.get("tables", []) if t.get("enabled", True)]
 
+    # 검증 전에 모든 테이블을 먼저 읽어둔다. 퀘스트처럼 다른 테이블(아이템/몬스터/맵)의
+    # id 를 참조하는 데이터는 교차 검증이 있어야 오타를 잡을 수 있다.
+    loaded = {}
+    preload_failed = False
+    for table in tables:
+        data = load_table_data(table["json_path"])
+        if data is None:
+            preload_failed = True
+            continue
+        loaded[table["name"]] = data
+
     all_structs = []          # combined C++/C# model structs (across all tables)
     all_indexes = []          # id 를 가진 중첩 오브젝트의 인덱스 서술자
     seen_struct_names = set()
     table_names = []          # top-level table class names (for C# list wrappers)
 
-    had_error = False
+    had_error = preload_failed
 
     for table in tables:
         table_name = table["name"]
-        data = load_table_data(table["json_path"])
+        data = loaded.get(table_name)
         if data is None:
-            had_error = True
             continue
 
         # 코드 생성 전에 데이터를 정적 검증한다(중복 id, 필드명 오타 등).
         # 오타 필드는 스키마 추론을 그대로 통과해 모델까지 전파되므로 여기서 차단한다.
-        validation_errors = validate_table(table_name, data)
+        validation_errors = validate_table(table_name, data, loaded)
         if validation_errors:
             for err in validation_errors:
                 print(f"{RED}[ERROR] {err}{RESET}")

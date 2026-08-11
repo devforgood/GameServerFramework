@@ -1,47 +1,388 @@
 [
   {
-    "id": 1,
+    "id": 1001,
     "code_name": "MainQuest",
-    "type": "main",
-    "name_id": "quest_tutorial_name",
-    "desc_id": "quest_tutorial_desc",
-    "level_requirement": 1,
-    "reward_item_ids": [1, 2],
-    "reward_exp": 100,
-    "reward_gold": 50,
-    "is_repeatable": false,
-    "objective_type": "kill",
-    "objective_count": 5,
-    "objective_target_id": 1
+    "category": "kill",
+    "name_id": "quest_goblin_hunt_name",
+    "desc_id": "quest_goblin_hunt_desc",
+    "level": 3,
+    "min_level": 3,
+    "max_level": 0,
+    "priority": 100,
+    "map_id": 2,
+    "start_npc_id": 2001,
+    "end_npc_id": 2001,
+    "shareable": true,
+    "recommended_party_size": 1,
+    "auto_complete": false,
+    "chain_id": 10,
+    "chain_step": 1,
+    "prerequisites": {
+      "completed_quest_ids": [],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_goblin_hunt_stage1_desc",
+        "objectives": [
+          { "type": "talk", "target_id": 2001, "count": 1, "desc_id": "quest_goblin_hunt_obj_talk_elder" }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_goblin_hunt_stage2_desc",
+        "objectives": [
+          { "type": "kill", "target_id": 3, "count": 10, "desc_id": "quest_goblin_hunt_obj_kill_goblin" },
+          { "type": "collect", "target_id": 100, "count": 5, "desc_id": "quest_goblin_hunt_obj_collect_ear" }
+        ]
+      },
+      {
+        "step": 3,
+        "logic": "and",
+        "desc_id": "quest_goblin_hunt_stage3_desc",
+        "objectives": [
+          { "type": "talk", "target_id": 2001, "count": 1, "desc_id": "quest_goblin_hunt_obj_report" }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 500,
+      "gold": 200,
+      "items": [
+        { "item_id": 1, "count": 5 }
+      ],
+      "choice_items": [
+        { "item_id": 4, "count": 1 },
+        { "item_id": 5, "count": 1 }
+      ],
+      "skill_ids": []
+    }
   },
   {
-    "id": 2,
+    "id": 1002,
+    "code_name": "MainQuest",
+    "category": "boss",
+    "name_id": "quest_goblin_chief_name",
+    "desc_id": "quest_goblin_chief_desc",
+    "level": 5,
+    "min_level": 5,
+    "max_level": 0,
+    "priority": 100,
+    "map_id": 2,
+    "start_npc_id": 2001,
+    "end_npc_id": 2001,
+    "shareable": true,
+    "recommended_party_size": 3,
+    "auto_complete": false,
+    "chain_id": 10,
+    "chain_step": 2,
+    "prerequisites": {
+      "completed_quest_ids": [1001],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_goblin_chief_stage1_desc",
+        "objectives": [
+          { "type": "kill", "target_id": 4, "count": 1, "desc_id": "quest_goblin_chief_obj_kill_chief" }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_goblin_chief_stage2_desc",
+        "objectives": [
+          { "type": "talk", "target_id": 2001, "count": 1, "desc_id": "quest_goblin_chief_obj_report" }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 1200,
+      "gold": 500,
+      "items": [
+        { "item_id": 3, "count": 2 }
+      ],
+      "choice_items": [],
+      "skill_ids": []
+    }
+  },
+  {
+    "id": 1003,
+    "code_name": "SubQuest",
+    "category": "collect",
+    "name_id": "quest_wolf_pelt_name",
+    "desc_id": "quest_wolf_pelt_desc",
+    "level": 2,
+    "min_level": 2,
+    "max_level": 0,
+    "priority": 50,
+    "map_id": 13,
+    "start_npc_id": 2002,
+    "end_npc_id": 2002,
+    "shareable": true,
+    "recommended_party_size": 1,
+    "auto_complete": false,
+    "chain_id": 0,
+    "chain_step": 0,
+    "prerequisites": {
+      "completed_quest_ids": [],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_wolf_pelt_stage1_desc",
+        "objectives": [
+          { "type": "collect", "target_id": 101, "count": 5, "desc_id": "quest_wolf_pelt_obj_collect" }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 300,
+      "gold": 150,
+      "items": [
+        { "item_id": 1, "count": 3 }
+      ],
+      "choice_items": [],
+      "skill_ids": []
+    }
+  },
+  {
+    "id": 1004,
+    "code_name": "SubQuest",
+    "category": "kill",
+    "name_id": "quest_field_cleanup_name",
+    "desc_id": "quest_field_cleanup_desc",
+    "level": 2,
+    "min_level": 1,
+    "max_level": 0,
+    "priority": 30,
+    "map_id": 13,
+    "start_npc_id": 2002,
+    "end_npc_id": 2002,
+    "shareable": true,
+    "recommended_party_size": 1,
+    "auto_complete": true,
+    "chain_id": 0,
+    "chain_step": 0,
+    "prerequisites": {
+      "completed_quest_ids": [],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "or",
+        "desc_id": "quest_field_cleanup_stage1_desc",
+        "objectives": [
+          { "type": "kill", "target_id": 1, "count": 10, "desc_id": "quest_field_cleanup_obj_slime" },
+          { "type": "kill", "target_id": 2, "count": 5, "desc_id": "quest_field_cleanup_obj_wolf" }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 200,
+      "gold": 100,
+      "items": [],
+      "choice_items": [],
+      "skill_ids": []
+    }
+  },
+  {
+    "id": 1005,
+    "code_name": "SubQuest",
+    "category": "explore",
+    "name_id": "quest_first_steps_name",
+    "desc_id": "quest_first_steps_desc",
+    "level": 1,
+    "min_level": 1,
+    "max_level": 0,
+    "priority": 200,
+    "map_id": 1,
+    "start_npc_id": 2001,
+    "end_npc_id": 0,
+    "shareable": false,
+    "recommended_party_size": 1,
+    "auto_complete": true,
+    "chain_id": 0,
+    "chain_step": 0,
+    "prerequisites": {
+      "completed_quest_ids": [],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_first_steps_stage1_desc",
+        "objectives": [
+          { "type": "reach", "target_id": 2, "count": 1, "desc_id": "quest_first_steps_obj_reach_forest" },
+          { "type": "level", "target_id": 0, "count": 3, "desc_id": "quest_first_steps_obj_level3" }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 150,
+      "gold": 50,
+      "items": [
+        { "item_id": 1, "count": 2 }
+      ],
+      "choice_items": [],
+      "skill_ids": []
+    }
+  },
+  {
+    "id": 2001,
     "code_name": "RepeatedQuest",
-    "type": "repeated",
-    "name_id": "quest_daily_kills_name",
-    "desc_id": "quest_daily_kills_desc",
-    "level_requirement": 5,
-    "reward_item_ids": [3],
-    "reward_exp": 200,
-    "reward_gold": 100,
-    "is_repeatable": true,
-    "objective_type": "kill",
-    "objective_count": 10,
-    "objective_target_id": 2
+    "category": "kill",
+    "name_id": "quest_daily_wolf_name",
+    "desc_id": "quest_daily_wolf_desc",
+    "level": 5,
+    "min_level": 5,
+    "max_level": 0,
+    "priority": 10,
+    "map_id": 13,
+    "start_npc_id": 2002,
+    "end_npc_id": 2002,
+    "shareable": true,
+    "recommended_party_size": 1,
+    "auto_complete": false,
+    "chain_id": 0,
+    "chain_step": 0,
+    "prerequisites": {
+      "completed_quest_ids": [1003],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_daily_wolf_stage1_desc",
+        "objectives": [
+          { "type": "kill", "target_id": 2, "count": 10, "desc_id": "quest_daily_wolf_obj_kill" }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "daily",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": true
+    },
+    "rewards": {
+      "exp": 400,
+      "gold": 300,
+      "items": [
+        { "item_id": 2, "count": 1 }
+      ],
+      "choice_items": [],
+      "skill_ids": []
+    }
   },
   {
-    "id": 3,
+    "id": 3001,
     "code_name": "LimitedTimeQuest",
-    "type": "LimitedTime",
-    "name_id": "quest_limited_time_name",
-    "desc_id": "quest_limited_time_desc",
-    "level_requirement": 3,
-    "reward_item_ids": [4],
-    "reward_exp": 150,
-    "reward_gold": 75,
-    "is_repeatable": false,
-    "objective_type": "collect",
-    "objective_count": 3,
-    "objective_target_id": 1
+    "category": "collect",
+    "name_id": "quest_ancient_letter_name",
+    "desc_id": "quest_ancient_letter_desc",
+    "level": 6,
+    "min_level": 6,
+    "max_level": 0,
+    "priority": 150,
+    "map_id": 2,
+    "start_npc_id": 2001,
+    "end_npc_id": 2001,
+    "shareable": false,
+    "recommended_party_size": 1,
+    "auto_complete": false,
+    "chain_id": 0,
+    "chain_step": 0,
+    "prerequisites": {
+      "completed_quest_ids": [1002],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_ancient_letter_stage1_desc",
+        "objectives": [
+          { "type": "collect", "target_id": 102, "count": 1, "desc_id": "quest_ancient_letter_obj_collect" }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_ancient_letter_stage2_desc",
+        "objectives": [
+          { "type": "talk", "target_id": 2001, "count": 1, "desc_id": "quest_ancient_letter_obj_report" }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 1800,
+      "cooldown_seconds": 3600,
+      "repeatable": true
+    },
+    "rewards": {
+      "exp": 800,
+      "gold": 400,
+      "items": [
+        { "item_id": 3, "count": 1 }
+      ],
+      "choice_items": [],
+      "skill_ids": []
+    }
   }
 ]

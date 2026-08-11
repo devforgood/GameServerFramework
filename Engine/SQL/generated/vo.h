@@ -29,6 +29,7 @@ struct QuestActiveVO {
     int character_id;
     int quest_id;
     int state;
+    int stage;
     int progress1;
     int progress2;
     int progress3;

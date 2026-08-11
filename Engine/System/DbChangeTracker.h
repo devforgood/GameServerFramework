@@ -72,6 +72,18 @@ public:
         return true;
     }
 
+    // 키 스냅샷. 순회 도중 Add/Remove 로 컨테이너가 바뀌어도 안전하도록 복사해 준다.
+    // out 을 재사용하면 반복 호출해도 추가 할당이 없다.
+    void CollectKeys(std::vector<TKey>& out) const
+    {
+        out.clear();
+        out.reserve(rows_.size());
+        for (const auto& [key, entry] : rows_)
+            out.push_back(key);
+    }
+
+    size_t Size() const { return rows_.size(); }
+
     // 저장할 변경분이 있는지 (신규/수정/삭제 중 하나라도)
     bool HasPendingChanges() const
     {

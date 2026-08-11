@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS `quest_active`
     `character_id`       BIGINT          NOT NULL,
     `quest_id`           INT             NOT NULL,
     `state`              TINYINT         NOT NULL,
+    `stage`              TINYINT         NOT NULL DEFAULT 1,
     `progress1`          INT             NOT NULL DEFAULT 0,
     `progress2`          INT             NOT NULL DEFAULT 0,
     `progress3`          INT             NOT NULL DEFAULT 0,

@@ -39,6 +39,10 @@ private:
 	bool deadNotified_ = false; // 사망 이벤트 중복 발행 방지
 	SkillSet skillSet_;         // 플레이어와 동일한 스킬 파이프라인(TryCast)을 사용한다
 
+	// monster.json 의 종류 id. 스폰 마커(monster_spawn.monster_id)가 정한다.
+	// 사망 이벤트에 실려 나가서 퀘스트의 kill 목표가 종류별로 셀 수 있게 한다.
+	int dataId_ = 0;
+
 public:
 	int targetAgentId_;
 	std::string name_;
@@ -56,6 +60,9 @@ public:
 	int Resume();
 
 	SkillSet& GetSkillSet() { return skillSet_; }
+
+	void SetDataId(int dataId) { dataId_ = dataId; }
+	int GetDataId() const { return dataId_; }
 
 	// 사망 시 킬한 플레이어에게 EventActorDead 이벤트를 발행한다(최초 1회).
 	void NotifyKilledBy();

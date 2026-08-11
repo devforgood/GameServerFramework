@@ -202,6 +202,8 @@
     <ClCompile Include="Quest\Quest.cpp" />
     <ClCompile Include="Quest\QuestFactory.cpp" />
     <ClCompile Include="Quest\RepeatedQuest.cpp" />
+    <ClCompile Include="Quest\QuestRegistry.cpp" />
+    <ClCompile Include="Quest\SubQuest.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="skill\Skill.cpp" />
     <ClCompile Include="skill\SkillFactory.cpp" />
@@ -305,6 +307,9 @@
     <ClInclude Include="Quest\Quest.h" />
     <ClInclude Include="Quest\QuestFactory.h" />
     <ClInclude Include="Quest\RepeatedQuest.h" />
+    <ClInclude Include="Quest\QuestRegistry.h" />
+    <ClInclude Include="Quest\QuestObjective.h" />
+    <ClInclude Include="Quest\SubQuest.h" />
     <ClInclude Include="Message\SendMessage.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="skill\Skill.h" />

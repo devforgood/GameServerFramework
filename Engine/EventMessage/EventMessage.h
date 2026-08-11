@@ -8,6 +8,11 @@ struct EventActorDead
 {
 	int killer_actor_id;
 	int victim_actor_id;
+
+	// 처치된 대상의 데이터 id(monster.json). 퀘스트의 kill 목표는 "고블린 10마리"처럼
+	// 종류로 세므로, 매 스폰마다 달라지는 actor id 로는 셀 수 없다.
+	// 0 이면 데이터 id 를 모르는 대상(플레이어 등).
+	int victim_data_id = 0;
 };
 
 // 플레이어 입장
@@ -24,11 +29,33 @@ struct EventItemAcquired
 	int count;
 };
 
+// 아이템 사용 (사용 퀘스트)
+struct EventItemUsed
+{
+	int player_id;
+	int item_id;
+	int count;
+};
+
+// 스킬 사용 (스킬 사용 퀘스트, 숙련도)
+struct EventSkillUsed
+{
+	int player_id;
+	int skill_id;
+};
+
 // 레벨 상승 (레벨 달성 퀘스트, 컨텐츠 해금)
 struct EventLevelUp
 {
 	int player_id;
 	int new_level;
+};
+
+// 퀘스트 수락 (클라 동기화, 추적 목록)
+struct EventQuestAccepted
+{
+	int player_id;
+	int quest_id;
 };
 
 // 퀘스트 완료 (연계 퀘스트 진행)
@@ -38,7 +65,14 @@ struct EventQuestCompleted
 	int quest_id;
 };
 
-// 특정 지역 진입 (탐험 퀘스트, 영역 트리거)
+// 퀘스트 실패 (제한 시간 초과 등)
+struct EventQuestFailed
+{
+	int player_id;
+	int quest_id;
+};
+
+// 특정 지역 진입 (탐험 퀘스트, 영역 트리거). area_id 는 맵 id 다.
 struct EventAreaEntered
 {
 	int player_id;
@@ -52,12 +86,24 @@ struct EventNpcInteracted
 	int npc_id;
 };
 
+// 맵 오브젝트 상호작용 (상자 개봉, 장치 조작 등). object_id 는 Map.json 의 오브젝트 id.
+struct EventObjectInteracted
+{
+	int player_id;
+	int object_id;
+};
+
 using EventMessage = std::variant<
 	EventActorDead
 	, EventPlayerJoined
 	, EventItemAcquired
+	, EventItemUsed
+	, EventSkillUsed
 	, EventLevelUp
+	, EventQuestAccepted
 	, EventQuestCompleted
+	, EventQuestFailed
 	, EventAreaEntered
 	, EventNpcInteracted
+	, EventObjectInteracted
 >;

@@ -44,9 +44,25 @@ def _ensure_default_class(server_src_dir, table_name):
         with open(cpp_path, 'w', encoding='utf-8') as f:
             f.write(f'#include "{table_name}.h"\n')
 
+def _new_file_dir(server_src_dir, table_name):
+    """이 테이블의 C++ 소스를 새로 만들 디렉터리.
+
+    기존 클래스들이 테이블별 하위 폴더(Engine/Quest/, Engine/Map/ ...)에 모여 있으므로
+    베이스 클래스가 있는 곳에 새 파생 클래스도 같이 둔다. 루트에 흩어지면 include 경로에서
+    진짜 헤더를 가리는 사고가 난다(_resolve_path 주석 참고)."""
+    base_h = _resolve_path(server_src_dir, f'{table_name}.h')
+    if os.path.exists(base_h):
+        return os.path.dirname(base_h)
+    return server_src_dir
+
 def _ensure_default_derived_class(server_src_dir, table_name, class_name):
     h_path = _resolve_path(server_src_dir, f'{class_name}.h')
     cpp_path = _resolve_path(server_src_dir, f'{class_name}.cpp')
+
+    if not os.path.exists(h_path):
+        h_path = os.path.join(_new_file_dir(server_src_dir, table_name), f'{class_name}.h')
+    if not os.path.exists(cpp_path):
+        cpp_path = os.path.join(_new_file_dir(server_src_dir, table_name), f'{class_name}.cpp')
 
     if not os.path.exists(h_path):
         with open(h_path, 'w', encoding='utf-8') as f:

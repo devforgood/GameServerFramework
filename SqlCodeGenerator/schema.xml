@@ -26,6 +26,7 @@
     <column name="character_id" type="BIGINT" nullable="false"/>
     <column name="quest_id" type="INT" nullable="false"/>
     <column name="state" type="TINYINT" nullable="false"/>
+    <column name="stage" type="TINYINT" default="1" nullable="false"/>
     <column name="progress1" type="INT" default="0" nullable="false"/>
     <column name="progress2" type="INT" default="0" nullable="false"/>
     <column name="progress3" type="INT" default="0" nullable="false"/>

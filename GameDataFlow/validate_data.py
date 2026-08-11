@@ -26,6 +26,13 @@
      - two_way: 상대가 게이트여야 하고, 그 게이트도 two_way 이며 이 게이트를
        되가리켜야 한다(입구/출구 짝). 짝이 어긋나면 한쪽 방향 이동이 조용히 실패한다.
      - one_way: 레이드 등 인스턴스 던전 입구용. 짝이 필요 없고 스폰 지점을 가리켜도 된다.
+  6) (Quest 전용) 스테이지/목표/선행조건/보상/시간 정책 검증:
+     - 목표 type 은 서버가 해석할 수 있는 것이어야 하고, target_id 는 실제 다른 테이블
+       (몬스터/아이템/스킬/맵)에 있는 id 여야 한다. 오타 난 target_id 는 영원히 진행되지
+       않는 퀘스트가 되는데, 데이터만 봐서는 알 수 없다.
+     - 스테이지당 목표는 3개까지다(quest_active 의 progress1~3).
+     - 선행/차단 퀘스트, 보상 아이템/스킬 id 도 실제 존재해야 한다.
+     - 리셋되는 퀘스트는 repeatable 이어야 하고, LimitedTimeQuest 는 제한 시간이 있어야 한다.
 """
 
 from collections import Counter, defaultdict
@@ -216,8 +223,292 @@ def _validate_map_gate_links(table_name, entries):
     return errors
 
 
-def validate_table(table_name, entries):
-    """오류 메시지 리스트를 반환한다(비어 있으면 통과)."""
+# 서버 QuestObjective 가 해석할 수 있는 목표 타입.
+# 값을 추가하려면 Engine/Quest/QuestObjective.h 의 ParseObjectiveType 도 함께 늘려야 한다.
+# 각 항목은 (타입 이름, target_id 가 가리키는 테이블) — None 이면 target_id 를 쓰지 않는다.
+OBJECTIVE_TARGET_TABLE = {
+    'kill': 'MonsterData',
+    'collect': 'Item',
+    'use_item': 'Item',
+    'use_skill': 'Skill',
+    'reach': 'Map',
+    'talk': None,      # NPC 테이블이 아직 없다. 있으면 여기 연결한다.
+    'interact': None,  # 맵 오브젝트 id — 맵 안에 있으므로 전역 검사는 생략
+    'level': None,     # count 가 도달 목표 레벨이다
+}
+
+QUEST_STAGE_LOGIC = {'and', 'or'}
+QUEST_RESET_TYPES = {'none', 'daily', 'weekly'}
+
+# quest_active 테이블이 progress1~3 세 칸만 가지고 있다. 한 스테이지의 목표는
+# 이 칸에 슬롯 순서대로 저장되므로 스테이지당 목표 수가 여기를 넘으면 진행도를 잃는다.
+MAX_OBJECTIVES_PER_STAGE = 3
+
+
+def _ids_of(tables, table_name):
+    """다른 테이블의 최상위 id 집합. 테이블이 없으면 None(검사 생략)."""
+    if not tables or table_name not in tables:
+        return None
+    return {e['id'] for e in tables[table_name]
+            if isinstance(e, dict) and isinstance(e.get('id'), int)}
+
+
+def _validate_quest_objective(label, obj, tables, errors):
+    if not isinstance(obj, dict):
+        errors.append(f"{label} — 목표가 객체가 아닙니다")
+        return
+
+    obj_type = obj.get('type')
+    if obj_type not in OBJECTIVE_TARGET_TABLE:
+        errors.append(
+            f"{label} — 알 수 없는 목표 type {obj_type!r}. "
+            f"지원 타입: {sorted(OBJECTIVE_TARGET_TABLE)}")
+        return
+
+    count = obj.get('count')
+    if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+        errors.append(f"{label} — count 는 1 이상의 정수여야 합니다 (현재: {count!r})")
+
+    target_table = OBJECTIVE_TARGET_TABLE[obj_type]
+    target_id = obj.get('target_id', 0)
+
+    if obj_type == 'level':
+        if target_id:
+            errors.append(
+                f"{label} — level 목표는 target_id 를 쓰지 않습니다. "
+                f"도달 목표 레벨은 count 에 적습니다 (현재 target_id: {target_id!r})")
+        return
+
+    if not isinstance(target_id, int) or isinstance(target_id, bool) or target_id <= 0:
+        errors.append(
+            f"{label} — {obj_type} 목표는 1 이상의 target_id 가 필요합니다 (현재: {target_id!r})")
+        return
+
+    known = _ids_of(tables, target_table) if target_table else None
+    if known is not None and target_id not in known:
+        errors.append(
+            f"{label} — target_id {target_id} 가 {target_table} 테이블에 없습니다")
+
+
+def _validate_quest_stages(quest, label, tables, errors):
+    stages = quest.get('stages')
+    if not isinstance(stages, list) or not stages:
+        errors.append(f"{label} — stages 는 최소 1개가 필요합니다")
+        return
+
+    for index, stage in enumerate(stages):
+        stage_label = f"{label} stages[{index}]"
+        if not isinstance(stage, dict):
+            errors.append(f"{stage_label} — 스테이지가 객체가 아닙니다")
+            continue
+
+        # step 은 배열 순서와 같아야 한다. DB 의 quest_active.stage 가 이 값이고,
+        # 서버는 stage 값으로 배열을 되찾으므로 어긋나면 진행이 엉뚱한 곳으로 간다.
+        if stage.get('step') != index + 1:
+            errors.append(
+                f"{stage_label} — step 은 배열 순서와 같은 {index + 1} 이어야 합니다 "
+                f"(현재: {stage.get('step')!r})")
+
+        logic = stage.get('logic')
+        if logic not in QUEST_STAGE_LOGIC:
+            errors.append(
+                f"{stage_label} — logic 은 'and' 또는 'or' 여야 합니다 (현재: {logic!r})")
+
+        objectives = stage.get('objectives')
+        if not isinstance(objectives, list) or not objectives:
+            errors.append(f"{stage_label} — objectives 는 최소 1개가 필요합니다")
+            continue
+
+        if len(objectives) > MAX_OBJECTIVES_PER_STAGE:
+            errors.append(
+                f"{stage_label} — 목표가 {len(objectives)}개입니다. "
+                f"quest_active 는 진행도 칸이 {MAX_OBJECTIVES_PER_STAGE}개뿐이라 "
+                f"스테이지를 나눠야 합니다")
+
+        seen = set()
+        for slot, obj in enumerate(objectives):
+            _validate_quest_objective(
+                f"{stage_label} objectives[{slot}]", obj, tables, errors)
+            if isinstance(obj, dict):
+                key = (obj.get('type'), obj.get('target_id', 0))
+                if key in seen:
+                    errors.append(
+                        f"{stage_label} objectives[{slot}] — 같은 스테이지에 "
+                        f"{key[0]}/{key[1]} 목표가 중복됩니다. 진행 이벤트가 "
+                        f"두 칸을 동시에 올려 카운트가 어긋납니다")
+                seen.add(key)
+
+
+def _validate_quest_prerequisites(quest, label, quest_ids, tables, errors):
+    prereq = quest.get('prerequisites')
+    if prereq is None:
+        return
+    if not isinstance(prereq, dict):
+        errors.append(f"{label} — prerequisites 는 객체여야 합니다")
+        return
+
+    quest_id = quest.get('id')
+    for field in ('completed_quest_ids', 'blocked_quest_ids'):
+        for ref in prereq.get(field) or []:
+            if ref == quest_id:
+                errors.append(f"{label} — prerequisites.{field} 가 자기 자신을 참조합니다")
+            elif ref not in quest_ids:
+                errors.append(
+                    f"{label} — prerequisites.{field} 의 퀘스트 {ref} 가 존재하지 않습니다")
+
+    for field, target_table in (('item_ids', 'Item'), ('skill_ids', 'Skill')):
+        known = _ids_of(tables, target_table)
+        if known is None:
+            continue
+        for ref in prereq.get(field) or []:
+            if ref not in known:
+                errors.append(
+                    f"{label} — prerequisites.{field} 의 {ref} 가 "
+                    f"{target_table} 테이블에 없습니다")
+
+
+def _validate_quest_rewards(quest, label, tables, errors):
+    rewards = quest.get('rewards')
+    if rewards is None:
+        return
+    if not isinstance(rewards, dict):
+        errors.append(f"{label} — rewards 는 객체여야 합니다")
+        return
+
+    item_ids = _ids_of(tables, 'Item')
+    for field in ('items', 'choice_items'):
+        for i, entry in enumerate(rewards.get(field) or []):
+            entry_label = f"{label} rewards.{field}[{i}]"
+            if not isinstance(entry, dict):
+                errors.append(f"{entry_label} — 항목이 객체가 아닙니다")
+                continue
+            item_id = entry.get('item_id')
+            count = entry.get('count')
+            if item_ids is not None and item_id not in item_ids:
+                errors.append(f"{entry_label} — item_id {item_id!r} 가 Item 테이블에 없습니다")
+            if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+                errors.append(f"{entry_label} — count 는 1 이상이어야 합니다 (현재: {count!r})")
+
+    skill_ids = _ids_of(tables, 'Skill')
+    if skill_ids is not None:
+        for ref in rewards.get('skill_ids') or []:
+            if ref not in skill_ids:
+                errors.append(f"{label} — rewards.skill_ids 의 {ref} 가 Skill 테이블에 없습니다")
+
+    # 선택 보상은 하나만 고를 수 있으므로 후보가 1개면 선택의 의미가 없다.
+    choice = rewards.get('choice_items') or []
+    if len(choice) == 1:
+        errors.append(
+            f"{label} — rewards.choice_items 가 1개뿐입니다. "
+            f"고정 보상이면 items 로 옮기세요")
+
+    # 자동 완료 퀘스트는 서버가 목표 달성 즉시 끝내므로 보상을 고를 사람이 없다.
+    if choice and quest.get('auto_complete'):
+        errors.append(
+            f"{label} — auto_complete 퀘스트에는 선택 보상을 둘 수 없습니다 "
+            f"(고를 기회 없이 완료됩니다)")
+
+
+def _validate_quest_time(quest, label, errors):
+    time = quest.get('time')
+    if time is None:
+        return
+    if not isinstance(time, dict):
+        errors.append(f"{label} — time 은 객체여야 합니다")
+        return
+
+    reset_type = time.get('reset_type', 'none')
+    if reset_type not in QUEST_RESET_TYPES:
+        errors.append(
+            f"{label} — time.reset_type 은 {sorted(QUEST_RESET_TYPES)} 중 하나여야 합니다 "
+            f"(현재: {reset_type!r})")
+
+    for field in ('limit_seconds', 'cooldown_seconds'):
+        value = time.get(field, 0)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            errors.append(f"{label} — time.{field} 는 0 이상의 정수여야 합니다 (현재: {value!r})")
+
+    # 리셋되는 퀘스트는 다시 받을 수 있어야 한다. 아니면 첫 완료 후 영영 잠긴다.
+    if reset_type != 'none' and not time.get('repeatable'):
+        errors.append(
+            f"{label} — time.reset_type 이 '{reset_type}' 인데 repeatable 이 false 입니다. "
+            f"리셋되어도 재수락이 막혀 있습니다")
+
+    # 제한 시간 퀘스트라고 선언해 놓고 제한이 없으면 클래스가 아무 일도 하지 않는다.
+    if quest.get('code_name') == 'LimitedTimeQuest' and not time.get('limit_seconds'):
+        errors.append(
+            f"{label} — LimitedTimeQuest 는 time.limit_seconds 가 1 이상이어야 합니다")
+
+
+def _validate_quests(table_name, entries, tables):
+    """Quest 테이블 전용: 스테이지/목표/선행조건/보상/시간 정책 검증."""
+    errors = []
+
+    quest_ids = {e['id'] for e in entries
+                 if isinstance(e, dict) and isinstance(e.get('id'), int)}
+    chains = defaultdict(list)  # chain_id -> [(chain_step, quest_id)]
+
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+
+        quest_id = entry.get('id')
+        label = f"{table_name}: 퀘스트 {quest_id}"
+
+        if not entry.get('code_name'):
+            errors.append(
+                f"{label} — code_name 이 필요합니다 "
+                f"(QuestFactory 가 이 이름으로 클래스를 고른다)")
+
+        min_level = entry.get('min_level', 0)
+        max_level = entry.get('max_level', 0)
+        if max_level and max_level < min_level:
+            errors.append(
+                f"{label} — max_level({max_level}) 이 min_level({min_level}) 보다 작습니다")
+
+        # 완료 NPC 를 찾아가야 하는데 그 NPC 가 없으면 퀘스트가 영원히 안 끝난다.
+        if not entry.get('auto_complete') and not entry.get('end_npc_id'):
+            errors.append(
+                f"{label} — auto_complete 가 false 면 end_npc_id 가 필요합니다 "
+                f"(완료를 접수할 NPC 가 없습니다)")
+
+        map_ids = _ids_of(tables, 'Map')
+        map_id = entry.get('map_id', 0)
+        if map_id and map_ids is not None and map_id not in map_ids:
+            errors.append(f"{label} — map_id {map_id} 가 Map 테이블에 없습니다")
+
+        chain_id = entry.get('chain_id', 0)
+        if chain_id:
+            chains[chain_id].append((entry.get('chain_step', 0), quest_id))
+
+        _validate_quest_stages(entry, label, tables, errors)
+        _validate_quest_prerequisites(entry, label, quest_ids, tables, errors)
+        _validate_quest_rewards(entry, label, tables, errors)
+        _validate_quest_time(entry, label, errors)
+
+    # 같은 체인 안에서 순서 번호가 겹치면 다음 퀘스트를 하나로 정할 수 없다.
+    for chain_id, steps in chains.items():
+        counts = Counter(step for step, _ in steps)
+        duplicated = sorted(s for s, c in counts.items() if c > 1)
+        if duplicated:
+            errors.append(
+                f"{table_name}: 체인 {chain_id} 의 chain_step 이 중복됩니다 {duplicated} "
+                f"(퀘스트 {sorted(qid for _, qid in steps)})")
+        for step, qid in steps:
+            if step < 1:
+                errors.append(
+                    f"{table_name}: 퀘스트 {qid} — chain_id 가 있으면 "
+                    f"chain_step 은 1 이상이어야 합니다 (현재: {step})")
+
+    return errors
+
+
+def validate_table(table_name, entries, tables=None):
+    """오류 메시지 리스트를 반환한다(비어 있으면 통과).
+
+    tables 는 {테이블 이름: 엔트리 리스트} 전체 맵이다. 퀘스트처럼 다른 테이블의
+    id 를 참조하는 데이터를 교차 검증할 때 쓴다. 없으면 교차 검사만 건너뛴다.
+    """
     errors = []
 
     if not isinstance(entries, list):
@@ -280,6 +571,10 @@ def validate_table(table_name, entries):
         errors.extend(_validate_map_spawn_ids(table_name, entries))
         errors.extend(_validate_map_gates(table_name, entries))
         errors.extend(_validate_map_gate_links(table_name, entries))
+
+    # 6) Quest 전용: 스테이지/목표/선행조건/보상/시간 정책 검증
+    if table_name == "Quest":
+        errors.extend(_validate_quests(table_name, entries, tables))
 
     # 3) 필드명 오타 의심 검사 (중첩 객체 포함, 경로 단위로 비교)
     field_paths = defaultdict(set)  # (path, name) -> 등장한 객체 인스턴스 id 집합

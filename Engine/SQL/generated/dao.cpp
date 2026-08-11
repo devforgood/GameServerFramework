@@ -349,16 +349,17 @@ QuestActiveDAO::QuestActiveDAO(sql::Connection* conn)
 void QuestActiveDAO::Insert(const QuestActiveVO& vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("INSERT INTO quest_active (character_id, quest_id, state, progress1, progress2, progress3, accept_time) VALUES (?, ?, ?, ?, ?, ?, ?)")
+            conn_->prepareStatement("INSERT INTO quest_active (character_id, quest_id, state, stage, progress1, progress2, progress3, accept_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
         );
 
         stmt->setInt(1, vo.character_id);
         stmt->setInt(2, vo.quest_id);
         stmt->setInt(3, vo.state);
-        stmt->setInt(4, vo.progress1);
-        stmt->setInt(5, vo.progress2);
-        stmt->setInt(6, vo.progress3);
-        stmt->setString(7, toMySQLDateTime(vo.accept_time));
+        stmt->setInt(4, vo.stage);
+        stmt->setInt(5, vo.progress1);
+        stmt->setInt(6, vo.progress2);
+        stmt->setInt(7, vo.progress3);
+        stmt->setString(8, toMySQLDateTime(vo.accept_time));
 
         stmt->execute();
     }
@@ -375,13 +376,14 @@ void QuestActiveDAO::Update(const QuestActiveVO& vo) {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement(
                 "UPDATE quest_active "
-                "SET state = ?, progress1 = ?, progress2 = ?, progress3 = ?, accept_time = ? "
+                "SET state = ?, stage = ?, progress1 = ?, progress2 = ?, progress3 = ?, accept_time = ? "
                 "WHERE character_id = ? AND quest_id = ?"
             )
         );
 
         int param_idx = 1;
         stmt->setInt(param_idx++, vo.state);
+        stmt->setInt(param_idx++, vo.stage);
         stmt->setInt(param_idx++, vo.progress1);
         stmt->setInt(param_idx++, vo.progress2);
         stmt->setInt(param_idx++, vo.progress3);
@@ -421,7 +423,7 @@ void QuestActiveDAO::Delete(const QuestActiveVO& vo) {
 bool QuestActiveDAO::Select(int character_id, int quest_id, QuestActiveVO& out_vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("SELECT character_id, quest_id, state, progress1, progress2, progress3, accept_time FROM quest_active WHERE character_id = ? AND quest_id = ?")
+            conn_->prepareStatement("SELECT character_id, quest_id, state, stage, progress1, progress2, progress3, accept_time FROM quest_active WHERE character_id = ? AND quest_id = ?")
         );
 
         stmt->setInt(1, character_id);
@@ -432,6 +434,7 @@ bool QuestActiveDAO::Select(int character_id, int quest_id, QuestActiveVO& out_v
             out_vo.character_id = res->getInt("character_id");
             out_vo.quest_id = res->getInt("quest_id");
             out_vo.state = res->getInt("state");
+            out_vo.stage = res->getInt("stage");
             out_vo.progress1 = res->getInt("progress1");
             out_vo.progress2 = res->getInt("progress2");
             out_vo.progress3 = res->getInt("progress3");
@@ -452,7 +455,7 @@ bool QuestActiveDAO::Select(int character_id, int quest_id, QuestActiveVO& out_v
 std::vector<QuestActiveVO> QuestActiveDAO::SelectByIndex(int character_id) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("SELECT character_id, quest_id, state, progress1, progress2, progress3, accept_time FROM quest_active WHERE character_id = ?")
+            conn_->prepareStatement("SELECT character_id, quest_id, state, stage, progress1, progress2, progress3, accept_time FROM quest_active WHERE character_id = ?")
         );
 
         stmt->setInt(1, character_id);
@@ -464,6 +467,7 @@ std::vector<QuestActiveVO> QuestActiveDAO::SelectByIndex(int character_id) {
             obj.character_id = res->getInt("character_id");
             obj.quest_id = res->getInt("quest_id");
             obj.state = res->getInt("state");
+            obj.stage = res->getInt("stage");
             obj.progress1 = res->getInt("progress1");
             obj.progress2 = res->getInt("progress2");
             obj.progress3 = res->getInt("progress3");

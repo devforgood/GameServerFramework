@@ -12,6 +12,13 @@ namespace gamedata
     struct Skill;
     struct ItemItemOption;
     struct Item;
+    struct QuestPrerequisites;
+    struct QuestRewardsChoiceItem;
+    struct QuestRewardsItem;
+    struct QuestRewards;
+    struct QuestStageObjective;
+    struct QuestStage;
+    struct QuestTime;
     struct Quest;
     struct GameModeBossInfo;
     struct GameModeRewards;
@@ -90,25 +97,96 @@ namespace gamedata
         int id = 0;
         std::vector<ItemItemOption> item_options;
         std::string name_id;
+        bool no_sell = false;
+        bool no_trade = false;
+        int quest_id = 0;
         std::string type;
+    };
+
+
+    struct QuestPrerequisites
+    {
+        std::vector<int> blocked_quest_ids;
+        std::vector<int> completed_quest_ids;
+        std::vector<int> item_ids;
+        std::vector<int> skill_ids;
+    };
+
+
+    struct QuestRewardsChoiceItem
+    {
+        int count = 0;
+        int item_id = 0;
+    };
+
+
+    struct QuestRewardsItem
+    {
+        int count = 0;
+        int item_id = 0;
+    };
+
+
+    struct QuestRewards
+    {
+        std::vector<QuestRewardsChoiceItem> choice_items;
+        int exp = 0;
+        int gold = 0;
+        std::vector<QuestRewardsItem> items;
+        std::vector<int> skill_ids;
+    };
+
+
+    struct QuestStageObjective
+    {
+        int count = 0;
+        std::string desc_id;
+        int target_id = 0;
+        std::string type;
+    };
+
+
+    struct QuestStage
+    {
+        std::string desc_id;
+        std::string logic;
+        std::vector<QuestStageObjective> objectives;
+        int step = 0;
+    };
+
+
+    struct QuestTime
+    {
+        int cooldown_seconds = 0;
+        int limit_seconds = 0;
+        bool repeatable = false;
+        std::string reset_type;
     };
 
 
     struct Quest
     {
+        bool auto_complete = false;
+        std::string category;
+        int chain_id = 0;
+        int chain_step = 0;
         std::string code_name;
         std::string desc_id;
+        int end_npc_id = 0;
         int id = 0;
-        bool is_repeatable = false;
-        int level_requirement = 0;
+        int level = 0;
+        int map_id = 0;
+        int max_level = 0;
+        int min_level = 0;
         std::string name_id;
-        int objective_count = 0;
-        int objective_target_id = 0;
-        std::string objective_type;
-        int reward_exp = 0;
-        int reward_gold = 0;
-        std::vector<int> reward_item_ids;
-        std::string type;
+        QuestPrerequisites prerequisites;
+        int priority = 0;
+        int recommended_party_size = 0;
+        QuestRewards rewards;
+        bool shareable = false;
+        std::vector<QuestStage> stages;
+        int start_npc_id = 0;
+        QuestTime time;
     };
 
 
@@ -433,25 +511,96 @@ namespace gamedata
         if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("item_options") && !j.at("item_options").is_null()) j.at("item_options").get_to(o.item_options);
         if (j.contains("name_id") && !j.at("name_id").is_null()) j.at("name_id").get_to(o.name_id);
+        if (j.contains("no_sell") && !j.at("no_sell").is_null()) j.at("no_sell").get_to(o.no_sell);
+        if (j.contains("no_trade") && !j.at("no_trade").is_null()) j.at("no_trade").get_to(o.no_trade);
+        if (j.contains("quest_id") && !j.at("quest_id").is_null()) j.at("quest_id").get_to(o.quest_id);
         if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, QuestPrerequisites& o)
+    {
+        if (j.contains("blocked_quest_ids") && !j.at("blocked_quest_ids").is_null()) j.at("blocked_quest_ids").get_to(o.blocked_quest_ids);
+        if (j.contains("completed_quest_ids") && !j.at("completed_quest_ids").is_null()) j.at("completed_quest_ids").get_to(o.completed_quest_ids);
+        if (j.contains("item_ids") && !j.at("item_ids").is_null()) j.at("item_ids").get_to(o.item_ids);
+        if (j.contains("skill_ids") && !j.at("skill_ids").is_null()) j.at("skill_ids").get_to(o.skill_ids);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, QuestRewardsChoiceItem& o)
+    {
+        if (j.contains("count") && !j.at("count").is_null()) j.at("count").get_to(o.count);
+        if (j.contains("item_id") && !j.at("item_id").is_null()) j.at("item_id").get_to(o.item_id);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, QuestRewardsItem& o)
+    {
+        if (j.contains("count") && !j.at("count").is_null()) j.at("count").get_to(o.count);
+        if (j.contains("item_id") && !j.at("item_id").is_null()) j.at("item_id").get_to(o.item_id);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, QuestRewards& o)
+    {
+        if (j.contains("choice_items") && !j.at("choice_items").is_null()) j.at("choice_items").get_to(o.choice_items);
+        if (j.contains("exp") && !j.at("exp").is_null()) j.at("exp").get_to(o.exp);
+        if (j.contains("gold") && !j.at("gold").is_null()) j.at("gold").get_to(o.gold);
+        if (j.contains("items") && !j.at("items").is_null()) j.at("items").get_to(o.items);
+        if (j.contains("skill_ids") && !j.at("skill_ids").is_null()) j.at("skill_ids").get_to(o.skill_ids);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, QuestStageObjective& o)
+    {
+        if (j.contains("count") && !j.at("count").is_null()) j.at("count").get_to(o.count);
+        if (j.contains("desc_id") && !j.at("desc_id").is_null()) j.at("desc_id").get_to(o.desc_id);
+        if (j.contains("target_id") && !j.at("target_id").is_null()) j.at("target_id").get_to(o.target_id);
+        if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, QuestStage& o)
+    {
+        if (j.contains("desc_id") && !j.at("desc_id").is_null()) j.at("desc_id").get_to(o.desc_id);
+        if (j.contains("logic") && !j.at("logic").is_null()) j.at("logic").get_to(o.logic);
+        if (j.contains("objectives") && !j.at("objectives").is_null()) j.at("objectives").get_to(o.objectives);
+        if (j.contains("step") && !j.at("step").is_null()) j.at("step").get_to(o.step);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, QuestTime& o)
+    {
+        if (j.contains("cooldown_seconds") && !j.at("cooldown_seconds").is_null()) j.at("cooldown_seconds").get_to(o.cooldown_seconds);
+        if (j.contains("limit_seconds") && !j.at("limit_seconds").is_null()) j.at("limit_seconds").get_to(o.limit_seconds);
+        if (j.contains("repeatable") && !j.at("repeatable").is_null()) j.at("repeatable").get_to(o.repeatable);
+        if (j.contains("reset_type") && !j.at("reset_type").is_null()) j.at("reset_type").get_to(o.reset_type);
     }
 
 
     inline void from_json(const nlohmann::json& j, Quest& o)
     {
+        if (j.contains("auto_complete") && !j.at("auto_complete").is_null()) j.at("auto_complete").get_to(o.auto_complete);
+        if (j.contains("category") && !j.at("category").is_null()) j.at("category").get_to(o.category);
+        if (j.contains("chain_id") && !j.at("chain_id").is_null()) j.at("chain_id").get_to(o.chain_id);
+        if (j.contains("chain_step") && !j.at("chain_step").is_null()) j.at("chain_step").get_to(o.chain_step);
         if (j.contains("code_name") && !j.at("code_name").is_null()) j.at("code_name").get_to(o.code_name);
         if (j.contains("desc_id") && !j.at("desc_id").is_null()) j.at("desc_id").get_to(o.desc_id);
+        if (j.contains("end_npc_id") && !j.at("end_npc_id").is_null()) j.at("end_npc_id").get_to(o.end_npc_id);
         if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
-        if (j.contains("is_repeatable") && !j.at("is_repeatable").is_null()) j.at("is_repeatable").get_to(o.is_repeatable);
-        if (j.contains("level_requirement") && !j.at("level_requirement").is_null()) j.at("level_requirement").get_to(o.level_requirement);
+        if (j.contains("level") && !j.at("level").is_null()) j.at("level").get_to(o.level);
+        if (j.contains("map_id") && !j.at("map_id").is_null()) j.at("map_id").get_to(o.map_id);
+        if (j.contains("max_level") && !j.at("max_level").is_null()) j.at("max_level").get_to(o.max_level);
+        if (j.contains("min_level") && !j.at("min_level").is_null()) j.at("min_level").get_to(o.min_level);
         if (j.contains("name_id") && !j.at("name_id").is_null()) j.at("name_id").get_to(o.name_id);
-        if (j.contains("objective_count") && !j.at("objective_count").is_null()) j.at("objective_count").get_to(o.objective_count);
-        if (j.contains("objective_target_id") && !j.at("objective_target_id").is_null()) j.at("objective_target_id").get_to(o.objective_target_id);
-        if (j.contains("objective_type") && !j.at("objective_type").is_null()) j.at("objective_type").get_to(o.objective_type);
-        if (j.contains("reward_exp") && !j.at("reward_exp").is_null()) j.at("reward_exp").get_to(o.reward_exp);
-        if (j.contains("reward_gold") && !j.at("reward_gold").is_null()) j.at("reward_gold").get_to(o.reward_gold);
-        if (j.contains("reward_item_ids") && !j.at("reward_item_ids").is_null()) j.at("reward_item_ids").get_to(o.reward_item_ids);
-        if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
+        if (j.contains("prerequisites") && !j.at("prerequisites").is_null()) j.at("prerequisites").get_to(o.prerequisites);
+        if (j.contains("priority") && !j.at("priority").is_null()) j.at("priority").get_to(o.priority);
+        if (j.contains("recommended_party_size") && !j.at("recommended_party_size").is_null()) j.at("recommended_party_size").get_to(o.recommended_party_size);
+        if (j.contains("rewards") && !j.at("rewards").is_null()) j.at("rewards").get_to(o.rewards);
+        if (j.contains("shareable") && !j.at("shareable").is_null()) j.at("shareable").get_to(o.shareable);
+        if (j.contains("stages") && !j.at("stages").is_null()) j.at("stages").get_to(o.stages);
+        if (j.contains("start_npc_id") && !j.at("start_npc_id").is_null()) j.at("start_npc_id").get_to(o.start_npc_id);
+        if (j.contains("time") && !j.at("time").is_null()) j.at("time").get_to(o.time);
     }
 
 

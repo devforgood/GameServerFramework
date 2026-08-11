@@ -180,7 +180,7 @@ void Monster::NotifyKilledBy()
 	if (eventBroker == nullptr)
 		return;
 
-	eventBroker->publish(EventActorDead{ killer_actor_id, actorId_ });
+	eventBroker->publish(EventActorDead{ killer_actor_id, actorId_, dataId_ });
 }
 
 

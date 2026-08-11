@@ -1,4 +1,57 @@
 {
   "skill_fireball_name": "화염구",
-  "skill_fireball_desc": "적에게 피해를 주는 화염구를 발사합니다."
+  "skill_fireball_desc": "적에게 피해를 주는 화염구를 발사합니다.",
+
+  "item_goblin_ear_name": "고블린의 귀",
+  "item_goblin_ear_desc": "토벌을 증명하는 전리품입니다. 거래하거나 팔 수 없습니다.",
+  "item_wolf_pelt_name": "늑대 가죽",
+  "item_wolf_pelt_desc": "대장장이가 찾고 있는 질 좋은 가죽입니다.",
+  "item_ancient_letter_name": "고대의 편지",
+  "item_ancient_letter_desc": "낡은 봉랍이 찍힌 편지. 내용을 알아보기 어렵습니다.",
+
+  "quest_goblin_hunt_name": "고블린 사냥",
+  "quest_goblin_hunt_desc": "어두운 숲에 고블린이 늘었습니다. 촌장을 찾아가 이야기를 들어 보세요.",
+  "quest_goblin_hunt_stage1_desc": "촌장과 대화하기",
+  "quest_goblin_hunt_stage2_desc": "고블린 토벌",
+  "quest_goblin_hunt_stage3_desc": "촌장에게 보고",
+  "quest_goblin_hunt_obj_talk_elder": "촌장과 대화",
+  "quest_goblin_hunt_obj_kill_goblin": "고블린 처치",
+  "quest_goblin_hunt_obj_collect_ear": "고블린의 귀 수집",
+  "quest_goblin_hunt_obj_report": "촌장에게 보고",
+
+  "quest_goblin_chief_name": "고블린 족장 토벌",
+  "quest_goblin_chief_desc": "무리를 이끄는 족장을 쓰러뜨려야 숲이 조용해집니다.",
+  "quest_goblin_chief_stage1_desc": "족장 토벌",
+  "quest_goblin_chief_stage2_desc": "촌장에게 보고",
+  "quest_goblin_chief_obj_kill_chief": "고블린 족장 처치",
+  "quest_goblin_chief_obj_report": "촌장에게 보고",
+
+  "quest_wolf_pelt_name": "늑대 가죽 수집",
+  "quest_wolf_pelt_desc": "대장장이가 늑대 가죽을 구하고 있습니다.",
+  "quest_wolf_pelt_stage1_desc": "늑대 가죽 모으기",
+  "quest_wolf_pelt_obj_collect": "늑대 가죽 수집",
+
+  "quest_field_cleanup_name": "들판 정리",
+  "quest_field_cleanup_desc": "슬라임이든 늑대든, 들판을 어지럽히는 것들을 줄여 주세요.",
+  "quest_field_cleanup_stage1_desc": "들판의 몬스터 정리",
+  "quest_field_cleanup_obj_slime": "슬라임 처치",
+  "quest_field_cleanup_obj_wolf": "늑대 처치",
+
+  "quest_first_steps_name": "첫 걸음",
+  "quest_first_steps_desc": "마을 밖으로 나가 조금 더 강해져 보세요.",
+  "quest_first_steps_stage1_desc": "숲으로 나가 레벨 올리기",
+  "quest_first_steps_obj_reach_forest": "어두운 숲 도달",
+  "quest_first_steps_obj_level3": "레벨 3 달성",
+
+  "quest_daily_wolf_name": "일일 의뢰: 늑대 퇴치",
+  "quest_daily_wolf_desc": "매일 들어오는 늑대 퇴치 의뢰입니다.",
+  "quest_daily_wolf_stage1_desc": "늑대 퇴치",
+  "quest_daily_wolf_obj_kill": "늑대 처치",
+
+  "quest_ancient_letter_name": "고대의 편지",
+  "quest_ancient_letter_desc": "편지가 사라지기 전에 찾아 촌장에게 가져가야 합니다.",
+  "quest_ancient_letter_stage1_desc": "고대의 편지 확보",
+  "quest_ancient_letter_stage2_desc": "촌장에게 전달",
+  "quest_ancient_letter_obj_collect": "고대의 편지 획득",
+  "quest_ancient_letter_obj_report": "촌장에게 전달"
 }

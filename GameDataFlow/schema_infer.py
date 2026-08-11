@@ -112,16 +112,21 @@ def merge(a, b):
     return {'kind': 'scalar', 'ctype': 'string', 'nullable': nullable}
 
 
-def _resolve_unknown(node):
-    """Replace leftover 'unknown' nodes (always-null fields / always-empty arrays)
-    with a harmless nullable string default."""
+def _resolve_unknown(node, field_name=None):
+    """Replace leftover 'unknown' nodes (always-null fields / always-empty arrays).
+
+    타입을 한 번도 못 본 필드는 이름으로 추측한다. `..._id` / `..._ids` 는 이 프로젝트
+    전체에서 정수 참조라서, 데이터가 비었다는 이유로 문자열이 되면 그 리스트를 읽는 C++
+    코드가 통째로 깨진다(quest.prerequisites.item_ids 가 항상 [] 라서 vector<string> 이
+    된 사례). 그 외에는 예전처럼 문자열로 둔다."""
     if node['kind'] == 'unknown':
-        return {'kind': 'scalar', 'ctype': 'string', 'nullable': True}
+        ctype = 'int' if field_name and field_name.endswith(('_id', '_ids')) else 'string'
+        return {'kind': 'scalar', 'ctype': ctype, 'nullable': True}
     if node['kind'] == 'array':
-        node['element'] = _resolve_unknown(node['element'])
+        node['element'] = _resolve_unknown(node['element'], field_name)
     elif node['kind'] == 'object':
         for key in node['fields']:
-            node['fields'][key] = _resolve_unknown(node['fields'][key])
+            node['fields'][key] = _resolve_unknown(node['fields'][key], key)
     return node
 
 

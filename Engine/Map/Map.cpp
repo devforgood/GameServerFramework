@@ -9,6 +9,7 @@
 #include "DetourCommon.h"
 #include "MathHelper.h"
 #include "Player.h"
+#include "PlayerEventBroker.h"
 #include "ActorFactory.h"
 #include "Common.h"
 #include "ComponentRegistry.h"
@@ -606,12 +607,19 @@ int Map::SpawnMonstersFromData()
 			static_cast<float>(s.position.y),
 			static_cast<float>(s.position.z));
 
-		if (OnAddAgent(nullptr, syncnet::GameObjectType::GameObjectType_Monster, &pos) == nullptr)
+		auto monster = OnAddAgent(nullptr, syncnet::GameObjectType::GameObjectType_Monster, &pos);
+		if (monster == nullptr)
 		{
 			LOG.error("Map {} monster_spawn {} 위치({}, {}, {}) 몬스터 스폰 실패",
 				GetMapId(), s.id, s.position.x, s.position.y, s.position.z);
 			continue;
 		}
+
+		// 마커가 정한 종류를 액터에 새긴다. 사망 이벤트에 실려 퀘스트의 kill 목표를
+		// 종류별로 세는 근거가 된다(없으면 어떤 몬스터를 잡았는지 알 수 없다).
+		if (auto* mob = dynamic_cast<Monster*>(monster.get()))
+			mob->SetDataId(s.monster_id);
+
 		++spawned;
 	}
 
@@ -875,6 +883,10 @@ int Map::SpawnBoss(int bossId)
 		return -1;
 	}
 
+	// 보스도 monster.json 의 한 종류다. 보스 토벌 퀘스트가 kill 목표로 셀 수 있어야 한다.
+	if (auto* mob = dynamic_cast<Monster*>(boss.get()))
+		mob->SetDataId(bossId);
+
 	// 보스 체력은 게임 모드 데이터가 정한다(없으면 몬스터 기본값 유지).
 	if (gameMode_ != nullptr && gameMode_->gamedata != nullptr && gameMode_->gamedata->boss_info.boss_hp > 0)
 		boss->SetHealth(gameMode_->gamedata->boss_info.boss_hp);
@@ -1075,6 +1087,14 @@ std::shared_ptr<Actor> Map::OnAddAgent(std::shared_ptr<Player> player, syncnet::
 	// (입장 시점에는 아직 캐릭터가 없어 구독할 중심 좌표가 없다.)
 	if (AoIEnabled() && player != nullptr && actor->IsCharacter())
 		SubscribeViewer(player->GetPlayerId(), actor.get(), true);
+
+	// 캐릭터가 이 맵에 실제로 생기는 시점이 곧 지역 진입이다(최초 로그인이든 게이트
+	// 이동이든 모두 여기를 지난다). 탐험 목표(reach)가 이 이벤트로 진행된다.
+	if (player != nullptr && actor->IsCharacter())
+	{
+		if (auto* broker = player->GetComponent<PlayerEventBroker>())
+			broker->publish(EventAreaEntered{ static_cast<int>(player->GetPlayerId()), GetMapId() });
+	}
 
 	return actor;
 }

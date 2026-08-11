@@ -25,6 +25,8 @@ public static class QuestFactory
             
             case "RepeatedQuest": obj = new RepeatedQuest(); break;
             
+            case "SubQuest": obj = new SubQuest(); break;
+            
             default:
                 
                 return null;

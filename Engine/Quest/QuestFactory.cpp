@@ -9,6 +9,8 @@
 
 #include "RepeatedQuest.h"
 
+#include "SubQuest.h"
+
 
 
 Quest* QuestFactory::Create(int32_t id) {
@@ -31,6 +33,10 @@ Quest* QuestFactory::Create(int32_t id) {
 
     else if (codeName == "RepeatedQuest") {
         obj = new RepeatedQuest();
+    }
+
+    else if (codeName == "SubQuest") {
+        obj = new SubQuest();
     }
 
     else {

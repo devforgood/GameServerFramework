@@ -1,4 +1,57 @@
 {
   "skill_fireball_name": "Fireball",
-  "skill_fireball_desc": "Shoots a fireball that deals damage to enemies."
+  "skill_fireball_desc": "Shoots a fireball that deals damage to enemies.",
+
+  "item_goblin_ear_name": "Goblin Ear",
+  "item_goblin_ear_desc": "Proof of a kill. Cannot be traded or sold.",
+  "item_wolf_pelt_name": "Wolf Pelt",
+  "item_wolf_pelt_desc": "A fine pelt the blacksmith is looking for.",
+  "item_ancient_letter_name": "Ancient Letter",
+  "item_ancient_letter_desc": "A letter under a worn wax seal. The text is hard to make out.",
+
+  "quest_goblin_hunt_name": "Goblin Hunt",
+  "quest_goblin_hunt_desc": "Goblins have grown bold in the Dark Forest. Speak with the village elder.",
+  "quest_goblin_hunt_stage1_desc": "Speak with the elder",
+  "quest_goblin_hunt_stage2_desc": "Cull the goblins",
+  "quest_goblin_hunt_stage3_desc": "Report to the elder",
+  "quest_goblin_hunt_obj_talk_elder": "Talk to the elder",
+  "quest_goblin_hunt_obj_kill_goblin": "Goblins slain",
+  "quest_goblin_hunt_obj_collect_ear": "Goblin ears collected",
+  "quest_goblin_hunt_obj_report": "Report to the elder",
+
+  "quest_goblin_chief_name": "The Goblin Chief",
+  "quest_goblin_chief_desc": "The forest stays restless until the chief leading them falls.",
+  "quest_goblin_chief_stage1_desc": "Slay the chief",
+  "quest_goblin_chief_stage2_desc": "Report to the elder",
+  "quest_goblin_chief_obj_kill_chief": "Goblin chief slain",
+  "quest_goblin_chief_obj_report": "Report to the elder",
+
+  "quest_wolf_pelt_name": "Wolf Pelts",
+  "quest_wolf_pelt_desc": "The blacksmith needs wolf pelts.",
+  "quest_wolf_pelt_stage1_desc": "Gather wolf pelts",
+  "quest_wolf_pelt_obj_collect": "Wolf pelts collected",
+
+  "quest_field_cleanup_name": "Clearing the Fields",
+  "quest_field_cleanup_desc": "Slimes or wolves — thin out whatever is fouling the fields.",
+  "quest_field_cleanup_stage1_desc": "Clear the fields",
+  "quest_field_cleanup_obj_slime": "Slimes slain",
+  "quest_field_cleanup_obj_wolf": "Wolves slain",
+
+  "quest_first_steps_name": "First Steps",
+  "quest_first_steps_desc": "Head beyond the village and grow a little stronger.",
+  "quest_first_steps_stage1_desc": "Reach the forest and level up",
+  "quest_first_steps_obj_reach_forest": "Reach the Dark Forest",
+  "quest_first_steps_obj_level3": "Reach level 3",
+
+  "quest_daily_wolf_name": "Daily Contract: Wolf Cull",
+  "quest_daily_wolf_desc": "A standing daily contract to thin the wolf packs.",
+  "quest_daily_wolf_stage1_desc": "Cull the wolves",
+  "quest_daily_wolf_obj_kill": "Wolves slain",
+
+  "quest_ancient_letter_name": "The Ancient Letter",
+  "quest_ancient_letter_desc": "Find the letter and bring it to the elder before it is lost.",
+  "quest_ancient_letter_stage1_desc": "Secure the ancient letter",
+  "quest_ancient_letter_stage2_desc": "Deliver it to the elder",
+  "quest_ancient_letter_obj_collect": "Ancient letter obtained",
+  "quest_ancient_letter_obj_report": "Deliver to the elder"
 }

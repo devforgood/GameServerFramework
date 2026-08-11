@@ -46,5 +46,32 @@
     "type": "equipment",
     "name_id": "item_shield_basic_name",
     "desc_id": "item_shield_basic_desc"
+  },
+  {
+    "id": 100,
+    "type": "quest",
+    "name_id": "item_goblin_ear_name",
+    "desc_id": "item_goblin_ear_desc",
+    "no_trade": true,
+    "no_sell": true,
+    "quest_id": 1001
+  },
+  {
+    "id": 101,
+    "type": "quest",
+    "name_id": "item_wolf_pelt_name",
+    "desc_id": "item_wolf_pelt_desc",
+    "no_trade": true,
+    "no_sell": true,
+    "quest_id": 1003
+  },
+  {
+    "id": 102,
+    "type": "quest",
+    "name_id": "item_ancient_letter_name",
+    "desc_id": "item_ancient_letter_desc",
+    "no_trade": true,
+    "no_sell": true,
+    "quest_id": 3001
   }
 ]
