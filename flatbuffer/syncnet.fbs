@@ -20,6 +20,14 @@ union GameMessages
   QuestComplete,
   QuestAbandon,
   QuestSync,
+  PartyInvite,
+  PartyInviteReply,
+  PartyLeave,
+  PartyKick,
+  PartyLeaderChange,
+  PartySync,
+  PartyQuestShare,
+  PartyQuestShareReply,
 } // Optionally add more tables.
 
 enum StatusCode:short
@@ -68,20 +76,20 @@ table GameMessage {
 table AddAgent {
   gameObjectType:GameObjectType = Monster;
   pos:Vec3;
-  agentId:int = 0;
+  actorId:int = 0;
 }
 
 table RemoveAgent {
-  agentId:int;
+  actorId:int;
 }
 
 table SetMoveTarget {
-  agentId:int;
+  actorId:int;
   pos:Vec3;
 }
 
 table ActorInfo {
-  agentId:int;
+  actorId:int;
   pos:Vec3;
   gameObjectType:GameObjectType = Monster;
   state:ActorState;
@@ -97,7 +105,7 @@ table DebugRaycast {
 table UpdateActorNotify {
   actors:[ActorInfo];
   debugs:[DebugRaycast];
-  // 관심영역(AoI) 밖으로 나가 더 이상 동기화하지 않는 액터들의 agentId.
+  // 관심영역(AoI) 밖으로 나가 더 이상 동기화하지 않는 액터들의 actorId.
   // 사망이 아니라 '시야에서 사라짐'이므로 클라는 사망 연출 없이 조용히 제거한다.
   // (테이블 끝에 추가한 필드라 이전 버전과 호환된다)
   removed:[int];
@@ -108,7 +116,7 @@ table Ping {
 }
 
 table SetRaycast {
-  agentId:int;
+  actorId:int;
   pos:Vec3;
 }
 
@@ -118,8 +126,8 @@ table Login {
   mapId:int = 0;
   pos:Vec3;
   // 재접속 핸드오버: 0 이면 신규 로그인, 0 이 아니면 서버가 유지하던 기존 캐릭터의
-  // agent id(재접속). 클라는 이 값이 있으면 AddAgent 를 생략하고 이 id 를 채택한다.
-  agentId:int = 0;
+  // actor id(재접속). 클라는 이 값이 있으면 AddAgent 를 생략하고 이 id 를 채택한다.
+  actorId:int = 0;
   // 재접속 토큰. 서버가 최초 로그인 응답에 플레이어 uuid 를 실어 보내면 클라가 저장했다가
   // 재접속 요청 시 되돌려 보낸다. 서버는 이 값으로 유예 대기 중인 기존 플레이어를 식별한다.
   uuid:string;
@@ -180,7 +188,7 @@ table TreeDebugRuntimeFrame {
   monsterId:long;
   tick:ulong;
   aiState:AIState = Patrol;
-  targetAgentId:long = -1;
+  targetActorId:long = -1;
   executedPath:[ushort];
   changes:[TreeDebugNodeChange];
 }
@@ -201,7 +209,7 @@ table EnterGate {
   mapId:int;
   gateId:int;
   pos:Vec3;
-  agentId:int = 0;
+  actorId:int = 0;
 }
 
 // NPC 또는 맵 오브젝트와의 상호작용 요청.
@@ -238,6 +246,68 @@ table QuestSync {
   quests:[QuestInfo];  // 새로 생겼거나 상태가 바뀐 퀘스트
   removed:[int];       // 진행 목록에서 사라진 퀘스트 id(완료/포기/쿨타임)
   completed:[int];     // 이번에 완료 처리된 퀘스트 id (완료 연출용)
+}
+
+// ── 파티 ──
+// 파티는 접속 중에만 존재하는 상태라 DB 에 남지 않는다. 클라는 PartySync 만 믿으면 된다.
+
+// 초대. 클라 -> 서버는 actorId(화면에서 고른 캐릭터)만 채우고, 서버 -> 클라 알림은
+// 나머지를 채운다. 이름이 아니라 actorId 로 부르는 이유는 이름이 유일하다는 보장이
+// 없기 때문이다 — 화면에서 고른 그 캐릭터가 그대로 대상이 된다.
+table PartyInvite {
+  actorId:int;          // C->S: 초대할 캐릭터의 actor id
+  partyId:int = 0;      // S->C: 초대한 쪽의 파티 id(0 이면 수락 시 새로 만들어진다)
+  inviterId:long = 0;   // S->C: 초대한 플레이어 id
+  inviterName:string;   // S->C
+  timeoutSec:float = 0; // S->C: 남은 응답 시간. 클라는 이 시간에 맞춰 창을 닫는다
+}
+
+table PartyInviteReply {
+  accept:bool = false;
+}
+
+table PartyLeave {
+}
+
+table PartyKick {
+  playerId:long;
+}
+
+table PartyLeaderChange {
+  playerId:long;
+}
+
+table PartyMemberInfo {
+  playerId:long;
+  name:string;
+  level:int = 1;
+  // 이 멤버의 캐릭터 actor id 와 맵. 다른 맵에 있으면 actorId 는 0 이다
+  // (같은 맵이 아니면 클라에 그 액터가 존재하지 않는다).
+  actorId:int = 0;
+  mapId:int = 0;
+}
+
+// 서버 -> 클라 파티 로스터. partyId 가 0 이면 파티에 속해 있지 않다는 뜻이고,
+// 이때 members 는 비어 있다(탈퇴/추방/해산이 모두 이 형태로 전달된다).
+table PartySync {
+  partyId:int = 0;
+  leaderId:long = 0;
+  members:[PartyMemberInfo];
+}
+
+// 퀘스트 공유. C->S 는 questId 만, S->C 알림은 보낸 사람과 남은 시간을 채운다.
+// 공유 요청에 대한 '응답'에서는 fromPlayerId 에 제안이 실제로 간 인원 수가 담긴다
+// (알림과 응답은 GameMessage.id 로 구분된다 — 응답은 요청의 id 를, 알림은 0 을 쓴다).
+table PartyQuestShare {
+  questId:int;
+  fromPlayerId:long = 0;
+  fromName:string;
+  timeoutSec:float = 0;
+}
+
+table PartyQuestShareReply {
+  questId:int;
+  accept:bool = false;
 }
 
 root_type GameMessage;

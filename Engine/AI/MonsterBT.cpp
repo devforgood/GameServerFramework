@@ -34,15 +34,15 @@ public:
 		// 교전 중(타겟 보유)에는 전체 재탐색 대신 그 대상이 아직 유효한지만 확인한다.
 		// 전체 스캔은 시야 반경의 모든 셀을 훑고 후보마다 시야 판정을 하지만, 검증은 대상 하나만 본다.
 		// (MonsterCodeBaseBT.cpp 의 Condition_DetectEnemy 와 동일 로직)
-		if (monster_->targetAgentId_ >= 0)
+		if (monster_->targetActorId_ >= 0)
 		{
-			if (monster_->GetMap()->IsTargetVisible(monster_, monster_->targetAgentId_))
+			if (monster_->GetMap()->IsTargetVisible(monster_, monster_->targetActorId_))
 			{
 				monster_->SetState(syncnet::AIState_Detect);
 				BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionDetectEnemy, "ConditionDetectEnemy", BT::NodeStatus::SUCCESS, "target still visible");
 				return BT::NodeStatus::SUCCESS;
 			}
-			monster_->targetAgentId_ = -1; // 놓쳤다 — 아래에서 새 대상을 찾는다.
+			monster_->targetActorId_ = -1; // 놓쳤다 — 아래에서 새 대상을 찾는다.
 		}
 
 		// 스태거링: 적 탐지 그리드 스캔은 비싸다(월드 업데이트 병목). 배회 중에는 N틱마다 1회만
@@ -56,8 +56,8 @@ public:
 			return BT::NodeStatus::FAILURE;
 		}
 
-		monster_->targetAgentId_ = monster_->GetMap()->DetectEnemy(monster_);
-		if (monster_->targetAgentId_ >= 0)
+		monster_->targetActorId_ = monster_->GetMap()->DetectEnemy(monster_);
+		if (monster_->targetActorId_ >= 0)
 		{
 			monster_->SetState(syncnet::AIState_Detect);
 			BT_DEBUG_RECORD(monster_, BTDebugNodeId::ConditionDetectEnemy, "ConditionDetectEnemy", BT::NodeStatus::SUCCESS, "enemy detected");
@@ -190,7 +190,7 @@ public:
 		monster_->SetState(syncnet::AIState_Detect);
 		monster_->Resume();
 		INavMovement* nav = monster_->GetMap()->GetNavMap();
-		nav->SetMoveTarget(monster_->GetActorId(), nav->GetPos(monster_->targetAgentId_), false);
+		nav->SetMoveTarget(monster_->GetActorId(), nav->GetPos(monster_->targetActorId_), false);
 		BT_DEBUG_RECORD(monster_, BTDebugNodeId::ActionChase, "ActionChase", BT::NodeStatus::SUCCESS, "chase target position updated");
 		return BT::NodeStatus::SUCCESS;
 	}

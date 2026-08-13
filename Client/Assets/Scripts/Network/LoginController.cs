@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 //
 //   최초 로그인: 서버가 맵 id + 스폰 위치를 돌려주면 그 맵 씬을 로드하고, 씬이 준비되면
 //                캐릭터를 1회 자동 생성한다(AddAgent).
-//   재접속:      서버가 유예 중이던 기존 캐릭터의 agent id 를 돌려준다. 이때는 AddAgent 없이
+//   재접속:      서버가 유예 중이던 기존 캐릭터의 actor id 를 돌려준다. 이때는 AddAgent 없이
 //                그 id 를 채택하고 맵 씬만 (재)로드하면 서버 상태 동기화가 캐릭터를 되살린다.
 //
 // 재접속 토큰(플레이어 uuid)은 PlayerPrefs 에 영속 저장해 앱/플레이 재시작에도 유지한다.
@@ -17,7 +17,7 @@ public class LoginController
 
     private readonly ServerConnection connection;
     private readonly MapTransition mapTransition;
-    private readonly Action<int> setPlayerAgentId;
+    private readonly Action<int> setPlayerActorId;
     private readonly Action<Vector3> spawnCharacter;
 
     private string reconnectToken = "";
@@ -32,11 +32,11 @@ public class LoginController
     public Vector3 SpawnPos { get; private set; } = Vector3.zero;
 
     public LoginController(ServerConnection connection, MapTransition mapTransition,
-        Action<int> setPlayerAgentId, Action<Vector3> spawnCharacter)
+        Action<int> setPlayerActorId, Action<Vector3> spawnCharacter)
     {
         this.connection = connection;
         this.mapTransition = mapTransition;
-        this.setPlayerAgentId = setPlayerAgentId;
+        this.setPlayerActorId = setPlayerActorId;
         this.spawnCharacter = spawnCharacter;
     }
 
@@ -80,8 +80,8 @@ public class LoginController
                 PlayerPrefs.Save();
             }
 
-            if (login.AgentId != 0)
-                HandleReconnectHandover(login.AgentId);
+            if (login.ActorId != 0)
+                HandleReconnectHandover(login.ActorId);
             else
                 HandleNewLogin();
         });
@@ -101,13 +101,13 @@ public class LoginController
         spawnCharacter(SpawnPos);
     }
 
-    // 재접속: AddAgent(신규 스폰)를 하지 않고 서버가 유지하던 agent id 를 채택한 뒤 맵 씬을
+    // 재접속: AddAgent(신규 스폰)를 하지 않고 서버가 유지하던 actor id 를 채택한 뒤 맵 씬을
     // (재)로드한다. 로드 완료 후 서버가 보낸 상태 동기화(SendStateTo)가 큐에서 처리되며
     // 기존 캐릭터가 재생성된다. (게이트 이동과 동일한 씬 로드 파이프라인)
-    private void HandleReconnectHandover(int agentId)
+    private void HandleReconnectHandover(int actorId)
     {
-        setPlayerAgentId(agentId);
-        Debug.Log($"Reconnect handover. agentId:{agentId}, mapId:{MapId}, pos({SpawnPos.x},{SpawnPos.y},{SpawnPos.z})");
+        setPlayerActorId(actorId);
+        Debug.Log($"Reconnect handover. actorId:{actorId}, mapId:{MapId}, pos({SpawnPos.x},{SpawnPos.y},{SpawnPos.z})");
 
         Gamedata.Map map;
         if (GameManager.Instance.resource.Maps.TryGetValue(MapId, out map) && !string.IsNullOrEmpty(map.scene))

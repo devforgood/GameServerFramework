@@ -295,7 +295,7 @@ TEST_F(SkillSystemTest, MonsterAttackGoesThroughSkillPipeline)
 	ASSERT_NE(victim, nullptr);
 	ASSERT_NE(monster, nullptr);
 
-	monster->targetAgentId_ = victim->GetActorId(); // BT DetectEnemy 가 세팅하는 값
+	monster->targetActorId_ = victim->GetActorId(); // BT DetectEnemy 가 세팅하는 값
 
 	int healthBefore = victim->GetHealth();
 	monster->Attack(); // BT Action_Attack 이 호출하는 그 경로

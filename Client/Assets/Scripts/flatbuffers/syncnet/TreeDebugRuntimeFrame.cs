@@ -29,7 +29,7 @@ public struct TreeDebugRuntimeFrame : IFlatbufferObject
   public long MonsterId { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
   public ulong Tick { get { int o = __p.__offset(8); return o != 0 ? __p.bb.GetUlong(o + __p.bb_pos) : (ulong)0; } }
   public syncnet.AIState AiState { get { int o = __p.__offset(10); return o != 0 ? (syncnet.AIState)__p.bb.GetSbyte(o + __p.bb_pos) : syncnet.AIState.Patrol; } }
-  public long TargetAgentId { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)-1; } }
+  public long TargetActorId { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)-1; } }
   public ushort ExecutedPath(int j) { int o = __p.__offset(14); return o != 0 ? __p.bb.GetUshort(__p.__vector(o) + j * 2) : (ushort)0; }
   public int ExecutedPathLength { get { int o = __p.__offset(14); return o != 0 ? __p.__vector_len(o) : 0; } }
 #if ENABLE_SPAN_T
@@ -46,11 +46,11 @@ public struct TreeDebugRuntimeFrame : IFlatbufferObject
       long monsterId = 0,
       ulong tick = 0,
       syncnet.AIState aiState = syncnet.AIState.Patrol,
-      long targetAgentId = -1,
+      long targetActorId = -1,
       VectorOffset executedPathOffset = default(VectorOffset),
       VectorOffset changesOffset = default(VectorOffset)) {
     builder.StartTable(7);
-    TreeDebugRuntimeFrame.AddTargetAgentId(builder, targetAgentId);
+    TreeDebugRuntimeFrame.AddTargetActorId(builder, targetActorId);
     TreeDebugRuntimeFrame.AddTick(builder, tick);
     TreeDebugRuntimeFrame.AddMonsterId(builder, monsterId);
     TreeDebugRuntimeFrame.AddChanges(builder, changesOffset);
@@ -65,7 +65,7 @@ public struct TreeDebugRuntimeFrame : IFlatbufferObject
   public static void AddMonsterId(FlatBufferBuilder builder, long monsterId) { builder.AddLong(1, monsterId, 0); }
   public static void AddTick(FlatBufferBuilder builder, ulong tick) { builder.AddUlong(2, tick, 0); }
   public static void AddAiState(FlatBufferBuilder builder, syncnet.AIState aiState) { builder.AddSbyte(3, (sbyte)aiState, 0); }
-  public static void AddTargetAgentId(FlatBufferBuilder builder, long targetAgentId) { builder.AddLong(4, targetAgentId, -1); }
+  public static void AddTargetActorId(FlatBufferBuilder builder, long targetActorId) { builder.AddLong(4, targetActorId, -1); }
   public static void AddExecutedPath(FlatBufferBuilder builder, VectorOffset executedPathOffset) { builder.AddOffset(5, executedPathOffset.Value, 0); }
   public static VectorOffset CreateExecutedPathVector(FlatBufferBuilder builder, ushort[] data) { builder.StartVector(2, data.Length, 2); for (int i = data.Length - 1; i >= 0; i--) builder.AddUshort(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateExecutedPathVectorBlock(FlatBufferBuilder builder, ushort[] data) { builder.StartVector(2, data.Length, 2); builder.Add(data); return builder.EndVector(); }

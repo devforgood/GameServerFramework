@@ -7,7 +7,7 @@
 // 테스트용 Mock IGridActor 클래스
 class MockGridActor : public IGridActor {
 private:
-    int agentId;
+    int actorId;
     float x, y;
     int gridX, gridY;
     int gridSlot = -1;
@@ -16,7 +16,7 @@ private:
 
 public:
     MockGridActor(int id, float posX, float posY, bool isChar = false) 
-        : agentId(id), x(posX), y(posY), gridX(-1), gridY(-1), isCharacterType(isChar) {}
+        : actorId(id), x(posX), y(posY), gridX(-1), gridY(-1), isCharacterType(isChar) {}
 
     virtual ~MockGridActor() = default;
 
@@ -30,7 +30,7 @@ public:
     virtual float GetVector2Y() const override { return y; }
     virtual void SetGridSlot(int slot) override { gridSlot = slot; }
     virtual int GetGridSlot() const override { return gridSlot; }
-    virtual int GetActorId() const override { return agentId; }
+    virtual int GetActorId() const override { return actorId; }
 	virtual void DecrementHealth(int amount) override {}
     virtual void SetLastAttacker(int attacker_actor_id) override { lastAttackerActorId = attacker_actor_id; }
 
@@ -40,7 +40,7 @@ public:
         y = newY;
     }
 
-    int getId() const { return agentId; }
+    int getId() const { return actorId; }
 };
 
 // GridManager 테스트 클래스

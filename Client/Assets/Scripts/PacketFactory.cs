@@ -16,22 +16,22 @@ public static class PacketFactory
         return builder.SizedByteArray();
     }
 
-    public static byte[] CreateRemoveAgentMessage(int agentId)
+    public static byte[] CreateRemoveAgentMessage(int actorId)
     {
         var builder = new FlatBufferBuilder(1024);
         syncnet.RemoveAgent.StartRemoveAgent(builder);
-        syncnet.RemoveAgent.AddAgentId(builder, agentId);
+        syncnet.RemoveAgent.AddActorId(builder, actorId);
         var offset = syncnet.RemoveAgent.EndRemoveAgent(builder);
         var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.RemoveAgent, offset.Value);
         builder.Finish(msg.Value);
         return builder.SizedByteArray();
     }
 
-    public static byte[] CreateSetMoveTargetMessage(int agentId, Vector3 pos)
+    public static byte[] CreateSetMoveTargetMessage(int actorId, Vector3 pos)
     {
         var builder = new FlatBufferBuilder(1024);
         syncnet.SetMoveTarget.StartSetMoveTarget(builder);
-        syncnet.SetMoveTarget.AddAgentId(builder, agentId);
+        syncnet.SetMoveTarget.AddActorId(builder, actorId);
         syncnet.SetMoveTarget.AddPos(builder, syncnet.Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
         var offset = syncnet.SetMoveTarget.EndSetMoveTarget(builder);
         var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.SetMoveTarget, offset.Value);
@@ -105,12 +105,12 @@ public static class PacketFactory
         return builder.SizedByteArray();
     }
 
-    public static byte[] CreateUseSkillMessage(int skillId, int agentId, Vector3 pos, int type, long timestamp)
+    public static byte[] CreateUseSkillMessage(int skillId, int actorId, Vector3 pos, int type, long timestamp)
     {
         var builder = new FlatBufferBuilder(1024);
         syncnet.UseSkill.StartUseSkill(builder);
         syncnet.UseSkill.AddSkillId(builder, skillId);
-        syncnet.UseSkill.AddId(builder, agentId);
+        syncnet.UseSkill.AddId(builder, actorId);
         syncnet.UseSkill.AddPos(builder, syncnet.Vec3.CreateVec3(builder, pos.x, pos.y, pos.z));
         syncnet.UseSkill.AddTargetId(builder, type);
         syncnet.UseSkill.AddDuration(builder, 1);

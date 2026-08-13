@@ -83,7 +83,7 @@ public class InputHandler : MonoBehaviour
                         var monster = evt.HitInfo.Value.transform.GetComponent<Monster>();
                         if (monster != null)
                         {
-                            session.RemoveAgent(monster.agnet_id);
+                            session.RemoveAgent(monster.actor_id);
                         }
                     }
                 }
@@ -96,7 +96,7 @@ public class InputHandler : MonoBehaviour
 
             // 이동 타겟 설정
             { "move_target", evt =>
-                session.SetMoveTarget(session.player_agnet_id, evt.HitPoint)
+                session.SetMoveTarget(session.player_actor_id, evt.HitPoint)
             },
 
             // 캐릭터 생성
@@ -111,7 +111,7 @@ public class InputHandler : MonoBehaviour
 
             // 캐릭터 이동
             { "move_character", evt =>
-                session.SetMoveTarget(session.player_agnet_id, evt.HitPoint)
+                session.SetMoveTarget(session.player_actor_id, evt.HitPoint)
             }
         };
     }

@@ -191,9 +191,26 @@ QuestDefinition (데이터)          PlayerQuestState (플레이어별)
 | `QuestAbandon` | C→S / 응답 | 포기 |
 | `QuestSync` | S→C | 바뀐 퀘스트(`quests`), 목록에서 빠진 것(`removed`), 이번에 완료된 것(`completed`) |
 
-`QuestSync` 는 매 이벤트마다 보내지 않는다. `PlayerQuest` 가 바뀐 퀘스트 id 만 모아 두고
-`Player::Update` 가 틱마다 한 통으로 내보낸다(처치 한 번에 메시지 한 통이 나가지 않도록).
-로그인 직후에는 `MarkAllForSync()` 로 진행 중인 전체가 한 번 나간다.
+`QuestSync` 는 매 이벤트마다 보내지 않는다. 바뀐 퀘스트 id 만 모아 두고 `PlayerQuest::Update`
+끝에서 한 통으로 내보낸다(처치 한 번에 메시지 한 통이 나가지 않도록). 로그인 직후에는
+`MarkAllForSync()` 로 진행 중인 전체가 한 번 나간다.
+
+**보내는 주체는 컴포넌트 자신이다.** 무엇이 바뀌었는지는 `PlayerQuest` 가 가장 잘 아는데,
+그것을 밖으로 꺼내 `Player` 가 직렬화하게 하면 내부 상태를 오직 그 목적으로만 public 으로
+열어 두게 된다. 전송 통로만 [`PlayerSender`](../Player/PlayerSender.h) 로 받아 직접 보낸다 —
+통로가 없으면(세션 전, 테스트) 조용히 건너뛰고, 가짜 통로를 끼우면 와이어 포맷을 그대로
+검증할 수 있다(`UnitTest/PlayerQuestTest.cpp` 의 `SyncHarness`).
+
+## 파티와의 연결
+
+퀘스트 쪽에서 파티를 아는 곳은 두 군데뿐이다. 자세한 규칙은 [Party/README.md](../Party/README.md).
+
+- **킬 크레딧**: 파티로 잡은 처치는 `party_credit` 이 반경 안의 파티원 전원에게
+  `EventActorDead` 를 발행한다. 퀘스트 목표는 **인원과 무관하게 각자 1마리로 센다** —
+  나눠 세면 파티 사냥이 퀘스트 진행에는 손해가 된다(경험치만 나눈다).
+- **퀘스트 공유**: `quest.json` 의 `shareable` 이 참인 퀘스트만 `PlayerParty::ShareQuest` 로
+  파티원에게 제안할 수 있다. 제안을 수락해도 조건 검사(`Quest::CanAccept`)는 그대로 탄다 —
+  공유는 조건을 면제해 주지 않는다.
 
 ## 운영(GM)
 
@@ -209,7 +226,6 @@ QuestDefinition (데이터)          PlayerQuestState (플레이어별)
 ## 아직 없는 것
 
 - 대화(Dialog) 시스템과 선택지에 따른 분기 — 별도 서브시스템
-- 파티 공유(킬 크레딧 공유, 진행 동기화) — 파티 시스템 자체가 아직 없다
 - 호위/보호 목표와 그에 따른 실패 조건 — NPC 가 액터로 스폰되어야 성립한다
   (현재 NPC 는 위치와 상호작용 반경만 가진 정적 데이터다)
 - 클라이언트 퀘스트 UI (프로토콜과 생성 코드는 준비돼 있다)

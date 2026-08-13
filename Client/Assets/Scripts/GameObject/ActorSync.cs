@@ -12,15 +12,15 @@ public class ActorSync
     // 이보다 큰 위치 변화(텔레포트/게이트/스폰)는 보간 대신 즉시 스냅한다.
     private const float PositionSnapDistance = 4f;
 
-    /// <summary>agentId → 씬 오브젝트. 외부(Actor 등)가 참조를 지우기도 하므로 그대로 노출한다.</summary>
+    /// <summary>actorId → 씬 오브젝트. 외부(Actor 등)가 참조를 지우기도 하므로 그대로 노출한다.</summary>
     public Dictionary<int, GameObject> Objects { get; } = new Dictionary<int, GameObject>();
 
     // 클라가 transform 을 직접 애니메이션 중인 액터. 이 액터만 서버 위치 반영을 건너뛴다.
     private readonly HashSet<int> locallyAnimated = new HashSet<int>();
 
-    public bool TryGet(int agentId, out GameObject gameObject)
+    public bool TryGet(int actorId, out GameObject gameObject)
     {
-        return Objects.TryGetValue(agentId, out gameObject);
+        return Objects.TryGetValue(actorId, out gameObject);
     }
 
     /// <summary>씬 전환으로 파괴된 이전 맵의 액터 참조를 버린다.</summary>
@@ -31,8 +31,8 @@ public class ActorSync
     }
 
     /// <summary>클라 연출이 이 액터의 transform 을 소유하는 구간의 시작/끝.</summary>
-    public void BeginLocalAnimation(int agentId) { locallyAnimated.Add(agentId); }
-    public void EndLocalAnimation(int agentId) { locallyAnimated.Remove(agentId); }
+    public void BeginLocalAnimation(int actorId) { locallyAnimated.Add(actorId); }
+    public void EndLocalAnimation(int actorId) { locallyAnimated.Remove(actorId); }
 
     /// <summary>서버 스냅샷 적용(생성 + 상태 갱신 + 디버그 표식).</summary>
     public void Apply(UpdateActorNotify notify)
@@ -40,25 +40,25 @@ public class ActorSync
         for (int i = 0; i < notify.ActorsLength; ++i)
         {
             var updatedActor = notify.Actors(i).Value;
-            var agentId = updatedActor.AgentId;
+            var actorId = updatedActor.ActorId;
 
             Vector3 pos = new Vector3();
             GameObject gameObject = null;
             Actor actor = null;
 
-            if (!Objects.TryGetValue(agentId, out gameObject))
+            if (!Objects.TryGetValue(actorId, out gameObject))
             {
                 if (updatedActor.Pos.HasValue)
                     pos = new Vector3(updatedActor.Pos.Value.X, updatedActor.Pos.Value.Y, updatedActor.Pos.Value.Z);
                 else
-                    Debug.LogWarning($"Actor {agentId} has no position, skipping creation");
+                    Debug.LogWarning($"Actor {actorId} has no position, skipping creation");
 
-                gameObject = Create(updatedActor.GameObjectType, pos, agentId);
+                gameObject = Create(updatedActor.GameObjectType, pos, actorId);
                 if (gameObject != null)
                 {
-                    Objects[agentId] = gameObject;
+                    Objects[actorId] = gameObject;
                     actor = gameObject.GetComponent<Actor>();
-                    Debug.LogWarning($"Created new {updatedActor.GameObjectType} object for agent {agentId}");
+                    Debug.LogWarning($"Created new {updatedActor.GameObjectType} object for agent {actorId}");
                 }
             }
             else
@@ -73,7 +73,7 @@ public class ActorSync
             if (actor != null)
                 UpdateActorState(actor, updatedActor, pos);
             else
-                Debug.LogError($"Failed to get Actor component for agent {agentId}");
+                Debug.LogError($"Failed to get Actor component for agent {actorId}");
         }
 
         // 관심영역(AoI) 이탈 처리.
@@ -82,13 +82,13 @@ public class ActorSync
         // 다시 보내주므로 그때 새로 만들어진다.
         for (int i = 0; i < notify.RemovedLength; ++i)
         {
-            int agentId = notify.Removed(i);
+            int actorId = notify.Removed(i);
             GameObject leaving;
-            if (!Objects.TryGetValue(agentId, out leaving))
+            if (!Objects.TryGetValue(actorId, out leaving))
                 continue;
 
-            Objects.Remove(agentId);
-            locallyAnimated.Remove(agentId);
+            Objects.Remove(actorId);
+            locallyAnimated.Remove(actorId);
             if (leaving != null)
                 Object.Destroy(leaving);
         }
@@ -124,7 +124,7 @@ public class ActorSync
                 //
                 // 돌진은 서버가 매 틱 실제로 이동시키는 '이동 공격'이라 위치는 서버가 진실이다
                 // (오라 데미지·몬스터 감지 판정이 그 경로를 쓰고, 벽에 막히면 네비메시가 경로를 꺾는다).
-                if (locallyAnimated.Contains(actor.agnet_id))
+                if (locallyAnimated.Contains(actor.actor_id))
                     continue;
 
                 gameObject.transform.position = actor.InterpolatedPosition();
@@ -136,7 +136,7 @@ public class ActorSync
         }
     }
 
-    private GameObject Create(GameObjectType type, Vector3 pos, int agentId)
+    private GameObject Create(GameObjectType type, Vector3 pos, int actorId)
     {
         GameObject gameObject = null;
         Actor actor = null;
@@ -157,7 +157,7 @@ public class ActorSync
         }
 
         if (actor != null)
-            actor.agnet_id = agentId;
+            actor.actor_id = actorId;
 
         return gameObject;
     }
@@ -177,7 +177,7 @@ public class ActorSync
             int oldHealth = actor.health;
             int newHealth = updatedActor.Health.Value.Health;
             if (oldHealth > newHealth)
-                Debug.LogWarning($"=== DAMAGE EVENT === Actor {actor.agnet_id} ({actor.gameObject.name}) health: {oldHealth} -> {newHealth}");
+                Debug.LogWarning($"=== DAMAGE EVENT === Actor {actor.actor_id} ({actor.gameObject.name}) health: {oldHealth} -> {newHealth}");
 
             actor.UpdateHealth(newHealth);
         }

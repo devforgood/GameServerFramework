@@ -63,7 +63,7 @@ struct GameObjectT {
     void* map_ = nullptr; int aiState_ = 0; long changeFlag_ = 0;
     int gridX = -1, gridY = -1; float speed = 0; void* bt_ = nullptr;
     float spawnPos_[3]{0, 0, 0}; std::uint64_t spawnRef_ = 0; void* tree_ = nullptr;
-    bool deadNotified_ = false; int targetAgentId_ = 0; std::string monsterName_;
+    bool deadNotified_ = false; int targetActorId_ = 0; std::string monsterName_;
 
     GameObjectT() { components_.reserve(16); }
     virtual ~GameObjectT() = default;

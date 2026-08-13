@@ -46,9 +46,9 @@ public class Gate : MonoBehaviour
             Debug.Log($"[Gate] '{gateName}': collider '{other.name}' has no Actor in parent. ignore.");
             return;
         }
-        if (actor.agnet_id != Session.Instance.player_agnet_id)
+        if (actor.actor_id != Session.Instance.player_actor_id)
         {
-            Debug.Log($"[Gate] '{gateName}': actor agent_id({actor.agnet_id}) != local player_agnet_id({Session.Instance.player_agnet_id}). not local player, ignore.");
+            Debug.Log($"[Gate] '{gateName}': actor actor_id({actor.actor_id}) != local player_actor_id({Session.Instance.player_actor_id}). not local player, ignore.");
             return;
         }
 
@@ -81,7 +81,7 @@ public class Gate : MonoBehaviour
             return;
 
         var actor = other.GetComponentInParent<Actor>();
-        if (actor == null || actor.agnet_id != Session.Instance.player_agnet_id)
+        if (actor == null || actor.actor_id != Session.Instance.player_actor_id)
             return;
 
         if (Session.Instance.SuppressGateWarpUntilExit)

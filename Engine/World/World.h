@@ -133,6 +133,11 @@ public:
 	// (예: 대규모 측정은 가장 넓은 맵에서 해야 한다) 고르려면 목록이 필요하다.
 	std::vector<Map*> GetMaps() const;
 
+	// 접속 중인 플레이어를 id 로 찾는다. 없으면 nullptr.
+	// Map::FindPlayer 와 달리 맵을 가리지 않는다 — 파티처럼 맵을 넘어 이어지는
+	// 관계는 상대가 어느 맵에 있는지와 무관하게 찾을 수 있어야 한다.
+	std::shared_ptr<Player> FindPlayer(long player_id) const;
+
 	// gamedata 맵 id로 상시(field) Map 을 찾는다. 없으면 nullptr.
 	// 인스턴스 맵은 여기서 찾을 수 없다 — 같은 mapId 로 여러 개가 동시에 살아 있어서
 	// id 만으로는 어느 것인지 정할 수 없다. 인스턴스는 플레이어의 캐릭터가 가진
@@ -148,8 +153,8 @@ public:
 
 	// 플레이어의 캐릭터를 targetId(전역 유일 마커 id — 게이트 또는 player_spawn)로 이동시킨다.
 	// 목적지 맵은 마커의 parent 로 정해지므로 따로 받지 않는다.
-	// 성공 시 outMapId/outPos(도착 위치)/outAgentId(재생성된 새 actor id)를 채우고 true.
-	bool ChangeMap(std::shared_ptr<Player> player, int targetId, int& outMapId, syncnet::Vec3& outPos, int& outAgentId);
+	// 성공 시 outMapId/outPos(도착 위치)/outActorId(재생성된 새 actor id)를 채우고 true.
+	bool ChangeMap(std::shared_ptr<Player> player, int targetId, int& outMapId, syncnet::Vec3& outPos, int& outActorId);
 
 	// ── 광역 경로 탐색 ──
 	// navmesh 는 맵 하나의 지형만 안다. 맵을 넘나드는 이동은 ZoneGraph 가 "어느 게이트를
@@ -174,8 +179,8 @@ public:
 	void GetAgentsInfo(std::shared_ptr<send_message>& msg, std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& agent_info_vector);
 
 	std::shared_ptr<Actor> OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
-	void OnRemoveAgent(int agent_id);
-	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
+	void OnRemoveAgent(int actor_id);
+	void OnSetMoveTarget(int actor_id, const syncnet::Vec3* pos);
 	void OnSetRaycast(const syncnet::Vec3* pos);
 
 

@@ -29,7 +29,7 @@ CPU 는 부수적이다. 오히려 플레이어별로 메시지를 나눠 만들
 플레이어마다 "지금 보고 있는 액터 집합"을 서버가 들고 있는다.
 
 ```
-Player 또는 Map 이 소유: std::unordered_set<int> visibleActors_;  // agentId
+Player 또는 Map 이 소유: std::unordered_set<int> visibleActors_;  // actorId
 ```
 
 ### 3-2. 매 틱 절차 (플레이어 단위)
@@ -38,7 +38,7 @@ Player 또는 Map 이 소유: std::unordered_set<int> visibleActors_;  // agentI
 A    = AoI 반경 안의 액터 집합           (그리드 쿼리)
 enter = A - visible                     → 전체 스냅샷(GameObjectChangeType::All)
 stay  = A ∩ visible, 이번 틱 변경분      → 변경 플래그만
-leave = visible - A                     → 제거 통보(agentId 목록)
+leave = visible - A                     → 제거 통보(actorId 목록)
 visible = A
 ```
 
@@ -64,7 +64,7 @@ visible = A
 
 | 안 | 방법 | 장점 | 단점 |
 |---|---|---|---|
-| **A. 기존 `RemoveAgent` 재사용** | 이미 스키마에 있는 `table RemoveAgent { agentId }` 를 해당 플레이어에게 보낸다. 클라 `Session.OnReceive` 에 `case RemoveAgent` 추가 | **스키마 변경 없음**(flatbuffers 재생성 불필요), 클라 변경 최소 | 액터 여러 개가 동시에 빠지면 메시지가 여러 개 |
+| **A. 기존 `RemoveAgent` 재사용** | 이미 스키마에 있는 `table RemoveAgent { actorId }` 를 해당 플레이어에게 보낸다. 클라 `Session.OnReceive` 에 `case RemoveAgent` 추가 | **스키마 변경 없음**(flatbuffers 재생성 불필요), 클라 변경 최소 | 액터 여러 개가 동시에 빠지면 메시지가 여러 개 |
 | B. `UpdateActorNotify` 에 `removed:[int]` 추가 | 테이블 끝에 필드 append(하위호환) | 한 메시지에 묶여 효율적 | `syncnet.fbs` 재생성 필요(C++/C# 생성 코드 전체 갱신) |
 
 leave 는 플레이어가 이동할 때만 발생하고 한 틱에 몇 개 수준이라, **A 로 시작하고 양이 문제되면 B 로 넘어가길 권장**한다.

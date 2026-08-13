@@ -7,9 +7,12 @@
 #include "PlayerSkill.h"
 #include "PlayerWallet.h"
 #include "GameObject.h"
+#include "PlayerSender.h"
 #include "QuestRegistry.h"
 #include "QuestPolicy.h"
 #include "GameData/gamedata.h"
+#include "SendMessage.h"
+#include "syncnet_generated.h"
 #include <algorithm>
 
 namespace
@@ -38,15 +41,70 @@ void PlayerQuest::Start()
 
 void PlayerQuest::Update(float dt)
 {
-	if (activeQuests_.Size() == 0)
+	// 제한 시간 검사는 진행 중인 퀘스트가 있을 때만, 그것도 1초에 한 번만 한다.
+	if (activeQuests_.Size() > 0)
+	{
+		expireCheckAcc_ += dt;
+		if (expireCheckAcc_ >= kExpireCheckInterval)
+		{
+			expireCheckAcc_ = 0.0f;
+			expireTimedOutQuests();
+		}
+	}
+
+	// 진행 중인 퀘스트가 없어도 보낼 것이 남을 수 있다 — 마지막 퀘스트를 완료하면
+	// 목록은 비지만 removed/completed 는 그때 나가야 한다.
+	sendSync();
+}
+
+void PlayerQuest::sendSync()
+{
+	auto* sender = game_object != nullptr ? game_object->GetComponent<PlayerSender>() : nullptr;
+	if (sender == nullptr || !HasPendingSync())
 		return;
 
-	expireCheckAcc_ += dt;
-	if (expireCheckAcc_ < kExpireCheckInterval)
-		return;
-	expireCheckAcc_ = 0.0f;
+	std::vector<int> changed;
+	std::vector<int> removed;
+	std::vector<int> completed;
+	DrainSync(changed, removed, completed);
 
-	expireTimedOutQuests();
+	auto builder_ptr = std::make_shared<send_message>();
+
+	std::vector<flatbuffers::Offset<syncnet::QuestInfo>> infos;
+	infos.reserve(changed.size());
+	for (int quest_id : changed)
+	{
+		const QuestActiveVO* vo = GetActiveQuest(quest_id);
+		if (vo == nullptr)
+			continue; // 모아 두는 사이에 사라졌다 — removed 로 이미 나간다
+
+		const int progress[] = { vo->progress1, vo->progress2, vo->progress3 };
+		infos.push_back(syncnet::CreateQuestInfo(
+			*builder_ptr,
+			quest_id,
+			static_cast<int8_t>(vo->state),
+			vo->stage,
+			builder_ptr->CreateVector(progress, 3)));
+	}
+
+	if (infos.empty() && removed.empty() && completed.empty())
+		return;
+
+	auto payload = syncnet::CreateQuestSync(
+		*builder_ptr,
+		builder_ptr->CreateVector(infos),
+		builder_ptr->CreateVector(removed),
+		builder_ptr->CreateVector(completed));
+
+	auto send_msg = syncnet::CreateGameMessage(
+		*builder_ptr,
+		syncnet::GameMessages::GameMessages_QuestSync,
+		payload.Union(),
+		0 /* 요청/응답 짝이 아니라 알림이므로 0 */,
+		syncnet::StatusCode::StatusCode_Success);
+	builder_ptr->Finish(send_msg);
+
+	sender->Send(builder_ptr);
 }
 
 std::chrono::system_clock::time_point PlayerQuest::now() const

@@ -56,6 +56,9 @@
     <Filter Include="Quest">
       <UniqueIdentifier>{523c06b1-c4fa-4fba-8a53-d671dae0bc79}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Party">
+      <UniqueIdentifier>{9f2b4c11-6d3e-4a58-9c74-1e5b0a83d2f6}</UniqueIdentifier>
+    </Filter>
     <Filter Include="skill">
       <UniqueIdentifier>{9c6d76e4-1915-4245-a42b-da9c4c31da6a}</UniqueIdentifier>
     </Filter>
@@ -197,6 +200,18 @@
     </ClCompile>
     <ClCompile Include="Player\PlayerQuest.cpp">
       <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Player\PlayerParty.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Player\PlayerSender.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Party\PartyManager.cpp">
+      <Filter>Party</Filter>
+    </ClCompile>
+    <ClCompile Include="Party\PartyCredit.cpp">
+      <Filter>Party</Filter>
     </ClCompile>
     <ClCompile Include="Player\PlayerSaveData.h">
       <Filter>Player</Filter>
@@ -481,6 +496,24 @@
     </ClInclude>
     <ClInclude Include="Player\PlayerQuest.h">
       <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Player\PlayerParty.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Player\PlayerSender.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Party\Party.h">
+      <Filter>Party</Filter>
+    </ClInclude>
+    <ClInclude Include="Party\PartyManager.h">
+      <Filter>Party</Filter>
+    </ClInclude>
+    <ClInclude Include="Party\PartyPolicy.h">
+      <Filter>Party</Filter>
+    </ClInclude>
+    <ClInclude Include="Party\PartyCredit.h">
+      <Filter>Party</Filter>
     </ClInclude>
     <ClInclude Include="Player\PlayerSkill.h">
       <Filter>Player</Filter>

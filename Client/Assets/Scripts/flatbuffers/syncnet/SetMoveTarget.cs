@@ -19,11 +19,11 @@ public struct SetMoveTarget : IFlatbufferObject
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
   public SetMoveTarget __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public int AgentId { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public int ActorId { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public syncnet.Vec3? Pos { get { int o = __p.__offset(6); return o != 0 ? (syncnet.Vec3?)(new syncnet.Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
 
   public static void StartSetMoveTarget(FlatBufferBuilder builder) { builder.StartTable(2); }
-  public static void AddAgentId(FlatBufferBuilder builder, int agentId) { builder.AddInt(0, agentId, 0); }
+  public static void AddActorId(FlatBufferBuilder builder, int actorId) { builder.AddInt(0, actorId, 0); }
   public static void AddPos(FlatBufferBuilder builder, Offset<syncnet.Vec3> posOffset) { builder.AddStruct(1, posOffset.Value, 0); }
   public static Offset<syncnet.SetMoveTarget> EndSetMoveTarget(FlatBufferBuilder builder) {
     int o = builder.EndTable();

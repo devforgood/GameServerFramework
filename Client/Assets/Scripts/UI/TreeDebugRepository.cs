@@ -16,7 +16,7 @@ public static class TreeDebugRepository
         public bool HasDefinition;
         public ulong Tick;
         public syncnet.AIState AiState = syncnet.AIState.Patrol;
-        public long TargetAgentId = -1;
+        public long TargetActorId = -1;
         // 노드 추가/부모 변경 등 구조가 바뀔 때마다 증가. 뷰는 이 값이 달라졌을 때만 레이아웃을 다시 계산한다.
         public int StructureVersion;
         public readonly Dictionary<ushort, NodeState> Nodes = new Dictionary<ushort, NodeState>();
@@ -148,7 +148,7 @@ public static class TreeDebugRepository
 
         tree.Tick = frame.Tick;
         tree.AiState = frame.AiState;
-        tree.TargetAgentId = frame.TargetAgentId;
+        tree.TargetActorId = frame.TargetActorId;
         tree.ExecutedPath.Clear();
 
         for (int i = 0; i < frame.ExecutedPathLength; ++i)

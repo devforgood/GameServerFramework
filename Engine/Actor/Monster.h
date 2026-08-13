@@ -44,7 +44,7 @@ private:
 	int dataId_ = 0;
 
 public:
-	int targetAgentId_;
+	int targetActorId_;
 	std::string name_;
 
 public:

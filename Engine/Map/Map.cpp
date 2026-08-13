@@ -216,7 +216,7 @@ void Map::InitEcs()
 struct Map::AoIState
 {
 	// 한 틱 동안 그 플레이어에게 보낼 것들.
-	// enter 는 전체 스냅샷, update 는 변경분, leave 는 시야에서 빠진 agentId.
+	// enter 는 전체 스냅샷, update 는 변경분, leave 는 시야에서 빠진 actorId.
 	struct PendingView
 	{
 		std::vector<Actor*> enters;
@@ -931,8 +931,8 @@ void Map::SendWorldState()
 	if (players_.empty())
 	{
 		this->raycasts_.clear();
-		for (auto& agent_id : removedAgents_)
-			OnRemoveAgent(agent_id);
+		for (auto& actor_id : removedAgents_)
+			OnRemoveAgent(actor_id);
 
 		if (aoi_ != nullptr)
 		{
@@ -955,9 +955,9 @@ void Map::SendWorldState()
 	SendDebugRaycasts();
 	SendTreeDebugSync();
 
-	for (auto& agent_id : removedAgents_)
+	for (auto& actor_id : removedAgents_)
 	{
-		OnRemoveAgent(agent_id);
+		OnRemoveAgent(actor_id);
 	}
 
 	removedAgents_.clear();
@@ -1028,9 +1028,9 @@ void Map::SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Playe
 	}
 }
 
-void Map::OnRemoveAgent(int agent_id)
+void Map::OnRemoveAgent(int actor_id)
 {
-	auto itr = actorMap_.find(agent_id);
+	auto itr = actorMap_.find(actor_id);
 	if (itr == actorMap_.end())
 	{
 		LOG.error("OnRemoveAgent error not exist in monstersMap_");
@@ -1059,14 +1059,14 @@ void Map::OnRemoveAgent(int agent_id)
 	if (AoIEnabled())
 	{
 		for (long viewerId : gridManager_->SubscribersOf(removed->GetGridX(), removed->GetGridY()))
-			aoi_->slots[viewerId].pending.leaves.push_back(agent_id);
+			aoi_->slots[viewerId].pending.leaves.push_back(actor_id);
 	}
 
 	gridManager_->remove(removed);
 	actorList_.erase(itr->second);
 	actorMap_.erase(itr);
 
-	movement_->RemoveAgent(agent_id);
+	movement_->RemoveAgent(actor_id);
 
 }
 
@@ -1100,9 +1100,9 @@ std::shared_ptr<Actor> Map::OnAddAgent(std::shared_ptr<Player> player, syncnet::
 }
 
 
-void Map::OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos)
+void Map::OnSetMoveTarget(int actor_id, const syncnet::Vec3* pos)
 {
-	this->GetNavMap()->SetMoveTarget(agent_id, Vector3(pos).pos(), false);
+	this->GetNavMap()->SetMoveTarget(actor_id, Vector3(pos).pos(), false);
 
 }
 

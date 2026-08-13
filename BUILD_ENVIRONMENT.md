@@ -56,6 +56,20 @@ cd ..
 
 When adding new Unity generated `.cs` files, also add matching `.meta` files with unique GUIDs.
 
+## UnitTest runtime DLLs
+
+vcpkg's applocal deployment copies debug variants of most dependencies into
+`UnitTest\x64\Debug` but has repeatedly missed `behaviortree_cppd.dll`, leaving only the
+release `behaviortree_cpp.dll`. The build succeeds and `UnitTest.exe` then dies immediately
+with exit code `-1073741515` (`STATUS_DLL_NOT_FOUND`) before printing anything.
+
+The Debug|x64 post-build event in `UnitTest.vcxproj` now copies it from `x64\Debug\`, which
+`Engine`/`Game` populate. If you hit the same exit code for another library, check with:
+
+```powershell
+dumpbin /dependents UnitTest\x64\Debug\UnitTest.exe
+```
+
 ## Git In Sandbox
 
 If `git status` reports dubious ownership because the sandbox user differs from the repo owner, use:

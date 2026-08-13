@@ -15,6 +15,7 @@
 #include "PlayerLevel.h"
 #include "PlayerEventBroker.h"
 #include "PlayerQuest.h"
+#include "PlayerParty.h"
 #include "BTDebugManager.h"
 
 namespace
@@ -39,6 +40,22 @@ namespace
 		case QuestAcceptResult::AlreadyActive:
 		case QuestAcceptResult::AlreadyCompleted: return syncnet::StatusCode::StatusCode_AlreadyExists;
 		default:                                  return syncnet::StatusCode::StatusCode_Failed;
+		}
+	}
+
+	// 파티 조작 실패 사유도 마찬가지로 성공/실패 수준까지만 내려간다.
+	syncnet::StatusCode ToStatusCode(PartyResult result)
+	{
+		switch (result)
+		{
+		case PartyResult::Ok:             return syncnet::StatusCode::StatusCode_Success;
+		case PartyResult::TargetNotFound:
+		case PartyResult::NoInvite:
+		case PartyResult::NoOffer:        return syncnet::StatusCode::StatusCode_NotFound;
+		case PartyResult::AlreadyInParty:
+		case PartyResult::TargetInParty:
+		case PartyResult::AlreadyInvited: return syncnet::StatusCode::StatusCode_AlreadyExists;
+		default:                          return syncnet::StatusCode::StatusCode_Failed;
 		}
 	}
 
@@ -83,6 +100,13 @@ void PlayerController::handle(const syncnet::GameMessage* msg)
 	case syncnet::GameMessages::GameMessages_QuestAccept:		handle(msg->msg_as_QuestAccept()); break;
 	case syncnet::GameMessages::GameMessages_QuestComplete:		handle(msg->msg_as_QuestComplete()); break;
 	case syncnet::GameMessages::GameMessages_QuestAbandon:		handle(msg->msg_as_QuestAbandon()); break;
+	case syncnet::GameMessages::GameMessages_PartyInvite:		handle(msg->msg_as_PartyInvite()); break;
+	case syncnet::GameMessages::GameMessages_PartyInviteReply:	handle(msg->msg_as_PartyInviteReply()); break;
+	case syncnet::GameMessages::GameMessages_PartyLeave:		handle(msg->msg_as_PartyLeave()); break;
+	case syncnet::GameMessages::GameMessages_PartyKick:			handle(msg->msg_as_PartyKick()); break;
+	case syncnet::GameMessages::GameMessages_PartyLeaderChange:	handle(msg->msg_as_PartyLeaderChange()); break;
+	case syncnet::GameMessages::GameMessages_PartyQuestShare:	handle(msg->msg_as_PartyQuestShare()); break;
+	case syncnet::GameMessages::GameMessages_PartyQuestShareReply: handle(msg->msg_as_PartyQuestShareReply()); break;
 	}
 }
 
@@ -92,14 +116,14 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 
 	auto actor = world_->OnAddAgent(player_, msg->gameObjectType(), msg->pos());
 	auto status = syncnet::StatusCode::StatusCode_Success;
-	int agent_id = 0;
+	int actor_id = 0;
 	if (!actor) {
 		LOG.error("OnAddAgent 실패: Actor 생성에 실패했습니다.");
 		status = syncnet::StatusCode::StatusCode_Failed;
 	}
 	else
 	{ 
-		agent_id = actor->GetActorId();
+		actor_id = actor->GetActorId();
 	}
 
 	player_->Send(
@@ -109,15 +133,15 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 		, status
 		, msg->gameObjectType()
 		, msg->pos()
-		, agent_id
+		, actor_id
 	);
 
 }
 
 void PlayerController::handle(const syncnet::RemoveAgent* msg)
 {
-	LOG.info("remove agent id :{}", msg->agentId());
-	world_->OnRemoveAgent(msg->agentId());
+	LOG.info("remove actor id :{}", msg->actorId());
+	world_->OnRemoveAgent(msg->actorId());
 }
 
 void PlayerController::handle(const syncnet::SetMoveTarget* msg)
@@ -140,7 +164,7 @@ void PlayerController::handle(const syncnet::SetMoveTarget* msg)
 		return;
 	}
 
-	LOG.debug("move target agent id :{}, pos:({},{},{})", player_->GetCharacter()->GetActorId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
+	LOG.debug("move target actor id :{}, pos:({},{},{})", player_->GetCharacter()->GetActorId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 	// 캐릭터가 현재 속한 맵으로 라우팅한다(게이트 이동 후 비기본 맵에 있을 수 있음).
 	player_->GetCharacter()->GetMap()->OnSetMoveTarget(player_->GetCharacter()->GetActorId(), msg->pos());
 }
@@ -172,7 +196,7 @@ void PlayerController::handle(const syncnet::Login* msg)
 	LOG.info("Login id :{}, uuid:'{}', lastMessageId:{}", userId, reconnectToken, lastMessageId_);
 
 	// 재접속 핸드오버: 클라가 되돌려 보낸 uuid(재접속 토큰)로 유예 대기 중인 기존 플레이어를
-	// 찾으면, 이 세션을 그 플레이어에 재바인딩하고 기존 캐릭터(맵/위치/agentId)를 넘겨받는다.
+	// 찾으면, 이 세션을 그 플레이어에 재바인딩하고 기존 캐릭터(맵/위치/actorId)를 넘겨받는다.
 	// uuid 는 플레이어 고유값이라 다른 클라가 같은 userId 로 접속해도 가로챌 수 없다.
 	auto oldPlayer = world_->TryReconnect(reconnectToken);
 	if (oldPlayer != nullptr)
@@ -197,17 +221,17 @@ void PlayerController::handle(const syncnet::Login* msg)
 		auto character = oldPlayer->GetCharacter();
 		int mapId = 0;
 		syncnet::Vec3 pos(0, 0, 0);
-		int agentId = 0;
+		int actorId = 0;
 		if (character != nullptr && character->GetMap() != nullptr)
 		{
 			mapId = character->GetMap()->GetMapId();
 			const Vector3& p = character->GetPosition();
 			pos = syncnet::Vec3(p.convert_x(), p.convert_y(), p.convert_z());
-			agentId = character->GetActorId();
+			actorId = character->GetActorId();
 		}
 
-		// 응답의 agentId 가 0 이 아니면 클라는 재접속으로 인식해 AddAgent 를 생략하고
-		// 이 agentId 를 채택한다. 이어지는 SendStateTo 로 기존 캐릭터가 재생성된다.
+		// 응답의 actorId 가 0 이 아니면 클라는 재접속으로 인식해 AddAgent 를 생략하고
+		// 이 actorId 를 채택한다. 이어지는 SendStateTo 로 기존 캐릭터가 재생성된다.
 		// uuid 는 기존 값 그대로(클라가 이미 보유) 다시 실어 보낸다.
 		const std::string uuid = oldPlayer->GetUuid();
 		oldPlayer->Send(
@@ -219,7 +243,7 @@ void PlayerController::handle(const syncnet::Login* msg)
 			, password
 			, mapId
 			, &pos
-			, agentId
+			, actorId
 			, uuid.c_str()
 		);
 
@@ -269,7 +293,7 @@ void PlayerController::handle(const syncnet::Login* msg)
 		, password
 		, mapId
 		, &spawnPos
-		, 0 /* agentId: 신규 로그인은 0 */
+		, 0 /* actorId: 신규 로그인은 0 */
 		, uuid.c_str()
 	);
 }
@@ -346,7 +370,7 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 	LOG.info("EnterGate gateId :{}", msg->gateId());
 
 	syncnet::Vec3 outPos(0, 0, 0);
-	int outAgentId = 0;
+	int outActorId = 0;
 	int outMapId = 0;
 	int outTargetId = 0; // 도착 지점 마커(게이트 또는 player_spawn) id
 	auto status = syncnet::StatusCode::StatusCode_Success;
@@ -405,7 +429,7 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 				player_->GetPlayerId(), playerLevel, srcGate->required_level, srcGate->id);
 			status = syncnet::StatusCode::StatusCode_Failed;
 		}
-		else if (!world_->ChangeMap(player_, srcGate->target_id, outMapId, outPos, outAgentId))
+		else if (!world_->ChangeMap(player_, srcGate->target_id, outMapId, outPos, outActorId))
 		{
 			status = syncnet::StatusCode::StatusCode_Failed;
 		}
@@ -428,7 +452,7 @@ void PlayerController::handle(const syncnet::EnterGate* msg)
 		, outMapId
 		, outTargetId
 		, &outPos
-		, outAgentId
+		, outActorId
 	);
 
 	// 응답 이후에 새 맵의 액터 상태를 동기화한다(클라가 맵 교체를 마친 뒤 받도록).
@@ -607,5 +631,167 @@ void PlayerController::handle(const syncnet::QuestAbandon* msg)
 		, lastMessageId_
 		, ok ? syncnet::StatusCode::StatusCode_Success : syncnet::StatusCode::StatusCode_Failed
 		, msg->questId()
+	);
+}
+
+namespace
+{
+	// 파티 조작은 모두 PlayerParty 를 거친다. 컴포넌트가 없으면(빙의 전 등) 아무것도 못 한다.
+	PlayerParty* GetParty(const std::shared_ptr<Player>& player)
+	{
+		return player != nullptr ? player->GetComponent<PlayerParty>() : nullptr;
+	}
+}
+
+void PlayerController::handle(const syncnet::PartyInvite* msg)
+{
+	auto* party = GetParty(player_);
+	PartyResult result = PartyResult::TargetNotFound;
+
+	// 클라는 화면에서 고른 캐릭터의 actor id 를 보낸다. 그 액터가 정말 같은 맵의
+	// 캐릭터인지는 서버가 확인한다(임의의 id 로 아무나 부르지 못하게).
+	if (party != nullptr && player_->GetCharacter() != nullptr && player_->GetCharacter()->GetMap() != nullptr)
+	{
+		auto target = player_->GetCharacter()->GetMap()->FindActor(msg->actorId());
+		if (target != nullptr && target->IsCharacter())
+			result = party->Invite(static_cast<Character*>(target.get())->GetPlayerId());
+	}
+
+	LOG.info("PartyInvite actorId:{} result:{}", msg->actorId(), static_cast<int>(result));
+
+	player_->Send(
+		syncnet::CreatePartyInviteDirect
+		, syncnet::GameMessages::GameMessages_PartyInvite
+		, lastMessageId_
+		, ToStatusCode(result)
+		, msg->actorId()
+		, 0
+		, 0
+		, nullptr /* inviterName: 요청에 대한 응답이라 비운다 */
+		, 0.0f
+	);
+}
+
+void PlayerController::handle(const syncnet::PartyInviteReply* msg)
+{
+	auto* party = GetParty(player_);
+	const PartyResult result = party != nullptr
+		? party->RespondInvite(msg->accept())
+		: PartyResult::NoInvite;
+
+	LOG.info("PartyInviteReply accept:{} result:{}", msg->accept(), static_cast<int>(result));
+
+	player_->Send(
+		syncnet::CreatePartyInviteReply
+		, syncnet::GameMessages::GameMessages_PartyInviteReply
+		, lastMessageId_
+		, ToStatusCode(result)
+		, msg->accept()
+	);
+}
+
+void PlayerController::handle(const syncnet::PartyLeave* msg)
+{
+	auto* party = GetParty(player_);
+	const PartyResult result = party != nullptr ? party->Leave() : PartyResult::NotInParty;
+
+	LOG.info("PartyLeave result:{}", static_cast<int>(result));
+
+	player_->Send(
+		syncnet::CreatePartyLeave
+		, syncnet::GameMessages::GameMessages_PartyLeave
+		, lastMessageId_
+		, ToStatusCode(result)
+	);
+}
+
+void PlayerController::handle(const syncnet::PartyKick* msg)
+{
+	auto* party = GetParty(player_);
+	const PartyResult result = party != nullptr
+		? party->Kick(static_cast<long>(msg->playerId()))
+		: PartyResult::NotInParty;
+
+	LOG.info("PartyKick playerId:{} result:{}", msg->playerId(), static_cast<int>(result));
+
+	player_->Send(
+		syncnet::CreatePartyKick
+		, syncnet::GameMessages::GameMessages_PartyKick
+		, lastMessageId_
+		, ToStatusCode(result)
+		, msg->playerId()
+	);
+}
+
+void PlayerController::handle(const syncnet::PartyLeaderChange* msg)
+{
+	auto* party = GetParty(player_);
+	const PartyResult result = party != nullptr
+		? party->TransferLeader(static_cast<long>(msg->playerId()))
+		: PartyResult::NotInParty;
+
+	LOG.info("PartyLeaderChange playerId:{} result:{}", msg->playerId(), static_cast<int>(result));
+
+	player_->Send(
+		syncnet::CreatePartyLeaderChange
+		, syncnet::GameMessages::GameMessages_PartyLeaderChange
+		, lastMessageId_
+		, ToStatusCode(result)
+		, msg->playerId()
+	);
+}
+
+void PlayerController::handle(const syncnet::PartyQuestShare* msg)
+{
+	auto* party = GetParty(player_);
+	int offered = 0;
+	const PartyResult result = party != nullptr
+		? party->ShareQuest(msg->questId(), &offered)
+		: PartyResult::NotInParty;
+
+	LOG.info("PartyQuestShare questId:{} offered:{} result:{}",
+		msg->questId(), offered, static_cast<int>(result));
+
+	// 응답의 fromPlayerId 자리에 제안이 실제로 간 인원 수를 담는다. 0 이어도 성공이다
+	// (받을 수 있는 파티원이 없었을 뿐이며, 클라는 이 수로 안내 문구를 고른다).
+	player_->Send(
+		syncnet::CreatePartyQuestShareDirect
+		, syncnet::GameMessages::GameMessages_PartyQuestShare
+		, lastMessageId_
+		, ToStatusCode(result)
+		, msg->questId()
+		, static_cast<int64_t>(offered)
+		, nullptr /* fromName */
+		, 0.0f
+	);
+}
+
+void PlayerController::handle(const syncnet::PartyQuestShareReply* msg)
+{
+	auto* party = GetParty(player_);
+	QuestAcceptResult accept_result = QuestAcceptResult::Ok;
+	const PartyResult result = party != nullptr
+		? party->RespondShare(msg->questId(), msg->accept(), &accept_result)
+		: PartyResult::NoOffer;
+
+	LOG.info("PartyQuestShareReply questId:{} accept:{} result:{} acceptResult:{}",
+		msg->questId(), msg->accept(), static_cast<int>(result), static_cast<int>(accept_result));
+
+	// 제안에 답한 것과 퀘스트를 실제로 받은 것은 다르다. 수락했는데 조건이 안 되면
+	// 클라 입장에서는 실패이므로 둘 다 성공일 때만 성공으로 내려 준다.
+	syncnet::StatusCode status = ToStatusCode(result);
+	if (status == syncnet::StatusCode::StatusCode_Success
+		&& msg->accept() && accept_result != QuestAcceptResult::Ok)
+	{
+		status = ToStatusCode(accept_result);
+	}
+
+	player_->Send(
+		syncnet::CreatePartyQuestShareReply
+		, syncnet::GameMessages::GameMessages_PartyQuestShareReply
+		, lastMessageId_
+		, status
+		, msg->questId()
+		, msg->accept()
 	);
 }

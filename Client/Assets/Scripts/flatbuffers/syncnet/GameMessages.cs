@@ -25,6 +25,14 @@ public enum GameMessages : byte
   QuestComplete = 15,
   QuestAbandon = 16,
   QuestSync = 17,
+  PartyInvite = 18,
+  PartyInviteReply = 19,
+  PartyLeave = 20,
+  PartyKick = 21,
+  PartyLeaderChange = 22,
+  PartySync = 23,
+  PartyQuestShare = 24,
+  PartyQuestShareReply = 25,
 };
 
 

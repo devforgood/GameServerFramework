@@ -19,6 +19,7 @@
 #include "NavMesh.h"
 #include "GameMode.h"
 #include "GameModeFactory.h"
+#include "PartyManager.h"
 
 namespace
 {
@@ -330,9 +331,9 @@ void World::EvictInstancePlayers(Map* instance)
 	for (auto& player : instance->GetPlayers())
 	{
 		syncnet::Vec3 outPos(0, 0, 0);
-		int outAgentId = 0;
+		int outActorId = 0;
 		int outMapId = 0;
-		if (!ChangeMap(player, exitTargetId, outMapId, outPos, outAgentId))
+		if (!ChangeMap(player, exitTargetId, outMapId, outPos, outActorId))
 		{
 			LOG.error("인스턴스 퇴장 실패: player {} -> target {}",
 				player->GetPlayerId(), exitTargetId);
@@ -349,7 +350,7 @@ void World::EvictInstancePlayers(Map* instance)
 			, outMapId
 			, exitTargetId
 			, &outPos
-			, outAgentId
+			, outActorId
 		);
 
 		auto& character = player->GetCharacter();
@@ -407,6 +408,15 @@ void World::update(float deltaTime)
 	CleanupInstances();
 
 	TickReconnectGrace(deltaTime);
+
+	// 답하지 않은 파티 초대를 만료시킨다. 파티는 맵에 속하지 않으므로 월드가 돌린다.
+	PartyManager::Instance().Update(deltaTime);
+}
+
+std::shared_ptr<Player> World::FindPlayer(long player_id) const
+{
+	auto it = players_.find(player_id);
+	return it != players_.end() ? it->second : nullptr;
 }
 
 void World::join(std::shared_ptr<Player> player)
@@ -597,7 +607,7 @@ std::vector<Map*> World::GetMaps() const
 	return maps;
 }
 
-bool World::ChangeMap(std::shared_ptr<Player> player, int targetId, int& outMapId, syncnet::Vec3& outPos, int& outAgentId)
+bool World::ChangeMap(std::shared_ptr<Player> player, int targetId, int& outMapId, syncnet::Vec3& outPos, int& outActorId)
 {
 	if (player == nullptr)
 	{
@@ -671,9 +681,9 @@ bool World::ChangeMap(std::shared_ptr<Player> player, int targetId, int& outMapI
 
 	outMapId = mapId;
 	outPos = arrivalPos;
-	outAgentId = newActor->GetActorId();
-	LOG.info("World::ChangeMap success: player {} -> map {} target {}, newAgentId {}, pos({},{},{})",
-		player->GetPlayerId(), mapId, targetId, outAgentId, outPos.x(), outPos.y(), outPos.z());
+	outActorId = newActor->GetActorId();
+	LOG.info("World::ChangeMap success: player {} -> map {} target {}, newActorId {}, pos({},{},{})",
+		player->GetPlayerId(), mapId, targetId, outActorId, outPos.x(), outPos.y(), outPos.z());
 	return true;
 }
 
@@ -713,18 +723,18 @@ std::shared_ptr<Actor> World::OnAddAgent(std::shared_ptr<Player> player, syncnet
 	return actor;
 }
 
-void World::OnRemoveAgent(int agent_id)
+void World::OnRemoveAgent(int actor_id)
 {
 	// todo : map 선택 로직 추가
 	if (mapList_.empty())
 		return;
-	mapList_.begin()->get()->OnRemoveAgent(agent_id);
+	mapList_.begin()->get()->OnRemoveAgent(actor_id);
 }
 
-void World::OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos)
+void World::OnSetMoveTarget(int actor_id, const syncnet::Vec3* pos)
 {
 	// todo : map 선택 로직 추가
-	mapList_.begin()->get()->OnSetMoveTarget(agent_id, pos);
+	mapList_.begin()->get()->OnSetMoveTarget(actor_id, pos);
 }
 
 void World::OnSetRaycast(const syncnet::Vec3* pos)

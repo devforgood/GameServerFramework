@@ -146,9 +146,9 @@ protected:
 	Map* EnterInstance(std::shared_ptr<Player>& player)
 	{
 		syncnet::Vec3 outPos(0, 0, 0);
-		int outAgentId = 0;
+		int outActorId = 0;
 		int outMapId = 0;
-		if (!world_->ChangeMap(player, entranceGate_->target_id, outMapId, outPos, outAgentId))
+		if (!world_->ChangeMap(player, entranceGate_->target_id, outMapId, outPos, outActorId))
 			return nullptr;
 
 		auto& character = player->GetCharacter();
@@ -214,10 +214,10 @@ TEST_F(GameModeInstanceTest, EmptyInstanceIsDestroyed)
 
 	// 인스턴스의 출구 게이트로 되돌아 나간다.
 	syncnet::Vec3 outPos(0, 0, 0);
-	int outAgentId = 0;
+	int outActorId = 0;
 	int outMapId = 0;
 	ASSERT_TRUE(world_->ChangeMap(player, instanceData_->gates.front().target_id,
-		outMapId, outPos, outAgentId));
+		outMapId, outPos, outActorId));
 
 	world_->update(0.1f);
 	EXPECT_EQ(world_->GetInstanceCount(), 0u);

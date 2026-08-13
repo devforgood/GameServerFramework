@@ -133,7 +133,7 @@ TEST_P(MonsterBTTest, DetectsAndAttacksNearbyCharacter)
 	for (int i = 0; i < 20; ++i)
 		map_->UpdateActors(kTickDt);
 
-	EXPECT_EQ(monster->targetAgentId_, victim->GetActorId()) << "적을 탐지하지 못했습니다";
+	EXPECT_EQ(monster->targetActorId_, victim->GetActorId()) << "적을 탐지하지 못했습니다";
 	EXPECT_LT(victim->GetHealth(), healthBefore) << "탐지 후 공격이 실행되지 않았습니다";
 	EXPECT_EQ(victim->GetLastAttackerActorId(), monster->GetActorId());
 }
@@ -147,7 +147,7 @@ TEST_P(MonsterBTTest, PatrolsWhenNoEnemyNearby)
 	for (int i = 0; i < 20; ++i)
 		map_->UpdateActors(kTickDt);
 
-	EXPECT_EQ(monster->targetAgentId_, -1);
+	EXPECT_EQ(monster->targetActorId_, -1);
 	EXPECT_EQ(monster->GetState(), syncnet::AIState_Patrol);
 }
 
@@ -164,13 +164,13 @@ TEST_P(MonsterBTTest, KeepsTargetWhileItStaysVisible)
 	for (int i = 0; i < 20; ++i)
 		map_->UpdateActors(kTickDt);
 
-	const int acquired = monster->targetAgentId_;
+	const int acquired = monster->targetActorId_;
 	ASSERT_GE(acquired, 0) << "적을 탐지하지 못했습니다";
 
 	for (int i = 0; i < 20; ++i)
 		map_->UpdateActors(kTickDt);
 
-	EXPECT_EQ(monster->targetAgentId_, acquired) << "유효한 대상이 있는데 타깃이 바뀌었습니다";
+	EXPECT_EQ(monster->targetActorId_, acquired) << "유효한 대상이 있는데 타깃이 바뀌었습니다";
 }
 
 // 잡은 대상이 시야 밖으로 벗어나면 놓치고(타깃 해제) 배회로 돌아간다.
@@ -183,7 +183,7 @@ TEST_P(MonsterBTTest, DropsTargetWhenItLeavesViewRange)
 
 	for (int i = 0; i < 20; ++i)
 		map_->UpdateActors(kTickDt);
-	ASSERT_EQ(monster->targetAgentId_, victim->GetActorId());
+	ASSERT_EQ(monster->targetActorId_, victim->GetActorId());
 
 	// 대상이 시야 반경(10) 밖으로 멀어진다.
 	const Vector3& here = victim->GetPosition();
@@ -194,7 +194,7 @@ TEST_P(MonsterBTTest, DropsTargetWhenItLeavesViewRange)
 	for (int i = 0; i < 30; ++i)
 		map_->UpdateActors(kTickDt);
 
-	EXPECT_EQ(monster->targetAgentId_, -1) << "시야 밖 대상을 계속 타깃으로 잡고 있습니다";
+	EXPECT_EQ(monster->targetActorId_, -1) << "시야 밖 대상을 계속 타깃으로 잡고 있습니다";
 	EXPECT_EQ(monster->GetState(), syncnet::AIState_Patrol);
 }
 

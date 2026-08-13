@@ -19,17 +19,17 @@ public struct RemoveAgent : IFlatbufferObject
   public void __init(int _i, ByteBuffer _bb) { __p = new Table(_i, _bb); }
   public RemoveAgent __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
-  public int AgentId { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public int ActorId { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
 
   public static Offset<syncnet.RemoveAgent> CreateRemoveAgent(FlatBufferBuilder builder,
-      int agentId = 0) {
+      int actorId = 0) {
     builder.StartTable(1);
-    RemoveAgent.AddAgentId(builder, agentId);
+    RemoveAgent.AddActorId(builder, actorId);
     return RemoveAgent.EndRemoveAgent(builder);
   }
 
   public static void StartRemoveAgent(FlatBufferBuilder builder) { builder.StartTable(1); }
-  public static void AddAgentId(FlatBufferBuilder builder, int agentId) { builder.AddInt(0, agentId, 0); }
+  public static void AddActorId(FlatBufferBuilder builder, int actorId) { builder.AddInt(0, actorId, 0); }
   public static Offset<syncnet.RemoveAgent> EndRemoveAgent(FlatBufferBuilder builder) {
     int o = builder.EndTable();
     return new Offset<syncnet.RemoveAgent>(o);

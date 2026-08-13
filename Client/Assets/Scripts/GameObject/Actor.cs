@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class Actor : MonoBehaviour
 {
-    public int agnet_id;
+    public int actor_id;
     public Vector3 pos;   // 서버가 마지막으로 알려준 위치(보간 목표)
     public syncnet.AIState state;
     public int health = 100;
@@ -125,7 +125,7 @@ public class Actor : MonoBehaviour
         // Use cached DamageTextManager instance
         if (damageTextManager != null)
         {
-            damageTextManager.ShowDamage(agnet_id, damageTextPosition, damage, isCritical);
+            damageTextManager.ShowDamage(actor_id, damageTextPosition, damage, isCritical);
         }
         else
         {
@@ -142,13 +142,13 @@ public class Actor : MonoBehaviour
         switch (state)
         {
             case syncnet.AIState.Dead:
-                Debug.LogWarning($"Actor {agnet_id} is dead, showing death effect...");
+                Debug.LogWarning($"Actor {actor_id} is dead, showing death effect...");
                 // 사망 시 시각적 효과 (예: 색상 변경, 애니메이션 등)
                 ShowDeathEffect();
                 break;
                 
             case syncnet.AIState.Destroyed:
-                Debug.LogWarning($"Actor {agnet_id} is destroyed, removing from scene...");
+                Debug.LogWarning($"Actor {actor_id} is destroyed, removing from scene...");
                 // 파괴 시 오브젝트 제거
                 RemoveFromScene();
                 break;
@@ -175,9 +175,9 @@ public class Actor : MonoBehaviour
     protected virtual void RemoveFromScene()
     {
         // Session의 game_objects에서 제거
-        if (session != null && session.game_objects.ContainsKey(agnet_id))
+        if (session != null && session.game_objects.ContainsKey(actor_id))
         {
-            session.game_objects.Remove(agnet_id);
+            session.game_objects.Remove(actor_id);
         }
         
         // 오브젝트 파괴

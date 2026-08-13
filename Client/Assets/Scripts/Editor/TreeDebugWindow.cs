@@ -117,10 +117,10 @@ public class TreeDebugWindow : EditorWindow
             return;
 
         var monster = Selection.activeGameObject.GetComponentInParent<Monster>();
-        if (monster == null || monster.agnet_id == selectedMonsterId)
+        if (monster == null || monster.actor_id == selectedMonsterId)
             return;
 
-        selectedMonsterId = monster.agnet_id;
+        selectedMonsterId = monster.actor_id;
         // 아직 정의를 받지 못한 몬스터라면 서버에 트리 정의를 요청한다
         TreeDebugRepository.RequestDefinition(selectedMonsterId);
         Repaint();
@@ -224,8 +224,8 @@ public class TreeDebugWindow : EditorWindow
             var meta = new StringBuilder();
             meta.Append("tick ").Append(tree.Tick);
             meta.Append("  ·  ").Append(tree.AiState);
-            if (tree.TargetAgentId >= 0)
-                meta.Append("  ·  target ").Append(tree.TargetAgentId);
+            if (tree.TargetActorId >= 0)
+                meta.Append("  ·  target ").Append(tree.TargetActorId);
             GUILayout.Label(meta.ToString(), EditorStyles.miniLabel);
             GUILayout.Space(10f);
         }

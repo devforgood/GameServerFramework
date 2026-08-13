@@ -14,6 +14,9 @@
 #include "PlayerSkill.h"
 #include "PlayerLevel.h"
 #include "PlayerWallet.h"
+#include "PlayerParty.h"
+#include "PlayerSender.h"
+#include "World.h"
 #include "PlayerSaveData.h"
 #include "PlayerEventBroker.h"
 #include "PlayerEventBrokerProxy.h"
@@ -34,6 +37,15 @@ Player::Player()
 	this->AddComponent<PlayerSkill>();
 	this->AddComponent<PlayerLevel>();
 	this->AddComponent<PlayerWallet>();
+
+	// 파티는 캐릭터가 아니라 플레이어 단위다(맵을 옮겨도 유지된다). 다른 파티원이 이
+	// 플레이어를 찾을 수 있도록 여기서 바로 등록한다 — 로그인/로드를 기다리면 그 사이에
+	// 온 초대가 갈 곳을 잃는다.
+	this->AddComponent<PlayerParty>()->Bind(playerId_);
+
+	// 컴포넌트가 클라로 메시지를 내보내는 통로. 이 컴포넌트는 Player 가 소유하므로
+	// 생성자에서 자신을 넘겨도 안전하다(Player 보다 오래 살 수 없다).
+	this->AddComponent<PlayerSender>()->BindOwner(this);
 }
 
 Player::~Player() 
@@ -141,9 +153,8 @@ void Player::OnLoadedData(const PlayerLoadData & data)
 
 void Player::Update(float dt)
 {
+	// 컴포넌트가 각자 자기 변경분을 클라에 내보낸다(PlayerQuest/PlayerParty 의 Update).
 	GameObject::Update(dt);
-
-	SendQuestSync();
 
 	// 1분마다 플레이어 데이터를 디비에 저장하는 로직
 	playerLazySaveAcc_ += dt;
@@ -154,54 +165,11 @@ void Player::Update(float dt)
 	}
 }
 
-void Player::SendQuestSync()
+std::shared_ptr<Player> Player::FindPlayerInWorld(long player_id) const
 {
-	auto* quests = GetComponent<PlayerQuest>();
-	if (quests == nullptr || !quests->HasPendingSync())
-		return;
-
-	std::vector<int> changed;
-	std::vector<int> removed;
-	std::vector<int> completed;
-	quests->DrainSync(changed, removed, completed);
-
-	auto builder_ptr = std::make_shared<send_message>();
-
-	std::vector<flatbuffers::Offset<syncnet::QuestInfo>> infos;
-	infos.reserve(changed.size());
-	for (int quest_id : changed)
-	{
-		const QuestActiveVO* vo = quests->GetActiveQuest(quest_id);
-		if (vo == nullptr)
-			continue; // 모아 두는 사이에 사라졌다 — removed 로 이미 나간다
-
-		const int progress[] = { vo->progress1, vo->progress2, vo->progress3 };
-		infos.push_back(syncnet::CreateQuestInfo(
-			*builder_ptr,
-			quest_id,
-			static_cast<int8_t>(vo->state),
-			vo->stage,
-			builder_ptr->CreateVector(progress, 3)));
-	}
-
-	if (infos.empty() && removed.empty() && completed.empty())
-		return;
-
-	auto payload = syncnet::CreateQuestSync(
-		*builder_ptr,
-		builder_ptr->CreateVector(infos),
-		builder_ptr->CreateVector(removed),
-		builder_ptr->CreateVector(completed));
-
-	auto send_msg = syncnet::CreateGameMessage(
-		*builder_ptr,
-		syncnet::GameMessages::GameMessages_QuestSync,
-		payload.Union(),
-		0 /* 요청/응답 짝이 아니라 알림이므로 0 */,
-		syncnet::StatusCode::StatusCode_Success);
-	builder_ptr->Finish(send_msg);
-
-	Send(builder_ptr);
+	if (server_ == nullptr || server_->GetWorld() == nullptr)
+		return nullptr;
+	return server_->GetWorld()->FindPlayer(player_id);
 }
 
 std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Player::GetStrand()

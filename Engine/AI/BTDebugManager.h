@@ -55,7 +55,7 @@ struct BTDebugRuntimeFrame
 	int64_t monster_id = -1;
 	uint64_t tick = 0;
 	syncnet::AIState ai_state = syncnet::AIState_Patrol;
-	int64_t target_agent_id = -1;
+	int64_t target_actor_id = -1;
 	std::vector<uint16_t> executed_path;
 	std::vector<BTDebugNodeChange> changes;
 };

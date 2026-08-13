@@ -89,9 +89,7 @@ public:
 
 	// ---- 클라 동기화
 	// 매 이벤트마다 메시지를 보내면 처치 한 번에 한 통씩 나간다. 바뀐 퀘스트 id 만 모아
-	// 두고 틱 끝에 한 번 내보낸다.
-	bool HasPendingSync() const;
-	void DrainSync(std::vector<int>& changed, std::vector<int>& removed, std::vector<int>& completed);
+	// 두고 Update 끝에 한 번 내보낸다(sendSync).
 
 	// 로그인 직후처럼 전체를 다시 내려줘야 할 때, 진행 중인 모든 퀘스트를 동기화 대상으로 올린다.
 	void MarkAllForSync();
@@ -111,6 +109,12 @@ public:
 
 private:
 	std::chrono::system_clock::time_point now() const;
+
+	// 이번 틱에 바뀐 퀘스트를 한 통으로 묶어 클라에 내보낸다. Update 끝에서 호출.
+	// 보낼 통로(PlayerSender)가 없으면 아무것도 하지 않는다.
+	void sendSync();
+	bool HasPendingSync() const;
+	void DrainSync(std::vector<int>& changed, std::vector<int>& removed, std::vector<int>& completed);
 
 	// 진행도를 반영하고, 스테이지가 끝났으면 다음 스테이지로 넘기거나
 	// 완료 대기 상태로 만든다.

@@ -104,7 +104,7 @@ std::shared_ptr<send_message> BTDebugSync::BuildMessage()
 			frame.monster_id,
 			frame.tick,
 			frame.ai_state,
-			frame.target_agent_id,
+			frame.target_actor_id,
 			executed_path,
 			changes));
 	}

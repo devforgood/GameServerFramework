@@ -44,7 +44,7 @@
   <ItemDefinitionGroup />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Party;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <Optimization>Disabled</Optimization>
@@ -60,7 +60,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Party;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <Optimization>Disabled</Optimization>
@@ -76,13 +76,17 @@
       <AdditionalLibraryDirectories>..\Engine\3thparty\mariadb;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>mariadbcpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <!-- vcpkg applocal 배포가 behaviortree_cppd.dll 을 빠뜨려, 빌드는 되는데 실행이
+         STATUS_DLL_NOT_FOUND 로 죽는 일이 반복됐다. 솔루션 출력 폴더에서 직접 가져온다.
+         (아직 없으면 조용히 넘어간다 — Engine/Game 을 한 번 빌드하면 생긴다.) -->
     <PostBuildEvent>
-      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"</Command>
+      <Command>xcopy /D /Y "$(ProjectDir)..\Engine\3thparty\mariadb\mariadbcpp.dll" "$(OutDir)"
+if exist "$(ProjectDir)..\x64\$(Configuration)\behaviortree_cppd.dll" xcopy /D /Y "$(ProjectDir)..\x64\$(Configuration)\behaviortree_cppd.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Party;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -99,7 +103,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\Engine\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\Engine\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Engine\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Party;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\Engine\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\flatbuffer\flatbuffers-1.12.0\include;..\recastnavigation;..\thirdparty\mimalloc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PreprocessorDefinitions>X64;NDEBUG;_CONSOLE;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -129,6 +133,7 @@
     <ClCompile Include="ComponentPatternTest.cpp" />
     <ClCompile Include="PlayerQuestTest.cpp" />
     <ClCompile Include="PlayerInventoryTest.cpp" />
+    <ClCompile Include="PartyTest.cpp" />
     <ClCompile Include="PlayerLevelTest.cpp" />
     <ClCompile Include="ECSTest.cpp" />
     <ClCompile Include="EventBrokerTest.cpp" />

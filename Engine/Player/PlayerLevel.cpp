@@ -4,6 +4,7 @@
 #include "PlayerEventBroker.h"
 #include "GameObject.h"
 #include "GameData/ResourceLoader.h"
+#include "PartyPolicy.h"
 
 void PlayerLevel::Start()
 {
@@ -14,7 +15,8 @@ void PlayerLevel::Start()
 void PlayerLevel::OnEventActorDead(const EventActorDead& message)
 {
     // 몬스터 처치 보상으로 경험치를 획득하고 레벨 업을 시도한다.
-    GainExp(kExpPerKill);
+    // 파티로 잡았다면 크레딧을 나눠 가진 인원수만큼 분배된다(혼자면 그대로).
+    GainExp(PartyPolicy::Instance().ShareExp(kExpPerKill, message.credit_share));
 }
 
 void PlayerLevel::GainExp(int amount)

@@ -21,7 +21,7 @@ public class SkillController
     private readonly MonoBehaviour host;          // 코루틴 실행 + 연출 디스패처 host
     private readonly ServerConnection connection;
     private readonly ActorSync actors;
-    private readonly Func<int> playerAgentId;     // 내 캐릭터 agent id(세션이 소유)
+    private readonly Func<int> playerActorId;     // 내 캐릭터 actor id(세션이 소유)
 
     private readonly SkillCooldownTracker cooldowns = new SkillCooldownTracker();
 
@@ -33,12 +33,12 @@ public class SkillController
 
     private long UnixTimestampMs => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-    public SkillController(MonoBehaviour host, ServerConnection connection, ActorSync actors, Func<int> playerAgentId)
+    public SkillController(MonoBehaviour host, ServerConnection connection, ActorSync actors, Func<int> playerActorId)
     {
         this.host = host;
         this.connection = connection;
         this.actors = actors;
-        this.playerAgentId = playerAgentId;
+        this.playerActorId = playerActorId;
     }
 
     /// <summary>캐릭터가 새로 만들어지면(게이트 이동/재접속) 서버 스킬 상태도 초기화되므로 예측을 버린다.</summary>
@@ -51,11 +51,11 @@ public class SkillController
     public void Cast(int skillId, Vector3 pos, int type)
     {
         var timestamp = UnixTimestampMs;
-        int agentId = playerAgentId();
-        Debug.Log($"UseSkill agent_id: {agentId}, pos({pos.x}, {pos.y}, {pos.z}) timestamp({timestamp})");
+        int actorId = playerActorId();
+        Debug.Log($"UseSkill actor_id: {actorId}, pos({pos.x}, {pos.y}, {pos.z}) timestamp({timestamp})");
 
         GameObject gameObject;
-        if (!actors.TryGet(agentId, out gameObject))
+        if (!actors.TryGet(actorId, out gameObject))
         {
             Debug.LogError("Player agent not found in game_objects dictionary.");
             return;
@@ -89,7 +89,7 @@ public class SkillController
             return;
         }
 
-        connection.Send(PacketFactory.CreateUseSkillMessage(skillId, agentId, pos, type, timestamp));
+        connection.Send(PacketFactory.CreateUseSkillMessage(skillId, actorId, pos, type, timestamp));
         cooldowns.OnCast(resSkill);
 
         // 서버 브로드캐스트는 캐스터(자신)를 제외하므로, 자신의 연출은 여기서 즉시 재생한다.
@@ -178,7 +178,7 @@ public class SkillController
 
         var actor = gameObject.GetComponent<Actor>();
         actor.input_locked = true; // 서버 통보 전까지의 선반영(시전 차단용). 위치 동기화와는 무관하다.
-        actors.BeginLocalAnimation(actor.agnet_id);
+        actors.BeginLocalAnimation(actor.actor_id);
 
         try
         {
@@ -210,7 +210,7 @@ public class SkillController
         }
         finally
         {
-            actors.EndLocalAnimation(actor.agnet_id);
+            actors.EndLocalAnimation(actor.actor_id);
         }
     }
 }

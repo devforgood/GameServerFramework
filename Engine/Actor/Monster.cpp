@@ -19,6 +19,7 @@
 #include "Character.h"
 #include "PlayerEventBrokerProxy.h"
 #include "EventMessage.h"
+#include "PartyCredit.h"
 
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
@@ -33,7 +34,7 @@ Monster::Monster(Map* map)
 	: Actor(map), bt_(nullptr), tree_(nullptr)
 {
 	gameObjectType_ = syncnet::GameObjectType::GameObjectType_Monster;
-	targetAgentId_ = -1;
+	targetActorId_ = -1;
 
 	// 근접 공격 스킬 등록. 데이터가 없으면 nullptr 등록이라 TryCast 가 SkillNotFound 로 거부한다.
 	skillSet_.AddSkill(kMeleeSkillId, SkillRegistry::Instance().Get(kMeleeSkillId));
@@ -58,21 +59,21 @@ Monster::~Monster()
 bool Monster::Init(Vector3& pos)
 {
 	float speed = 3.5f;
-	int agent_id = map_->GetNavMap()->AddAgent(pos.pos(), speed);
-	if (agent_id < 0)
+	int actor_id = map_->GetNavMap()->AddAgent(pos.pos(), speed);
+	if (actor_id < 0)
 	{
 		LOG.error("OnAddAgent error in Map.addAgent()");
 		return false;
 	}
 
-	if (map_->actorMap_.find(agent_id) != map_->actorMap_.end())
+	if (map_->actorMap_.find(actor_id) != map_->actorMap_.end())
 	{
 		LOG.error("OnAddAgent error already exist in actorMap_");
 		return false;
 	}
 
 	this->SetPosition(pos.x, pos.y, pos.z);
-	actorId_ = agent_id;
+	actorId_ = actor_id;
 	this->speed = speed;
 	auto& entityManager = map_->systemManager_->GetEntityManager();
 	entityManager.GetComponent<engine::StateComponent>(entityId_).ActorID = actorId_;
@@ -124,7 +125,7 @@ int Monster::AttackRange()
 {
 	INavMovement* nav = map_->GetNavMap();
 	const float* this_pos = nav->GetPos(GetActorId());
-	const float* target_pos = nav->GetPos(targetAgentId_);
+	const float* target_pos = nav->GetPos(targetActorId_);
 
 	if (ManhattanDistance(this_pos, target_pos) > 3)
 		return -1;
@@ -132,7 +133,7 @@ int Monster::AttackRange()
 	float hitPoint[3];
 	if (nav->Raycast(GetActorId(), target_pos, hitPoint) == false)
 	{
-		return targetAgentId_;
+		return targetActorId_;
 	}
 	return -1;
 }
@@ -143,12 +144,12 @@ int Monster::Attack()
 
 	// 추격 대상 방향으로 근접 스킬을 시전한다 — 플레이어와 동일한 스킬 파이프라인.
 	// 쿨다운 등으로 거부되면 이번 틱은 공격하지 않는다(BT 가 다음 틱에 재시도).
-	auto target = map_->FindActor(targetAgentId_);
+	auto target = map_->FindActor(targetActorId_);
 	if (target != nullptr)
 	{
 		CastContext ctx;
 		ctx.skillId = kMeleeSkillId;
-		ctx.targetActorId = targetAgentId_;
+		ctx.targetActorId = targetActorId_;
 		ctx.targetPos = target->GetPosition();
 		skillSet_.TryCast(this, ctx);
 	}
@@ -170,17 +171,9 @@ void Monster::NotifyKilledBy()
 	if (killer_actor_id < 0)
 		return; // 공격자 정보가 없으면 발행하지 않음
 
-	// Actor 레이어는 플레이어를 모른다. 여기(게임 로직 레이어)에서 액터 → 캐릭터 → 플레이어로 변환한다.
-	auto attacker = map_->FindActor(killer_actor_id);
-	if (attacker == nullptr)
-		return; // 공격자가 이미 떠났음
-
-	// Possess 시점에 부착된 프록시를 통해 Player의 PlayerEventBroker로 발행한다.
-	auto eventBroker = attacker->GetComponent<PlayerEventBrokerProxy>();
-	if (eventBroker == nullptr)
-		return;
-
-	eventBroker->publish(EventActorDead{ killer_actor_id, actorId_, dataId_ });
+	// 액터 → 캐릭터 → 플레이어 변환과 파티 크레딧 분배는 party_credit 이 맡는다.
+	// 여기서는 "이 액터가 여기서 죽었다"까지만 알린다.
+	party_credit::PublishActorDead(map_, killer_actor_id, position_, actorId_, dataId_);
 }
 
 

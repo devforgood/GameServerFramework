@@ -28,5 +28,12 @@ public:
 	void handle(const syncnet::QuestAccept* msg);
 	void handle(const syncnet::QuestComplete* msg);
 	void handle(const syncnet::QuestAbandon* msg);
+	void handle(const syncnet::PartyInvite* msg);
+	void handle(const syncnet::PartyInviteReply* msg);
+	void handle(const syncnet::PartyLeave* msg);
+	void handle(const syncnet::PartyKick* msg);
+	void handle(const syncnet::PartyLeaderChange* msg);
+	void handle(const syncnet::PartyQuestShare* msg);
+	void handle(const syncnet::PartyQuestShareReply* msg);
 };
 

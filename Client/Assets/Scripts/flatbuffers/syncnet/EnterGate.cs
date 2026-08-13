@@ -22,13 +22,13 @@ public struct EnterGate : IFlatbufferObject
   public int MapId { get { int o = __p.__offset(4); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public int GateId { get { int o = __p.__offset(6); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public syncnet.Vec3? Pos { get { int o = __p.__offset(8); return o != 0 ? (syncnet.Vec3?)(new syncnet.Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
-  public int AgentId { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public int ActorId { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
 
   public static void StartEnterGate(FlatBufferBuilder builder) { builder.StartTable(4); }
   public static void AddMapId(FlatBufferBuilder builder, int mapId) { builder.AddInt(0, mapId, 0); }
   public static void AddGateId(FlatBufferBuilder builder, int gateId) { builder.AddInt(1, gateId, 0); }
   public static void AddPos(FlatBufferBuilder builder, Offset<syncnet.Vec3> posOffset) { builder.AddStruct(2, posOffset.Value, 0); }
-  public static void AddAgentId(FlatBufferBuilder builder, int agentId) { builder.AddInt(3, agentId, 0); }
+  public static void AddActorId(FlatBufferBuilder builder, int actorId) { builder.AddInt(3, actorId, 0); }
   public static Offset<syncnet.EnterGate> EndEnterGate(FlatBufferBuilder builder) {
     int o = builder.EndTable();
     return new Offset<syncnet.EnterGate>(o);

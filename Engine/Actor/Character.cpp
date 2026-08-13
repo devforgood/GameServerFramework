@@ -100,24 +100,24 @@ bool Character::Init(Vector3& pos)
 
 	float speed = 4.5f;
 
-	int agent_id = map_->GetNavMap()->AddAgent(Vector3(pos).pos(), speed);
-	if (agent_id < 0)
+	int actor_id = map_->GetNavMap()->AddAgent(Vector3(pos).pos(), speed);
+	if (actor_id < 0)
 	{
 		LOG.error("OnAddAgent error in Map.addAgent()");
 		return false;
 	}
 
-	if (map_->actorMap_.find(agent_id) != map_->actorMap_.end())
+	if (map_->actorMap_.find(actor_id) != map_->actorMap_.end())
 	{
 		LOG.error("OnAddAgent error already exist in actorMap_");
 		return false;
 	}
 
 	this->SetPosition(pos.x, pos.y, pos.z);
-	this->actorId_ = agent_id;
+	this->actorId_ = actor_id;
 	this->speed = speed;
 	auto& entityManager = map_->systemManager_->GetEntityManager();
-	entityManager.GetComponent<engine::StateComponent>(entityId_).ActorID = agent_id;
+	entityManager.GetComponent<engine::StateComponent>(entityId_).ActorID = actor_id;
 
 	return true;
 }

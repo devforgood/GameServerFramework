@@ -27,7 +27,7 @@ namespace
 		int64_t monster_id = -1;
 		uint64_t bt_tick = 0;
 		syncnet::AIState ai_state = syncnet::AIState_Patrol;
-		int64_t target_agent_id = -1;
+		int64_t target_actor_id = -1;
 		std::unordered_map<uint16_t, BTNodeDebugState> nodes;
 		std::vector<uint16_t> executed_nodes_this_tick;
 		std::vector<BTNodeDebugState> changed_nodes;
@@ -67,7 +67,7 @@ namespace
 		frame.monster_id = context.monster_id;
 		frame.tick = context.bt_tick;
 		frame.ai_state = context.ai_state;
-		frame.target_agent_id = context.target_agent_id;
+		frame.target_actor_id = context.target_actor_id;
 		frame.executed_path = context.executed_nodes_this_tick;
 		frame.changes.reserve(context.changed_nodes.size());
 
@@ -95,7 +95,7 @@ void BTDebugManager::BeginTick(Monster* monster)
 	auto& context = GetOrCreateContext(monster);
 	context.bt_tick++;
 	context.ai_state = monster->GetState();
-	context.target_agent_id = monster->targetAgentId_;
+	context.target_actor_id = monster->targetActorId_;
 	context.executed_nodes_this_tick.clear();
 	context.changed_nodes.clear();
 	context.dirty = false;
@@ -138,7 +138,7 @@ void BTDebugManager::Record(Monster* monster, uint16_t node_id, std::string_view
 
 	context.executed_nodes_this_tick.push_back(node_id);
 	context.ai_state = monster->GetState();
-	context.target_agent_id = monster->targetAgentId_;
+	context.target_actor_id = monster->targetActorId_;
 
 	if (changed)
 	{
@@ -155,7 +155,7 @@ void BTDebugManager::EndTick(Monster* monster)
 	std::lock_guard<std::mutex> lock(g_mutex);
 	auto& context = GetOrCreateContext(monster);
 	context.ai_state = monster->GetState();
-	context.target_agent_id = monster->targetAgentId_;
+	context.target_actor_id = monster->targetActorId_;
 
 	if (!context.dirty)
 		return;
@@ -189,7 +189,7 @@ void BTDebugManager::PublishMonsterSnapshot(int64_t monster_id)
 	frame.monster_id = context.monster_id;
 	frame.tick = context.bt_tick;
 	frame.ai_state = context.ai_state;
-	frame.target_agent_id = context.target_agent_id;
+	frame.target_actor_id = context.target_actor_id;
 	frame.executed_path = context.executed_nodes_this_tick;
 	frame.changes.reserve(context.nodes.size());
 

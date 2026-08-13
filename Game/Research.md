@@ -1047,7 +1047,7 @@ Game/BTDebugManager.h
 
 Game/BTDebugManager.cpp
   - Monster별 tick context 관리
-  - 실행 경로(executedPath), 변경 노드(changes), AIState, targetAgentId를 JSON RuntimeFrame으로 생성
+  - 실행 경로(executedPath), 변경 노드(changes), AIState, targetActorId를 JSON RuntimeFrame으로 생성
   - TreeDefinition JSON 생성 함수 제공
 ```
 
@@ -1082,7 +1082,7 @@ BTDebug sender thread 또는 WebSocket/TCP layer
   "monsterId": 12,
   "tick": 531,
   "aiState": "Detect",
-  "targetAgentId": 3,
+  "targetActorId": 3,
   "executedPath": [6, 1, 4, 3],
   "changes": [
     {

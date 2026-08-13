@@ -7,13 +7,13 @@ public class Monster : Actor
     public override void UpdateHealthUI(int currentHealth)
     {
         base.UpdateHealthUI(currentHealth);
-        Debug.Log($"Monster {agnet_id} health updated to: {currentHealth}");
+        Debug.Log($"Monster {actor_id} health updated to: {currentHealth}");
     }
 
     public override void UpdateState(GameObject game_object, syncnet.AIState newState)
     {
         base.UpdateState(game_object, newState);
-        Debug.Log($"Monster {agnet_id} state changed to: {newState}");
+        Debug.Log($"Monster {actor_id} state changed to: {newState}");
     }
     
     protected override void ShowDeathEffect()
@@ -32,6 +32,6 @@ public class Monster : Actor
             healthBar.gameObject.SetActive(false);
         }
         
-        Debug.Log($"Monster {agnet_id} death effect applied");
+        Debug.Log($"Monster {actor_id} death effect applied");
     }
 }

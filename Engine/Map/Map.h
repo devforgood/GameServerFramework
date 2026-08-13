@@ -206,9 +206,9 @@ public:
 	void SendBroadcastState();
 	void SendBroadcast(std::shared_ptr<send_message> msg);
 	void SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except);
-	void OnRemoveAgent(int agent_id);
+	void OnRemoveAgent(int actor_id);
 	std::shared_ptr<Actor> OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
-	void OnSetMoveTarget(int agent_id, const syncnet::Vec3* pos);
+	void OnSetMoveTarget(int actor_id, const syncnet::Vec3* pos);
 	void OnSetRaycast(const syncnet::Vec3* pos);
 	int DetectEnemy(Actor* actor);
 

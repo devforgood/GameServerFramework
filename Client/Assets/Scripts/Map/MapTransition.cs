@@ -27,7 +27,7 @@ public class MapTransition
     // 플레이어가 게이트 밖으로 나가면(OnTriggerExit) 해제한다. Gate.cs 에서 참조/해제한다.
     public bool SuppressGateWarpUntilExit { get; set; } = false;
 
-    /// <summary>게이트 이동 성공 — 서버가 목적지 맵에 캐릭터를 재생성하며 부여한 새 agent id.</summary>
+    /// <summary>게이트 이동 성공 — 서버가 목적지 맵에 캐릭터를 재생성하며 부여한 새 actor id.</summary>
     public event Action<int> GateEntered;
 
     /// <summary>씬이 준비됨(로드 완료, 또는 로드가 필요 없거나 불가능해 현재 씬 유지).</summary>
@@ -73,8 +73,8 @@ public class MapTransition
                     return;
                 }
 
-                Debug.Log($"EnterGate Success. mapId:{enterGate.MapId}, new agentId:{enterGate.AgentId}, pos({destPos.x},{destPos.y},{destPos.z})");
-                GateEntered?.Invoke(enterGate.AgentId);
+                Debug.Log($"EnterGate Success. mapId:{enterGate.MapId}, new actorId:{enterGate.ActorId}, pos({destPos.x},{destPos.y},{destPos.z})");
+                GateEntered?.Invoke(enterGate.ActorId);
 
                 // 응답의 GateId 는 '도착 지점 마커' id 다(요청에 보낸 '밟은 게이트'와 다르다).
                 suppressWarpOnNextSceneLoad = ArrivesOnGate(enterGate.GateId);
@@ -102,13 +102,13 @@ public class MapTransition
     /// (레이드가 끝나 인스턴스가 파괴될 때 서버가 플레이어를 출구 맵으로 내보내는 경로.)
     /// 서버는 이미 목적지 맵에 캐릭터를 재생성해 둔 상태이므로, 클라는 씬만 맞추면 된다.
     /// </summary>
-    public void ForcedMove(int mapId, int arrivalMarkerId, int agentId, string sceneName)
+    public void ForcedMove(int mapId, int arrivalMarkerId, int actorId, string sceneName)
     {
         // 진행 중이던 자발적 이동이 있어도 서버 통보가 우선이다 — 서버 쪽 캐릭터는 이미 옮겨졌다.
         isChangingMap = true;
 
-        Debug.Log($"Forced move by server. mapId:{mapId}, arrival:{arrivalMarkerId}, new agentId:{agentId}, scene:'{sceneName}'");
-        GateEntered?.Invoke(agentId);
+        Debug.Log($"Forced move by server. mapId:{mapId}, arrival:{arrivalMarkerId}, new actorId:{actorId}, scene:'{sceneName}'");
+        GateEntered?.Invoke(actorId);
 
         suppressWarpOnNextSceneLoad = ArrivesOnGate(arrivalMarkerId);
         LoadMapScene(sceneName);

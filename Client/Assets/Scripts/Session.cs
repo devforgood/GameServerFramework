@@ -27,13 +27,13 @@ public class Session : MonoBehaviour
     private MapTransition mapTransition;
     private LoginController login;
 
-    /// <summary>내 캐릭터의 agent id. 로그인/스폰/게이트 이동 응답으로 갱신된다.</summary>
-    public int player_agnet_id = 0;
+    /// <summary>내 캐릭터의 actor id. 로그인/스폰/게이트 이동 응답으로 갱신된다.</summary>
+    public int player_actor_id = 0;
 
     public long unixTimestampMs => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
     // ── 외부에 열어 둔 접근자(기존 호출부 유지) ──
-    /// <summary>agentId → 씬 오브젝트(Actor 가 자기 참조를 지울 때 사용).</summary>
+    /// <summary>actorId → 씬 오브젝트(Actor 가 자기 참조를 지울 때 사용).</summary>
     public Dictionary<int, GameObject> game_objects => actors.Objects;
 
     /// <summary>HUD 등에서 남은 쿨다운을 표시하기 위한 접근자.</summary>
@@ -72,19 +72,19 @@ public class Session : MonoBehaviour
     {
         connection = new ServerConnection(this, () => GameManager.Instance.server_address);
         actors = new ActorSync();
-        skills = new SkillController(this, connection, actors, () => player_agnet_id);
+        skills = new SkillController(this, connection, actors, () => player_actor_id);
         mapTransition = new MapTransition(connection, actors);
         login = new LoginController(connection, mapTransition,
-            agentId => player_agnet_id = agentId,
+            actorId => player_actor_id = actorId,
             pos => AddAgent(0, pos, GameObjectType.Character));
 
         // 연결되면(최초/재접속 공통) 자동 로그인한다.
         connection.Connected += login.Login;
 
         // 게이트 이동으로 캐릭터가 새로 만들어지면 id 를 갱신하고 스킬 예측을 버린다.
-        mapTransition.GateEntered += agentId =>
+        mapTransition.GateEntered += actorId =>
         {
-            player_agnet_id = agentId;
+            player_actor_id = actorId;
             skills.Reset();
         };
 
@@ -191,7 +191,7 @@ public class Session : MonoBehaviour
         }
 
         string destScene = !string.IsNullOrEmpty(destMap.scene) ? destMap.scene : destMap.name;
-        mapTransition.ForcedMove(enterGate.MapId, enterGate.GateId, enterGate.AgentId, destScene);
+        mapTransition.ForcedMove(enterGate.MapId, enterGate.GateId, enterGate.ActorId, destScene);
     }
 
     // ── 접속 ──
@@ -200,7 +200,7 @@ public class Session : MonoBehaviour
     public void Login() { login.Login(); }
 
     // ── 서버로 보내는 게임 명령 ──
-    public void AddAgent(int agent_id, Vector3 pos, GameObjectType type)
+    public void AddAgent(int actor_id, Vector3 pos, GameObjectType type)
     {
         int messageId = connection.NextMessageId();
         connection.Send(PacketFactory.CreateAddAgentMessage(messageId, pos, type), response =>
@@ -221,21 +221,21 @@ public class Session : MonoBehaviour
             Debug.Log("AddAgent Success");
             if (addAgent.GameObjectType == (int)GameObjectType.Character)
             {
-                player_agnet_id = addAgent.AgentId;
-                Debug.Log($"Player Agent ID: {player_agnet_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
+                player_actor_id = addAgent.ActorId;
+                Debug.Log($"Player Agent ID: {player_actor_id}, pos({pos.x}, {pos.y}, {pos.z}) ");
             }
         });
     }
 
-    public void RemoveAgent(int agentId)
+    public void RemoveAgent(int actorId)
     {
-        connection.Send(PacketFactory.CreateRemoveAgentMessage(agentId));
+        connection.Send(PacketFactory.CreateRemoveAgentMessage(actorId));
     }
 
-    public void SetMoveTarget(int agentId, Vector3 pos)
+    public void SetMoveTarget(int actorId, Vector3 pos)
     {
-        Debug.Log($"SetMoveTarget agent_id: {agentId}, pos({pos.x}, {pos.y}, {pos.z}) ");
-        connection.Send(PacketFactory.CreateSetMoveTargetMessage(agentId, pos));
+        Debug.Log($"SetMoveTarget actor_id: {actorId}, pos({pos.x}, {pos.y}, {pos.z}) ");
+        connection.Send(PacketFactory.CreateSetMoveTargetMessage(actorId, pos));
     }
 
     public void SetRaycast(Vector3 pos)

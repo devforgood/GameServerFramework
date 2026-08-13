@@ -86,6 +86,33 @@ struct QuestInfoBuilder;
 struct QuestSync;
 struct QuestSyncBuilder;
 
+struct PartyInvite;
+struct PartyInviteBuilder;
+
+struct PartyInviteReply;
+struct PartyInviteReplyBuilder;
+
+struct PartyLeave;
+struct PartyLeaveBuilder;
+
+struct PartyKick;
+struct PartyKickBuilder;
+
+struct PartyLeaderChange;
+struct PartyLeaderChangeBuilder;
+
+struct PartyMemberInfo;
+struct PartyMemberInfoBuilder;
+
+struct PartySync;
+struct PartySyncBuilder;
+
+struct PartyQuestShare;
+struct PartyQuestShareBuilder;
+
+struct PartyQuestShareReply;
+struct PartyQuestShareReplyBuilder;
+
 enum GameMessages {
   GameMessages_NONE = 0,
   GameMessages_AddAgent = 1,
@@ -105,11 +132,19 @@ enum GameMessages {
   GameMessages_QuestComplete = 15,
   GameMessages_QuestAbandon = 16,
   GameMessages_QuestSync = 17,
+  GameMessages_PartyInvite = 18,
+  GameMessages_PartyInviteReply = 19,
+  GameMessages_PartyLeave = 20,
+  GameMessages_PartyKick = 21,
+  GameMessages_PartyLeaderChange = 22,
+  GameMessages_PartySync = 23,
+  GameMessages_PartyQuestShare = 24,
+  GameMessages_PartyQuestShareReply = 25,
   GameMessages_MIN = GameMessages_NONE,
-  GameMessages_MAX = GameMessages_QuestSync
+  GameMessages_MAX = GameMessages_PartyQuestShareReply
 };
 
-inline const GameMessages (&EnumValuesGameMessages())[18] {
+inline const GameMessages (&EnumValuesGameMessages())[26] {
   static const GameMessages values[] = {
     GameMessages_NONE,
     GameMessages_AddAgent,
@@ -128,13 +163,21 @@ inline const GameMessages (&EnumValuesGameMessages())[18] {
     GameMessages_QuestAccept,
     GameMessages_QuestComplete,
     GameMessages_QuestAbandon,
-    GameMessages_QuestSync
+    GameMessages_QuestSync,
+    GameMessages_PartyInvite,
+    GameMessages_PartyInviteReply,
+    GameMessages_PartyLeave,
+    GameMessages_PartyKick,
+    GameMessages_PartyLeaderChange,
+    GameMessages_PartySync,
+    GameMessages_PartyQuestShare,
+    GameMessages_PartyQuestShareReply
   };
   return values;
 }
 
 inline const char * const *EnumNamesGameMessages() {
-  static const char * const names[19] = {
+  static const char * const names[27] = {
     "NONE",
     "AddAgent",
     "RemoveAgent",
@@ -153,13 +196,21 @@ inline const char * const *EnumNamesGameMessages() {
     "QuestComplete",
     "QuestAbandon",
     "QuestSync",
+    "PartyInvite",
+    "PartyInviteReply",
+    "PartyLeave",
+    "PartyKick",
+    "PartyLeaderChange",
+    "PartySync",
+    "PartyQuestShare",
+    "PartyQuestShareReply",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameGameMessages(GameMessages e) {
-  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_QuestSync)) return "";
+  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_PartyQuestShareReply)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesGameMessages()[index];
 }
@@ -234,6 +285,38 @@ template<> struct GameMessagesTraits<syncnet::QuestAbandon> {
 
 template<> struct GameMessagesTraits<syncnet::QuestSync> {
   static const GameMessages enum_value = GameMessages_QuestSync;
+};
+
+template<> struct GameMessagesTraits<syncnet::PartyInvite> {
+  static const GameMessages enum_value = GameMessages_PartyInvite;
+};
+
+template<> struct GameMessagesTraits<syncnet::PartyInviteReply> {
+  static const GameMessages enum_value = GameMessages_PartyInviteReply;
+};
+
+template<> struct GameMessagesTraits<syncnet::PartyLeave> {
+  static const GameMessages enum_value = GameMessages_PartyLeave;
+};
+
+template<> struct GameMessagesTraits<syncnet::PartyKick> {
+  static const GameMessages enum_value = GameMessages_PartyKick;
+};
+
+template<> struct GameMessagesTraits<syncnet::PartyLeaderChange> {
+  static const GameMessages enum_value = GameMessages_PartyLeaderChange;
+};
+
+template<> struct GameMessagesTraits<syncnet::PartySync> {
+  static const GameMessages enum_value = GameMessages_PartySync;
+};
+
+template<> struct GameMessagesTraits<syncnet::PartyQuestShare> {
+  static const GameMessages enum_value = GameMessages_PartyQuestShare;
+};
+
+template<> struct GameMessagesTraits<syncnet::PartyQuestShareReply> {
+  static const GameMessages enum_value = GameMessages_PartyQuestShareReply;
 };
 
 bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type);
@@ -546,6 +629,30 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::QuestSync *msg_as_QuestSync() const {
     return msg_type() == syncnet::GameMessages_QuestSync ? static_cast<const syncnet::QuestSync *>(msg()) : nullptr;
   }
+  const syncnet::PartyInvite *msg_as_PartyInvite() const {
+    return msg_type() == syncnet::GameMessages_PartyInvite ? static_cast<const syncnet::PartyInvite *>(msg()) : nullptr;
+  }
+  const syncnet::PartyInviteReply *msg_as_PartyInviteReply() const {
+    return msg_type() == syncnet::GameMessages_PartyInviteReply ? static_cast<const syncnet::PartyInviteReply *>(msg()) : nullptr;
+  }
+  const syncnet::PartyLeave *msg_as_PartyLeave() const {
+    return msg_type() == syncnet::GameMessages_PartyLeave ? static_cast<const syncnet::PartyLeave *>(msg()) : nullptr;
+  }
+  const syncnet::PartyKick *msg_as_PartyKick() const {
+    return msg_type() == syncnet::GameMessages_PartyKick ? static_cast<const syncnet::PartyKick *>(msg()) : nullptr;
+  }
+  const syncnet::PartyLeaderChange *msg_as_PartyLeaderChange() const {
+    return msg_type() == syncnet::GameMessages_PartyLeaderChange ? static_cast<const syncnet::PartyLeaderChange *>(msg()) : nullptr;
+  }
+  const syncnet::PartySync *msg_as_PartySync() const {
+    return msg_type() == syncnet::GameMessages_PartySync ? static_cast<const syncnet::PartySync *>(msg()) : nullptr;
+  }
+  const syncnet::PartyQuestShare *msg_as_PartyQuestShare() const {
+    return msg_type() == syncnet::GameMessages_PartyQuestShare ? static_cast<const syncnet::PartyQuestShare *>(msg()) : nullptr;
+  }
+  const syncnet::PartyQuestShareReply *msg_as_PartyQuestShareReply() const {
+    return msg_type() == syncnet::GameMessages_PartyQuestShareReply ? static_cast<const syncnet::PartyQuestShareReply *>(msg()) : nullptr;
+  }
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
@@ -631,6 +738,38 @@ template<> inline const syncnet::QuestSync *GameMessage::msg_as<syncnet::QuestSy
   return msg_as_QuestSync();
 }
 
+template<> inline const syncnet::PartyInvite *GameMessage::msg_as<syncnet::PartyInvite>() const {
+  return msg_as_PartyInvite();
+}
+
+template<> inline const syncnet::PartyInviteReply *GameMessage::msg_as<syncnet::PartyInviteReply>() const {
+  return msg_as_PartyInviteReply();
+}
+
+template<> inline const syncnet::PartyLeave *GameMessage::msg_as<syncnet::PartyLeave>() const {
+  return msg_as_PartyLeave();
+}
+
+template<> inline const syncnet::PartyKick *GameMessage::msg_as<syncnet::PartyKick>() const {
+  return msg_as_PartyKick();
+}
+
+template<> inline const syncnet::PartyLeaderChange *GameMessage::msg_as<syncnet::PartyLeaderChange>() const {
+  return msg_as_PartyLeaderChange();
+}
+
+template<> inline const syncnet::PartySync *GameMessage::msg_as<syncnet::PartySync>() const {
+  return msg_as_PartySync();
+}
+
+template<> inline const syncnet::PartyQuestShare *GameMessage::msg_as<syncnet::PartyQuestShare>() const {
+  return msg_as_PartyQuestShare();
+}
+
+template<> inline const syncnet::PartyQuestShareReply *GameMessage::msg_as<syncnet::PartyQuestShareReply>() const {
+  return msg_as_PartyQuestShareReply();
+}
+
 struct GameMessageBuilder {
   typedef GameMessage Table;
   flatbuffers::FlatBufferBuilder &fbb_;
@@ -678,7 +817,7 @@ struct AddAgent FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_GAMEOBJECTTYPE = 4,
     VT_POS = 6,
-    VT_AGENTID = 8
+    VT_ACTORID = 8
   };
   syncnet::GameObjectType gameObjectType() const {
     return static_cast<syncnet::GameObjectType>(GetField<int8_t>(VT_GAMEOBJECTTYPE, 1));
@@ -686,14 +825,14 @@ struct AddAgent FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::Vec3 *pos() const {
     return GetStruct<const syncnet::Vec3 *>(VT_POS);
   }
-  int32_t agentId() const {
-    return GetField<int32_t>(VT_AGENTID, 0);
+  int32_t actorId() const {
+    return GetField<int32_t>(VT_ACTORID, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_GAMEOBJECTTYPE) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
-           VerifyField<int32_t>(verifier, VT_AGENTID) &&
+           VerifyField<int32_t>(verifier, VT_ACTORID) &&
            verifier.EndTable();
   }
 };
@@ -708,8 +847,8 @@ struct AddAgentBuilder {
   void add_pos(const syncnet::Vec3 *pos) {
     fbb_.AddStruct(AddAgent::VT_POS, pos);
   }
-  void add_agentId(int32_t agentId) {
-    fbb_.AddElement<int32_t>(AddAgent::VT_AGENTID, agentId, 0);
+  void add_actorId(int32_t actorId) {
+    fbb_.AddElement<int32_t>(AddAgent::VT_ACTORID, actorId, 0);
   }
   explicit AddAgentBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -727,9 +866,9 @@ inline flatbuffers::Offset<AddAgent> CreateAddAgent(
     flatbuffers::FlatBufferBuilder &_fbb,
     syncnet::GameObjectType gameObjectType = syncnet::GameObjectType_Monster,
     const syncnet::Vec3 *pos = 0,
-    int32_t agentId = 0) {
+    int32_t actorId = 0) {
   AddAgentBuilder builder_(_fbb);
-  builder_.add_agentId(agentId);
+  builder_.add_actorId(actorId);
   builder_.add_pos(pos);
   builder_.add_gameObjectType(gameObjectType);
   return builder_.Finish();
@@ -738,14 +877,14 @@ inline flatbuffers::Offset<AddAgent> CreateAddAgent(
 struct RemoveAgent FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef RemoveAgentBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_AGENTID = 4
+    VT_ACTORID = 4
   };
-  int32_t agentId() const {
-    return GetField<int32_t>(VT_AGENTID, 0);
+  int32_t actorId() const {
+    return GetField<int32_t>(VT_ACTORID, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_AGENTID) &&
+           VerifyField<int32_t>(verifier, VT_ACTORID) &&
            verifier.EndTable();
   }
 };
@@ -754,8 +893,8 @@ struct RemoveAgentBuilder {
   typedef RemoveAgent Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_agentId(int32_t agentId) {
-    fbb_.AddElement<int32_t>(RemoveAgent::VT_AGENTID, agentId, 0);
+  void add_actorId(int32_t actorId) {
+    fbb_.AddElement<int32_t>(RemoveAgent::VT_ACTORID, actorId, 0);
   }
   explicit RemoveAgentBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -771,27 +910,27 @@ struct RemoveAgentBuilder {
 
 inline flatbuffers::Offset<RemoveAgent> CreateRemoveAgent(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t agentId = 0) {
+    int32_t actorId = 0) {
   RemoveAgentBuilder builder_(_fbb);
-  builder_.add_agentId(agentId);
+  builder_.add_actorId(actorId);
   return builder_.Finish();
 }
 
 struct SetMoveTarget FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef SetMoveTargetBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_AGENTID = 4,
+    VT_ACTORID = 4,
     VT_POS = 6
   };
-  int32_t agentId() const {
-    return GetField<int32_t>(VT_AGENTID, 0);
+  int32_t actorId() const {
+    return GetField<int32_t>(VT_ACTORID, 0);
   }
   const syncnet::Vec3 *pos() const {
     return GetStruct<const syncnet::Vec3 *>(VT_POS);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_AGENTID) &&
+           VerifyField<int32_t>(verifier, VT_ACTORID) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
            verifier.EndTable();
   }
@@ -801,8 +940,8 @@ struct SetMoveTargetBuilder {
   typedef SetMoveTarget Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_agentId(int32_t agentId) {
-    fbb_.AddElement<int32_t>(SetMoveTarget::VT_AGENTID, agentId, 0);
+  void add_actorId(int32_t actorId) {
+    fbb_.AddElement<int32_t>(SetMoveTarget::VT_ACTORID, actorId, 0);
   }
   void add_pos(const syncnet::Vec3 *pos) {
     fbb_.AddStruct(SetMoveTarget::VT_POS, pos);
@@ -821,26 +960,26 @@ struct SetMoveTargetBuilder {
 
 inline flatbuffers::Offset<SetMoveTarget> CreateSetMoveTarget(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t agentId = 0,
+    int32_t actorId = 0,
     const syncnet::Vec3 *pos = 0) {
   SetMoveTargetBuilder builder_(_fbb);
   builder_.add_pos(pos);
-  builder_.add_agentId(agentId);
+  builder_.add_actorId(actorId);
   return builder_.Finish();
 }
 
 struct ActorInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef ActorInfoBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_AGENTID = 4,
+    VT_ACTORID = 4,
     VT_POS = 6,
     VT_GAMEOBJECTTYPE = 8,
     VT_STATE = 10,
     VT_HEALTH = 12,
     VT_INPUTLOCKED = 14
   };
-  int32_t agentId() const {
-    return GetField<int32_t>(VT_AGENTID, 0);
+  int32_t actorId() const {
+    return GetField<int32_t>(VT_ACTORID, 0);
   }
   const syncnet::Vec3 *pos() const {
     return GetStruct<const syncnet::Vec3 *>(VT_POS);
@@ -859,7 +998,7 @@ struct ActorInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_AGENTID) &&
+           VerifyField<int32_t>(verifier, VT_ACTORID) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
            VerifyField<int8_t>(verifier, VT_GAMEOBJECTTYPE) &&
            VerifyField<syncnet::ActorState>(verifier, VT_STATE) &&
@@ -873,8 +1012,8 @@ struct ActorInfoBuilder {
   typedef ActorInfo Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_agentId(int32_t agentId) {
-    fbb_.AddElement<int32_t>(ActorInfo::VT_AGENTID, agentId, 0);
+  void add_actorId(int32_t actorId) {
+    fbb_.AddElement<int32_t>(ActorInfo::VT_ACTORID, actorId, 0);
   }
   void add_pos(const syncnet::Vec3 *pos) {
     fbb_.AddStruct(ActorInfo::VT_POS, pos);
@@ -905,7 +1044,7 @@ struct ActorInfoBuilder {
 
 inline flatbuffers::Offset<ActorInfo> CreateActorInfo(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t agentId = 0,
+    int32_t actorId = 0,
     const syncnet::Vec3 *pos = 0,
     syncnet::GameObjectType gameObjectType = syncnet::GameObjectType_Monster,
     const syncnet::ActorState *state = 0,
@@ -915,7 +1054,7 @@ inline flatbuffers::Offset<ActorInfo> CreateActorInfo(
   builder_.add_health(health);
   builder_.add_state(state);
   builder_.add_pos(pos);
-  builder_.add_agentId(agentId);
+  builder_.add_actorId(actorId);
   builder_.add_inputLocked(inputLocked);
   builder_.add_gameObjectType(gameObjectType);
   return builder_.Finish();
@@ -1100,18 +1239,18 @@ inline flatbuffers::Offset<Ping> CreatePing(
 struct SetRaycast FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef SetRaycastBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_AGENTID = 4,
+    VT_ACTORID = 4,
     VT_POS = 6
   };
-  int32_t agentId() const {
-    return GetField<int32_t>(VT_AGENTID, 0);
+  int32_t actorId() const {
+    return GetField<int32_t>(VT_ACTORID, 0);
   }
   const syncnet::Vec3 *pos() const {
     return GetStruct<const syncnet::Vec3 *>(VT_POS);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int32_t>(verifier, VT_AGENTID) &&
+           VerifyField<int32_t>(verifier, VT_ACTORID) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
            verifier.EndTable();
   }
@@ -1121,8 +1260,8 @@ struct SetRaycastBuilder {
   typedef SetRaycast Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_agentId(int32_t agentId) {
-    fbb_.AddElement<int32_t>(SetRaycast::VT_AGENTID, agentId, 0);
+  void add_actorId(int32_t actorId) {
+    fbb_.AddElement<int32_t>(SetRaycast::VT_ACTORID, actorId, 0);
   }
   void add_pos(const syncnet::Vec3 *pos) {
     fbb_.AddStruct(SetRaycast::VT_POS, pos);
@@ -1141,11 +1280,11 @@ struct SetRaycastBuilder {
 
 inline flatbuffers::Offset<SetRaycast> CreateSetRaycast(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int32_t agentId = 0,
+    int32_t actorId = 0,
     const syncnet::Vec3 *pos = 0) {
   SetRaycastBuilder builder_(_fbb);
   builder_.add_pos(pos);
-  builder_.add_agentId(agentId);
+  builder_.add_actorId(actorId);
   return builder_.Finish();
 }
 
@@ -1156,7 +1295,7 @@ struct Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_PASSWORD = 6,
     VT_MAPID = 8,
     VT_POS = 10,
-    VT_AGENTID = 12,
+    VT_ACTORID = 12,
     VT_UUID = 14
   };
   const flatbuffers::String *userId() const {
@@ -1171,8 +1310,8 @@ struct Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::Vec3 *pos() const {
     return GetStruct<const syncnet::Vec3 *>(VT_POS);
   }
-  int32_t agentId() const {
-    return GetField<int32_t>(VT_AGENTID, 0);
+  int32_t actorId() const {
+    return GetField<int32_t>(VT_ACTORID, 0);
   }
   const flatbuffers::String *uuid() const {
     return GetPointer<const flatbuffers::String *>(VT_UUID);
@@ -1185,7 +1324,7 @@ struct Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyString(password()) &&
            VerifyField<int32_t>(verifier, VT_MAPID) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
-           VerifyField<int32_t>(verifier, VT_AGENTID) &&
+           VerifyField<int32_t>(verifier, VT_ACTORID) &&
            VerifyOffset(verifier, VT_UUID) &&
            verifier.VerifyString(uuid()) &&
            verifier.EndTable();
@@ -1208,8 +1347,8 @@ struct LoginBuilder {
   void add_pos(const syncnet::Vec3 *pos) {
     fbb_.AddStruct(Login::VT_POS, pos);
   }
-  void add_agentId(int32_t agentId) {
-    fbb_.AddElement<int32_t>(Login::VT_AGENTID, agentId, 0);
+  void add_actorId(int32_t actorId) {
+    fbb_.AddElement<int32_t>(Login::VT_ACTORID, actorId, 0);
   }
   void add_uuid(flatbuffers::Offset<flatbuffers::String> uuid) {
     fbb_.AddOffset(Login::VT_UUID, uuid);
@@ -1232,11 +1371,11 @@ inline flatbuffers::Offset<Login> CreateLogin(
     flatbuffers::Offset<flatbuffers::String> password = 0,
     int32_t mapId = 0,
     const syncnet::Vec3 *pos = 0,
-    int32_t agentId = 0,
+    int32_t actorId = 0,
     flatbuffers::Offset<flatbuffers::String> uuid = 0) {
   LoginBuilder builder_(_fbb);
   builder_.add_uuid(uuid);
-  builder_.add_agentId(agentId);
+  builder_.add_actorId(actorId);
   builder_.add_pos(pos);
   builder_.add_mapId(mapId);
   builder_.add_password(password);
@@ -1250,7 +1389,7 @@ inline flatbuffers::Offset<Login> CreateLoginDirect(
     const char *password = nullptr,
     int32_t mapId = 0,
     const syncnet::Vec3 *pos = 0,
-    int32_t agentId = 0,
+    int32_t actorId = 0,
     const char *uuid = nullptr) {
   auto userId__ = userId ? _fbb.CreateString(userId) : 0;
   auto password__ = password ? _fbb.CreateString(password) : 0;
@@ -1261,7 +1400,7 @@ inline flatbuffers::Offset<Login> CreateLoginDirect(
       password__,
       mapId,
       pos,
-      agentId,
+      actorId,
       uuid__);
 }
 
@@ -1667,7 +1806,7 @@ struct TreeDebugRuntimeFrame FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
     VT_MONSTERID = 6,
     VT_TICK = 8,
     VT_AISTATE = 10,
-    VT_TARGETAGENTID = 12,
+    VT_TARGETACTORID = 12,
     VT_EXECUTEDPATH = 14,
     VT_CHANGES = 16
   };
@@ -1683,8 +1822,8 @@ struct TreeDebugRuntimeFrame FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
   syncnet::AIState aiState() const {
     return static_cast<syncnet::AIState>(GetField<int8_t>(VT_AISTATE, 0));
   }
-  int64_t targetAgentId() const {
-    return GetField<int64_t>(VT_TARGETAGENTID, -1LL);
+  int64_t targetActorId() const {
+    return GetField<int64_t>(VT_TARGETACTORID, -1LL);
   }
   const flatbuffers::Vector<uint16_t> *executedPath() const {
     return GetPointer<const flatbuffers::Vector<uint16_t> *>(VT_EXECUTEDPATH);
@@ -1699,7 +1838,7 @@ struct TreeDebugRuntimeFrame FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
            VerifyField<int64_t>(verifier, VT_MONSTERID) &&
            VerifyField<uint64_t>(verifier, VT_TICK) &&
            VerifyField<int8_t>(verifier, VT_AISTATE) &&
-           VerifyField<int64_t>(verifier, VT_TARGETAGENTID) &&
+           VerifyField<int64_t>(verifier, VT_TARGETACTORID) &&
            VerifyOffset(verifier, VT_EXECUTEDPATH) &&
            verifier.VerifyVector(executedPath()) &&
            VerifyOffset(verifier, VT_CHANGES) &&
@@ -1725,8 +1864,8 @@ struct TreeDebugRuntimeFrameBuilder {
   void add_aiState(syncnet::AIState aiState) {
     fbb_.AddElement<int8_t>(TreeDebugRuntimeFrame::VT_AISTATE, static_cast<int8_t>(aiState), 0);
   }
-  void add_targetAgentId(int64_t targetAgentId) {
-    fbb_.AddElement<int64_t>(TreeDebugRuntimeFrame::VT_TARGETAGENTID, targetAgentId, -1LL);
+  void add_targetActorId(int64_t targetActorId) {
+    fbb_.AddElement<int64_t>(TreeDebugRuntimeFrame::VT_TARGETACTORID, targetActorId, -1LL);
   }
   void add_executedPath(flatbuffers::Offset<flatbuffers::Vector<uint16_t>> executedPath) {
     fbb_.AddOffset(TreeDebugRuntimeFrame::VT_EXECUTEDPATH, executedPath);
@@ -1752,11 +1891,11 @@ inline flatbuffers::Offset<TreeDebugRuntimeFrame> CreateTreeDebugRuntimeFrame(
     int64_t monsterId = 0,
     uint64_t tick = 0,
     syncnet::AIState aiState = syncnet::AIState_Patrol,
-    int64_t targetAgentId = -1LL,
+    int64_t targetActorId = -1LL,
     flatbuffers::Offset<flatbuffers::Vector<uint16_t>> executedPath = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::TreeDebugNodeChange>>> changes = 0) {
   TreeDebugRuntimeFrameBuilder builder_(_fbb);
-  builder_.add_targetAgentId(targetAgentId);
+  builder_.add_targetActorId(targetActorId);
   builder_.add_tick(tick);
   builder_.add_monsterId(monsterId);
   builder_.add_changes(changes);
@@ -1772,7 +1911,7 @@ inline flatbuffers::Offset<TreeDebugRuntimeFrame> CreateTreeDebugRuntimeFrameDir
     int64_t monsterId = 0,
     uint64_t tick = 0,
     syncnet::AIState aiState = syncnet::AIState_Patrol,
-    int64_t targetAgentId = -1LL,
+    int64_t targetActorId = -1LL,
     const std::vector<uint16_t> *executedPath = nullptr,
     const std::vector<flatbuffers::Offset<syncnet::TreeDebugNodeChange>> *changes = nullptr) {
   auto treeId__ = treeId ? _fbb.CreateString(treeId) : 0;
@@ -1784,7 +1923,7 @@ inline flatbuffers::Offset<TreeDebugRuntimeFrame> CreateTreeDebugRuntimeFrameDir
       monsterId,
       tick,
       aiState,
-      targetAgentId,
+      targetActorId,
       executedPath__,
       changes__);
 }
@@ -1905,7 +2044,7 @@ struct EnterGate FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_MAPID = 4,
     VT_GATEID = 6,
     VT_POS = 8,
-    VT_AGENTID = 10
+    VT_ACTORID = 10
   };
   int32_t mapId() const {
     return GetField<int32_t>(VT_MAPID, 0);
@@ -1916,15 +2055,15 @@ struct EnterGate FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::Vec3 *pos() const {
     return GetStruct<const syncnet::Vec3 *>(VT_POS);
   }
-  int32_t agentId() const {
-    return GetField<int32_t>(VT_AGENTID, 0);
+  int32_t actorId() const {
+    return GetField<int32_t>(VT_ACTORID, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_MAPID) &&
            VerifyField<int32_t>(verifier, VT_GATEID) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
-           VerifyField<int32_t>(verifier, VT_AGENTID) &&
+           VerifyField<int32_t>(verifier, VT_ACTORID) &&
            verifier.EndTable();
   }
 };
@@ -1942,8 +2081,8 @@ struct EnterGateBuilder {
   void add_pos(const syncnet::Vec3 *pos) {
     fbb_.AddStruct(EnterGate::VT_POS, pos);
   }
-  void add_agentId(int32_t agentId) {
-    fbb_.AddElement<int32_t>(EnterGate::VT_AGENTID, agentId, 0);
+  void add_actorId(int32_t actorId) {
+    fbb_.AddElement<int32_t>(EnterGate::VT_ACTORID, actorId, 0);
   }
   explicit EnterGateBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -1962,9 +2101,9 @@ inline flatbuffers::Offset<EnterGate> CreateEnterGate(
     int32_t mapId = 0,
     int32_t gateId = 0,
     const syncnet::Vec3 *pos = 0,
-    int32_t agentId = 0) {
+    int32_t actorId = 0) {
   EnterGateBuilder builder_(_fbb);
-  builder_.add_agentId(agentId);
+  builder_.add_actorId(actorId);
   builder_.add_pos(pos);
   builder_.add_gateId(gateId);
   builder_.add_mapId(mapId);
@@ -2318,6 +2457,579 @@ inline flatbuffers::Offset<QuestSync> CreateQuestSyncDirect(
       completed__);
 }
 
+struct PartyInvite FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PartyInviteBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_ACTORID = 4,
+    VT_PARTYID = 6,
+    VT_INVITERID = 8,
+    VT_INVITERNAME = 10,
+    VT_TIMEOUTSEC = 12
+  };
+  int32_t actorId() const {
+    return GetField<int32_t>(VT_ACTORID, 0);
+  }
+  int32_t partyId() const {
+    return GetField<int32_t>(VT_PARTYID, 0);
+  }
+  int64_t inviterId() const {
+    return GetField<int64_t>(VT_INVITERID, 0);
+  }
+  const flatbuffers::String *inviterName() const {
+    return GetPointer<const flatbuffers::String *>(VT_INVITERNAME);
+  }
+  float timeoutSec() const {
+    return GetField<float>(VT_TIMEOUTSEC, 0.0f);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_ACTORID) &&
+           VerifyField<int32_t>(verifier, VT_PARTYID) &&
+           VerifyField<int64_t>(verifier, VT_INVITERID) &&
+           VerifyOffset(verifier, VT_INVITERNAME) &&
+           verifier.VerifyString(inviterName()) &&
+           VerifyField<float>(verifier, VT_TIMEOUTSEC) &&
+           verifier.EndTable();
+  }
+};
+
+struct PartyInviteBuilder {
+  typedef PartyInvite Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_actorId(int32_t actorId) {
+    fbb_.AddElement<int32_t>(PartyInvite::VT_ACTORID, actorId, 0);
+  }
+  void add_partyId(int32_t partyId) {
+    fbb_.AddElement<int32_t>(PartyInvite::VT_PARTYID, partyId, 0);
+  }
+  void add_inviterId(int64_t inviterId) {
+    fbb_.AddElement<int64_t>(PartyInvite::VT_INVITERID, inviterId, 0);
+  }
+  void add_inviterName(flatbuffers::Offset<flatbuffers::String> inviterName) {
+    fbb_.AddOffset(PartyInvite::VT_INVITERNAME, inviterName);
+  }
+  void add_timeoutSec(float timeoutSec) {
+    fbb_.AddElement<float>(PartyInvite::VT_TIMEOUTSEC, timeoutSec, 0.0f);
+  }
+  explicit PartyInviteBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  PartyInviteBuilder &operator=(const PartyInviteBuilder &);
+  flatbuffers::Offset<PartyInvite> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<PartyInvite>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<PartyInvite> CreatePartyInvite(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t actorId = 0,
+    int32_t partyId = 0,
+    int64_t inviterId = 0,
+    flatbuffers::Offset<flatbuffers::String> inviterName = 0,
+    float timeoutSec = 0.0f) {
+  PartyInviteBuilder builder_(_fbb);
+  builder_.add_inviterId(inviterId);
+  builder_.add_timeoutSec(timeoutSec);
+  builder_.add_inviterName(inviterName);
+  builder_.add_partyId(partyId);
+  builder_.add_actorId(actorId);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<PartyInvite> CreatePartyInviteDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t actorId = 0,
+    int32_t partyId = 0,
+    int64_t inviterId = 0,
+    const char *inviterName = nullptr,
+    float timeoutSec = 0.0f) {
+  auto inviterName__ = inviterName ? _fbb.CreateString(inviterName) : 0;
+  return syncnet::CreatePartyInvite(
+      _fbb,
+      actorId,
+      partyId,
+      inviterId,
+      inviterName__,
+      timeoutSec);
+}
+
+struct PartyInviteReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PartyInviteReplyBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_ACCEPT = 4
+  };
+  bool accept() const {
+    return GetField<uint8_t>(VT_ACCEPT, 0) != 0;
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint8_t>(verifier, VT_ACCEPT) &&
+           verifier.EndTable();
+  }
+};
+
+struct PartyInviteReplyBuilder {
+  typedef PartyInviteReply Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_accept(bool accept) {
+    fbb_.AddElement<uint8_t>(PartyInviteReply::VT_ACCEPT, static_cast<uint8_t>(accept), 0);
+  }
+  explicit PartyInviteReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  PartyInviteReplyBuilder &operator=(const PartyInviteReplyBuilder &);
+  flatbuffers::Offset<PartyInviteReply> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<PartyInviteReply>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<PartyInviteReply> CreatePartyInviteReply(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    bool accept = false) {
+  PartyInviteReplyBuilder builder_(_fbb);
+  builder_.add_accept(accept);
+  return builder_.Finish();
+}
+
+struct PartyLeave FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PartyLeaveBuilder Builder;
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           verifier.EndTable();
+  }
+};
+
+struct PartyLeaveBuilder {
+  typedef PartyLeave Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  explicit PartyLeaveBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  PartyLeaveBuilder &operator=(const PartyLeaveBuilder &);
+  flatbuffers::Offset<PartyLeave> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<PartyLeave>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<PartyLeave> CreatePartyLeave(
+    flatbuffers::FlatBufferBuilder &_fbb) {
+  PartyLeaveBuilder builder_(_fbb);
+  return builder_.Finish();
+}
+
+struct PartyKick FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PartyKickBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_PLAYERID = 4
+  };
+  int64_t playerId() const {
+    return GetField<int64_t>(VT_PLAYERID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int64_t>(verifier, VT_PLAYERID) &&
+           verifier.EndTable();
+  }
+};
+
+struct PartyKickBuilder {
+  typedef PartyKick Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_playerId(int64_t playerId) {
+    fbb_.AddElement<int64_t>(PartyKick::VT_PLAYERID, playerId, 0);
+  }
+  explicit PartyKickBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  PartyKickBuilder &operator=(const PartyKickBuilder &);
+  flatbuffers::Offset<PartyKick> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<PartyKick>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<PartyKick> CreatePartyKick(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int64_t playerId = 0) {
+  PartyKickBuilder builder_(_fbb);
+  builder_.add_playerId(playerId);
+  return builder_.Finish();
+}
+
+struct PartyLeaderChange FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PartyLeaderChangeBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_PLAYERID = 4
+  };
+  int64_t playerId() const {
+    return GetField<int64_t>(VT_PLAYERID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int64_t>(verifier, VT_PLAYERID) &&
+           verifier.EndTable();
+  }
+};
+
+struct PartyLeaderChangeBuilder {
+  typedef PartyLeaderChange Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_playerId(int64_t playerId) {
+    fbb_.AddElement<int64_t>(PartyLeaderChange::VT_PLAYERID, playerId, 0);
+  }
+  explicit PartyLeaderChangeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  PartyLeaderChangeBuilder &operator=(const PartyLeaderChangeBuilder &);
+  flatbuffers::Offset<PartyLeaderChange> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<PartyLeaderChange>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<PartyLeaderChange> CreatePartyLeaderChange(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int64_t playerId = 0) {
+  PartyLeaderChangeBuilder builder_(_fbb);
+  builder_.add_playerId(playerId);
+  return builder_.Finish();
+}
+
+struct PartyMemberInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PartyMemberInfoBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_PLAYERID = 4,
+    VT_NAME = 6,
+    VT_LEVEL = 8,
+    VT_ACTORID = 10,
+    VT_MAPID = 12
+  };
+  int64_t playerId() const {
+    return GetField<int64_t>(VT_PLAYERID, 0);
+  }
+  const flatbuffers::String *name() const {
+    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  int32_t level() const {
+    return GetField<int32_t>(VT_LEVEL, 1);
+  }
+  int32_t actorId() const {
+    return GetField<int32_t>(VT_ACTORID, 0);
+  }
+  int32_t mapId() const {
+    return GetField<int32_t>(VT_MAPID, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int64_t>(verifier, VT_PLAYERID) &&
+           VerifyOffset(verifier, VT_NAME) &&
+           verifier.VerifyString(name()) &&
+           VerifyField<int32_t>(verifier, VT_LEVEL) &&
+           VerifyField<int32_t>(verifier, VT_ACTORID) &&
+           VerifyField<int32_t>(verifier, VT_MAPID) &&
+           verifier.EndTable();
+  }
+};
+
+struct PartyMemberInfoBuilder {
+  typedef PartyMemberInfo Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_playerId(int64_t playerId) {
+    fbb_.AddElement<int64_t>(PartyMemberInfo::VT_PLAYERID, playerId, 0);
+  }
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+    fbb_.AddOffset(PartyMemberInfo::VT_NAME, name);
+  }
+  void add_level(int32_t level) {
+    fbb_.AddElement<int32_t>(PartyMemberInfo::VT_LEVEL, level, 1);
+  }
+  void add_actorId(int32_t actorId) {
+    fbb_.AddElement<int32_t>(PartyMemberInfo::VT_ACTORID, actorId, 0);
+  }
+  void add_mapId(int32_t mapId) {
+    fbb_.AddElement<int32_t>(PartyMemberInfo::VT_MAPID, mapId, 0);
+  }
+  explicit PartyMemberInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  PartyMemberInfoBuilder &operator=(const PartyMemberInfoBuilder &);
+  flatbuffers::Offset<PartyMemberInfo> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<PartyMemberInfo>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<PartyMemberInfo> CreatePartyMemberInfo(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int64_t playerId = 0,
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    int32_t level = 1,
+    int32_t actorId = 0,
+    int32_t mapId = 0) {
+  PartyMemberInfoBuilder builder_(_fbb);
+  builder_.add_playerId(playerId);
+  builder_.add_mapId(mapId);
+  builder_.add_actorId(actorId);
+  builder_.add_level(level);
+  builder_.add_name(name);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<PartyMemberInfo> CreatePartyMemberInfoDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int64_t playerId = 0,
+    const char *name = nullptr,
+    int32_t level = 1,
+    int32_t actorId = 0,
+    int32_t mapId = 0) {
+  auto name__ = name ? _fbb.CreateString(name) : 0;
+  return syncnet::CreatePartyMemberInfo(
+      _fbb,
+      playerId,
+      name__,
+      level,
+      actorId,
+      mapId);
+}
+
+struct PartySync FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PartySyncBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_PARTYID = 4,
+    VT_LEADERID = 6,
+    VT_MEMBERS = 8
+  };
+  int32_t partyId() const {
+    return GetField<int32_t>(VT_PARTYID, 0);
+  }
+  int64_t leaderId() const {
+    return GetField<int64_t>(VT_LEADERID, 0);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<syncnet::PartyMemberInfo>> *members() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::PartyMemberInfo>> *>(VT_MEMBERS);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_PARTYID) &&
+           VerifyField<int64_t>(verifier, VT_LEADERID) &&
+           VerifyOffset(verifier, VT_MEMBERS) &&
+           verifier.VerifyVector(members()) &&
+           verifier.VerifyVectorOfTables(members()) &&
+           verifier.EndTable();
+  }
+};
+
+struct PartySyncBuilder {
+  typedef PartySync Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_partyId(int32_t partyId) {
+    fbb_.AddElement<int32_t>(PartySync::VT_PARTYID, partyId, 0);
+  }
+  void add_leaderId(int64_t leaderId) {
+    fbb_.AddElement<int64_t>(PartySync::VT_LEADERID, leaderId, 0);
+  }
+  void add_members(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::PartyMemberInfo>>> members) {
+    fbb_.AddOffset(PartySync::VT_MEMBERS, members);
+  }
+  explicit PartySyncBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  PartySyncBuilder &operator=(const PartySyncBuilder &);
+  flatbuffers::Offset<PartySync> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<PartySync>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<PartySync> CreatePartySync(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t partyId = 0,
+    int64_t leaderId = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::PartyMemberInfo>>> members = 0) {
+  PartySyncBuilder builder_(_fbb);
+  builder_.add_leaderId(leaderId);
+  builder_.add_members(members);
+  builder_.add_partyId(partyId);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<PartySync> CreatePartySyncDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t partyId = 0,
+    int64_t leaderId = 0,
+    const std::vector<flatbuffers::Offset<syncnet::PartyMemberInfo>> *members = nullptr) {
+  auto members__ = members ? _fbb.CreateVector<flatbuffers::Offset<syncnet::PartyMemberInfo>>(*members) : 0;
+  return syncnet::CreatePartySync(
+      _fbb,
+      partyId,
+      leaderId,
+      members__);
+}
+
+struct PartyQuestShare FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PartyQuestShareBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_QUESTID = 4,
+    VT_FROMPLAYERID = 6,
+    VT_FROMNAME = 8,
+    VT_TIMEOUTSEC = 10
+  };
+  int32_t questId() const {
+    return GetField<int32_t>(VT_QUESTID, 0);
+  }
+  int64_t fromPlayerId() const {
+    return GetField<int64_t>(VT_FROMPLAYERID, 0);
+  }
+  const flatbuffers::String *fromName() const {
+    return GetPointer<const flatbuffers::String *>(VT_FROMNAME);
+  }
+  float timeoutSec() const {
+    return GetField<float>(VT_TIMEOUTSEC, 0.0f);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_QUESTID) &&
+           VerifyField<int64_t>(verifier, VT_FROMPLAYERID) &&
+           VerifyOffset(verifier, VT_FROMNAME) &&
+           verifier.VerifyString(fromName()) &&
+           VerifyField<float>(verifier, VT_TIMEOUTSEC) &&
+           verifier.EndTable();
+  }
+};
+
+struct PartyQuestShareBuilder {
+  typedef PartyQuestShare Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_questId(int32_t questId) {
+    fbb_.AddElement<int32_t>(PartyQuestShare::VT_QUESTID, questId, 0);
+  }
+  void add_fromPlayerId(int64_t fromPlayerId) {
+    fbb_.AddElement<int64_t>(PartyQuestShare::VT_FROMPLAYERID, fromPlayerId, 0);
+  }
+  void add_fromName(flatbuffers::Offset<flatbuffers::String> fromName) {
+    fbb_.AddOffset(PartyQuestShare::VT_FROMNAME, fromName);
+  }
+  void add_timeoutSec(float timeoutSec) {
+    fbb_.AddElement<float>(PartyQuestShare::VT_TIMEOUTSEC, timeoutSec, 0.0f);
+  }
+  explicit PartyQuestShareBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  PartyQuestShareBuilder &operator=(const PartyQuestShareBuilder &);
+  flatbuffers::Offset<PartyQuestShare> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<PartyQuestShare>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<PartyQuestShare> CreatePartyQuestShare(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t questId = 0,
+    int64_t fromPlayerId = 0,
+    flatbuffers::Offset<flatbuffers::String> fromName = 0,
+    float timeoutSec = 0.0f) {
+  PartyQuestShareBuilder builder_(_fbb);
+  builder_.add_fromPlayerId(fromPlayerId);
+  builder_.add_timeoutSec(timeoutSec);
+  builder_.add_fromName(fromName);
+  builder_.add_questId(questId);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<PartyQuestShare> CreatePartyQuestShareDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t questId = 0,
+    int64_t fromPlayerId = 0,
+    const char *fromName = nullptr,
+    float timeoutSec = 0.0f) {
+  auto fromName__ = fromName ? _fbb.CreateString(fromName) : 0;
+  return syncnet::CreatePartyQuestShare(
+      _fbb,
+      questId,
+      fromPlayerId,
+      fromName__,
+      timeoutSec);
+}
+
+struct PartyQuestShareReply FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef PartyQuestShareReplyBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_QUESTID = 4,
+    VT_ACCEPT = 6
+  };
+  int32_t questId() const {
+    return GetField<int32_t>(VT_QUESTID, 0);
+  }
+  bool accept() const {
+    return GetField<uint8_t>(VT_ACCEPT, 0) != 0;
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_QUESTID) &&
+           VerifyField<uint8_t>(verifier, VT_ACCEPT) &&
+           verifier.EndTable();
+  }
+};
+
+struct PartyQuestShareReplyBuilder {
+  typedef PartyQuestShareReply Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_questId(int32_t questId) {
+    fbb_.AddElement<int32_t>(PartyQuestShareReply::VT_QUESTID, questId, 0);
+  }
+  void add_accept(bool accept) {
+    fbb_.AddElement<uint8_t>(PartyQuestShareReply::VT_ACCEPT, static_cast<uint8_t>(accept), 0);
+  }
+  explicit PartyQuestShareReplyBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  PartyQuestShareReplyBuilder &operator=(const PartyQuestShareReplyBuilder &);
+  flatbuffers::Offset<PartyQuestShareReply> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<PartyQuestShareReply>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<PartyQuestShareReply> CreatePartyQuestShareReply(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t questId = 0,
+    bool accept = false) {
+  PartyQuestShareReplyBuilder builder_(_fbb);
+  builder_.add_questId(questId);
+  builder_.add_accept(accept);
+  return builder_.Finish();
+}
+
 inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type) {
   switch (type) {
     case GameMessages_NONE: {
@@ -2389,6 +3101,38 @@ inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj,
     }
     case GameMessages_QuestSync: {
       auto ptr = reinterpret_cast<const syncnet::QuestSync *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_PartyInvite: {
+      auto ptr = reinterpret_cast<const syncnet::PartyInvite *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_PartyInviteReply: {
+      auto ptr = reinterpret_cast<const syncnet::PartyInviteReply *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_PartyLeave: {
+      auto ptr = reinterpret_cast<const syncnet::PartyLeave *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_PartyKick: {
+      auto ptr = reinterpret_cast<const syncnet::PartyKick *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_PartyLeaderChange: {
+      auto ptr = reinterpret_cast<const syncnet::PartyLeaderChange *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_PartySync: {
+      auto ptr = reinterpret_cast<const syncnet::PartySync *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_PartyQuestShare: {
+      auto ptr = reinterpret_cast<const syncnet::PartyQuestShare *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_PartyQuestShareReply: {
+      auto ptr = reinterpret_cast<const syncnet::PartyQuestShareReply *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;

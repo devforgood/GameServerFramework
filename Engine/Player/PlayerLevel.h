@@ -21,6 +21,7 @@ public:
 
     int GetLevel() const { return level_; }
     int GetExp() const { return exp_; }
+    const std::string& GetName() const { return name_; }
 
 private:
     // 주어진 누적 경험치에 해당하는 레벨(required_exp <= exp 중 최고 레벨)을 Level 테이블에서 찾는다.

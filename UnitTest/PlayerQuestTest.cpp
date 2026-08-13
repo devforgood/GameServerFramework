@@ -12,7 +12,10 @@
 #include "DbRecord.h"
 #include "GameObject.h"
 #include "PlayerEventBroker.h"
+#include "PlayerSender.h"
 #include "EventMessage.h"
+#include "SendMessage.h"
+#include "syncnet_generated.h"
 #include "Quest.h"
 #include "QuestRegistry.h"
 #include "QuestPolicy.h"
@@ -107,6 +110,39 @@ QuestActiveVO MakeQuestVO(
 	vo.accept_time = std::chrono::system_clock::now();
 	return vo;
 }
+
+// 클라로 나가는 QuestSync 를 가로채는 최소 구성.
+// PlayerQuest 가 자기 Update 끝에서 직접 보내므로, 세션 대신 sink 를 끼워 확인한다.
+struct SyncHarness
+{
+	GameObject go;
+	PlayerQuest* quest = nullptr;
+	std::vector<std::shared_ptr<send_message>> sent;
+
+	explicit SyncHarness(const PlayerLoadData& load)
+	{
+		go.AddComponent<PlayerEventBroker>();
+		quest = go.AddComponent<PlayerQuest>();
+		go.AddComponent<PlayerSender>()->SetSink(
+			[this](std::shared_ptr<send_message>& msg) { sent.push_back(msg); });
+		quest->Load(load);
+	}
+
+	// 한 틱 돌려 이번에 나간 QuestSync 를 돌려준다. 나간 것이 없으면 nullptr.
+	const syncnet::QuestSync* Flush()
+	{
+		sent.clear();
+		go.Update(0.1f);
+
+		for (auto it = sent.rbegin(); it != sent.rend(); ++it)
+		{
+			const auto* msg = syncnet::GetGameMessage((*it)->GetBufferPointer());
+			if (msg != nullptr && msg->msg_type() == syncnet::GameMessages::GameMessages_QuestSync)
+				return msg->msg_as_QuestSync();
+		}
+		return nullptr;
+	}
+};
 
 PlayerSaveData DoSave(PlayerQuest& quest)
 {
@@ -589,27 +625,32 @@ TEST_F(PlayerQuestTest, Progress_CollectAdvancesFromInventoryEvent)
 	EXPECT_EQ(quest->GetProgress(kGoblinHunt, 1), 5);
 }
 
-TEST_F(PlayerQuestTest, Sync_CollectsChangedRemovedAndCompleted)
+TEST_F(PlayerQuestTest, Sync_SendsChangedRemovedAndCompleted)
 {
-	PlayerQuest quest;
-	quest.Load(MakeNewPlayerData());
+	SyncHarness harness(MakeNewPlayerData());
 
-	std::vector<int> changed, removed, completed;
+	ASSERT_EQ(harness.quest->AcceptQuest(kFieldCleanup), QuestAcceptResult::Ok);
 
-	ASSERT_EQ(quest.AcceptQuest(kFieldCleanup), QuestAcceptResult::Ok);
-	ASSERT_TRUE(quest.HasPendingSync());
-	quest.DrainSync(changed, removed, completed);
-	EXPECT_EQ(changed, std::vector<int>{ kFieldCleanup });
-	EXPECT_TRUE(removed.empty());
-	EXPECT_TRUE(completed.empty());
-	EXPECT_FALSE(quest.HasPendingSync()); // 꺼내면 비워진다
+	const syncnet::QuestSync* sync = harness.Flush();
+	ASSERT_NE(nullptr, sync);
+	ASSERT_EQ(1u, sync->quests()->size());
+	EXPECT_EQ(kFieldCleanup, sync->quests()->Get(0)->questId());
+	EXPECT_EQ(0u, sync->removed()->size());
+	EXPECT_EQ(0u, sync->completed()->size());
+
+	EXPECT_EQ(nullptr, harness.Flush()); // 바뀐 것이 없으면 보내지 않는다
 
 	// auto_complete 퀘스트가 끝나면 목록에서 빠지고 완료로 보고된다.
-	quest.ReportProgress(QuestObjectiveType::Kill, kSlimeMonsterId, 10);
-	quest.DrainSync(changed, removed, completed);
-	EXPECT_TRUE(changed.empty()); // 사라진 퀘스트를 변경으로도 보내면 클라가 다시 만든다
-	EXPECT_EQ(removed, std::vector<int>{ kFieldCleanup });
-	EXPECT_EQ(completed, std::vector<int>{ kFieldCleanup });
+	harness.quest->ReportProgress(QuestObjectiveType::Kill, kSlimeMonsterId, 10);
+
+	sync = harness.Flush();
+	ASSERT_NE(nullptr, sync);
+	// 사라진 퀘스트를 변경으로도 보내면 클라가 그것을 다시 만든다.
+	EXPECT_EQ(0u, sync->quests()->size());
+	ASSERT_EQ(1u, sync->removed()->size());
+	EXPECT_EQ(kFieldCleanup, sync->removed()->Get(0));
+	ASSERT_EQ(1u, sync->completed()->size());
+	EXPECT_EQ(kFieldCleanup, sync->completed()->Get(0));
 }
 
 TEST_F(PlayerQuestTest, Sync_MarkAllRestoresLogOnLogin)
@@ -617,15 +658,21 @@ TEST_F(PlayerQuestTest, Sync_MarkAllRestoresLogOnLogin)
 	std::vector<QuestActiveVO> actives;
 	actives.push_back(MakeQuestVO(1001, kGoblinHunt, 0, 2, 5, 3, 0));
 
-	PlayerQuest quest;
-	quest.Load(MakeExistingPlayerData(1001, actives, std::string{}));
-	EXPECT_FALSE(quest.HasPendingSync());
+	SyncHarness harness(MakeExistingPlayerData(1001, actives, std::string{}));
+	EXPECT_EQ(nullptr, harness.Flush()); // 로드만으로는 아무것도 나가지 않는다
 
-	quest.MarkAllForSync();
+	harness.quest->MarkAllForSync();
 
-	std::vector<int> changed, removed, completed;
-	quest.DrainSync(changed, removed, completed);
-	EXPECT_EQ(changed, std::vector<int>{ kGoblinHunt });
+	const syncnet::QuestSync* sync = harness.Flush();
+	ASSERT_NE(nullptr, sync);
+	ASSERT_EQ(1u, sync->quests()->size());
+
+	const syncnet::QuestInfo* info = sync->quests()->Get(0);
+	EXPECT_EQ(kGoblinHunt, info->questId());
+	EXPECT_EQ(2, info->stage());
+	ASSERT_EQ(3u, info->progress()->size());
+	EXPECT_EQ(5, info->progress()->Get(0));
+	EXPECT_EQ(3, info->progress()->Get(1));
 }
 
 TEST_F(PlayerQuestTest, Prerequisite_ItemAndSkillCheckRealComponents)

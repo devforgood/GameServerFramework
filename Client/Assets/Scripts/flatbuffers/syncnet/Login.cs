@@ -35,7 +35,7 @@ public struct Login : IFlatbufferObject
   public byte[] GetPasswordArray() { return __p.__vector_as_array<byte>(6); }
   public int MapId { get { int o = __p.__offset(8); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public syncnet.Vec3? Pos { get { int o = __p.__offset(10); return o != 0 ? (syncnet.Vec3?)(new syncnet.Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
-  public int AgentId { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
+  public int ActorId { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public string Uuid { get { int o = __p.__offset(14); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
 #if ENABLE_SPAN_T
   public Span<byte> GetUuidBytes() { return __p.__vector_as_span<byte>(14, 1); }
@@ -49,7 +49,7 @@ public struct Login : IFlatbufferObject
   public static void AddPassword(FlatBufferBuilder builder, StringOffset passwordOffset) { builder.AddOffset(1, passwordOffset.Value, 0); }
   public static void AddMapId(FlatBufferBuilder builder, int mapId) { builder.AddInt(2, mapId, 0); }
   public static void AddPos(FlatBufferBuilder builder, Offset<syncnet.Vec3> posOffset) { builder.AddStruct(3, posOffset.Value, 0); }
-  public static void AddAgentId(FlatBufferBuilder builder, int agentId) { builder.AddInt(4, agentId, 0); }
+  public static void AddActorId(FlatBufferBuilder builder, int actorId) { builder.AddInt(4, actorId, 0); }
   public static void AddUuid(FlatBufferBuilder builder, StringOffset uuidOffset) { builder.AddOffset(5, uuidOffset.Value, 0); }
   public static Offset<syncnet.Login> EndLogin(FlatBufferBuilder builder) {
     int o = builder.EndTable();
