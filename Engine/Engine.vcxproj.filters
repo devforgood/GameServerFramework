@@ -204,9 +204,6 @@
     <ClCompile Include="Player\PlayerParty.cpp">
       <Filter>Player</Filter>
     </ClCompile>
-    <ClCompile Include="Player\PlayerSender.cpp">
-      <Filter>Player</Filter>
-    </ClCompile>
     <ClCompile Include="Party\PartyManager.cpp">
       <Filter>Party</Filter>
     </ClCompile>

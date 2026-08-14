@@ -196,7 +196,6 @@
     <ClCompile Include="Player\PlayerRepository.cpp" />
     <ClCompile Include="Player\PlayerItem.cpp" />
     <ClCompile Include="Player\PlayerParty.cpp" />
-    <ClCompile Include="Player\PlayerSender.cpp" />
     <ClCompile Include="Player\PlayerQuest.cpp" />
     <ClCompile Include="Party\PartyManager.cpp" />
     <ClCompile Include="Party\PartyCredit.cpp" />

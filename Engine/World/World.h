@@ -133,11 +133,6 @@ public:
 	// (예: 대규모 측정은 가장 넓은 맵에서 해야 한다) 고르려면 목록이 필요하다.
 	std::vector<Map*> GetMaps() const;
 
-	// 접속 중인 플레이어를 id 로 찾는다. 없으면 nullptr.
-	// Map::FindPlayer 와 달리 맵을 가리지 않는다 — 파티처럼 맵을 넘어 이어지는
-	// 관계는 상대가 어느 맵에 있는지와 무관하게 찾을 수 있어야 한다.
-	std::shared_ptr<Player> FindPlayer(long player_id) const;
-
 	// gamedata 맵 id로 상시(field) Map 을 찾는다. 없으면 nullptr.
 	// 인스턴스 맵은 여기서 찾을 수 없다 — 같은 mapId 로 여러 개가 동시에 살아 있어서
 	// id 만으로는 어느 것인지 정할 수 없다. 인스턴스는 플레이어의 캐릭터가 가진

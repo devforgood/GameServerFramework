@@ -413,12 +413,6 @@ void World::update(float deltaTime)
 	PartyManager::Instance().Update(deltaTime);
 }
 
-std::shared_ptr<Player> World::FindPlayer(long player_id) const
-{
-	auto it = players_.find(player_id);
-	return it != players_.end() ? it->second : nullptr;
-}
-
 void World::join(std::shared_ptr<Player> player)
 {
 	if (player == nullptr)

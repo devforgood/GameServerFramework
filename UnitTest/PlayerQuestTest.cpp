@@ -123,7 +123,7 @@ struct SyncHarness
 	{
 		go.AddComponent<PlayerEventBroker>();
 		quest = go.AddComponent<PlayerQuest>();
-		go.AddComponent<PlayerSender>()->SetSink(
+		go.AddComponent<PlayerSender>()->Bind(
 			[this](std::shared_ptr<send_message>& msg) { sent.push_back(msg); });
 		quest->Load(load);
 	}

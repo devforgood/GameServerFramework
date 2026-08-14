@@ -36,6 +36,13 @@ public:
 	void Bind(long player_id);
 	long GetPlayerId() const { return playerId_; }
 
+	// 이 플레이어의 캐릭터가 있는 곳. 컴포넌트 층에서는 캐릭터를 볼 수 없으므로
+	// 빙의/해제 시점에 Player 가 알려 준다(맵을 옮기면 캐릭터가 재생성되어 둘 다 바뀐다).
+	// 로스터에 실어 보낼 때 파티원의 것을 각자의 컴포넌트에서 읽는다 — 이름/레벨과 같은 방식.
+	void SetLocation(int actor_id, int map_id);
+	int GetActorId() const { return actorId_; }
+	int GetMapId() const { return mapId_; }
+
 	// 플레이어 id 로 컴포넌트를 찾는다. 등록/해제는 Bind 와 소멸자가 맡으므로
 	// 여기서 돌아온 포인터는 그 플레이어가 살아 있는 동안만 유효하다(같은 틱 안에서 쓸 것).
 	static PlayerParty* Find(long player_id);
@@ -86,6 +93,7 @@ private:
 	// 얻을 수 있으므로 세션이 없는 곳(테스트)에서도 채워진다.
 	static std::string resolveName(long player_id);
 	static int resolveLevel(long player_id);
+	static PlayerParty* findMember(long player_id);
 
 	static std::unordered_map<long, PlayerParty*>& registry();
 
@@ -103,4 +111,8 @@ private:
 
 	QuestShareOffer share_;
 	bool shareNotifyPending_ = false;
+
+	// 내 캐릭터의 위치. 빙의 전이거나 캐릭터가 없으면 0.
+	int actorId_ = 0;
+	int mapId_ = 0;
 };

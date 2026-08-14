@@ -118,8 +118,5 @@ public:
 
 	void SavePlayerData();
 
-	// 파티원처럼 맵을 넘어 이어지는 상대를 찾는다. 서버/월드가 없으면(테스트 등) nullptr.
-	// 컴포넌트 층에서는 다른 플레이어의 캐릭터를 볼 수 없어 PlayerParty 가 이것을 쓴다.
-	std::shared_ptr<Player> FindPlayerInWorld(long player_id) const;
 };
 

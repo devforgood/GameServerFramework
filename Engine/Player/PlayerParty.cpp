@@ -1,9 +1,6 @@
 #include "PlayerParty.h"
-#include "Character.h"
 #include "GameObject.h"
-#include "Map.h"
 #include "PartyPolicy.h"
-#include "Player.h"
 #include "PlayerLevel.h"
 #include "PlayerQuest.h"
 #include "PlayerSender.h"
@@ -90,10 +87,37 @@ void PlayerParty::Update(float dt)
 	sendSync();
 }
 
-std::string PlayerParty::resolveName(long player_id)
+void PlayerParty::SetLocation(int actor_id, int map_id)
+{
+	if (actorId_ == actor_id && mapId_ == map_id)
+		return;
+
+	actorId_ = actor_id;
+	mapId_ = map_id;
+
+	// 맵을 옮기면 파티원들이 보는 내 agent 도 달라진다(같은 맵에 없으면 0). 로스터를
+	// 다시 내보내야 하므로 나뿐 아니라 파티원 전원을 변경 상태로 돌린다.
+	const Party* party = GetParty();
+	if (party == nullptr)
+		return;
+
+	for (long member_id : party->GetMembers())
+	{
+		if (PlayerParty* member = Find(member_id))
+			member->rosterDirty_ = true;
+	}
+}
+
+PlayerParty* PlayerParty::findMember(long player_id)
 {
 	PlayerParty* member = Find(player_id);
-	if (member == nullptr || member->game_object == nullptr)
+	return (member != nullptr && member->game_object != nullptr) ? member : nullptr;
+}
+
+std::string PlayerParty::resolveName(long player_id)
+{
+	PlayerParty* member = findMember(player_id);
+	if (member == nullptr)
 		return std::string();
 
 	auto* level = member->game_object->GetComponent<PlayerLevel>();
@@ -102,8 +126,8 @@ std::string PlayerParty::resolveName(long player_id)
 
 int PlayerParty::resolveLevel(long player_id)
 {
-	PlayerParty* member = Find(player_id);
-	if (member == nullptr || member->game_object == nullptr)
+	PlayerParty* member = findMember(player_id);
+	if (member == nullptr)
 		return 1;
 
 	auto* level = member->game_object->GetComponent<PlayerLevel>();
@@ -170,17 +194,6 @@ void PlayerParty::sendSync()
 	// 전달되므로, 클라는 사유별 메시지를 따로 다루지 않고 이것만 보면 된다.
 	const Party* roster = GetParty();
 
-	// 캐릭터(actor id, 맵)는 컴포넌트 층에서 볼 수 없다. 소유 Player 가 있을 때만 채우고,
-	// 없으면 0 으로 둔다 — 이름/레벨은 그래도 정상적으로 나간다.
-	Player* owner = sender->GetOwner();
-	int myMapId = 0;
-	if (owner != nullptr)
-	{
-		auto& self = owner->GetCharacter();
-		if (self != nullptr && self->GetMap() != nullptr)
-			myMapId = self->GetMap()->GetMapId();
-	}
-
 	auto builder_ptr = std::make_shared<send_message>();
 	std::vector<flatbuffers::Offset<syncnet::PartyMemberInfo>> members;
 
@@ -189,30 +202,21 @@ void PlayerParty::sendSync()
 		members.reserve(roster->Size());
 		for (long member_id : roster->GetMembers())
 		{
+			PlayerParty* member = findMember(member_id);
+			const int memberMapId = member != nullptr ? member->mapId_ : 0;
+
 			// 다른 맵에 있는 파티원의 actorId 는 이 클라에 존재하지 않는 액터라 0 으로 둔다.
-			int actorId = 0;
-			int mapId = 0;
-			if (owner != nullptr)
-			{
-				if (auto member = owner->FindPlayerInWorld(member_id))
-				{
-					if (auto& character = member->GetCharacter())
-					{
-						if (character->GetMap() != nullptr)
-							mapId = character->GetMap()->GetMapId();
-						if (mapId != 0 && mapId == myMapId)
-							actorId = character->GetActorId();
-					}
-				}
-			}
+			const int memberActorId =
+				(member != nullptr && memberMapId != 0 && memberMapId == mapId_)
+					? member->actorId_ : 0;
 
 			members.push_back(syncnet::CreatePartyMemberInfo(
 				*builder_ptr,
 				member_id,
 				builder_ptr->CreateString(resolveName(member_id)),
 				resolveLevel(member_id),
-				actorId,
-				mapId));
+				memberActorId,
+				memberMapId));
 		}
 	}
 

@@ -16,7 +16,7 @@
 #include "PlayerWallet.h"
 #include "PlayerParty.h"
 #include "PlayerSender.h"
-#include "World.h"
+#include "Map.h"
 #include "PlayerSaveData.h"
 #include "PlayerEventBroker.h"
 #include "PlayerEventBrokerProxy.h"
@@ -43,9 +43,11 @@ Player::Player()
 	// 온 초대가 갈 곳을 잃는다.
 	this->AddComponent<PlayerParty>()->Bind(playerId_);
 
-	// 컴포넌트가 클라로 메시지를 내보내는 통로. 이 컴포넌트는 Player 가 소유하므로
-	// 생성자에서 자신을 넘겨도 안전하다(Player 보다 오래 살 수 없다).
-	this->AddComponent<PlayerSender>()->BindOwner(this);
+	// 컴포넌트가 클라로 메시지를 내보내는 통로. 넘기는 것은 "보낸다"는 동작 하나뿐이라
+	// 컴포넌트가 이걸 통해 Player 의 다른 기능에 손댈 수 없다. 이 컴포넌트는 Player 가
+	// 소유하므로 this 를 캡처해도 안전하다(Player 보다 오래 살 수 없다).
+	this->AddComponent<PlayerSender>()->Bind(
+		[this](std::shared_ptr<send_message>& msg) { this->Send(msg); });
 }
 
 Player::~Player() 
@@ -73,6 +75,15 @@ void Player::Possess(std::shared_ptr<Character> character)
 	// 프록시 컴포넌트를 부착하고, 브로커의 소유자(Player)를 약하게 참조하게 한다.
 	auto* proxy = character_->AddComponent<PlayerEventBrokerProxy>();
 	proxy->SetBrokerOwner(weak_from_this());
+
+	// 파티 로스터에 실을 내 캐릭터 위치. 컴포넌트 층에서는 캐릭터를 볼 수 없으므로
+	// 여기서 알려 준다. 맵 이동은 UnPossess -> Possess 로 캐릭터를 다시 만들므로
+	// 이 두 지점만 챙기면 값이 어긋나지 않는다.
+	if (auto* party = GetComponent<PlayerParty>())
+	{
+		party->SetLocation(character_->GetActorId(),
+			character_->GetMap() != nullptr ? character_->GetMap()->GetMapId() : 0);
+	}
 }
 
 void Player::UnPossess()
@@ -80,6 +91,9 @@ void Player::UnPossess()
 	// 게이트 이동 등으로 캐릭터를 다른 맵에 재생성하기 전, 기존 빙의를 해제한다.
 	// character_ 의 마지막 참조가 사라지면 이전 맵에서 제거된 Character 가 파괴된다.
 	character_ = nullptr;
+
+	if (auto* party = GetComponent<PlayerParty>())
+		party->SetLocation(0, 0);
 }
 
 void Player::Send(std::shared_ptr<send_message>& msg)
@@ -163,13 +177,6 @@ void Player::Update(float dt)
 		SavePlayerData();
 		playerLazySaveAcc_ -= 60.0f;
 	}
-}
-
-std::shared_ptr<Player> Player::FindPlayerInWorld(long player_id) const
-{
-	if (server_ == nullptr || server_->GetWorld() == nullptr)
-		return nullptr;
-	return server_->GetWorld()->FindPlayer(player_id);
 }
 
 std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Player::GetStrand()

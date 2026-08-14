@@ -130,8 +130,6 @@ public:
 
 	void UpdateGameLogic(float delta);
 
-	// 이 서버가 돌리는 월드. 파티처럼 맵을 넘어 다른 플레이어를 찾아야 하는 곳에서 쓴다.
-	World* GetWorld() { return channel_.GetWorld(); }
 
 private:
 	void DoAccept();

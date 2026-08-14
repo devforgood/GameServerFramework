@@ -68,7 +68,7 @@ struct TestPlayer
 		party->Bind(player_id);
 
 		// 실제 세션 없이 와이어 포맷을 검증하기 위해 전송을 가로챈다.
-		go.AddComponent<PlayerSender>()->SetSink(
+		go.AddComponent<PlayerSender>()->Bind(
 			[this](std::shared_ptr<send_message>& msg) { sent.push_back(msg); });
 
 		PlayerLoadData data{};
@@ -495,6 +495,66 @@ TEST_F(PartyTest, ComponentInviteFlow_SendsInviteThenRoster)
 	alice.Tick(0.1f);
 	// 바뀐 것이 없으면 다시 보내지 않는다.
 	EXPECT_EQ(nullptr, alice.LastMessage(syncnet::GameMessages::GameMessages_PartySync));
+}
+
+TEST_F(PartyTest, RosterCarriesActorIdOnlyForSameMap)
+{
+	TestPlayer alice(11, 101, 10, "Alice");
+	TestPlayer bob(12, 102, 10, "Bob");
+	TestPlayer carol(13, 103, 10, "Carol");
+
+	ASSERT_EQ(PartyResult::Ok, alice.party->Invite(12));
+	ASSERT_EQ(PartyResult::Ok, bob.party->RespondInvite(true));
+	ASSERT_EQ(PartyResult::Ok, alice.party->Invite(13));
+	ASSERT_EQ(PartyResult::Ok, carol.party->RespondInvite(true));
+
+	// 캐릭터 위치는 빙의 시점에 Player 가 알려 준다. 여기서는 직접 세운다.
+	alice.party->SetLocation(501, 1);
+	bob.party->SetLocation(502, 1);
+	carol.party->SetLocation(503, 2); // 다른 맵
+
+	alice.sent.clear();
+	alice.Tick(0.1f);
+
+	const syncnet::GameMessage* msg =
+		alice.LastMessage(syncnet::GameMessages::GameMessages_PartySync);
+	ASSERT_NE(nullptr, msg);
+	const syncnet::PartySync* roster = msg->msg_as_PartySync();
+	ASSERT_EQ(3u, roster->members()->size());
+
+	EXPECT_EQ(501, roster->members()->Get(0)->actorId());
+	EXPECT_EQ(1, roster->members()->Get(0)->mapId());
+	EXPECT_EQ(502, roster->members()->Get(1)->actorId());
+
+	// 다른 맵의 파티원은 이 클라에 그 액터가 없다. mapId 는 알려 주되 actorId 는 0.
+	EXPECT_EQ(2, roster->members()->Get(2)->mapId());
+	EXPECT_EQ(0, roster->members()->Get(2)->actorId());
+}
+
+TEST_F(PartyTest, MapChangeResendsRosterToEveryone)
+{
+	TestPlayer alice(11, 101, 10);
+	TestPlayer bob(12, 102, 10);
+
+	ASSERT_EQ(PartyResult::Ok, alice.party->Invite(12));
+	ASSERT_EQ(PartyResult::Ok, bob.party->RespondInvite(true));
+	alice.party->SetLocation(501, 1);
+	bob.party->SetLocation(502, 1);
+
+	alice.Tick(0.1f);
+	bob.Tick(0.1f);
+	alice.sent.clear();
+
+	// bob 이 맵을 옮기면 alice 가 보던 bob 의 actorId 가 더 이상 유효하지 않다.
+	// 바뀐 당사자뿐 아니라 파티원 전원이 로스터를 다시 받아야 한다.
+	bob.party->SetLocation(777, 2);
+
+	alice.Tick(0.1f);
+	const syncnet::GameMessage* msg =
+		alice.LastMessage(syncnet::GameMessages::GameMessages_PartySync);
+	ASSERT_NE(nullptr, msg);
+	EXPECT_EQ(0, msg->msg_as_PartySync()->members()->Get(1)->actorId());
+	EXPECT_EQ(2, msg->msg_as_PartySync()->members()->Get(1)->mapId());
 }
 
 TEST_F(PartyTest, DisbandSendsEmptyRoster)
