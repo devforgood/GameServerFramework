@@ -335,6 +335,7 @@
     <ClInclude Include="SQL\SqlClientManager.h" />
     <ClInclude Include="SQL\generated\dao.h" />
     <ClInclude Include="SQL\generated\vo.h" />
+    <ClInclude Include="SQL\generated\schema_columns.h" />
     <ClInclude Include="flatbuffers\syncnet_generated.h" />
     <ClInclude Include="Movement\Vector3.h" />
     <ClInclude Include="Movement\Walker.h" />

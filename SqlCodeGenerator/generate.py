@@ -113,10 +113,16 @@ def render_templates(tables):
         with open(f"{pathname}/{table['file_name']}.cpp", "a", encoding="utf-8") as f:
             f.write(env.get_template("dao.cpp.j2").render(class_name=table["class_name"], table=table, include_header=is_first_file))
 
+        # 기동 시 실제 컬럼과 대조할 목록(빠진 컬럼만 ADD COLUMN 한다).
+        with open(f"{pathname}/schema_columns.h", "a", encoding="utf-8") as f:
+            f.write(env.get_template("schema_columns.h.j2").render(table=table, include_header=is_first_file))
+
         create_sqls.append(env.get_template("create_table.sql.j2").render(table=table))
 
-        is_first_file = False 
+        is_first_file = False
 
+    with open(f"{pathname}/schema_columns.h", "a", encoding="utf-8") as f:
+        f.write("};\n")
 
     create_sql_text = "\n\n".join(create_sqls)
 

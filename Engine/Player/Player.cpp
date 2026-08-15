@@ -151,10 +151,7 @@ void Player::OnLoadedData(const PlayerLoadData & data)
 	SetName(data.player.name);
 	SetLevel(data.player.level);
 
-	ForEachComponent([&data](Component& component)
-	{
-		component.Load(data);
-	});
+	Load(data);
 
 	// 접속하지 않은 사이에 지난 시간을 정산한다(제한 시간 만료, 일일 리셋 등).
 	if (auto* broker = GetComponent<PlayerEventBroker>())
@@ -194,14 +191,7 @@ void Player::SavePlayerData()
 	// 각 컴포넌트에서 플레이어 데이터를 수집
 	auto save_data = std::make_shared<PlayerSaveData>();
 
-	ForEachComponent([&save_data](Component& component)
-	{
-		if (component.IsDirty())
-		{
-			component.Save(save_data.get());
-			component.ClearDirty();
-		}
-	});
+	Save(save_data.get());
 
 	// 변경된 데이터만 비동기로 전달
 	PlayerRepository::AsyncSave(shared_from_this(), save_data);

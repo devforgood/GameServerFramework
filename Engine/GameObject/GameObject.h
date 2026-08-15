@@ -48,6 +48,26 @@ public:
         }
     }
 
+    virtual void Load(std::any data)
+    {
+        for (auto& component : components_)
+        {
+            component->Load(data);
+        }
+    }
+
+    virtual void Save(std::any data)
+    {
+        for (auto& component : components_)
+        {
+            if (component->IsDirty())
+            {
+                component->Save(data);
+                component->ClearDirty();
+            }
+        }
+	}
+
 public:
     template<typename T>
     T* GetComponent() const

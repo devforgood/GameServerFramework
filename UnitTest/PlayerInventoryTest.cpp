@@ -14,6 +14,8 @@
 #include "EventMessage.h"
 #include "GameData/ResourceLoader.h"
 #include "SqlScript.h"
+#include "./generated/schema_columns.h"
+#include <set>
 
 // 인벤토리/보유 스킬/지갑의 게임 로직과 DB 왕복.
 // 실제 DB 없이 PlayerLoadData -> Load -> 로직 -> Save -> PlayerSaveData 흐름만 검증한다.
@@ -396,7 +398,39 @@ TEST(SqlScriptTest, GeneratedScriptSplitsIntoRunnableStatements)
 	{
 		EXPECT_EQ(statement.find(';'), std::string::npos)
 			<< "문장 안에 세미콜론이 남아 있습니다: " << statement;
-		EXPECT_TRUE(statement.rfind("CREATE", 0) == 0 || statement.rfind("ALTER", 0) == 0)
+		EXPECT_TRUE(statement.rfind("CREATE", 0) == 0)
 			<< "예상치 못한 문장: " << statement;
+
+		// CREATE TABLE IF NOT EXISTS 는 양쪽 서버에서 통하지만, ADD COLUMN IF NOT EXISTS 는
+		// MariaDB 전용이라 MySQL 서버에서는 문장 전체가 거부된다. 스크립트에 다시 들어오면
+		// 마이그레이션이 도는 척만 하게 된다.
+		EXPECT_EQ(statement.find("ADD COLUMN"), std::string::npos)
+			<< "컬럼 마이그레이션은 schema_columns.h 로 한다: " << statement;
 	}
+}
+
+// 기동 시 컬럼을 맞추려면 이 목록이 스키마의 모든 테이블/컬럼을 담고 있어야 한다.
+// (AUTO_INCREMENT 컬럼은 기존 테이블에 붙일 수 없어 제외된다.)
+TEST(SqlScriptTest, SchemaColumnListCoversGeneratedTables)
+{
+	ASSERT_GT(std::size(kSchemaColumns), 0u);
+
+	std::set<std::string> listed;
+	for (const SchemaColumn& col : kSchemaColumns)
+	{
+		ASSERT_NE(nullptr, col.table);
+		ASSERT_NE(nullptr, col.column);
+		ASSERT_NE(nullptr, col.definition);
+		EXPECT_STRNE("", col.definition) << col.table << "." << col.column;
+		listed.insert(std::string(col.table) + "." + col.column);
+	}
+
+	// stage 는 이번 퀘스트 작업에서 기존 테이블에 추가된 컬럼이다. 목록에서 빠지면
+	// 이미 만들어진 DB 는 영영 갱신되지 않는다.
+	EXPECT_TRUE(listed.count("quest_active.stage") > 0);
+	EXPECT_TRUE(listed.count("player_wallet.gold") > 0);
+	EXPECT_TRUE(listed.count("player_item.count") > 0);
+
+	// AUTO_INCREMENT 인 player.id 는 나중에 붙일 수 없으므로 목록에 없어야 한다.
+	EXPECT_TRUE(listed.count("player.id") == 0);
 }

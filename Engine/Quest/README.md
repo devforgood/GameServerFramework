@@ -142,13 +142,28 @@ QuestDefinition (데이터)          PlayerQuestState (플레이어별)
 
 ### 기존 DB 마이그레이션
 
-`stage` 컬럼이 새로 생겼지만 **손으로 할 일은 없다**. 생성되는 `create_tables.sql` 이
-`CREATE TABLE IF NOT EXISTS` 뒤에 컬럼마다 멱등한 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
-를 붙이고, 서버 기동 때 `SqlClientManager::create_tables` 가 이를 한 문장씩 실행한다.
+`stage` 컬럼이 새로 생겼지만 **손으로 할 일은 없다**. 서버 기동 때
+`SqlClientManager::create_tables` 가 두 단계를 밟는다.
 
-이전에는 `CREATE TABLE IF NOT EXISTS` 뿐이라 **이미 있는 테이블은 영영 갱신되지 않았다**.
-게다가 커넥션에 `allowMultiQueries` 가 없어 `;` 로 이어 붙인 스크립트를 통째로 넘기면
-드라이버가 거부한다 — 그래서 `sql_script::Split` 으로 잘라 하나씩 보낸다.
+1. `create_tables.sql` 의 `CREATE TABLE IF NOT EXISTS` 를 한 문장씩 실행한다. 커넥션에
+   `allowMultiQueries` 가 없어 `;` 로 이어 붙인 스크립트를 통째로 넘기면 드라이버가
+   거부하므로 `sql_script::Split` 으로 잘라 보낸다.
+2. `information_schema.COLUMNS` 를 읽어 실제 컬럼과 생성된 목록(`schema_columns.h`)을
+   대조하고, **빠진 컬럼만** `ALTER TABLE ... ADD COLUMN` 한다.
+
+`CREATE TABLE IF NOT EXISTS` 는 이미 있는 테이블에 아무것도 하지 않으므로 2단계가 없으면
+**기존 DB 는 영영 갱신되지 않는다**.
+
+2단계를 SQL 로만 하려던 시도(`ADD COLUMN IF NOT EXISTS` 를 컬럼마다 붙이기)는 실패했다.
+그 문법은 **MariaDB 전용**이라 MySQL 서버에서는 문장 전체가 문법 오류로 거부된다 —
+마이그레이션이 도는 것처럼 보이면서 실제로는 아무것도 하지 않고, 기동할 때마다 컬럼 수만큼
+에러 로그만 쌓였다. 지금 방식은 어느 서버에서든 같게 동작하고, 바꿀 것이 없으면 조용하다.
+
+**스키마 정비는 프로세스에 한 번만 돈다**(`std::call_once`). `SqlClientManager::init` 은 DB
+스레드마다 불리는데, 스키마까지 매번 돌리면 모두가 같은 시점에 "컬럼이 없다"고 판단하고
+같은 `ALTER` 를 동시에 던진다. 하나만 성공하고 나머지는 `Duplicate column name` 으로 실패해,
+스키마는 멀쩡한데 기동이 실패한 것처럼 보인다. 별도 서버 프로세스와의 경합까지 고려해
+`Duplicate column name`(1060)은 실패로 세지 않는다 — 원하는 상태는 이미 이뤄졌기 때문이다.
 
 컬럼이 없던 시절의 행은 `stage = 0` 으로 읽히는데, `PlayerQuest::Load` 가 1로 올린다.
 
