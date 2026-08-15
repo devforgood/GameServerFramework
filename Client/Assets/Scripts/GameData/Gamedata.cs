@@ -173,13 +173,39 @@ namespace Gamedata
     [Serializable]
     public class Npc
     {
+        public int dialog_id;
+        public int escort_dest_id;
+        public double follow_range;
+        public int hp;
         public int id;
         public double interact_range;
         public int map_id;
+        public double move_speed;
         public string name;
         public string name_id;
         public NpcPosition position;
+        public int respawn_seconds;
         public string type;
+    }
+
+
+    [Serializable]
+    public class DialogChoice
+    {
+        public string action;
+        public int next_id;
+        public int param;
+        public string text_id;
+    }
+
+
+    [Serializable]
+    public class Dialog
+    {
+        public System.Collections.Generic.List<DialogChoice> choices;
+        public int id;
+        public int npc_id;
+        public string text_id;
     }
 
 
@@ -512,6 +538,14 @@ namespace Gamedata
     public class NpcList
     {
         public List<Npc> items;
+    }
+
+
+    // Wrapper so UnityEngine.JsonUtility can parse the top-level JSON array.
+    [Serializable]
+    public class DialogList
+    {
+        public List<Dialog> items;
     }
 
 

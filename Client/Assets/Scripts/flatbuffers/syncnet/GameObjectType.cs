@@ -9,6 +9,7 @@ public enum GameObjectType : sbyte
 {
   Character = 0,
   Monster = 1,
+  Npc = 2,
 };
 
 

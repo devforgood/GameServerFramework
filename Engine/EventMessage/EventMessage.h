@@ -98,6 +98,21 @@ struct EventObjectInteracted
 	int object_id;
 };
 
+// 호위/보호 대상 NPC 가 죽었다. npc_id 는 npc.json 의 NPC id 다.
+// 그 NPC 를 호위/보호 중이던 퀘스트는 실패한다 — 되살아난 NPC 로 이어서 할 수 없다.
+struct EventNpcDead
+{
+	int player_id;
+	int npc_id;
+};
+
+// 호위 대상 NPC 가 목적지에 닿았다.
+struct EventNpcEscorted
+{
+	int player_id;
+	int npc_id;
+};
+
 using EventMessage = std::variant<
 	EventActorDead
 	, EventPlayerJoined
@@ -111,4 +126,6 @@ using EventMessage = std::variant<
 	, EventAreaEntered
 	, EventNpcInteracted
 	, EventObjectInteracted
+	, EventNpcDead
+	, EventNpcEscorted
 >;

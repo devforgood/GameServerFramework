@@ -16,6 +16,14 @@ enum class QuestObjectiveType
 	Talk,      // target_id = NPC (전용 테이블이 아직 없다)
 	Interact,  // target_id = Map.json 의 오브젝트
 	Level,     // target_id 를 쓰지 않고 count 가 도달 목표 레벨이다
+
+	// target_id = npc.json 의 NPC. 목적지는 그 NPC 의 escort_dest_id 가 정한다
+	// (목표에 또 적으면 둘이 어긋날 수 있고, NPC 는 어차피 목적지를 하나만 갖는다).
+	Escort,
+
+	// target_id = npc.json 의 NPC, count = 지켜야 하는 시간(초).
+	// 대상이 죽으면 진행도와 무관하게 퀘스트가 실패한다.
+	Protect,
 };
 
 // 진행도를 쌓는 방식. 대부분은 이벤트마다 더하지만, 레벨처럼 "현재 값"이
@@ -37,7 +45,16 @@ inline QuestObjectiveType ParseObjectiveType(std::string_view type)
 	if (type == "talk")      return QuestObjectiveType::Talk;
 	if (type == "interact")  return QuestObjectiveType::Interact;
 	if (type == "level")     return QuestObjectiveType::Level;
+	if (type == "escort")    return QuestObjectiveType::Escort;
+	if (type == "protect")   return QuestObjectiveType::Protect;
 	return QuestObjectiveType::None;
+}
+
+// 대상 NPC 가 죽으면 실패하는 목표인가. 지키던 대상이 죽었는데 되살아난 NPC 로 이어서
+// 하게 두면 "지켰다"는 말이 성립하지 않는다.
+inline bool ObjectiveFailsOnNpcDeath(QuestObjectiveType type)
+{
+	return type == QuestObjectiveType::Escort || type == QuestObjectiveType::Protect;
 }
 
 inline QuestProgressMode ProgressModeOf(QuestObjectiveType type)

@@ -178,7 +178,7 @@ void GridManager::enterCell(IGridActor* actor, int x, int y) {
     if (x < 0 || x >= grid_->getWidth() || y < 0 || y >= grid_->getHeight()) return;
 
     auto& cell = grid_->get(x, y);
-    auto& bucket = actor->IsCharacter() ? cell.characters : cell.monsters;
+    auto& bucket = actor->IsMonsterTarget() ? cell.characters : cell.monsters;
     actor->SetGridSlot(static_cast<int>(bucket.size()));
     bucket.push_back(actor);
 }
@@ -188,7 +188,7 @@ void GridManager::leaveCell(IGridActor* actor, int x, int y) {
     if (x < 0 || x >= grid_->getWidth() || y < 0 || y >= grid_->getHeight()) return;
 
     auto& cell = grid_->get(x, y);
-    auto& bucket = actor->IsCharacter() ? cell.characters : cell.monsters;
+    auto& bucket = actor->IsMonsterTarget() ? cell.characters : cell.monsters;
 
     const int slot = actor->GetGridSlot();
     if (slot < 0 || slot >= static_cast<int>(bucket.size()) || bucket[slot] != actor)
@@ -207,7 +207,7 @@ void GridManager::add(IGridActor* actor) {
     actor->SetGridY(cy);
     enterCell(actor, cx, cy);
 
-    if (actor->IsCharacter())
+    if (actor->IsMonsterTarget())
         characters_.push_back(actor);
 }
 
@@ -224,7 +224,7 @@ void GridManager::move(IGridActor* actor, float newX, float newY) {
 void GridManager::remove(IGridActor* actor) {
     leaveCell(actor, actor->GetGridX(), actor->GetGridY());
 
-    if (actor->IsCharacter()) {
+    if (actor->IsMonsterTarget()) {
         for (size_t i = 0; i < characters_.size(); ++i) {
             if (characters_[i] == actor) {
                 characters_[i] = characters_.back();

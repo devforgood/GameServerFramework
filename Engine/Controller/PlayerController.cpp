@@ -16,6 +16,7 @@
 #include "PlayerEventBroker.h"
 #include "PlayerQuest.h"
 #include "PlayerParty.h"
+#include "PlayerDialog.h"
 #include "BTDebugManager.h"
 
 namespace
@@ -107,6 +108,7 @@ void PlayerController::handle(const syncnet::GameMessage* msg)
 	case syncnet::GameMessages::GameMessages_PartyLeaderChange:	handle(msg->msg_as_PartyLeaderChange()); break;
 	case syncnet::GameMessages::GameMessages_PartyQuestShare:	handle(msg->msg_as_PartyQuestShare()); break;
 	case syncnet::GameMessages::GameMessages_PartyQuestShareReply: handle(msg->msg_as_PartyQuestShareReply()); break;
+	case syncnet::GameMessages::GameMessages_DialogSelect:		handle(msg->msg_as_DialogSelect()); break;
 	}
 }
 
@@ -480,6 +482,9 @@ void PlayerController::handle(const syncnet::Interact* msg)
 {
 	auto status = syncnet::StatusCode::StatusCode_Success;
 
+	// 대화가 열렸으면 상호작용 응답 뒤에 보낼 첫 노드.
+	const gamedata::Dialog* openedDialog = nullptr;
+
 	if (!player_ || !player_->GetCharacter())
 	{
 		LOG.error("Interact error: player or character is null");
@@ -550,13 +555,28 @@ void PlayerController::handle(const syncnet::Interact* msg)
 					player_->GetPlayerId(), targetId, std::sqrt(distSq), range);
 				status = syncnet::StatusCode::StatusCode_Failed;
 			}
-			else if (auto* broker = player_->GetComponent<PlayerEventBroker>())
+			else
 			{
-				const int playerId = static_cast<int>(player_->GetPlayerId());
+				if (auto* broker = player_->GetComponent<PlayerEventBroker>())
+				{
+					const int playerId = static_cast<int>(player_->GetPlayerId());
+					if (isNpc)
+						broker->publish(EventNpcInteracted{ playerId, targetId });
+					else
+						broker->publish(EventObjectInteracted{ playerId, targetId });
+				}
+
+				// 대화가 걸린 NPC 면 첫 노드를 이어서 내려보낸다. 대화를 여는 메시지를 따로
+				// 두지 않는 이유는 NPC 를 누르는 동작 하나로 족하기 때문이다. 대화 목표(talk)와
+				// 완료 접수는 위 이벤트가 이미 처리했다 — 대화는 그 위에 얹히는 표현이다.
 				if (isNpc)
-					broker->publish(EventNpcInteracted{ playerId, targetId });
-				else
-					broker->publish(EventObjectInteracted{ playerId, targetId });
+				{
+					if (auto* dialog = player_->GetComponent<PlayerDialog>())
+					{
+						if (dialog->Open(targetId))
+							openedDialog = dialog->GetCurrentNode();
+					}
+				}
 			}
 		}
 	}
@@ -568,6 +588,12 @@ void PlayerController::handle(const syncnet::Interact* msg)
 		, status
 		, msg->targetId()
 	);
+
+	// 상호작용 응답 뒤에 보낸다. 클라가 먼저 상호작용 성공을 확인하고 대화 창을 연다.
+	if (openedDialog != nullptr)
+	{
+		SendDialogNode(openedDialog, msg->targetId(), syncnet::StatusCode::StatusCode_Success);
+	}
 }
 
 void PlayerController::handle(const syncnet::QuestAccept* msg)
@@ -794,4 +820,88 @@ void PlayerController::handle(const syncnet::PartyQuestShareReply* msg)
 		, msg->questId()
 		, msg->accept()
 	);
+}
+void PlayerController::SendDialogNode(const gamedata::Dialog* node, int npc_id, syncnet::StatusCode status)
+{
+	auto builder_ptr = std::make_shared<send_message>();
+
+	std::vector<flatbuffers::Offset<syncnet::DialogChoiceInfo>> choices;
+	flatbuffers::Offset<flatbuffers::String> text_offset = 0;
+
+	if (node != nullptr)
+	{
+		text_offset = builder_ptr->CreateString(node->text_id);
+		choices.reserve(node->choices.size());
+		for (const auto& choice : node->choices)
+		{
+			choices.push_back(syncnet::CreateDialogChoiceInfo(
+				*builder_ptr,
+				builder_ptr->CreateString(choice.text_id),
+				builder_ptr->CreateString(choice.action)));
+		}
+	}
+
+	// node 가 없으면 nodeId 0 짜리 빈 노드를 보낸다 — 클라는 이것으로 창을 닫는다.
+	auto payload = syncnet::CreateDialogNode(
+		*builder_ptr,
+		node != nullptr ? node->id : 0,
+		node != nullptr ? npc_id : 0,
+		text_offset,
+		builder_ptr->CreateVector(choices));
+
+	auto send_msg = syncnet::CreateGameMessage(
+		*builder_ptr,
+		syncnet::GameMessages::GameMessages_DialogNode,
+		payload.Union(),
+		lastMessageId_,
+		status);
+	builder_ptr->Finish(send_msg);
+
+	player_->Send(builder_ptr);
+}
+
+void PlayerController::handle(const syncnet::DialogSelect* msg)
+{
+	auto* dialog = player_ != nullptr ? player_->GetComponent<PlayerDialog>() : nullptr;
+	if (dialog == nullptr)
+	{
+		LOG.error("DialogSelect error: PlayerDialog component missing");
+		return;
+	}
+
+	// 음수 인덱스는 "창을 닫았다"는 뜻이다. 별도 메시지를 두지 않는 이유는, 닫기가
+	// 선택지 중 하나(close)로도 일어나서 클라가 두 경로를 구분할 이유가 없기 때문이다.
+	if (msg->choiceIndex() < 0)
+	{
+		dialog->Close();
+		SendDialogNode(nullptr, 0, syncnet::StatusCode::StatusCode_Success);
+		return;
+	}
+
+	const gamedata::Dialog* next = nullptr;
+	const DialogResult result = dialog->Select(msg->nodeId(), msg->choiceIndex(), &next);
+
+	LOG.info("DialogSelect nodeId:{} choice:{} result:{}",
+		msg->nodeId(), msg->choiceIndex(), static_cast<int>(result));
+
+	switch (result)
+	{
+	case DialogResult::Ok:
+		SendDialogNode(next, dialog->GetNpcId(), syncnet::StatusCode::StatusCode_Success);
+		break;
+
+	case DialogResult::Closed:
+		SendDialogNode(nullptr, 0, syncnet::StatusCode::StatusCode_Success);
+		break;
+
+	case DialogResult::ActionFailed:
+		// 대화는 그 자리에 남는다. 왜 안 됐는지 보여줄 화면을 유지해야 하기 때문이다.
+		SendDialogNode(dialog->GetCurrentNode(), dialog->GetNpcId(),
+			syncnet::StatusCode::StatusCode_Failed);
+		break;
+
+	default:
+		SendDialogNode(nullptr, 0, syncnet::StatusCode::StatusCode_Failed);
+		break;
+	}
 }

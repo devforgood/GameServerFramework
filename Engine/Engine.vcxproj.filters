@@ -159,6 +159,9 @@
     <ClCompile Include="Actor\Monster.cpp">
       <Filter>Actor</Filter>
     </ClCompile>
+    <ClCompile Include="Actor\NonPlayerCharacter.cpp">
+      <Filter>Actor</Filter>
+    </ClCompile>
     <ClCompile Include="AI\MonsterBT.cpp">
       <Filter>AI</Filter>
     </ClCompile>
@@ -447,6 +450,9 @@
       <Filter>Message</Filter>
     </ClInclude>
     <ClInclude Include="Actor\Monster.h">
+      <Filter>Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor\NonPlayerCharacter.h">
       <Filter>Actor</Filter>
     </ClInclude>
     <ClInclude Include="AI\MonsterBT.h">

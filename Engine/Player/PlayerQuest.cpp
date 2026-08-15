@@ -11,6 +11,7 @@
 #include "QuestRegistry.h"
 #include "QuestPolicy.h"
 #include "GameData/gamedata.h"
+#include "LogHelper.h"
 #include "SendMessage.h"
 #include "syncnet_generated.h"
 #include <algorithm>
@@ -36,19 +37,25 @@ void PlayerQuest::Start()
 	eventBroker->subscribe<PlayerQuest, EventAreaEntered, &PlayerQuest::OnEventAreaEntered>(this);
 	eventBroker->subscribe<PlayerQuest, EventNpcInteracted, &PlayerQuest::OnEventNpcInteracted>(this);
 	eventBroker->subscribe<PlayerQuest, EventObjectInteracted, &PlayerQuest::OnEventObjectInteracted>(this);
+	eventBroker->subscribe<PlayerQuest, EventNpcDead, &PlayerQuest::OnEventNpcDead>(this);
+	eventBroker->subscribe<PlayerQuest, EventNpcEscorted, &PlayerQuest::OnEventNpcEscorted>(this);
 	eventBroker->subscribe<PlayerQuest, EventPlayerJoined, &PlayerQuest::OnEventPlayerJoined>(this);
 }
 
 void PlayerQuest::Update(float dt)
 {
-	// 제한 시간 검사는 진행 중인 퀘스트가 있을 때만, 그것도 1초에 한 번만 한다.
+	// 제한 시간 검사와 보호 목표의 시간 누적은 진행 중인 퀘스트가 있을 때만,
+	// 그것도 1초에 한 번만 한다(보호 목표의 진행도 단위가 초다).
 	if (activeQuests_.Size() > 0)
 	{
 		expireCheckAcc_ += dt;
 		if (expireCheckAcc_ >= kExpireCheckInterval)
 		{
-			expireCheckAcc_ = 0.0f;
+			const int elapsed = static_cast<int>(expireCheckAcc_ / kExpireCheckInterval);
+			expireCheckAcc_ -= elapsed * kExpireCheckInterval;
+
 			expireTimedOutQuests();
+			tickProtectObjectives(elapsed);
 		}
 	}
 
@@ -165,6 +172,49 @@ void PlayerQuest::OnEventNpcInteracted(const EventNpcInteracted& message)
 void PlayerQuest::OnEventObjectInteracted(const EventObjectInteracted& message)
 {
 	ReportProgress(QuestObjectiveType::Interact, message.object_id, 1);
+}
+
+void PlayerQuest::OnEventNpcDead(const EventNpcDead& message)
+{
+	// 지키던 대상이 죽으면 그 목표가 걸린 퀘스트는 실패한다. 리스폰한 NPC 로 이어서
+	// 하게 두면 "지켰다"가 아무 의미도 갖지 않는다.
+	std::vector<int> quest_ids;
+	activeQuests_.CollectKeys(quest_ids);
+
+	for (int quest_id : quest_ids)
+	{
+		const QuestActiveVO* vo = activeQuests_.Find(quest_id);
+		if (vo == nullptr)
+			continue;
+
+		const QuestState state = static_cast<QuestState>(vo->state);
+		if (state != QuestState::InProgress)
+			continue;
+
+		const Quest* quest = QuestRegistry::Instance().Get(quest_id);
+		if (quest == nullptr)
+			continue;
+
+		const gamedata::QuestStage* stage = quest->GetStage(vo->stage);
+		if (stage == nullptr)
+			continue;
+
+		for (const auto& objective : stage->objectives)
+		{
+			const QuestObjectiveType type = ParseObjectiveType(objective.type);
+			if (!ObjectiveFailsOnNpcDeath(type) || objective.target_id != message.npc_id)
+				continue;
+
+			if (failQuest(quest_id))
+				LOG.info("퀘스트 {} 실패: 대상 NPC {} 사망", quest_id, message.npc_id);
+			break;
+		}
+	}
+}
+
+void PlayerQuest::OnEventNpcEscorted(const EventNpcEscorted& message)
+{
+	ReportProgress(QuestObjectiveType::Escort, message.npc_id, 1);
 }
 
 void PlayerQuest::OnEventPlayerJoined(const EventPlayerJoined& message)
@@ -616,11 +666,62 @@ void PlayerQuest::expireTimedOutQuests()
 		if (vo == nullptr)
 			continue;
 
-		vo->state = static_cast<int>(QuestState::Failed);
-		markDirty();
-		markSync(quest_id);
-		publish(EventQuestFailed{ characterId_, quest_id });
+		failQuest(quest_id);
 	}
+}
+
+bool PlayerQuest::failQuest(int quest_id)
+{
+	QuestActiveVO* vo = activeQuests_.Modify(quest_id);
+	if (vo == nullptr)
+		return false;
+
+	const QuestState state = static_cast<QuestState>(vo->state);
+	if (state != QuestState::InProgress && state != QuestState::ReadyToComplete)
+		return false;
+
+	vo->state = static_cast<int>(QuestState::Failed);
+	markDirty();
+	markSync(quest_id);
+	publish(EventQuestFailed{ characterId_, quest_id });
+	return true;
+}
+
+void PlayerQuest::tickProtectObjectives(int seconds)
+{
+	if (seconds <= 0 || activeQuests_.Size() == 0)
+		return;
+
+	// 목표가 걸린 NPC 마다 한 번씩만 보고한다. 같은 NPC 를 여러 퀘스트에서 지키고 있어도
+	// 흐른 시간은 하나다.
+	std::vector<int> npc_ids;
+
+	std::vector<int> quest_ids;
+	activeQuests_.CollectKeys(quest_ids);
+	for (int quest_id : quest_ids)
+	{
+		const QuestActiveVO* vo = activeQuests_.Find(quest_id);
+		if (vo == nullptr || static_cast<QuestState>(vo->state) != QuestState::InProgress)
+			continue;
+
+		const Quest* quest = QuestRegistry::Instance().Get(quest_id);
+		if (quest == nullptr)
+			continue;
+
+		const gamedata::QuestStage* stage = quest->GetStage(vo->stage);
+		if (stage == nullptr)
+			continue;
+
+		for (const auto& objective : stage->objectives)
+		{
+			if (ParseObjectiveType(objective.type) != QuestObjectiveType::Protect)
+				continue;
+			pushUnique(npc_ids, objective.target_id);
+		}
+	}
+
+	for (int npc_id : npc_ids)
+		ReportProgress(QuestObjectiveType::Protect, npc_id, seconds);
 }
 
 void PlayerQuest::clearFinishedCooldowns()

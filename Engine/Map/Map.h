@@ -140,6 +140,11 @@ public:
 	// (벤치마크/테스트는 World::Init 만 호출하므로 몬스터가 자동 스폰되지 않는다).
 	int SpawnMonstersFromData();
 
+	// npc.json 에서 이 맵에 속하고 hp 가 있는 NPC 를 액터로 스폰한다.
+	// hp 가 없는 NPC(퀘스트를 주는 마을 사람 등)는 데이터로만 존재하며 여기 오지 않는다.
+	// 서버 기동 시 SpawnMapMonsters 와 함께 1회 호출한다.
+	int SpawnNpcsFromData();
+
 	// 게이트의 target_id(전역 유일 마커 id)가 가리키는 도착 지점을 푼다.
 	// 마커는 게이트일 수도 스폰 지점일 수도 있다 — 둘 다 parent 로 소속 맵을 알 수 있어서
 	// 목적지 맵 id 를 따로 들고 다닐 필요가 없다.

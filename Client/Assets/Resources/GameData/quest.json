@@ -353,6 +353,72 @@
     }
   },
   {
+    "id": 1006,
+    "code_name": "SubQuest",
+    "category": "escort",
+    "name_id": "quest_escort_merchant_name",
+    "desc_id": "quest_escort_merchant_desc",
+    "level": 2,
+    "min_level": 2,
+    "max_level": 0,
+    "priority": 60,
+    "map_id": 1,
+    "start_npc_id": 2001,
+    "end_npc_id": 2001,
+    "shareable": true,
+    "recommended_party_size": 2,
+    "auto_complete": false,
+    "chain_id": 0,
+    "chain_step": 0,
+    "prerequisites": {
+      "completed_quest_ids": [],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_escort_merchant_stage1_desc",
+        "objectives": [
+          {
+            "type": "protect",
+            "target_id": 2003,
+            "count": 20,
+            "desc_id": "quest_escort_merchant_obj_protect"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_escort_merchant_stage2_desc",
+        "objectives": [
+          {
+            "type": "escort",
+            "target_id": 2003,
+            "count": 1,
+            "desc_id": "quest_escort_merchant_obj_escort"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 300,
+      "gold": 150,
+      "items": [],
+      "choice_items": [],
+      "skill_ids": []
+    }
+  },
+  {
     "id": 2001,
     "code_name": "RepeatedQuest",
     "category": "kill",

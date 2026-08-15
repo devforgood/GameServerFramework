@@ -15,6 +15,7 @@
 #include "PlayerLevel.h"
 #include "PlayerWallet.h"
 #include "PlayerParty.h"
+#include "PlayerDialog.h"
 #include "PlayerSender.h"
 #include "Map.h"
 #include "PlayerSaveData.h"
@@ -42,6 +43,10 @@ Player::Player()
 	// 플레이어를 찾을 수 있도록 여기서 바로 등록한다 — 로그인/로드를 기다리면 그 사이에
 	// 온 초대가 갈 곳을 잃는다.
 	this->AddComponent<PlayerParty>()->Bind(playerId_);
+
+	// 대화는 순수하게 플레이어 상태다(지금 어느 노드를 보고 있는가). 캐릭터가 없어도
+	// 붙어 있어야 로그인 직후 상호작용이 바로 통한다.
+	this->AddComponent<PlayerDialog>();
 
 	// 컴포넌트가 클라로 메시지를 내보내는 통로. 넘기는 것은 "보낸다"는 동작 하나뿐이라
 	// 컴포넌트가 이걸 통해 Player 의 다른 기능에 손댈 수 없다. 이 컴포넌트는 Player 가

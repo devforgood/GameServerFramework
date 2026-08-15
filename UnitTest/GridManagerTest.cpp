@@ -22,6 +22,10 @@ public:
 
     // IGridActor 인터페이스 구현
     virtual bool IsCharacter() const override { return isCharacterType; }
+
+    // 이 목에서는 둘을 구분할 이유가 없다. 실제로 갈리는 것은 호위 NPC 뿐이고
+    // (캐릭터는 아니지만 몬스터의 표적), 그 동작은 NonPlayerCharacter 가 검증한다.
+    virtual bool IsMonsterTarget() const override { return isCharacterType; }
     virtual void SetGridX(int gx) override { gridX = gx; }
     virtual void SetGridY(int gy) override { gridY = gy; }
     virtual int GetGridX() const override { return gridX; }
@@ -513,6 +517,7 @@ TEST_F(GridManagerTest, AoEMaskVariousDirections) {
 }
 
 // 메인 함수 (gtest 실행용)
+// "net" 로거 등록은 TestLogger.cpp 가 정적 초기화로 처리한다(어느 main 이 링크되든 무관하게).
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

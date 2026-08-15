@@ -44,6 +44,8 @@ public:
 	void OnEventAreaEntered(const EventAreaEntered& message);
 	void OnEventNpcInteracted(const EventNpcInteracted& message);
 	void OnEventObjectInteracted(const EventObjectInteracted& message);
+	void OnEventNpcDead(const EventNpcDead& message);
+	void OnEventNpcEscorted(const EventNpcEscorted& message);
 	void OnEventPlayerJoined(const EventPlayerJoined& message);
 
 	// ---- 퀘스트 조작
@@ -133,6 +135,13 @@ private:
 
 	// 제한 시간이 지난 퀘스트를 Failed 로 돌린다.
 	void expireTimedOutQuests();
+
+	// 지키는 중인 목표(protect)에 흐른 시간을 진행도로 넣는다.
+	void tickProtectObjectives(int seconds);
+
+	// 퀘스트를 실패 상태로 만든다(사유는 호출 측 로그에 남긴다).
+	// 이미 실패했거나 진행 중이 아니면 아무것도 하지 않는다.
+	bool failQuest(int quest_id);
 
 	// 쿨타임 대기 중인 행 가운데 리셋 경계를 지난 것을 정리한다.
 	void clearFinishedCooldowns();

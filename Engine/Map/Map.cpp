@@ -4,6 +4,7 @@
 #include "Server.h"
 #include "Monster.h"
 #include "Character.h"
+#include "NonPlayerCharacter.h"
 #include "Vector3.h"
 #include "LogHelper.h"
 #include "DetourCommon.h"
@@ -625,6 +626,51 @@ int Map::SpawnMonstersFromData()
 
 	if (spawned > 0)
 		LOG.info("Map {} 몬스터 {}마리 스폰(monster_spawn 마커 기준)", GetMapId(), spawned);
+	return spawned;
+}
+
+int Map::SpawnNpcsFromData()
+{
+	int spawned = 0;
+	for (const auto& [npcId, npc] : ResourceLoader::Instance().GetNpcs())
+	{
+		if (npc == nullptr || npc->map_id != GetMapId())
+			continue;
+
+		// 맞을 수 있어야 액터다. hp 가 없는 NPC 는 클라가 씬에 배치한 정적 데이터일 뿐이고,
+		// 서버는 Interact 의 거리 판정에만 쓴다.
+		if (npc->hp <= 0)
+			continue;
+
+		// 위치는 npc.json(클라 좌표계) 기준. 몬스터 스폰과 같은 변환을 탄다.
+		const syncnet::Vec3 clientPos(
+			static_cast<float>(npc->position.x),
+			static_cast<float>(npc->position.y),
+			static_cast<float>(npc->position.z));
+		Vector3 pos(&clientPos);
+
+		auto actor = std::make_shared<NonPlayerCharacter>(this);
+
+		// 데이터를 먼저 새긴다 — Init 이 move_speed 를 읽고, 목적지도 여기서 풀린다.
+		actor->SetData(npc);
+
+		if (!actor->Init(pos))
+		{
+			LOG.error("Map {} NPC {} 스폰 실패(위치 {}, {}, {})",
+				GetMapId(), npc->id, npc->position.x, npc->position.y, npc->position.z);
+			continue;
+		}
+
+		gridManager_->add(actor.get());
+
+		auto itr = actorList_.insert(actorList_.end(), actor);
+		actorMap_.insert(std::make_pair(actor->GetActorId(), itr));
+		actor->SetChangedFlag(static_cast<long>(GameObjectChangeType::All));
+		++spawned;
+	}
+
+	if (spawned > 0)
+		LOG.info("Map {} NPC {}명 스폰(npc.json 기준)", GetMapId(), spawned);
 	return spawned;
 }
 

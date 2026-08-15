@@ -31,6 +31,14 @@
       "enabled": true
     },
     {
+      "name": "Dialog",
+      "json_path": "dialog.json",
+      "repeated_field": "dialogs",
+      "output_file": "dialog.json",
+      "description": "NPC dialog nodes and choices. Npc.dialog_id points at the root node of that NPC",
+      "enabled": true
+    },
+    {
       "name": "GameMode",
       "json_path": "GameMode.json",
       "repeated_field": "game_modes",

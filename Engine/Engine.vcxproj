@@ -78,7 +78,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -96,7 +96,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -114,7 +114,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4251;4267;4819</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -134,7 +134,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4251;4267;4819</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -182,6 +182,7 @@
     <ClCompile Include="Map\ZoneGraph.cpp" />
     <ClCompile Include="Item\ItemFactory.cpp" />
     <ClCompile Include="Actor\Monster.cpp" />
+    <ClCompile Include="Actor\NonPlayerCharacter.cpp" />
     <ClCompile Include="AI\MonsterBT.cpp" />
     <ClCompile Include="AI\MonsterCodeBaseBT.cpp" />
     <ClCompile Include="World\NavMesh.cpp" />
@@ -195,6 +196,9 @@
     <ClCompile Include="Controller\PlayerController.cpp" />
     <ClCompile Include="Player\PlayerRepository.cpp" />
     <ClCompile Include="Player\PlayerItem.cpp" />
+    <ClCompile Include="Dialog\Dialog.cpp" />
+    <ClCompile Include="Dialog\DialogFactory.cpp" />
+    <ClCompile Include="Player\PlayerDialog.cpp" />
     <ClCompile Include="Player\PlayerParty.cpp" />
     <ClCompile Include="Player\PlayerQuest.cpp" />
     <ClCompile Include="Party\PartyManager.cpp" />
@@ -292,6 +296,7 @@
     <ClInclude Include="System\MathHelper.h" />
     <ClInclude Include="Message\GameMessage.h" />
     <ClInclude Include="Actor\Monster.h" />
+    <ClInclude Include="Actor\NonPlayerCharacter.h" />
     <ClInclude Include="AI\MonsterBT.h" />
     <ClInclude Include="AI\MonsterCodeBaseBT.h" />
     <ClInclude Include="World\NavMesh.h" />
@@ -307,6 +312,10 @@
     <ClInclude Include="Player\PlayerRepository.h" />
     <ClInclude Include="Player\PlayerItem.h" />
     <ClInclude Include="Player\PlayerLoadData.h" />
+    <ClInclude Include="Dialog\Dialog.h" />
+    <ClInclude Include="Dialog\DialogFactory.h" />
+    <ClInclude Include="Dialog\DialogAction.h" />
+    <ClInclude Include="Player\PlayerDialog.h" />
     <ClInclude Include="Player\PlayerParty.h" />
     <ClInclude Include="Player\PlayerSender.h" />
     <ClInclude Include="Player\PlayerQuest.h" />

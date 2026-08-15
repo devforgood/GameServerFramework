@@ -273,7 +273,13 @@ ZoneGraph::WalkCostFn World::MakeWalkCostFn()
 void World::SpawnMapMonsters()
 {
 	for (auto& map : mapList_)
+	{
 		map->SpawnMonstersFromData();
+
+		// 호위 대상처럼 월드에 실재하는 NPC 도 이때 함께 세운다. 몬스터와 마찬가지로
+		// Init 과 분리해, 벤치마크/테스트 환경에서는 자동으로 생기지 않게 한다.
+		map->SpawnNpcsFromData();
+	}
 }
 
 Map* World::CreateInstance(int mapId)

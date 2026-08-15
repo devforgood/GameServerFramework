@@ -113,6 +113,15 @@ struct PartyQuestShareBuilder;
 struct PartyQuestShareReply;
 struct PartyQuestShareReplyBuilder;
 
+struct DialogChoiceInfo;
+struct DialogChoiceInfoBuilder;
+
+struct DialogNode;
+struct DialogNodeBuilder;
+
+struct DialogSelect;
+struct DialogSelectBuilder;
+
 enum GameMessages {
   GameMessages_NONE = 0,
   GameMessages_AddAgent = 1,
@@ -140,11 +149,13 @@ enum GameMessages {
   GameMessages_PartySync = 23,
   GameMessages_PartyQuestShare = 24,
   GameMessages_PartyQuestShareReply = 25,
+  GameMessages_DialogNode = 26,
+  GameMessages_DialogSelect = 27,
   GameMessages_MIN = GameMessages_NONE,
-  GameMessages_MAX = GameMessages_PartyQuestShareReply
+  GameMessages_MAX = GameMessages_DialogSelect
 };
 
-inline const GameMessages (&EnumValuesGameMessages())[26] {
+inline const GameMessages (&EnumValuesGameMessages())[28] {
   static const GameMessages values[] = {
     GameMessages_NONE,
     GameMessages_AddAgent,
@@ -171,13 +182,15 @@ inline const GameMessages (&EnumValuesGameMessages())[26] {
     GameMessages_PartyLeaderChange,
     GameMessages_PartySync,
     GameMessages_PartyQuestShare,
-    GameMessages_PartyQuestShareReply
+    GameMessages_PartyQuestShareReply,
+    GameMessages_DialogNode,
+    GameMessages_DialogSelect
   };
   return values;
 }
 
 inline const char * const *EnumNamesGameMessages() {
-  static const char * const names[27] = {
+  static const char * const names[29] = {
     "NONE",
     "AddAgent",
     "RemoveAgent",
@@ -204,13 +217,15 @@ inline const char * const *EnumNamesGameMessages() {
     "PartySync",
     "PartyQuestShare",
     "PartyQuestShareReply",
+    "DialogNode",
+    "DialogSelect",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameGameMessages(GameMessages e) {
-  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_PartyQuestShareReply)) return "";
+  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_DialogSelect)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesGameMessages()[index];
 }
@@ -319,6 +334,14 @@ template<> struct GameMessagesTraits<syncnet::PartyQuestShareReply> {
   static const GameMessages enum_value = GameMessages_PartyQuestShareReply;
 };
 
+template<> struct GameMessagesTraits<syncnet::DialogNode> {
+  static const GameMessages enum_value = GameMessages_DialogNode;
+};
+
+template<> struct GameMessagesTraits<syncnet::DialogSelect> {
+  static const GameMessages enum_value = GameMessages_DialogSelect;
+};
+
 bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type);
 bool VerifyGameMessagesVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
 
@@ -361,29 +384,32 @@ inline const char *EnumNameStatusCode(StatusCode e) {
 enum GameObjectType {
   GameObjectType_Character = 0,
   GameObjectType_Monster = 1,
+  GameObjectType_Npc = 2,
   GameObjectType_MIN = GameObjectType_Character,
-  GameObjectType_MAX = GameObjectType_Monster
+  GameObjectType_MAX = GameObjectType_Npc
 };
 
-inline const GameObjectType (&EnumValuesGameObjectType())[2] {
+inline const GameObjectType (&EnumValuesGameObjectType())[3] {
   static const GameObjectType values[] = {
     GameObjectType_Character,
-    GameObjectType_Monster
+    GameObjectType_Monster,
+    GameObjectType_Npc
   };
   return values;
 }
 
 inline const char * const *EnumNamesGameObjectType() {
-  static const char * const names[3] = {
+  static const char * const names[4] = {
     "Character",
     "Monster",
+    "Npc",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameGameObjectType(GameObjectType e) {
-  if (flatbuffers::IsOutRange(e, GameObjectType_Character, GameObjectType_Monster)) return "";
+  if (flatbuffers::IsOutRange(e, GameObjectType_Character, GameObjectType_Npc)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesGameObjectType()[index];
 }
@@ -653,6 +679,12 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::PartyQuestShareReply *msg_as_PartyQuestShareReply() const {
     return msg_type() == syncnet::GameMessages_PartyQuestShareReply ? static_cast<const syncnet::PartyQuestShareReply *>(msg()) : nullptr;
   }
+  const syncnet::DialogNode *msg_as_DialogNode() const {
+    return msg_type() == syncnet::GameMessages_DialogNode ? static_cast<const syncnet::DialogNode *>(msg()) : nullptr;
+  }
+  const syncnet::DialogSelect *msg_as_DialogSelect() const {
+    return msg_type() == syncnet::GameMessages_DialogSelect ? static_cast<const syncnet::DialogSelect *>(msg()) : nullptr;
+  }
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
@@ -768,6 +800,14 @@ template<> inline const syncnet::PartyQuestShare *GameMessage::msg_as<syncnet::P
 
 template<> inline const syncnet::PartyQuestShareReply *GameMessage::msg_as<syncnet::PartyQuestShareReply>() const {
   return msg_as_PartyQuestShareReply();
+}
+
+template<> inline const syncnet::DialogNode *GameMessage::msg_as<syncnet::DialogNode>() const {
+  return msg_as_DialogNode();
+}
+
+template<> inline const syncnet::DialogSelect *GameMessage::msg_as<syncnet::DialogSelect>() const {
+  return msg_as_DialogSelect();
 }
 
 struct GameMessageBuilder {
@@ -3030,6 +3070,215 @@ inline flatbuffers::Offset<PartyQuestShareReply> CreatePartyQuestShareReply(
   return builder_.Finish();
 }
 
+struct DialogChoiceInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef DialogChoiceInfoBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_TEXTID = 4,
+    VT_ACTION = 6
+  };
+  const flatbuffers::String *textId() const {
+    return GetPointer<const flatbuffers::String *>(VT_TEXTID);
+  }
+  const flatbuffers::String *action() const {
+    return GetPointer<const flatbuffers::String *>(VT_ACTION);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_TEXTID) &&
+           verifier.VerifyString(textId()) &&
+           VerifyOffset(verifier, VT_ACTION) &&
+           verifier.VerifyString(action()) &&
+           verifier.EndTable();
+  }
+};
+
+struct DialogChoiceInfoBuilder {
+  typedef DialogChoiceInfo Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_textId(flatbuffers::Offset<flatbuffers::String> textId) {
+    fbb_.AddOffset(DialogChoiceInfo::VT_TEXTID, textId);
+  }
+  void add_action(flatbuffers::Offset<flatbuffers::String> action) {
+    fbb_.AddOffset(DialogChoiceInfo::VT_ACTION, action);
+  }
+  explicit DialogChoiceInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  DialogChoiceInfoBuilder &operator=(const DialogChoiceInfoBuilder &);
+  flatbuffers::Offset<DialogChoiceInfo> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<DialogChoiceInfo>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<DialogChoiceInfo> CreateDialogChoiceInfo(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> textId = 0,
+    flatbuffers::Offset<flatbuffers::String> action = 0) {
+  DialogChoiceInfoBuilder builder_(_fbb);
+  builder_.add_action(action);
+  builder_.add_textId(textId);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<DialogChoiceInfo> CreateDialogChoiceInfoDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *textId = nullptr,
+    const char *action = nullptr) {
+  auto textId__ = textId ? _fbb.CreateString(textId) : 0;
+  auto action__ = action ? _fbb.CreateString(action) : 0;
+  return syncnet::CreateDialogChoiceInfo(
+      _fbb,
+      textId__,
+      action__);
+}
+
+struct DialogNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef DialogNodeBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_NODEID = 4,
+    VT_NPCID = 6,
+    VT_TEXTID = 8,
+    VT_CHOICES = 10
+  };
+  int32_t nodeId() const {
+    return GetField<int32_t>(VT_NODEID, 0);
+  }
+  int32_t npcId() const {
+    return GetField<int32_t>(VT_NPCID, 0);
+  }
+  const flatbuffers::String *textId() const {
+    return GetPointer<const flatbuffers::String *>(VT_TEXTID);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<syncnet::DialogChoiceInfo>> *choices() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::DialogChoiceInfo>> *>(VT_CHOICES);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_NODEID) &&
+           VerifyField<int32_t>(verifier, VT_NPCID) &&
+           VerifyOffset(verifier, VT_TEXTID) &&
+           verifier.VerifyString(textId()) &&
+           VerifyOffset(verifier, VT_CHOICES) &&
+           verifier.VerifyVector(choices()) &&
+           verifier.VerifyVectorOfTables(choices()) &&
+           verifier.EndTable();
+  }
+};
+
+struct DialogNodeBuilder {
+  typedef DialogNode Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_nodeId(int32_t nodeId) {
+    fbb_.AddElement<int32_t>(DialogNode::VT_NODEID, nodeId, 0);
+  }
+  void add_npcId(int32_t npcId) {
+    fbb_.AddElement<int32_t>(DialogNode::VT_NPCID, npcId, 0);
+  }
+  void add_textId(flatbuffers::Offset<flatbuffers::String> textId) {
+    fbb_.AddOffset(DialogNode::VT_TEXTID, textId);
+  }
+  void add_choices(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::DialogChoiceInfo>>> choices) {
+    fbb_.AddOffset(DialogNode::VT_CHOICES, choices);
+  }
+  explicit DialogNodeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  DialogNodeBuilder &operator=(const DialogNodeBuilder &);
+  flatbuffers::Offset<DialogNode> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<DialogNode>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<DialogNode> CreateDialogNode(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t nodeId = 0,
+    int32_t npcId = 0,
+    flatbuffers::Offset<flatbuffers::String> textId = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::DialogChoiceInfo>>> choices = 0) {
+  DialogNodeBuilder builder_(_fbb);
+  builder_.add_choices(choices);
+  builder_.add_textId(textId);
+  builder_.add_npcId(npcId);
+  builder_.add_nodeId(nodeId);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<DialogNode> CreateDialogNodeDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t nodeId = 0,
+    int32_t npcId = 0,
+    const char *textId = nullptr,
+    const std::vector<flatbuffers::Offset<syncnet::DialogChoiceInfo>> *choices = nullptr) {
+  auto textId__ = textId ? _fbb.CreateString(textId) : 0;
+  auto choices__ = choices ? _fbb.CreateVector<flatbuffers::Offset<syncnet::DialogChoiceInfo>>(*choices) : 0;
+  return syncnet::CreateDialogNode(
+      _fbb,
+      nodeId,
+      npcId,
+      textId__,
+      choices__);
+}
+
+struct DialogSelect FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef DialogSelectBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_NODEID = 4,
+    VT_CHOICEINDEX = 6
+  };
+  int32_t nodeId() const {
+    return GetField<int32_t>(VT_NODEID, 0);
+  }
+  int32_t choiceIndex() const {
+    return GetField<int32_t>(VT_CHOICEINDEX, -1);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_NODEID) &&
+           VerifyField<int32_t>(verifier, VT_CHOICEINDEX) &&
+           verifier.EndTable();
+  }
+};
+
+struct DialogSelectBuilder {
+  typedef DialogSelect Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_nodeId(int32_t nodeId) {
+    fbb_.AddElement<int32_t>(DialogSelect::VT_NODEID, nodeId, 0);
+  }
+  void add_choiceIndex(int32_t choiceIndex) {
+    fbb_.AddElement<int32_t>(DialogSelect::VT_CHOICEINDEX, choiceIndex, -1);
+  }
+  explicit DialogSelectBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  DialogSelectBuilder &operator=(const DialogSelectBuilder &);
+  flatbuffers::Offset<DialogSelect> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<DialogSelect>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<DialogSelect> CreateDialogSelect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t nodeId = 0,
+    int32_t choiceIndex = -1) {
+  DialogSelectBuilder builder_(_fbb);
+  builder_.add_choiceIndex(choiceIndex);
+  builder_.add_nodeId(nodeId);
+  return builder_.Finish();
+}
+
 inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type) {
   switch (type) {
     case GameMessages_NONE: {
@@ -3133,6 +3382,14 @@ inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj,
     }
     case GameMessages_PartyQuestShareReply: {
       auto ptr = reinterpret_cast<const syncnet::PartyQuestShareReply *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_DialogNode: {
+      auto ptr = reinterpret_cast<const syncnet::DialogNode *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_DialogSelect: {
+      auto ptr = reinterpret_cast<const syncnet::DialogSelect *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;

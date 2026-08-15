@@ -77,6 +77,9 @@ void ResourceLoader::ClearResources()
     npcs.clear();
     storage_npcs.clear();
 
+    dialogs.clear();
+    storage_dialogs.clear();
+
     game_modes.clear();
     storage_game_modes.clear();
 
@@ -212,6 +215,9 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
     std::deque<gamedata::Npc> tmp_storage_npcs;
     std::unordered_map<long, const gamedata::Npc*> tmp_npcs;
 
+    std::deque<gamedata::Dialog> tmp_storage_dialogs;
+    std::unordered_map<long, const gamedata::Dialog*> tmp_dialogs;
+
     std::deque<gamedata::GameMode> tmp_storage_game_modes;
     std::unordered_map<long, const gamedata::GameMode*> tmp_game_modes;
 
@@ -240,6 +246,9 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
 
     tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::Npc>,
         basePath + "npc.json", std::ref(tmp_storage_npcs), std::ref(tmp_npcs)));
+
+    tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::Dialog>,
+        basePath + "dialog.json", std::ref(tmp_storage_dialogs), std::ref(tmp_dialogs)));
 
     tasks.push_back(std::async(std::launch::async, &LoadJsonFile<gamedata::GameMode>,
         basePath + "GameMode.json", std::ref(tmp_storage_game_modes), std::ref(tmp_game_modes)));
@@ -275,6 +284,9 @@ bool ResourceLoader::LoadResources(const std::string& basePath)
 
     storage_npcs = std::move(tmp_storage_npcs);
     npcs = std::move(tmp_npcs);
+
+    storage_dialogs = std::move(tmp_storage_dialogs);
+    dialogs = std::move(tmp_dialogs);
 
     storage_game_modes = std::move(tmp_storage_game_modes);
     game_modes = std::move(tmp_game_modes);

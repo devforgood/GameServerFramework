@@ -238,11 +238,29 @@ QuestDefinition (데이터)          PlayerQuestState (플레이어별)
 - **플레이어 조작**: `PlayerQuest::GmForceAccept / GmForceComplete / GmSetProgress / GmResetQuest`.
   모두 정상 경로의 조건 검사를 건너뛴다 — 호출한 쪽이 권한을 확인해야 한다.
 
+## 호위 / 보호
+
+`escort`/`protect` 목표는 대상 NPC 가 월드에 액터로 서 있어야 성립한다. 자세한 것은
+[Actor/NonPlayerCharacter.h](../Actor/NonPlayerCharacter.h).
+
+- **`npc.json` 의 hp 가 0 보다 큰 NPC 만** 액터로 스폰된다. 맞을 수 있다는 것이 곧 죽을 수
+  있다는 뜻이고, 그때부터 서버가 상태를 들고 있어야 하기 때문이다. 위치만 필요한 NPC
+  (퀘스트를 주는 마을 사람)는 데이터로 남는다.
+- **목적지는 목표가 아니라 NPC 가 갖는다**(`escort_dest_id`). 양쪽에 적으면 어긋날 수 있고,
+  NPC 는 어차피 목적지를 하나만 갖는다.
+- **`protect` 의 진행도는 초다.** `count` 가 지켜야 하는 시간이고 `PlayerQuest::Update` 가
+  1초 단위로 쌓는다.
+- **대상이 죽으면 그 목표가 걸린 퀘스트는 실패한다.** 리스폰한 NPC 로 이어서 하게 두면
+  "지켰다"가 아무 의미도 갖지 않는다.
+
+호위 NPC 는 `IsMonsterTarget()` 이 참이라 몬스터가 실제로 공격한다 — 그래야 보호가 위험을
+동반한 목표가 된다. `IsCharacter()` 와 나눠 둔 이유는 그쪽이 "`Character*` 로 캐스팅해도
+되는가"를 뜻해서다(플레이어 id 조회 등이 그 값을 믿고 캐스팅한다).
+
 ## 아직 없는 것
 
-- 대화(Dialog) 시스템과 선택지에 따른 분기 — 별도 서브시스템
-- 호위/보호 목표와 그에 따른 실패 조건 — NPC 가 액터로 스폰되어야 성립한다
-  (현재 NPC 는 위치와 상호작용 반경만 가진 정적 데이터다)
+- 조건부 대화 선택지 — 퀘스트 상태에 따라 선택지를 보이거나 숨기는 규칙
+  ([Dialog/README.md](../Dialog/README.md) 참고)
 - 클라이언트 퀘스트 UI (프로토콜과 생성 코드는 준비돼 있다)
 - 보유 스킬과 시전 권한의 연결 — `SkillSet::InitFromResources` 가 아직 모든 스킬을 준다.
   `PlayerSkill` 은 "무엇을 배웠는가"만 기록하며 선행조건/보상에 쓰인다

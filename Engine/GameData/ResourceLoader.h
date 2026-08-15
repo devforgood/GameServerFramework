@@ -23,6 +23,9 @@ private:
     std::deque<gamedata::Npc> storage_npcs;
     std::unordered_map<long, const gamedata::Npc*> npcs;
 
+    std::deque<gamedata::Dialog> storage_dialogs;
+    std::unordered_map<long, const gamedata::Dialog*> dialogs;
+
     std::deque<gamedata::GameMode> storage_game_modes;
     std::unordered_map<long, const gamedata::GameMode*> game_modes;
 
@@ -71,6 +74,9 @@ public:
 
     const std::unordered_map<long, const gamedata::Npc*>& GetNpcs() const { return npcs; }
     const gamedata::Npc* GetNpc(long id) const { auto itr = npcs.find(id); return itr != npcs.end() ? itr->second : nullptr; }
+
+    const std::unordered_map<long, const gamedata::Dialog*>& GetDialogs() const { return dialogs; }
+    const gamedata::Dialog* GetDialog(long id) const { auto itr = dialogs.find(id); return itr != dialogs.end() ? itr->second : nullptr; }
 
     const std::unordered_map<long, const gamedata::GameMode*>& GetGameModes() const { return game_modes; }
     const gamedata::GameMode* GetGameMode(long id) const { auto itr = game_modes.find(id); return itr != game_modes.end() ? itr->second : nullptr; }

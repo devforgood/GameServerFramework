@@ -5,8 +5,13 @@
     "name_id": "npc_elder_name",
     "type": "quest_giver",
     "map_id": 1,
-    "position": { "x": -11.0, "y": 0.0, "z": 2.0 },
-    "interact_range": 3.0
+    "position": {
+      "x": -11.0,
+      "y": 0.0,
+      "z": 2.0
+    },
+    "interact_range": 3.0,
+    "dialog_id": 3001
   },
   {
     "id": 2002,
@@ -14,7 +19,31 @@
     "name_id": "npc_blacksmith_name",
     "type": "quest_giver",
     "map_id": 1,
-    "position": { "x": -11.0, "y": 0.0, "z": -2.0 },
-    "interact_range": 3.0
+    "position": {
+      "x": -11.0,
+      "y": 0.0,
+      "z": -2.0
+    },
+    "interact_range": 3.0,
+    "dialog_id": 3101
+  },
+  {
+    "id": 2003,
+    "name": "Lost Merchant",
+    "name_id": "npc_merchant_name",
+    "type": "escort",
+    "map_id": 1,
+    "position": {
+      "x": -9.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    "interact_range": 3.0,
+    "hp": 200,
+    "move_speed": 3.0,
+    "follow_range": 12.0,
+    "escort_dest_id": 1001,
+    "respawn_seconds": 30,
+    "dialog_id": 0
   }
 ]

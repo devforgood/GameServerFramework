@@ -22,6 +22,8 @@ namespace gamedata
     struct Quest;
     struct NpcPosition;
     struct Npc;
+    struct DialogChoice;
+    struct Dialog;
     struct GameModeBossInfo;
     struct GameModeRewards;
     struct GameModeRules;
@@ -203,13 +205,37 @@ namespace gamedata
 
     struct Npc
     {
+        int dialog_id = 0;
+        int escort_dest_id = 0;
+        double follow_range = 0.0;
+        int hp = 0;
         int id = 0;
         double interact_range = 0.0;
         int map_id = 0;
+        double move_speed = 0.0;
         std::string name;
         std::string name_id;
         NpcPosition position;
+        int respawn_seconds = 0;
         std::string type;
+    };
+
+
+    struct DialogChoice
+    {
+        std::string action;
+        int next_id = 0;
+        int param = 0;
+        std::string text_id;
+    };
+
+
+    struct Dialog
+    {
+        std::vector<DialogChoice> choices;
+        int id = 0;
+        int npc_id = 0;
+        std::string text_id;
     };
 
 
@@ -638,13 +664,37 @@ namespace gamedata
 
     inline void from_json(const nlohmann::json& j, Npc& o)
     {
+        if (j.contains("dialog_id") && !j.at("dialog_id").is_null()) j.at("dialog_id").get_to(o.dialog_id);
+        if (j.contains("escort_dest_id") && !j.at("escort_dest_id").is_null()) j.at("escort_dest_id").get_to(o.escort_dest_id);
+        if (j.contains("follow_range") && !j.at("follow_range").is_null()) j.at("follow_range").get_to(o.follow_range);
+        if (j.contains("hp") && !j.at("hp").is_null()) j.at("hp").get_to(o.hp);
         if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("interact_range") && !j.at("interact_range").is_null()) j.at("interact_range").get_to(o.interact_range);
         if (j.contains("map_id") && !j.at("map_id").is_null()) j.at("map_id").get_to(o.map_id);
+        if (j.contains("move_speed") && !j.at("move_speed").is_null()) j.at("move_speed").get_to(o.move_speed);
         if (j.contains("name") && !j.at("name").is_null()) j.at("name").get_to(o.name);
         if (j.contains("name_id") && !j.at("name_id").is_null()) j.at("name_id").get_to(o.name_id);
         if (j.contains("position") && !j.at("position").is_null()) j.at("position").get_to(o.position);
+        if (j.contains("respawn_seconds") && !j.at("respawn_seconds").is_null()) j.at("respawn_seconds").get_to(o.respawn_seconds);
         if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, DialogChoice& o)
+    {
+        if (j.contains("action") && !j.at("action").is_null()) j.at("action").get_to(o.action);
+        if (j.contains("next_id") && !j.at("next_id").is_null()) j.at("next_id").get_to(o.next_id);
+        if (j.contains("param") && !j.at("param").is_null()) j.at("param").get_to(o.param);
+        if (j.contains("text_id") && !j.at("text_id").is_null()) j.at("text_id").get_to(o.text_id);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, Dialog& o)
+    {
+        if (j.contains("choices") && !j.at("choices").is_null()) j.at("choices").get_to(o.choices);
+        if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
+        if (j.contains("npc_id") && !j.at("npc_id").is_null()) j.at("npc_id").get_to(o.npc_id);
+        if (j.contains("text_id") && !j.at("text_id").is_null()) j.at("text_id").get_to(o.text_id);
     }
 
 

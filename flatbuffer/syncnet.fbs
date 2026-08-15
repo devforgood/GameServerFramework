@@ -28,6 +28,8 @@ union GameMessages
   PartySync,
   PartyQuestShare,
   PartyQuestShareReply,
+  DialogNode,
+  DialogSelect,
 } // Optionally add more tables.
 
 enum StatusCode:short
@@ -44,10 +46,13 @@ struct Vec3 {
   z:float;
 }
 
-enum GameObjectType:byte 
-{ 
-  Character = 0, 
-  Monster 
+enum GameObjectType:byte
+{
+  Character = 0,
+  Monster,
+  // 월드에 액터로 존재하는 NPC(호위 대상 등). 위치만 가진 정적 NPC 는 여기 오지 않는다 —
+  // 그쪽은 npc.json 데이터일 뿐이고 클라가 씬에 직접 배치한다.
+  Npc,
 }
 
 enum AIState:byte
@@ -308,6 +313,33 @@ table PartyQuestShare {
 table PartyQuestShareReply {
   questId:int;
   accept:bool = false;
+}
+
+// ── 대화 ──
+// 대화 상태는 서버가 들고 있다. 클라는 받은 노드를 그리고, 고른 번호를 되돌려 보낸다.
+// 대화는 Interact 로 열린다(따로 여는 메시지가 없다) — NPC 를 누르는 동작 하나로 족하다.
+
+table DialogChoiceInfo {
+  textId:string;
+  // 이 선택지가 무엇을 하는지("close" / "goto" / "accept_quest" / "complete_quest").
+  // 클라가 아이콘을 고르는 데만 쓴다 — 실제 처리는 서버가 한다.
+  action:string;
+}
+
+// 서버 -> 클라. nodeId 가 0 이면 대화가 끝났다는 뜻이고 나머지 필드는 비어 있다.
+table DialogNode {
+  nodeId:int = 0;
+  npcId:int = 0;
+  textId:string;
+  choices:[DialogChoiceInfo];
+}
+
+// 클라 -> 서버. nodeId 는 클라가 보고 있던 노드다 — 서버가 아는 것과 다르면 거절한다
+// (창을 두 번 누르면 지난 화면의 선택지로 지금 노드의 동작이 실행된다).
+// choiceIndex 가 음수면 "대화 닫기"다.
+table DialogSelect {
+  nodeId:int = 0;
+  choiceIndex:int = -1;
 }
 
 root_type GameMessage;

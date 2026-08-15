@@ -4,6 +4,12 @@
 class World;
 class Player;
 class Character;
+
+namespace gamedata
+{
+	struct Dialog;
+}
+
 class PlayerController
 {
 private:
@@ -35,5 +41,10 @@ public:
 	void handle(const syncnet::PartyLeaderChange* msg);
 	void handle(const syncnet::PartyQuestShare* msg);
 	void handle(const syncnet::PartyQuestShareReply* msg);
+	void handle(const syncnet::DialogSelect* msg);
+
+private:
+	// 지금 열려 있는 대화 노드를 클라에 보낸다. node 가 nullptr 이면 "닫힘"을 보낸다.
+	void SendDialogNode(const gamedata::Dialog* node, int npc_id, syncnet::StatusCode status);
 };
 

@@ -46,9 +46,12 @@ constexpr int kGoblinChief = 1002;     // MainQuest, 선행 1001
 constexpr int kWolfPelt = 1003;        // SubQuest, 수집
 constexpr int kFieldCleanup = 1004;    // SubQuest, or 목표 + auto_complete
 constexpr int kFirstSteps = 1005;      // SubQuest, reach + level + auto_complete
+constexpr int kEscortMerchant = 1006;  // SubQuest, 1스테이지 protect(20초) / 2스테이지 escort
 constexpr int kDailyWolf = 2001;       // RepeatedQuest
 constexpr int kAncientLetter = 3001;   // LimitedTimeQuest
 constexpr int kDisabledEvent = 9001;   // 운영이 내려둔(disabled) 퀘스트
+
+constexpr int kMerchantNpcId = 2003;   // 호위/보호 대상 NPC
 
 constexpr int kGoblinMonsterId = 3;
 constexpr int kOrcMonsterId = 4;
@@ -1245,4 +1248,136 @@ TEST_F(PlayerQuestTest, RoundTrip_ProgressSurvivesReload)
 	reborn.ReportProgress(QuestObjectiveType::Kill, kGoblinMonsterId, 4);
 	reborn.ReportProgress(QuestObjectiveType::Collect, kGoblinEarItemId, 5);
 	EXPECT_EQ(reborn.GetStage(kGoblinHunt), 3);
+}
+
+// ============================================================
+// 호위 / 보호
+// ============================================================
+// NPC 액터의 이동·사망 판정은 맵과 navmesh 가 필요해 여기서 다루지 않는다
+// (NonPlayerCharacter 가 맡는다). 여기서는 그 결과로 오는 이벤트가 퀘스트에
+// 어떻게 반영되는지를 본다.
+
+TEST_F(PlayerQuestTest, Protect_AccumulatesSecondsAndAdvancesStage)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+	quest->Load(MakeNewPlayerData());
+
+	ASSERT_EQ(quest->AcceptQuest(kEscortMerchant), QuestAcceptResult::Ok);
+	EXPECT_EQ(quest->GetStage(kEscortMerchant), 1);
+
+	// 보호 목표의 진행도는 흐른 시간(초)이다. Update 가 1초 단위로 누적한다.
+	for (int i = 0; i < 5; ++i)
+		go.Update(1.0f);
+	EXPECT_EQ(quest->GetProgress(kEscortMerchant, 0), 5);
+	EXPECT_EQ(quest->GetStage(kEscortMerchant), 1);
+
+	// 20초를 채우면 스테이지가 넘어간다.
+	for (int i = 0; i < 15; ++i)
+		go.Update(1.0f);
+	EXPECT_EQ(quest->GetStage(kEscortMerchant), 2);
+}
+
+TEST_F(PlayerQuestTest, Protect_DoesNotTickBeforeItsStage)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+	quest->Load(MakeNewPlayerData());
+
+	// 보호 목표가 없는 퀘스트만 진행 중이면 시간이 흘러도 아무 일도 없어야 한다.
+	ASSERT_EQ(quest->AcceptQuest(kWolfPelt), QuestAcceptResult::Ok);
+	for (int i = 0; i < 30; ++i)
+		go.Update(1.0f);
+	EXPECT_EQ(quest->GetProgress(kWolfPelt, 0), 0);
+}
+
+TEST_F(PlayerQuestTest, Escort_ArrivalCompletesStage)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+	quest->Load(MakeNewPlayerData());
+
+	ASSERT_EQ(quest->AcceptQuest(kEscortMerchant), QuestAcceptResult::Ok);
+	ASSERT_TRUE(quest->GmSetProgress(kEscortMerchant, 2, 0, 0, 0)); // 호위 스테이지로
+
+	auto* broker = go.GetComponent<PlayerEventBroker>();
+	broker->publish(EventNpcEscorted{ 1, kMerchantNpcId });
+
+	// 마지막 스테이지를 끝냈으므로 완료 대기 상태가 된다(auto_complete 아님).
+	EXPECT_EQ(quest->GetState(kEscortMerchant), QuestState::ReadyToComplete);
+}
+
+TEST_F(PlayerQuestTest, Escort_OtherNpcArrivalIsIgnored)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+	quest->Load(MakeNewPlayerData());
+
+	ASSERT_EQ(quest->AcceptQuest(kEscortMerchant), QuestAcceptResult::Ok);
+	ASSERT_TRUE(quest->GmSetProgress(kEscortMerchant, 2, 0, 0, 0));
+
+	go.GetComponent<PlayerEventBroker>()->publish(EventNpcEscorted{ 1, kElderNpcId });
+	EXPECT_EQ(quest->GetState(kEscortMerchant), QuestState::InProgress);
+	EXPECT_EQ(quest->GetProgress(kEscortMerchant, 0), 0);
+}
+
+TEST_F(PlayerQuestTest, NpcDeath_FailsProtectingQuest)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+	quest->Load(MakeNewPlayerData());
+
+	ASSERT_EQ(quest->AcceptQuest(kEscortMerchant), QuestAcceptResult::Ok);
+	go.Update(1.0f);
+	ASSERT_EQ(quest->GetProgress(kEscortMerchant, 0), 1);
+
+	go.GetComponent<PlayerEventBroker>()->publish(EventNpcDead{ 1, kMerchantNpcId });
+
+	// 지키던 대상이 죽었으면 되살아난 NPC 로 이어서 할 수 없다.
+	EXPECT_EQ(quest->GetState(kEscortMerchant), QuestState::Failed);
+
+	// 실패한 뒤에는 시간이 더 흘러도 진행도가 오르지 않는다.
+	const int before = quest->GetProgress(kEscortMerchant, 0);
+	for (int i = 0; i < 5; ++i)
+		go.Update(1.0f);
+	EXPECT_EQ(quest->GetProgress(kEscortMerchant, 0), before);
+}
+
+TEST_F(PlayerQuestTest, NpcDeath_FailsEscortingQuest)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+	quest->Load(MakeNewPlayerData());
+
+	ASSERT_EQ(quest->AcceptQuest(kEscortMerchant), QuestAcceptResult::Ok);
+	ASSERT_TRUE(quest->GmSetProgress(kEscortMerchant, 2, 0, 0, 0));
+
+	go.GetComponent<PlayerEventBroker>()->publish(EventNpcDead{ 1, kMerchantNpcId });
+	EXPECT_EQ(quest->GetState(kEscortMerchant), QuestState::Failed);
+
+	// 죽은 뒤 도착 이벤트가 와도(리스폰 등) 실패한 퀘스트는 되살아나지 않는다.
+	go.GetComponent<PlayerEventBroker>()->publish(EventNpcEscorted{ 1, kMerchantNpcId });
+	EXPECT_EQ(quest->GetState(kEscortMerchant), QuestState::Failed);
+}
+
+TEST_F(PlayerQuestTest, NpcDeath_LeavesUnrelatedQuestsAlone)
+{
+	GameObject go;
+	go.AddComponent<PlayerEventBroker>();
+	PlayerQuest* quest = go.AddComponent<PlayerQuest>();
+	quest->Load(MakeNewPlayerData());
+
+	ASSERT_EQ(quest->AcceptQuest(kEscortMerchant), QuestAcceptResult::Ok);
+	ASSERT_EQ(quest->AcceptQuest(kWolfPelt), QuestAcceptResult::Ok);
+
+	go.GetComponent<PlayerEventBroker>()->publish(EventNpcDead{ 1, kMerchantNpcId });
+
+	EXPECT_EQ(quest->GetState(kEscortMerchant), QuestState::Failed);
+	EXPECT_EQ(quest->GetState(kWolfPelt), QuestState::InProgress);
 }

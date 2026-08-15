@@ -5,6 +5,12 @@ class IGridActor {
 public:
     virtual ~IGridActor() = default; // 가상 소멸자
 	virtual bool IsCharacter() const = 0; // 순수 가상 함수
+
+	// 몬스터가 사냥할 대상인가. 그리드는 이 값으로 셀 버킷을 나누고, 몬스터의 적 탐지는
+	// 그 버킷만 훑는다. IsCharacter 와 나눠 둔 이유는 둘의 뜻이 다르기 때문이다 —
+	// IsCharacter 는 "Character* 로 캐스팅해도 되는가"이고(플레이어 id 조회 등에서 쓴다),
+	// 이쪽은 "몬스터의 표적이 되는가"다. 호위 NPC 는 후자만 참이다.
+	virtual bool IsMonsterTarget() const = 0;
 	virtual void SetGridX(int gridX) = 0; // 순수 가상 함수
 	virtual void SetGridY(int gridY) = 0; // 순수 가상 함수
 	virtual int GetGridX() const = 0; // 순수 가상 함수

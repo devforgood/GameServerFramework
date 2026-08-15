@@ -235,7 +235,13 @@ OBJECTIVE_TARGET_TABLE = {
     'talk': 'Npc',
     'interact': None,  # 맵 오브젝트 id — 맵 안에 있으므로 전역 검사는 생략
     'level': None,     # count 가 도달 목표 레벨이다
+    'escort': 'Npc',
+    'protect': 'Npc',
 }
+
+# 액터로 스폰되어야 성립하는 목표. 대상 NPC 가 hp 를 갖고 있어야 한다
+# (hp 가 없는 NPC 는 서버에 액터가 없어 죽지도, 따라오지도 않는다).
+OBJECTIVE_NEEDS_NPC_ACTOR = {'escort', 'protect'}
 
 QUEST_STAGE_LOGIC = {'and', 'or'}
 QUEST_RESET_TYPES = {'none', 'daily', 'weekly'}
@@ -288,6 +294,35 @@ def _validate_quest_objective(label, obj, tables, errors):
     if known is not None and target_id not in known:
         errors.append(
             f"{label} — target_id {target_id} 가 {target_table} 테이블에 없습니다")
+        return
+
+    if obj_type in OBJECTIVE_NEEDS_NPC_ACTOR:
+        _validate_npc_actor_target(label, obj_type, target_id, tables, errors)
+
+
+def _validate_npc_actor_target(label, obj_type, npc_id, tables, errors):
+    """호위/보호 대상이 실제로 월드에 설 수 있는 NPC 인지 본다.
+
+    서버는 hp 가 있는 NPC 만 액터로 스폰한다. hp 가 없으면 그 NPC 는 씬에 그려진
+    정적 데이터일 뿐이라 죽지도, 따라오지도 않는다 — 목표가 영원히 끝나지 않는다.
+    """
+    npcs = tables.get('Npc') if tables else None
+    if not npcs:
+        return  # 테이블이 없으면 검사 생략(위에서 이미 보고했다)
+
+    npc = next((n for n in npcs if isinstance(n, dict) and n.get('id') == npc_id), None)
+    if npc is None:
+        return
+
+    if not isinstance(npc.get('hp'), int) or npc.get('hp', 0) <= 0:
+        errors.append(
+            f"{label} — {obj_type} 대상 NPC {npc_id} 에 hp 가 없습니다. "
+            f"hp 가 0 이면 서버가 액터로 스폰하지 않아 목표가 끝나지 않습니다")
+
+    if obj_type == 'escort' and not npc.get('escort_dest_id'):
+        errors.append(
+            f"{label} — escort 대상 NPC {npc_id} 에 escort_dest_id 가 없습니다. "
+            f"목적지가 없으면 도착 판정이 일어나지 않습니다")
 
 
 def _validate_quest_stages(quest, label, tables, errors):
@@ -511,6 +546,97 @@ def _validate_quests(table_name, entries, tables):
     return errors
 
 
+# dialog.json 의 choices[].action. C++ 의 ParseDialogAction 과 짝을 이룬다.
+# param 을 쓰는 동작만 값을 담고, 나머지는 None.
+DIALOG_ACTIONS = {
+    'close': None,
+    'goto': None,
+    'accept_quest': 'Quest',
+    'complete_quest': 'Quest',
+}
+
+
+def _validate_dialogs(table_name, entries, tables):
+    """대화 노드가 서로 이어져 있고, 각 선택지가 실제로 무언가를 하는지 본다.
+
+    끊어진 노드 참조는 런타임에 "대화가 그냥 닫힌다"로 나타나서, 데이터를 고칠 단서가
+    아무것도 남지 않는다. 여기서 잡는 편이 훨씬 싸다.
+    """
+    errors = []
+
+    node_ids = {e['id'] for e in entries
+                if isinstance(e, dict) and isinstance(e.get('id'), int)}
+    npc_ids = _ids_of(tables, 'Npc')
+    quest_ids = _ids_of(tables, 'Quest')
+
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+
+        node_id = entry.get('id')
+        label = f"{table_name}[id={node_id}]"
+
+        if npc_ids is not None and entry.get('npc_id') not in npc_ids:
+            errors.append(f"{label} — npc_id {entry.get('npc_id')!r} 가 Npc 테이블에 없습니다")
+
+        if not entry.get('text_id'):
+            errors.append(f"{label} — text_id 가 비어 있습니다")
+
+        choices = entry.get('choices')
+        if not isinstance(choices, list) or not choices:
+            errors.append(
+                f"{label} — choices 가 비어 있습니다. "
+                f"선택지가 없으면 플레이어가 대화를 닫을 방법이 없습니다")
+            continue
+
+        for i, choice in enumerate(choices):
+            clabel = f"{label} choices[{i}]"
+            if not isinstance(choice, dict):
+                errors.append(f"{clabel} — 선택지가 객체가 아닙니다")
+                continue
+
+            if not choice.get('text_id'):
+                errors.append(f"{clabel} — text_id 가 비어 있습니다")
+
+            action = choice.get('action')
+            if action not in DIALOG_ACTIONS:
+                errors.append(
+                    f"{clabel} — 알 수 없는 action {action!r}. "
+                    f"지원: {sorted(DIALOG_ACTIONS)}")
+                continue
+
+            next_id = choice.get('next_id', 0)
+            if action == 'goto':
+                if next_id not in node_ids:
+                    errors.append(
+                        f"{clabel} — goto 의 next_id {next_id!r} 에 해당하는 노드가 없습니다")
+            elif action == 'close' and next_id:
+                errors.append(
+                    f"{clabel} — close 는 next_id 를 쓰지 않습니다 (현재: {next_id!r})")
+            elif next_id and next_id not in node_ids:
+                errors.append(
+                    f"{clabel} — next_id {next_id!r} 에 해당하는 노드가 없습니다")
+
+            param_table = DIALOG_ACTIONS[action]
+            if param_table == 'Quest':
+                param = choice.get('param', 0)
+                if quest_ids is not None and param not in quest_ids:
+                    errors.append(
+                        f"{clabel} — {action} 의 param {param!r} 이 Quest 테이블에 없습니다")
+
+    # 대화가 걸린 NPC 의 시작 노드가 실제로 존재하는지도 함께 본다.
+    npcs = tables.get('Npc') if tables else None
+    for npc in npcs or []:
+        if not isinstance(npc, dict):
+            continue
+        root = npc.get('dialog_id', 0)
+        if root and root not in node_ids:
+            errors.append(
+                f"Npc[id={npc.get('id')}] — dialog_id {root} 에 해당하는 대화 노드가 없습니다")
+
+    return errors
+
+
 def validate_table(table_name, entries, tables=None):
     """오류 메시지 리스트를 반환한다(비어 있으면 통과).
 
@@ -583,6 +709,10 @@ def validate_table(table_name, entries, tables=None):
     # 6) Quest 전용: 스테이지/목표/선행조건/보상/시간 정책 검증
     if table_name == "Quest":
         errors.extend(_validate_quests(table_name, entries, tables))
+
+    # 7) Dialog 전용: 노드 참조/동작/선택지 검증
+    if table_name == "Dialog":
+        errors.extend(_validate_dialogs(table_name, entries, tables))
 
     # 3) 필드명 오타 의심 검사 (중첩 객체 포함, 경로 단위로 비교)
     field_paths = defaultdict(set)  # (path, name) -> 등장한 객체 인스턴스 id 집합

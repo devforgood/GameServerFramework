@@ -49,11 +49,17 @@ def _new_file_dir(server_src_dir, table_name):
 
     기존 클래스들이 테이블별 하위 폴더(Engine/Quest/, Engine/Map/ ...)에 모여 있으므로
     베이스 클래스가 있는 곳에 새 파생 클래스도 같이 둔다. 루트에 흩어지면 include 경로에서
-    진짜 헤더를 가리는 사고가 난다(_resolve_path 주석 참고)."""
+    진짜 헤더를 가리는 사고가 난다(_resolve_path 주석 참고).
+
+    베이스 클래스가 아직 없는 새 테이블이면 테이블 이름의 폴더를 만들어 거기 둔다 —
+    루트에 두면 다음 번 생성부터는 '루트에 있다'는 이유로 계속 루트에 쌓인다."""
     base_h = _resolve_path(server_src_dir, f'{table_name}.h')
     if os.path.exists(base_h):
         return os.path.dirname(base_h)
-    return server_src_dir
+
+    table_dir = os.path.join(server_src_dir, table_name)
+    os.makedirs(table_dir, exist_ok=True)
+    return table_dir
 
 def _ensure_default_derived_class(server_src_dir, table_name, class_name):
     h_path = _resolve_path(server_src_dir, f'{class_name}.h')

@@ -76,6 +76,13 @@ public:
 		return gameObjectType_ == syncnet::GameObjectType::GameObjectType_Character;
 	}
 
+	// 기본적으로 플레이어 캐릭터만 몬스터의 표적이 된다. 호위 NPC 처럼 캐릭터가 아니면서
+	// 사냥당해야 하는 액터가 이것만 따로 켠다(IGridActor 의 설명 참고).
+	virtual bool IsMonsterTarget() const override
+	{
+		return IsCharacter();
+	}
+
 	virtual void SetGridX(int gridX)
 	{
 		this->gridX = gridX; 

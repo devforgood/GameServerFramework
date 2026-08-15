@@ -1,0 +1,40 @@
+[
+  {
+    "id": 3001,
+    "npc_id": 2001,
+    "text_id": "dlg_elder_greet",
+    "choices": [
+      { "text_id": "dlg_elder_ask_work", "action": "goto", "param": 0, "next_id": 3002 },
+      { "text_id": "dlg_elder_ask_merchant", "action": "goto", "param": 0, "next_id": 3003 },
+      { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
+    ]
+  },
+  {
+    "id": 3002,
+    "npc_id": 2001,
+    "text_id": "dlg_elder_goblin_intro",
+    "choices": [
+      { "text_id": "dlg_elder_accept_goblin", "action": "accept_quest", "param": 1001, "next_id": 0 },
+      { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3001 },
+      { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
+    ]
+  },
+  {
+    "id": 3003,
+    "npc_id": 2001,
+    "text_id": "dlg_elder_merchant_intro",
+    "choices": [
+      { "text_id": "dlg_elder_accept_escort", "action": "accept_quest", "param": 1006, "next_id": 0 },
+      { "text_id": "dlg_elder_report_escort", "action": "complete_quest", "param": 1006, "next_id": 0 },
+      { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3001 }
+    ]
+  },
+  {
+    "id": 3101,
+    "npc_id": 2002,
+    "text_id": "dlg_blacksmith_greet",
+    "choices": [
+      { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
+    ]
+  }
+]

@@ -33,6 +33,8 @@ public enum GameMessages : byte
   PartySync = 23,
   PartyQuestShare = 24,
   PartyQuestShareReply = 25,
+  DialogNode = 26,
+  DialogSelect = 27,
 };
 
 
