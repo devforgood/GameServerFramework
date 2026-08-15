@@ -50,7 +50,7 @@ public static class MapJsonAutoSync
         {
             return Enabled
                 && !EditorApplication.isPlayingOrWillChangePlaymode
-                && UnityEditor.Experimental.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage() == null;
+                && UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage() == null;
         }
     }
 

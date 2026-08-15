@@ -1,7 +1,10 @@
 fileFormatVersion: 2
-guid: 5f983c79e06bb844789ae9ffa1513e44
+guid: e2831157d94e4d15998dcb6ad1418057
 labels:
-- NuGetForUnity
+- gvh_version-1.2.185
+- gvhp_exportpath-ExternalDependencyManager/Editor/1.2.185/Google.VersionHandlerImpl.dll
+- gvh
+- gvhp_targets-editor
 PluginImporter:
   externalObjects: {}
   serializedVersion: 3
@@ -17,12 +20,13 @@ PluginImporter:
       enabled: 0
       settings: {}
     Editor:
-      enabled: 0
+      enabled: 1
       settings:
         DefaultValueInitialized: true
     WindowsStoreApps:
       enabled: 0
-      settings: {}
+      settings:
+        CPU: AnyCPU
   userData: 
   assetBundleName: 
   assetBundleVariant: 

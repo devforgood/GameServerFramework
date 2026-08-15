@@ -79,6 +79,7 @@ namespace Assets.Scripts.GameData
             var levelReq = Resources.LoadAsync<TextAsset>("GameData/level");
             var monsterReq = Resources.LoadAsync<TextAsset>("GameData/monster");
             var mapReq = Resources.LoadAsync<TextAsset>("GameData/Map");
+            var npcReq = Resources.LoadAsync<TextAsset>("GameData/npc");
 
             // 모든 요청이 끝날 때까지 대기. (요청은 이미 동시에 진행 중)
             yield return skillReq;
@@ -87,6 +88,7 @@ namespace Assets.Scripts.GameData
             yield return levelReq;
             yield return monsterReq;
             yield return mapReq;
+            yield return npcReq;
 
             ParseTable<Gamedata.SkillList, Gamedata.Skill>((TextAsset)skillReq.asset, "GameData/skill", l => l.items, s => s.id, Skills);
             ParseTable<Gamedata.ItemList, Gamedata.Item>((TextAsset)itemReq.asset, "GameData/item", l => l.items, i => i.id, Items);
@@ -94,6 +96,7 @@ namespace Assets.Scripts.GameData
             ParseTable<Gamedata.LevelList, Gamedata.Level>((TextAsset)levelReq.asset, "GameData/level", l => l.items, lv => lv.id, Levels);
             ParseTable<Gamedata.MonsterDataList, Gamedata.MonsterData>((TextAsset)monsterReq.asset, "GameData/monster", l => l.items, m => m.id, MonsterDatas);
             ParseTable<Gamedata.MapList, Gamedata.Map>((TextAsset)mapReq.asset, "GameData/Map", l => l.items, m => m.id, Maps);
+            ParseTable<Gamedata.NpcList, Gamedata.Npc>((TextAsset)npcReq.asset, "GameData/npc", l => l.items, n => n.id, Npcs);
 
             BuildMapIndexes();
 
@@ -139,6 +142,7 @@ namespace Assets.Scripts.GameData
         public Dictionary<int, Gamedata.Level> Levels = new Dictionary<int, Gamedata.Level>();
         public Dictionary<int, Gamedata.MonsterData> MonsterDatas = new Dictionary<int, Gamedata.MonsterData>();
         public Dictionary<int, Gamedata.Map> Maps = new Dictionary<int, Gamedata.Map>();
+        public Dictionary<int, Gamedata.Npc> Npcs = new Dictionary<int, Gamedata.Npc>();
 
         // 맵 안 오브젝트의 전역 id 인덱스. BuildMapIndexes 가 채운다.
         public Dictionary<int, Gamedata.MapGate> MapGates = new Dictionary<int, Gamedata.MapGate>();
