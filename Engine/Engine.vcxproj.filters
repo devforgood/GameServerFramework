@@ -5,23 +5,14 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="ECS">
-      <UniqueIdentifier>{42081c05-332a-4309-aa6b-d05e3698a353}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Grid">
       <UniqueIdentifier>{8d4a5077-1a77-4d55-a830-abbe94be5aff}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="RingBuffer">
-      <UniqueIdentifier>{7d82d9cf-1605-452c-ad8c-4deadaee74df}</UniqueIdentifier>
     </Filter>
     <Filter Include="Random">
       <UniqueIdentifier>{d2ca0b4d-59ef-48ef-bc77-6d80aaa2fa57}</UniqueIdentifier>
     </Filter>
     <Filter Include="Time">
       <UniqueIdentifier>{ec8e8a14-f774-4018-9a03-b9a06ed87a90}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="EventBroker">
-      <UniqueIdentifier>{79dc5367-e19e-45a0-8e2d-c8d49b84aa6b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Actor">
       <UniqueIdentifier>{e1771e22-b5fd-4215-8661-f99412a06b4a}</UniqueIdentifier>
@@ -89,20 +80,11 @@
   </ItemGroup>
   <!-- Engine core ClCompile -->
   <ItemGroup>
-    <ClCompile Include="Grid\GridManager.cpp">
-      <Filter>Grid</Filter>
-    </ClCompile>
-    <ClCompile Include="RingBuffer\RingBuffer.cpp">
-      <Filter>RingBuffer</Filter>
-    </ClCompile>
     <ClCompile Include="Random\RandomUtil.cpp">
       <Filter>Random</Filter>
     </ClCompile>
     <ClCompile Include="Time\TimeStamp.cpp">
       <Filter>Time</Filter>
-    </ClCompile>
-    <ClCompile Include="EventBroker\NonThreadSafeBus.h">
-      <Filter>EventBroker</Filter>
     </ClCompile>
     <!-- Game ClCompile (moved) -->
     <ClCompile Include="Actor\Actor.cpp">
@@ -286,65 +268,20 @@
     <ClCompile Include="GameData\ResourceLoader.cpp">
       <Filter>GameData</Filter>
     </ClCompile>
+    <ClCompile Include="Dialog\Dialog.cpp" />
+    <ClCompile Include="Dialog\DialogFactory.cpp" />
+    <ClCompile Include="Player\PlayerDialog.cpp" />
+    <ClCompile Include="Player\PlayerWallet.cpp" />
+    <ClCompile Include="Quest\QuestRegistry.cpp" />
+    <ClCompile Include="Npc\Npc.cpp" />
+    <ClCompile Include="Npc\NpcFactory.cpp" />
+    <ClCompile Include="Quest\SubQuest.cpp" />
+    <ClCompile Include="..\thirdparty\mimalloc\src\static.c" />
   </ItemGroup>
   <!-- Engine core ClInclude -->
   <ItemGroup>
-    <ClInclude Include="EventBroker\BoostConcurrentQueue.h">
-      <Filter>EventBroker</Filter>
-    </ClInclude>
-    <ClInclude Include="ECS\CacheOptimizedSystem.h">
-      <Filter>ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="ECS\ComponentRegistry.h">
-      <Filter>ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="ECS\Components.h">
-      <Filter>ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="ECS\ECS.h">
-      <Filter>ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="EventBroker\EventBroker.h">
-      <Filter>EventBroker</Filter>
-    </ClInclude>
-    <ClInclude Include="EventBroker\EventBus.h">
-      <Filter>EventBroker</Filter>
-    </ClInclude>
-    <ClInclude Include="EventBroker\EventPolicy.h">
-      <Filter>EventBroker</Filter>
-    </ClInclude>
-    <ClInclude Include="EventBroker\EventQueue.h">
-      <Filter>EventBroker</Filter>
-    </ClInclude>
-    <ClInclude Include="Grid\GridManager.h">
-      <Filter>Grid</Filter>
-    </ClInclude>
-    <ClInclude Include="Grid\IGridActor.h">
-      <Filter>Grid</Filter>
-    </ClInclude>
-    <ClInclude Include="EventBroker\MoodycamelConcurrentQueue.h">
-      <Filter>EventBroker</Filter>
-    </ClInclude>
-    <ClInclude Include="EventBroker\NonThreadSafe.h">
-      <Filter>EventBroker</Filter>
-    </ClInclude>
-    <ClInclude Include="EventBroker\NonThreadSafeQueue.h">
-      <Filter>EventBroker</Filter>
-    </ClInclude>
     <ClInclude Include="Random\RandomUtil.h">
       <Filter>Random</Filter>
-    </ClInclude>
-    <ClInclude Include="RingBuffer\RingBuffer.h">
-      <Filter>RingBuffer</Filter>
-    </ClInclude>
-    <ClInclude Include="ECS\SystemManager.h">
-      <Filter>ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="ECS\Systems.h">
-      <Filter>ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="EventBroker\ThreadSafe.h">
-      <Filter>EventBroker</Filter>
     </ClInclude>
     <ClInclude Include="Time\TimeStamp.h">
       <Filter>Time</Filter>
@@ -606,5 +543,18 @@
     <ClInclude Include="Player\PlayerDbDispatcher.h">
       <Filter>Player</Filter>
     </ClInclude>
+    <ClInclude Include="Dialog\Dialog.h" />
+    <ClInclude Include="Dialog\DialogFactory.h" />
+    <ClInclude Include="Dialog\DialogAction.h" />
+    <ClInclude Include="Player\PlayerDialog.h" />
+    <ClInclude Include="Player\PlayerWallet.h" />
+    <ClInclude Include="SQL\SqlScript.h" />
+    <ClInclude Include="Quest\QuestRegistry.h" />
+    <ClInclude Include="Npc\Npc.h" />
+    <ClInclude Include="Npc\NpcFactory.h" />
+    <ClInclude Include="Quest\QuestObjective.h" />
+    <ClInclude Include="Quest\QuestPolicy.h" />
+    <ClInclude Include="Quest\SubQuest.h" />
+    <ClInclude Include="SQL\generated\schema_columns.h" />
   </ItemGroup>
 </Project>

@@ -78,7 +78,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;..\ECS;Item;Map;System;..\EventBroker;EventMessage;GameMode;GameObject;..\Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;..\RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -96,7 +96,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;..\ECS;Item;Map;System;..\EventBroker;EventMessage;GameMode;GameObject;..\Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;..\RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -114,7 +114,7 @@
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4251;4267;4819</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;..\ECS;Item;Map;System;..\EventBroker;EventMessage;GameMode;GameObject;..\Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;..\RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -134,7 +134,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>4251;4267;4819</DisableSpecificWarnings>
-      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;ECS;Item;Map;System;EventBroker;EventMessage;GameMode;GameObject;Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;.;AI;Actor;Controller;..\ECS;Item;Map;System;..\EventBroker;EventMessage;GameMode;GameObject;..\Grid;Level;Message;Dialog;MonsterData;Movement;Npc;Party;Player;Quest;Random;..\RingBuffer;SQL;Time;World;flatbuffers;skill;GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;.\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -152,10 +152,7 @@
   </ItemGroup>
   <!-- Engine core sources -->
   <ItemGroup>
-    <ClCompile Include="Grid\GridManager.cpp" />
-    <ClCompile Include="EventBroker\NonThreadSafeBus.h" />
     <ClCompile Include="Random\RandomUtil.cpp" />
-    <ClCompile Include="RingBuffer\RingBuffer.cpp" />
     <ClCompile Include="Time\TimeStamp.cpp" />
   </ItemGroup>
   <!-- Game sources (moved from Game project) -->
@@ -230,28 +227,10 @@
   </ItemGroup>
   <!-- Engine core headers -->
   <ItemGroup>
-    <ClInclude Include="EventBroker\BoostConcurrentQueue.h" />
-    <ClInclude Include="ECS\CacheOptimizedSystem.h" />
-    <ClInclude Include="ECS\ComponentRegistry.h" />
-    <ClInclude Include="ECS\Components.h" />
-    <ClInclude Include="ECS\ECS.h" />
-    <ClInclude Include="EventBroker\EventBroker.h" />
-    <ClInclude Include="EventBroker\EventBus.h" />
     <ClInclude Include="EventMessage\EventMessage.h" />
-    <ClInclude Include="EventBroker\EventPolicy.h" />
-    <ClInclude Include="EventBroker\EventQueue.h" />
-    <ClInclude Include="Grid\GridManager.h" />
-    <ClInclude Include="Grid\IGridActor.h" />
-    <ClInclude Include="EventBroker\MoodycamelConcurrentQueue.h" />
-    <ClInclude Include="EventBroker\NonThreadSafe.h" />
-    <ClInclude Include="EventBroker\NonThreadSafeQueue.h" />
     <ClInclude Include="Player\PlayerEventBroker.h" />
     <ClInclude Include="Player\PlayerEventBrokerProxy.h" />
     <ClInclude Include="Random\RandomUtil.h" />
-    <ClInclude Include="RingBuffer\RingBuffer.h" />
-    <ClInclude Include="ECS\SystemManager.h" />
-    <ClInclude Include="ECS\Systems.h" />
-    <ClInclude Include="EventBroker\ThreadSafe.h" />
     <ClInclude Include="Time\TimeStamp.h" />
   </ItemGroup>
   <!-- Game headers (moved from Game project) -->
@@ -356,6 +335,18 @@
     </ProjectReference>
     <ProjectReference Include="..\recastnavigation\recastnavigation.vcxproj">
       <Project>{8e24c208-4d79-43be-941d-dbd48e5a4264}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ECS\ECS.vcxproj">
+      <Project>{19e5e78e-ae56-47bf-ae49-3e20e31028ca}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\EventBroker\EventBroker.vcxproj">
+      <Project>{83970557-cc7d-4b76-9919-920dbc8631c7}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Grid\Grid.vcxproj">
+      <Project>{0376daee-3509-4fb6-97e9-64665969759e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\RingBuffer\RingBuffer.vcxproj">
+      <Project>{49685030-21e0-4378-91e7-a19e1bb9d39d}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

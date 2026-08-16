@@ -31,6 +31,7 @@ namespace
 			: id_(id), x_(x), y_(y), isCharacter_(isCharacter) {}
 
 		bool IsCharacter() const override { return isCharacter_; }
+		bool IsMonsterTarget() const override { return isCharacter_; }
 		void SetGridX(int gx) override { gridX_ = gx; }
 		void SetGridY(int gy) override { gridY_ = gy; }
 		int GetGridX() const override { return gridX_; }
