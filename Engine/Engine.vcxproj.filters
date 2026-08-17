@@ -147,6 +147,9 @@
     <ClCompile Include="AI\MonsterBT.cpp">
       <Filter>AI</Filter>
     </ClCompile>
+    <ClCompile Include="AI\MonsterBTRunner.cpp">
+      <Filter>AI</Filter>
+    </ClCompile>
     <ClCompile Include="AI\MonsterCodeBaseBT.cpp">
       <Filter>AI</Filter>
     </ClCompile>
@@ -393,6 +396,12 @@
       <Filter>Actor</Filter>
     </ClInclude>
     <ClInclude Include="AI\MonsterBT.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\MonsterBTNodes.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="AI\MonsterBTRunner.h">
       <Filter>AI</Filter>
     </ClInclude>
     <ClInclude Include="AI\MonsterCodeBaseBT.h">

@@ -181,6 +181,7 @@
     <ClCompile Include="Actor\Monster.cpp" />
     <ClCompile Include="Actor\NonPlayerCharacter.cpp" />
     <ClCompile Include="AI\MonsterBT.cpp" />
+    <ClCompile Include="AI\MonsterBTRunner.cpp" />
     <ClCompile Include="AI\MonsterCodeBaseBT.cpp" />
     <ClCompile Include="World\NavMesh.cpp" />
     <ClCompile Include="World\CrowdNavMovement.cpp" />
@@ -277,6 +278,8 @@
     <ClInclude Include="Actor\Monster.h" />
     <ClInclude Include="Actor\NonPlayerCharacter.h" />
     <ClInclude Include="AI\MonsterBT.h" />
+    <ClInclude Include="AI\MonsterBTNodes.h" />
+    <ClInclude Include="AI\MonsterBTRunner.h" />
     <ClInclude Include="AI\MonsterCodeBaseBT.h" />
     <ClInclude Include="World\NavMesh.h" />
     <ClInclude Include="World\INavMovement.h" />

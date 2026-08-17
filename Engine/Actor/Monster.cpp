@@ -4,17 +4,12 @@
 #include "World.h"
 #include "DetourCommon.h"
 #include "MathHelper.h"
-#include "behaviortree_cpp/bt_factory.h"
 #include "Vector3.h"
 #include "LogHelper.h"
-#include "MonsterBT.h"
-#include "MonsterCodeBaseBT.h"
-#include "../BehaviorTree/BehaviorTree.h" // bt_ 의 Tick/Release 호출에 완전한 타입 필요
 #include "Common.h"
 #include "Map.h"
 #include "INavMovement.h"
 #include "SkillRegistry.h"
-#include "BTDebugManager.h"
 #include "Player.h"
 #include "Character.h"
 #include "PlayerEventBrokerProxy.h"
@@ -31,7 +26,7 @@ Monster::BTBackend Monster::btBackend_ = Monster::BTBackend::CodeBase;
 
 
 Monster::Monster(Map* map)
-	: Actor(map), bt_(nullptr), tree_(nullptr)
+	: Actor(map)
 {
 	gameObjectType_ = syncnet::GameObjectType::GameObjectType_Monster;
 	targetActorId_ = -1;
@@ -42,18 +37,7 @@ Monster::Monster(Map* map)
 
 Monster::~Monster()
 {
-	if (bt_ != nullptr)
-	{
-		bt_->Release(); // 노드들을 해제한다(트리 객체는 delete 로).
-		delete bt_;
-		bt_ = nullptr;
-	}
-
-	if (tree_ != nullptr)
-	{
-		delete tree_;
-		tree_ = nullptr;
-	}
+	// BT 트리는 brain_ 이 소유한다(백엔드별 해제 방식도 그쪽에 있다).
 }
 
 bool Monster::Init(Vector3& pos)
@@ -86,20 +70,10 @@ bool Monster::Init(Vector3& pos)
 
 	name_ = "Monster:" + std::to_string(actorId_);
 
-	// 실제로 틱할 트리 하나만 만든다. 예전에는 둘 다 만들어 두고 하나만 틱했는데,
+	// 선택된 백엔드의 트리 하나만 만든다. 예전에는 둘 다 만들어 두고 하나만 틱했는데,
 	// 스폰마다 Monster.xml 을 읽어 파싱하는 비용(behaviortree_cpp)을 쓰지도 않는 트리에 지불했다.
 	// 백엔드는 스폰 시점에 고정되므로, 바꾸려면 몬스터 생성 전에 btBackend_ 를 설정해야 한다.
-	if (btBackend_ == BTBackend::CodeBase)
-	{
-		bt_ = MonsterCodeBaseBT::createTree(this);
-	}
-	else
-	{
-		tree_ = MonsterBT::createTree(this);
-#if defined(ENABLE_BT_DEBUG)
-		BTDebugManager::Instance().PublishTreeDefinition(this);
-#endif
-	}
+	brain_.Create(this);
 	return true;
 }
 
@@ -107,18 +81,7 @@ void Monster::Update(float dt)
 {
 	Actor::Update(dt);
 	skillSet_.Update(this, dt); // 스킬 쿨다운/페이즈 진행
-	//runBehaviorTree(this);
-	if (bt_ != nullptr)
-	{
-		// 인하우스 BT(기본). 틱 비용이 낮은 대신 BT 디버그 뷰어를 지원하지 않는다.
-		bt_->Tick();
-	}
-	else if (tree_ != nullptr)
-	{
-		BT_DEBUG_BEGIN_TICK(this);
-		tree_->tickOnce();
-		BT_DEBUG_END_TICK(this);
-	}
+	brain_.Tick(this);
 }
 
 int Monster::AttackRange()

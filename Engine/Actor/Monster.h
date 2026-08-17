@@ -1,18 +1,11 @@
 #pragma once
 #include "Actor.h"
 #include "LuaObject.h"
+#include "MonsterBTRunner.h"
 #include "SkillSet.h"
 
 #include <string>
 
-namespace BT
-{
-	class BehaviorTree;
-	class Tree;
-}
-
-class Action_Patrol;
-class ActionPatrol;
 class Vector3;
 
 class Monster : public Actor, public LuaObject<Monster>
@@ -33,9 +26,8 @@ public:
 	static constexpr int kMeleeSkillId = 3;
 
 private:
-	BT::BehaviorTree * bt_;
+	MonsterBTRunner brain_;     // 선택된 백엔드의 BT 트리(생성/틱/해제를 위임한다)
 	float spawnPos_[3];
-	BT::Tree* tree_;
 	bool deadNotified_ = false; // 사망 이벤트 중복 발행 방지
 	SkillSet skillSet_;         // 플레이어와 동일한 스킬 파이프라인(TryCast)을 사용한다
 
@@ -61,6 +53,9 @@ public:
 
 	SkillSet& GetSkillSet() { return skillSet_; }
 
+	// 배회(patrol) 의 중심점. 스폰 시 네비메시에 스냅된 위치다.
+	const float* GetSpawnPos() const { return spawnPos_; }
+
 	void SetDataId(int dataId) { dataId_ = dataId; }
 	int GetDataId() const { return dataId_; }
 
@@ -68,8 +63,5 @@ public:
 	void NotifyKilledBy();
 
 	static void registerLuaFunctionAll();
-
-	friend Action_Patrol;
-	friend ActionPatrol;
 };
 

@@ -782,8 +782,8 @@ BENCHMARK_CAPTURE(BM_DetectEnemyOnly, waypoint, "waypoint")
 // ============================================================================
 // BT 프레임워크 비교: behaviortree_cpp vs ../BehaviorTree(인하우스)
 //
-// 몬스터 트리(GameData/Monster.xml)와 MonsterCodeBaseBT 는 노드 로직/구조가 1:1 로
-// 동일하므로, 게임 로직 비용은 상쇄되고 프레임워크 자체의 오버헤드 차이가 드러난다.
+// 두 백엔드는 노드 로직을 아예 공유하고(Engine/AI/MonsterBTNodes.h) 트리 구조도 1:1 로
+// 같으므로, 게임 로직 비용은 상쇄되고 프레임워크 자체의 오버헤드 차이가 드러난다.
 //   - BM_BTFrameworkTick_* : 스텁 노드로 만든 동일 토폴로지 트리 1회 틱(순수 오버헤드)
 //   - BM_BTCreate/*        : 몬스터 1마리분 트리 생성 비용(프로덕션 경로 그대로)
 //   - BM_BTWorldTickActors/*: 몬스터 N마리 UpdateActors(BT 틱 포함) 1회 비용

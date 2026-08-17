@@ -196,7 +196,10 @@ namespace BT
 		virtual void Release() { delete this; }
 
 	protected:
-		Condition(bool InIsNegation) :IsNegation(InIsNegation) {}
+		// 부정(negation) 을 쓰지 않는 조건이 대부분이라 기본값을 둔다.
+		// 덕분에 파생 노드가 Action 과 같은 시그니처(인자 없는 기반 생성)로 만들어져,
+		// 조건/액션을 한 템플릿으로 감쌀 수 있다(Engine/AI/MonsterCodeBaseBT.cpp).
+		Condition(bool InIsNegation = false) :IsNegation(InIsNegation) {}
 		virtual ~Condition() {}
 
 	protected:
