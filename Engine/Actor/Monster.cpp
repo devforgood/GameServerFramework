@@ -124,6 +124,28 @@ int Monster::Resume()
 	return 0;
 }
 
+void Monster::SetDataId(int dataId)
+{
+	dataId_ = dataId;
+
+	const gamedata::MonsterData* data = ResourceLoader::Instance().GetMonsterData(dataId);
+	if (data == nullptr)
+	{
+		LOG.warn("Monster: monster.json 에 id {} 가 없다. 기본 스탯으로 스폰한다.", dataId);
+		return;
+	}
+
+	// 스폰 시점이므로 체력을 최대치로 채운다.
+	SetCombatStats(data->hp, data->attack, data->defense, /*resetHealth=*/true);
+	name_ = data->name.empty() ? name_ : data->name;
+}
+
+int Monster::GetRewardExp() const
+{
+	const gamedata::MonsterData* data = ResourceLoader::Instance().GetMonsterData(dataId_);
+	return data != nullptr ? data->exp : 0;
+}
+
 void Monster::NotifyKilledBy()
 {
 	if (deadNotified_)
@@ -136,7 +158,7 @@ void Monster::NotifyKilledBy()
 
 	// 액터 → 캐릭터 → 플레이어 변환과 파티 크레딧 분배는 party_credit 이 맡는다.
 	// 여기서는 "이 액터가 여기서 죽었다"까지만 알린다.
-	party_credit::PublishActorDead(map_, killer_actor_id, position_, actorId_, dataId_);
+	party_credit::PublishActorDead(map_, killer_actor_id, position_, actorId_, dataId_, GetRewardExp());
 }
 
 

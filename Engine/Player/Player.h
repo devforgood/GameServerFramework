@@ -17,6 +17,7 @@ class Player : public GameObject, public std::enable_shared_from_this<Player>
 {
 private:
 	long playerId_;
+	long long dbPlayerId_ = 0; // player.id (영속). 인증 후 확정된다.
 	std::string name_;
 	int level_;
 	boost::uuids::uuid uuid_;
@@ -36,9 +37,10 @@ private:
 	// Character 는 맵 이동 때마다 재생성되므로, 이동에도 유지되는 Player 에 보관한다.
 	uint64_t lastGateMoveMs_ = 0;
 
-	// 로그인 시 결정된 스폰 맵 id(기본 맵 또는 마지막 로그아웃 위치의 맵).
-	// 클라가 보내는 AddAgent(Character) 를 이 맵으로 라우팅한다. 0 = 미정(기본 맵).
+	// 로그인 시 결정된 스폰 맵/좌표(기본 맵의 스폰 마커 또는 저장된 마지막 위치).
+	// 클라가 보내는 AddAgent(Character) 를 이 맵/좌표로 처리한다. 0 = 미정(기본 맵).
 	int spawnMapId_ = 0;
+	syncnet::Vec3 spawnPos_{ 0, 0, 0 };
 
 public:
 	Player();
@@ -59,8 +61,16 @@ public:
 	std::shared_ptr<GameSession> GetSession() { return session_.lock(); }
 	GameServer* GetServer() { return server_; }
 
+	// 런타임 핸들. 프로세스 로컬 카운터라 재시작하면 값이 달라진다.
+	// 월드/파티/브로드캐스트 같은 "지금 접속 중" 자료구조의 키로만 쓴다.
 	long GetPlayerId() { return playerId_; }
 	std::string GetName() { return name_; }
+
+	// 영속 캐릭터 행 id(player.id). 로그인 인증이 끝나야 정해진다(0 = 아직 미확정).
+	// 저장/로드는 반드시 이 값을 키로 써야 한다 — playerId_ 를 쓰면 접속 순서에 따라
+	// 남의 행을 읽고 덮어쓴다.
+	long long GetDbPlayerId() const { return dbPlayerId_; }
+	void SetDbPlayerId(long long id) { dbPlayerId_ = id; }
 
 	void SetUserId(const std::string& userId) { userId_ = userId; }
 	const std::string& GetUserId() const { return userId_; }
@@ -76,11 +86,23 @@ public:
 	}
 	void MarkGateMoved(uint64_t nowMs) { lastGateMoveMs_ = nowMs; }
 
-	void SetSpawnMapId(int mapId) { spawnMapId_ = mapId; }
+	// 로그인 응답에서 서버가 정한 스폰 맵/좌표. 클라의 AddAgent 는 요청에 담긴 좌표 대신
+	// 이 값을 쓴다 — 클라가 좌표를 고르면 임의 지점으로 들어올 수 있고, 응답으로 알려준
+	// 위치와 실제 스폰이 어긋나기도 한다.
+	void SetSpawnLocation(int mapId, const syncnet::Vec3& pos)
+	{
+		spawnMapId_ = mapId;
+		spawnPos_ = pos;
+	}
 	int GetSpawnMapId() const { return spawnMapId_; }
+	const syncnet::Vec3& GetSpawnPos() const { return spawnPos_; }
 
 	void Possess(std::shared_ptr<Character> character);
 	void UnPossess();
+
+	// PlayerSkill(배운 스킬)을 현재 캐릭터의 SkillSet 에 반영한다.
+	// 빙의 시점과, 스킬을 새로 배운 뒤(퀘스트 보상 등)에 호출한다.
+	void ApplyOwnedSkillsToCharacter();
 
 	void Send(std::shared_ptr<send_message>& msg);
 	void Close();

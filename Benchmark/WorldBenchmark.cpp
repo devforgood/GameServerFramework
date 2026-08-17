@@ -505,7 +505,7 @@ static void BM_LargeMapTickCapacityEngaged(benchmark::State& state)
 	{
 		syncnet::Vec3 v(c[0], c[1], c[2]);
 		auto player = std::make_shared<Player>();
-		player->SetSpawnMapId(map->GetMapId());
+		player->SetSpawnLocation(map->GetMapId(), v);
 		map->Enter(player);
 		if (map->OnAddAgent(player, syncnet::GameObjectType_Character, &v))
 		{

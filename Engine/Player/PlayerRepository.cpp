@@ -1,8 +1,12 @@
 #include "PlayerRepository.h"
 
 #include <functional>
+#include <memory>
 #include <vector>
 
+#include <mariadb/conncpp.hpp>
+
+#include "LogHelper.h"
 #include "Player.h"
 #include "PlayerLoadData.h"
 #include "PlayerSaveData.h"
@@ -42,6 +46,9 @@ namespace
             PlayerWalletDAO(conn).Select(id, data.wallet);
         },
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
+            PlayerLocationDAO(conn).Select(id, data.location);
+        },
+        [](sql::Connection* conn, long id, PlayerLoadData& data) {
             data.quest_actives = QuestActiveDAO(conn).SelectByIndex(id);
         },
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
@@ -79,6 +86,13 @@ namespace
             }
         },
         [](sql::Connection* conn, const PlayerSaveData& data) {
+            if (data.location)
+            {
+                PlayerLocationDAO location_dao(conn);
+                ApplyRecord(location_dao, *data.location);
+            }
+        },
+        [](sql::Connection* conn, const PlayerSaveData& data) {
             if (data.quest_actives)
             {
                 QuestActiveDAO quest_dao(conn);
@@ -104,6 +118,90 @@ namespace
             }
         },
     };
+}
+
+namespace
+{
+    // name(=userId) 으로 캐릭터 행을 찾는다. 없으면 0.
+    long long SelectIdByName(sql::Connection* conn, const std::string& userId)
+    {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn->prepareStatement("SELECT id FROM player WHERE name = ?"));
+        stmt->setString(1, userId);
+
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        if (res->next())
+            return res->getInt64("id");
+        return 0;
+    }
+}
+
+long long PlayerRepository::ResolveAccountRow(sql::Connection* conn,
+                                              const std::string& userId,
+                                              long long authPlayerId)
+{
+    // 인증이 행 id 를 알려줬으면 그대로 쓴다(로비가 계정↔캐릭터 매핑을 아는 경우).
+    if (authPlayerId != 0)
+        return authPlayerId;
+
+    if (conn == nullptr || userId.empty())
+        return 0;
+
+    try
+    {
+        if (const long long existing = SelectIdByName(conn, userId))
+            return existing;
+
+        // 첫 접속: 행을 만든다. name 은 UNIQUE 라, 동시에 두 세션이 들어오면
+        // 한쪽만 성공한다 — 실패한 쪽은 다시 조회해 같은 행을 쓴다.
+        try
+        {
+            PlayerVO vo{};
+            vo.name = userId;
+            vo.level = 1;
+            vo.exp = 0;
+            PlayerDAO(conn).Insert(vo);
+        }
+        catch (const std::exception&)
+        {
+            // UNIQUE 충돌로 보고 재조회한다. 정말 다른 오류였다면 아래에서 0 이 나온다.
+        }
+
+        return SelectIdByName(conn, userId);
+    }
+    catch (const std::exception& e)
+    {
+        LOG.error("ResolveAccountRow 실패 (userId '{}'): {}", userId, e.what());
+        return 0;
+    }
+}
+
+void PlayerRepository::AsyncResolveAndLoad(std::shared_ptr<Player> player,
+                                           const std::string& userId,
+                                           long long authPlayerId,
+                                           std::function<void(Player&, bool)> onComplete)
+{
+    // 이 시점에는 아직 행 id 가 없으므로 디스패처가 넘겨주는 id 는 쓰지 않는다.
+    PlayerDbDispatcher::DispatchWithoutId(player, "PlayerResolveLoad",
+        [userId, authPlayerId](sql::Connection* conn) {
+            auto result = std::make_shared<PlayerLoadResult>();
+            result->dbPlayerId = ResolveAccountRow(conn, userId, authPlayerId);
+            if (result->dbPlayerId == 0)
+                return result; // ok = false
+
+            LoadAll(conn, static_cast<long>(result->dbPlayerId), result->data);
+            result->ok = true;
+            return result;
+        },
+        [onComplete = std::move(onComplete)](Player& player, const PlayerLoadResult& result) {
+            if (result.ok)
+            {
+                // 저장/로드 키를 확정한 뒤에 반영한다. 순서가 바뀌면 첫 저장이 0번 행으로 나간다.
+                player.SetDbPlayerId(result.dbPlayerId);
+                player.OnLoadedData(result.data);
+            }
+            onComplete(player, result.ok);
+        });
 }
 
 void PlayerRepository::LoadAll(sql::Connection* conn, long player_id, PlayerLoadData& out_data)
@@ -135,6 +233,11 @@ void PlayerRepository::AsyncLoad(std::shared_ptr<Player> player)
 
 void PlayerRepository::AsyncSave(std::shared_ptr<Player> player, std::shared_ptr<PlayerSaveData> data)
 {
+    // 계정 행이 아직 확정되지 않았으면(로그인 전, 또는 확정 실패) 저장하지 않는다.
+    // 이 검사가 없으면 0번 행이나 남의 행으로 나간다.
+    if (player == nullptr || player->GetDbPlayerId() == 0)
+        return;
+
     // DB 처리: 수집된 변경분을 저장한다. (결과 후처리 없음)
     PlayerDbDispatcher::Dispatch(player, "PlayerSave",
         [data](sql::Connection* conn, long /*player_id*/) {

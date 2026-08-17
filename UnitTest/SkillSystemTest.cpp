@@ -19,6 +19,8 @@
 #include "Skill.h"
 #include "SkillSet.h"
 #include "SkillRegistry.h"
+#include "CombatSystem.h"
+#include <algorithm>
 #include "Vector3.h"
 #include "syncnet_generated.h"
 
@@ -114,6 +116,16 @@ protected:
 		auto actor = map_->OnAddAgent(nullptr, syncnet::GameObjectType_Monster, &pos);
 		return std::dynamic_pointer_cast<Monster>(actor);
 	}
+
+	// 캐릭터는 이제 "배운 스킬"만 들고 스폰된다(skill.json 의 starter 만 기본 지급).
+	// 그 외 스킬을 쓰는 테스트는 프로덕션과 마찬가지로 먼저 습득시켜야 한다.
+	static void GrantSkill(const std::shared_ptr<Character>& character, int skillId)
+	{
+		ASSERT_NE(character, nullptr);
+		Skill* skill = SkillRegistry::Instance().Get(skillId);
+		ASSERT_NE(skill, nullptr) << "skill.json 에 id " << skillId << " 가 없다";
+		character->GetSkillSet().AddSkill(skillId, skill);
+	}
 };
 
 // 스킬 정의는 id 당 1개만 생성되어 공유된다(기존: 캐릭터마다 전체 테이블 인스턴스화).
@@ -172,8 +184,14 @@ TEST_F(SkillSystemTest, DamageGoesThroughCombatPipeline)
 	ASSERT_EQ(attacker->GetSkillSet().TryCast(attacker.get(), ctx), CastResult::Success);
 
 	EXPECT_LT(victim->GetHealth(), healthBefore);      // 데미지 적용
-	EXPECT_GE(victim->GetHealth(), healthBefore - 20); // max_damage 상한
 	EXPECT_EQ(victim->GetLastAttackerActorId(), attacker->GetActorId()); // 킬 크레딧
+
+	// 상한은 스킬 max_damage 가 아니라 combat::ComputeDamage 의 결과다
+	// (굴림값 + 공격자 공격력 → 대상 방어력으로 경감).
+	const double kNormalAttackMaxDamage = 20.0; // skill.json id 1
+	const int worstCase = combat::ComputeDamage(
+		kNormalAttackMaxDamage, attacker->GetAttack(), victim->GetDefense());
+	EXPECT_GE(victim->GetHealth(), healthBefore - worstCase);
 }
 
 // 점프 수명주기: 시전(Active, 입력 잠금) → 지속시간 종료(teleport, 잠금 해제, Cooldown) → Ready.
@@ -270,7 +288,10 @@ TEST_F(SkillSystemTest, DataOnlySkillNeedsNoNewClass)
 	ctx.skillId = 777;
 	ctx.targetPos = victim->GetPosition();
 	EXPECT_EQ(skills.TryCast(attacker.get(), ctx), CastResult::Success);
-	EXPECT_EQ(victim->GetHealth(), healthBefore - 7);
+
+	// 고정 7 데미지도 공격력/방어력 보정을 거친다.
+	const int expected = combat::ComputeDamage(7.0, attacker->GetAttack(), victim->GetDefense());
+	EXPECT_EQ(victim->GetHealth(), healthBefore - expected);
 }
 
 // skill.json 의 code_name 없는 엔트리(몬스터 근접, id 3)는 팩토리가 기본 Skill 로 생성한다
@@ -363,6 +384,8 @@ TEST_F(SkillSystemTest, AoEDamageHitsAroundTargetPoint)
 
 	int before = victim->GetHealth();
 
+	GrantSkill(attacker, 101);
+
 	CastContext ctx;
 	ctx.skillId = 101; // Fireball: effects=[aoe_damage], radius 4
 	ctx.targetPos = victim->GetPosition();
@@ -370,7 +393,7 @@ TEST_F(SkillSystemTest, AoEDamageHitsAroundTargetPoint)
 
 	EXPECT_LT(victim->GetHealth(), before);                              // 목표 지점 대상 피격
 	EXPECT_EQ(victim->GetLastAttackerActorId(), attacker->GetActorId()); // combat 단일 경로(킬 크레딧)
-	EXPECT_EQ(attacker->GetHealth(), 100);                              // 캐스터는 AoE 에서 제외
+	EXPECT_EQ(attacker->GetHealth(), attacker->GetMaxHealth());          // 캐스터는 AoE 에서 제외
 }
 
 // heal: 캐스터 자신의 체력을 heal 만큼 회복한다(Health 플래그로 자동 동기화).
@@ -380,12 +403,16 @@ TEST_F(SkillSystemTest, HealRestoresCasterHealth)
 	ASSERT_NE(caster, nullptr);
 	caster->SetHealth(50);
 
+	GrantSkill(caster, 112);
+
 	CastContext ctx;
 	ctx.skillId = 112; // Prayer: effects=[heal], heal 40
 	ctx.targetPos = caster->GetPosition();
 	ASSERT_EQ(caster->GetSkillSet().TryCast(caster.get(), ctx), CastResult::Success);
 
-	EXPECT_EQ(caster->GetHealth(), 90);
+	// 회복은 최대 체력을 넘지 않는다(레벨 1 기준 100 이므로 50+40=90).
+	const int expected = std::min(50 + 40, caster->GetMaxHealth());
+	EXPECT_EQ(caster->GetHealth(), expected);
 }
 
 // dash(팔라딘 차지): 순간이동(teleport)과 달리 Active 동안 지면을 따라 전진하고,
@@ -404,6 +431,8 @@ TEST_F(SkillSystemTest, ChargeDashesToTargetAndDamagesOnArrival)
 	int healthBefore = victim->GetHealth();
 
 	SkillSet& skills = caster->GetSkillSet();
+	GrantSkill(caster, 119);
+
 	CastContext ctx;
 	ctx.skillId = 119; // Charge: input_lock + dash(active) + aoe_damage(end), range 12, duration 1
 	ctx.targetPos = dest;
@@ -450,6 +479,8 @@ TEST_F(SkillSystemTest, DashClampsDistanceToRange)
 	const Vector3 start = caster->GetPosition();
 	SkillSet& skills = caster->GetSkillSet();
 
+	GrantSkill(caster, 130);
+
 	CastContext ctx;
 	ctx.skillId = 130; // Vault: input_lock + dash, range 8, duration 1 (데미지 없음)
 	ctx.targetPos = Vector3(start.x + 500.0f, start.y, start.z);
@@ -484,6 +515,8 @@ TEST_F(SkillSystemTest, KnockbackPushesTargetsAwayFromCaster)
 	float distanceBefore = distanceFromCaster(before);
 	int healthBefore = victim->GetHealth();
 
+	GrantSkill(caster, 123);
+
 	CastContext ctx;
 	ctx.skillId = 123; // War Cry: damage(range 6, angle 360) + knockback 4
 	ctx.targetPos = victim->GetPosition();
@@ -510,9 +543,11 @@ TEST_F(SkillSystemTest, PassiveAuraAutoPulsesDamageWithoutCasting)
 	ASSERT_NE(caster, nullptr);
 	ASSERT_NE(victim, nullptr);
 
+	// 패시브도 배워야 켜진다(starter 가 아니므로 명시적으로 습득시킨다).
+	GrantSkill(caster, 200);
 	SkillSet& skills = caster->GetSkillSet();
 
-	// 패시브는 시전 대상이 아니다 — 클라가 UseSkill 로 보내도 거부된다.
+	// 패시브는 시전 대상이 아니다 — 보유하고 있어도 UseSkill 로는 발동하지 않는다.
 	CastContext ctx;
 	ctx.skillId = 200; // Holy Fire: aura_damage pulse, interval 0.5, radius 5
 	ctx.targetPos = caster->GetPosition();
@@ -533,13 +568,13 @@ TEST_F(SkillSystemTest, PassiveAuraAutoPulsesDamageWithoutCasting)
 }
 
 // 패시브(Prayer 오라): 보유만으로 pulse 마다 캐스터 체력을 회복한다.
-// (Holy Fire 패시브도 함께 켜져 있지만 근처 대상이 없으면 캐스터에는 영향이 없다.)
 TEST_F(SkillSystemTest, PassiveAuraAutoPulsesHeal)
 {
 	auto caster = SpawnCharacter();
 	ASSERT_NE(caster, nullptr);
 	caster->SetHealth(50);
 
+	GrantSkill(caster, 201); // Prayer 오라(패시브)
 	SkillSet& skills = caster->GetSkillSet();
 
 	skills.Update(caster.get(), 1.0f); // Prayer(interval 1.0) 1회 pulse → +5

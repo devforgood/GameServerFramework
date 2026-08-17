@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "게임 서버 실행 설정 예시. 실제로 쓰려면 server_config.json 으로 복사한다.",
+    "실행 디렉터리의 server_config.json 을 자동으로 읽고, --config <path> 로 바꿀 수 있다.",
+    "파일이 없어도 서버는 뜨며, 그때는 아래 주석의 '기본값'이 적용된다(운영에서 안전한 값).",
+    "db.password 는 환경변수 GAMESERVER_DB_PASSWORD 가 있으면 그 값이 이 파일을 이긴다."
+  ],
+
+  "db": {
+    "url": "jdbc:mariadb://localhost:3306/testdb",
+    "user": "root",
+    "password": ""
+  },
+
+  "network": {
+    "_comment": "max_connections: 서버(포트)당 동시 접속 상한. 초과 연결은 세션을 만들기 전에 끊는다.",
+    "max_connections": 2000,
+
+    "_comment_queue": "max_send_queue: 세션당 송신 대기 메시지 상한. 수신을 멈춘 클라이언트가 메모리를 끌어올리는 것을 막는다. 넘으면 그 세션을 끊는다.",
+    "max_send_queue": 256,
+
+    "_comment_rate": "레이트리밋(토큰 버킷). 초당 max_packets_per_second 개씩 차고 packet_burst 까지 쌓인다. 초과하면 세션을 끊는다. 0 이면 비활성.",
+    "max_packets_per_second": 60,
+    "packet_burst": 120,
+
+    "_comment_debug": "SetRaycast / TreeDebugRequest 허용 여부. 운영에서는 반드시 false. 기본값 false.",
+    "allow_debug_commands": false
+  },
+
+  "auth": {
+    "_comment": "db_token: session_token 테이블을 조회해 검증(기본). allow_all: 검증 없이 통과 — 로컬 개발 전용.",
+    "mode": "db_token",
+
+    "_comment_ttl": "발급 후 이 시간이 지난 토큰은 거부한다(초). 0 이면 만료를 보지 않는다.",
+    "token_ttl_seconds": 3600
+  }
+}

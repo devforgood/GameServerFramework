@@ -26,13 +26,6 @@ public struct Login : IFlatbufferObject
   public ArraySegment<byte>? GetUserIdBytes() { return __p.__vector_as_arraysegment(4); }
 #endif
   public byte[] GetUserIdArray() { return __p.__vector_as_array<byte>(4); }
-  public string Password { get { int o = __p.__offset(6); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
-#if ENABLE_SPAN_T
-  public Span<byte> GetPasswordBytes() { return __p.__vector_as_span<byte>(6, 1); }
-#else
-  public ArraySegment<byte>? GetPasswordBytes() { return __p.__vector_as_arraysegment(6); }
-#endif
-  public byte[] GetPasswordArray() { return __p.__vector_as_array<byte>(6); }
   public int MapId { get { int o = __p.__offset(8); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public syncnet.Vec3? Pos { get { int o = __p.__offset(10); return o != 0 ? (syncnet.Vec3?)(new syncnet.Vec3()).__assign(o + __p.bb_pos, __p.bb) : null; } }
   public int ActorId { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
@@ -43,14 +36,21 @@ public struct Login : IFlatbufferObject
   public ArraySegment<byte>? GetUuidBytes() { return __p.__vector_as_arraysegment(14); }
 #endif
   public byte[] GetUuidArray() { return __p.__vector_as_array<byte>(14); }
+  public string AuthToken { get { int o = __p.__offset(16); return o != 0 ? __p.__string(o + __p.bb_pos) : null; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetAuthTokenBytes() { return __p.__vector_as_span<byte>(16, 1); }
+#else
+  public ArraySegment<byte>? GetAuthTokenBytes() { return __p.__vector_as_arraysegment(16); }
+#endif
+  public byte[] GetAuthTokenArray() { return __p.__vector_as_array<byte>(16); }
 
-  public static void StartLogin(FlatBufferBuilder builder) { builder.StartTable(6); }
+  public static void StartLogin(FlatBufferBuilder builder) { builder.StartTable(7); }
   public static void AddUserId(FlatBufferBuilder builder, StringOffset userIdOffset) { builder.AddOffset(0, userIdOffset.Value, 0); }
-  public static void AddPassword(FlatBufferBuilder builder, StringOffset passwordOffset) { builder.AddOffset(1, passwordOffset.Value, 0); }
   public static void AddMapId(FlatBufferBuilder builder, int mapId) { builder.AddInt(2, mapId, 0); }
   public static void AddPos(FlatBufferBuilder builder, Offset<syncnet.Vec3> posOffset) { builder.AddStruct(3, posOffset.Value, 0); }
   public static void AddActorId(FlatBufferBuilder builder, int actorId) { builder.AddInt(4, actorId, 0); }
   public static void AddUuid(FlatBufferBuilder builder, StringOffset uuidOffset) { builder.AddOffset(5, uuidOffset.Value, 0); }
+  public static void AddAuthToken(FlatBufferBuilder builder, StringOffset authTokenOffset) { builder.AddOffset(6, authTokenOffset.Value, 0); }
   public static Offset<syncnet.Login> EndLogin(FlatBufferBuilder builder) {
     int o = builder.EndTable();
     return new Offset<syncnet.Login>(o);

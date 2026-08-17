@@ -5,6 +5,7 @@
 #include "PlayerLevel.h"
 #include "PlayerItem.h"
 #include "PlayerSkill.h"
+#include "Player.h"
 #include "PlayerWallet.h"
 #include "GameObject.h"
 #include "PlayerSender.h"
@@ -808,8 +809,17 @@ void PlayerQuest::grantRewards(const Quest& quest, int reward_choice)
 
 		if (auto* skills = game_object->GetComponent<PlayerSkill>())
 		{
+			bool learnedAny = false;
 			for (int skill_id : grant.skill_ids)
-				skills->LearnSkill(skill_id);
+				learnedAny |= skills->LearnSkill(skill_id);
+
+			// 캐릭터의 SkillSet 은 빙의 시점에 한 번 채워지므로, 새로 배운 스킬은
+			// 여기서 다시 실어 줘야 즉시 쓸 수 있다(안 하면 재접속 전까지 못 쓴다).
+			if (learnedAny)
+			{
+				if (auto* player = dynamic_cast<Player*>(game_object))
+					player->ApplyOwnedSkillsToCharacter();
+			}
 		}
 	}
 

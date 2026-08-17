@@ -38,6 +38,27 @@ private:
 
 // ----------------------------------------
 
+class PlayerLocationDAO {
+public:
+    PlayerLocationDAO(sql::Connection* conn);
+
+    void Insert(const PlayerLocationVO& vo);
+    void Update(const PlayerLocationVO& vo);
+    void Delete(const PlayerLocationVO& vo);
+
+    // Select by primary key
+    bool Select(long long character_id, PlayerLocationVO& out_vo);
+
+    // Select by index columns (if any)
+
+private:
+    sql::Connection* conn_;
+};
+
+
+
+// ----------------------------------------
+
 class PlayerItemDAO {
 public:
     PlayerItemDAO(sql::Connection* conn);
@@ -137,6 +158,28 @@ public:
     bool Select(long long character_id, QuestStateVO& out_vo);
 
     // Select by index columns (if any)
+
+private:
+    sql::Connection* conn_;
+};
+
+
+
+// ----------------------------------------
+
+class SessionTokenDAO {
+public:
+    SessionTokenDAO(sql::Connection* conn);
+
+    void Insert(const SessionTokenVO& vo);
+    void Update(const SessionTokenVO& vo);
+    void Delete(const SessionTokenVO& vo);
+
+    // Select by primary key
+    bool Select(std::string token, SessionTokenVO& out_vo);
+
+    // Select by index columns (if any)
+    std::vector<SessionTokenVO> SelectByIndex(std::string user_id);
 
 private:
     sql::Connection* conn_;

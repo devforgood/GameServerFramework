@@ -845,8 +845,9 @@ TEST_F(PartyQuestShareTest, SharedKillSplitsExp)
 	const int before_solo = solo.level->GetExp();
 	const int before_shared = shared.level->GetExp();
 
-	solo.go.GetComponent<PlayerEventBroker>()->publish(EventActorDead{ 1, 500, 3, 1 });
-	shared.go.GetComponent<PlayerEventBroker>()->publish(EventActorDead{ 1, 500, 3, 2 });
+	// 마지막 인자는 보상 경험치(monster.json 의 exp). 분배는 credit_share 가 정한다.
+	solo.go.GetComponent<PlayerEventBroker>()->publish(EventActorDead{ 1, 500, 3, 1, 50 });
+	shared.go.GetComponent<PlayerEventBroker>()->publish(EventActorDead{ 1, 500, 3, 2, 50 });
 
 	const int solo_gain = solo.level->GetExp() - before_solo;
 	const int shared_gain = shared.level->GetExp() - before_shared;

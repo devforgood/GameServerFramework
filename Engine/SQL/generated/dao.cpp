@@ -6,11 +6,12 @@ PlayerDAO::PlayerDAO(sql::Connection* conn)
 void PlayerDAO::Insert(const PlayerVO& vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("INSERT INTO player (name, level) VALUES (?, ?)")
+            conn_->prepareStatement("INSERT INTO player (name, level, exp) VALUES (?, ?, ?)")
         );
 
         stmt->setString(1, vo.name);
         stmt->setInt(2, vo.level);
+        stmt->setInt64(3, vo.exp);
 
         stmt->execute();
     }
@@ -27,7 +28,7 @@ void PlayerDAO::Update(const PlayerVO& vo) {
         std::unique_ptr<sql::PreparedStatement> stmt(
             conn_->prepareStatement(
                 "UPDATE player "
-                "SET name = ?, level = ? "
+                "SET name = ?, level = ?, exp = ? "
                 "WHERE id = ?"
             )
         );
@@ -35,6 +36,7 @@ void PlayerDAO::Update(const PlayerVO& vo) {
         int param_idx = 1;
         stmt->setString(param_idx++, vo.name);
         stmt->setInt(param_idx++, vo.level);
+        stmt->setInt64(param_idx++, vo.exp);
         
         stmt->setInt64(param_idx++, vo.id);
 
@@ -68,7 +70,7 @@ void PlayerDAO::Delete(const PlayerVO& vo) {
 bool PlayerDAO::Select(long long id, PlayerVO& out_vo) {
     try {
         std::unique_ptr<sql::PreparedStatement> stmt(
-            conn_->prepareStatement("SELECT id, name, level FROM player WHERE id = ?")
+            conn_->prepareStatement("SELECT id, name, level, exp FROM player WHERE id = ?")
         );
 
         stmt->setInt64(1, id);
@@ -78,6 +80,109 @@ bool PlayerDAO::Select(long long id, PlayerVO& out_vo) {
             out_vo.id = res->getInt64("id");
             out_vo.name = res->getString("name");
             out_vo.level = res->getInt("level");
+            out_vo.exp = res->getInt64("exp");
+        } else {
+            return false;
+        }
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+    return true;
+}
+
+
+
+// ----------------------------------------
+
+PlayerLocationDAO::PlayerLocationDAO(sql::Connection* conn)
+    : conn_(conn) {}
+
+void PlayerLocationDAO::Insert(const PlayerLocationVO& vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("INSERT INTO player_location (character_id, map_id, x, y, z) VALUES (?, ?, ?, ?, ?)")
+        );
+
+        stmt->setInt64(1, vo.character_id);
+        stmt->setInt(2, vo.map_id);
+        stmt->setDouble(3, vo.x);
+        stmt->setDouble(4, vo.y);
+        stmt->setDouble(5, vo.z);
+
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+void PlayerLocationDAO::Update(const PlayerLocationVO& vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement(
+                "UPDATE player_location "
+                "SET map_id = ?, x = ?, y = ?, z = ? "
+                "WHERE character_id = ?"
+            )
+        );
+
+        int param_idx = 1;
+        stmt->setInt(param_idx++, vo.map_id);
+        stmt->setDouble(param_idx++, vo.x);
+        stmt->setDouble(param_idx++, vo.y);
+        stmt->setDouble(param_idx++, vo.z);
+        
+        stmt->setInt64(param_idx++, vo.character_id);
+
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+void PlayerLocationDAO::Delete(const PlayerLocationVO& vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("DELETE FROM player_location WHERE character_id = ?")
+        );
+
+        stmt->setInt64(1, vo.character_id);
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+bool PlayerLocationDAO::Select(long long character_id, PlayerLocationVO& out_vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("SELECT character_id, map_id, x, y, z FROM player_location WHERE character_id = ?")
+        );
+
+        stmt->setInt64(1, character_id);
+
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        if (res->next()) {
+            out_vo.character_id = res->getInt64("character_id");
+            out_vo.map_id = res->getInt("map_id");
+            out_vo.x = res->getDouble("x");
+            out_vo.y = res->getDouble("y");
+            out_vo.z = res->getDouble("z");
         } else {
             return false;
         }
@@ -672,3 +777,130 @@ bool QuestStateDAO::Select(long long character_id, QuestStateVO& out_vo) {
     return true;
 }
 
+
+
+// ----------------------------------------
+
+SessionTokenDAO::SessionTokenDAO(sql::Connection* conn)
+    : conn_(conn) {}
+
+void SessionTokenDAO::Insert(const SessionTokenVO& vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("INSERT INTO session_token (token, user_id, player_id, issued_at) VALUES (?, ?, ?, ?)")
+        );
+
+        stmt->setString(1, vo.token);
+        stmt->setString(2, vo.user_id);
+        stmt->setInt64(3, vo.player_id);
+        stmt->setString(4, toMySQLDateTime(vo.issued_at));
+
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+void SessionTokenDAO::Update(const SessionTokenVO& vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement(
+                "UPDATE session_token "
+                "SET user_id = ?, player_id = ?, issued_at = ? "
+                "WHERE token = ?"
+            )
+        );
+
+        int param_idx = 1;
+        stmt->setString(param_idx++, vo.user_id);
+        stmt->setInt64(param_idx++, vo.player_id);
+        stmt->setString(param_idx++, toMySQLDateTime(vo.issued_at));
+        
+        stmt->setString(param_idx++, vo.token);
+
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+void SessionTokenDAO::Delete(const SessionTokenVO& vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("DELETE FROM session_token WHERE token = ?")
+        );
+
+        stmt->setString(1, vo.token);
+        stmt->execute();
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+}
+
+bool SessionTokenDAO::Select(std::string token, SessionTokenVO& out_vo) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("SELECT token, user_id, player_id, issued_at FROM session_token WHERE token = ?")
+        );
+
+        stmt->setString(1, token);
+
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        if (res->next()) {
+            out_vo.token = res->getString("token");
+            out_vo.user_id = res->getString("user_id");
+            out_vo.player_id = res->getInt64("player_id");
+            out_vo.issued_at = fromMySQLDateTime(res->getString("issued_at"));
+        } else {
+            return false;
+        }
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+    return true;
+}
+
+std::vector<SessionTokenVO> SessionTokenDAO::SelectByIndex(std::string user_id) {
+    try {
+        std::unique_ptr<sql::PreparedStatement> stmt(
+            conn_->prepareStatement("SELECT token, user_id, player_id, issued_at FROM session_token WHERE user_id = ?")
+        );
+
+        stmt->setString(1, user_id);
+
+        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        std::vector<SessionTokenVO> results;
+        while (res->next()) {
+            SessionTokenVO obj;
+            obj.token = res->getString("token");
+            obj.user_id = res->getString("user_id");
+            obj.player_id = res->getInt64("player_id");
+            obj.issued_at = fromMySQLDateTime(res->getString("issued_at"));
+            results.push_back(obj);
+        }
+        return results;
+    }
+    catch (const sql::SQLException& e) {
+        throw std::runtime_error(std::string("SQL error: ") + e.what());
+    }
+    catch (const std::exception& e) {
+        throw std::runtime_error(std::string("error: ") + e.what());
+    }
+    return std::vector<SessionTokenVO>();
+}

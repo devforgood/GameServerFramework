@@ -471,6 +471,94 @@ void World::leave(std::shared_ptr<Player> player)
 	}
 }
 
+int World::SaveAllPlayers()
+{
+	int count = 0;
+
+	for (auto& pair : players_)
+	{
+		if (pair.second == nullptr)
+			continue;
+		pair.second->SavePlayerData();
+		++count;
+	}
+
+	// 재접속 유예 중인 플레이어도 저장한다. 이들은 players_ 에 없지만 진행 상황은
+	// 살아 있어서, 여기서 빠뜨리면 종료 직전에 끊긴 사람만 진행이 사라진다.
+	for (auto& pair : pendingReconnects_)
+	{
+		if (pair.second.player == nullptr)
+			continue;
+		pair.second.player->SavePlayerData();
+		++count;
+	}
+
+	return count;
+}
+
+int World::EvictExistingLogin(const std::string& userId, const Player* exclude)
+{
+	if (userId.empty())
+		return 0;
+
+	int evicted = 0;
+
+	// 1) 접속 중인 같은 계정의 세션을 끊는다.
+	//    남겨 두면 한 계정이 두 캐릭터로 동시에 돌아다니고, 두 세션이 같은 DB 행에
+	//    번갈아 저장해 진행 상황이 서로를 덮어쓴다(아이템 복사의 고전적 경로다).
+	//    나중에 들어온 쪽을 살리는 것이 일반적이다 — 접속이 끊긴 줄 모르는 쪽이 기존 세션이다.
+	std::vector<std::shared_ptr<Player>> victims;
+	for (auto& pair : players_)
+	{
+		auto& existing = pair.second;
+		if (existing == nullptr || existing.get() == exclude)
+			continue;
+		if (existing->GetUserId() == userId)
+			victims.push_back(existing);
+	}
+
+	for (auto& victim : victims)
+	{
+		LOG.warn("중복 로그인: userId '{}' 의 기존 세션(player {})을 끊는다",
+			userId, victim->GetPlayerId());
+
+		victim->SavePlayerData(); // 진행 상황을 먼저 보존한다
+
+		// 캐릭터를 즉시 제거한다. 유예 대기로 넘기면 계정이 60초 동안 잠긴다.
+		auto character = victim->GetCharacter();
+		if (character != nullptr && character->GetMap() != nullptr)
+			character->GetMap()->OnRemoveAgent(character->GetActorId());
+
+		players_.erase(victim->GetPlayerId());
+		victim->Close(); // 세션 종료(캐릭터가 이미 없으므로 유예 대기로 가지 않는다)
+		++evicted;
+	}
+
+	// 2) 재접속 유예 중인 같은 계정도 정리한다. uuid 핸드오버로 돌아올 자리를 남겨 두면,
+	//    새 로그인과 유예 캐릭터가 같은 계정으로 동시에 존재하게 된다.
+	for (auto it = pendingReconnects_.begin(); it != pendingReconnects_.end(); )
+	{
+		auto& pending = it->second.player;
+		if (pending == nullptr || pending->GetUserId() != userId)
+		{
+			++it;
+			continue;
+		}
+
+		LOG.info("중복 로그인: userId '{}' 의 유예 대기 캐릭터를 정리한다", userId);
+		pending->SavePlayerData();
+
+		auto character = pending->GetCharacter();
+		if (character != nullptr && character->GetMap() != nullptr)
+			character->GetMap()->OnRemoveAgent(character->GetActorId());
+
+		it = pendingReconnects_.erase(it);
+		++evicted;
+	}
+
+	return evicted;
+}
+
 void World::BeginDisconnect(std::shared_ptr<Player> player)
 {
 	if (player == nullptr)
@@ -524,14 +612,14 @@ void World::TickReconnectGrace(float deltaTime)
 		auto player = it->second.player;
 		LOG.info("reconnect grace expired for uuid '{}'. removing character.", it->first);
 
-		// 제거 전에 마지막 위치를 기록한다. 같은 userId 로 다시 로그인하면 이 위치로 스폰된다.
-		RememberLastLocation(player);
+		// 캐릭터를 지우기 전에 저장한다. SavePlayerData 가 현재 위치를 PlayerLocation 에
+		// 찍고 나가므로, 다음 로그인은 여기서 저장된 좌표로 스폰된다.
+		// (순서가 바뀌면 캐릭터가 사라진 뒤라 위치를 읽을 수 없다.)
+		player->SavePlayerData();
 
 		auto character = player->GetCharacter();
 		if (character != nullptr && character->GetMap() != nullptr)
 			character->GetMap()->OnRemoveAgent(character->GetActorId());
-
-		player->SavePlayerData(); // 드롭 전에 영속화(비동기 저장이 shared_ptr 로 수명 유지)
 
 		it = pendingReconnects_.erase(it);
 	}
@@ -561,36 +649,6 @@ std::shared_ptr<Player> World::TryReconnect(const std::string& uuid)
 }
 
 
-
-void World::RememberLastLocation(const std::shared_ptr<Player>& player)
-{
-	if (player == nullptr || player->GetUserId().empty())
-		return;
-
-	auto character = player->GetCharacter();
-	if (character == nullptr || character->GetMap() == nullptr)
-		return;
-
-	// 캐릭터 위치는 서버 좌표계 → Login 응답/AddAgent 에 그대로 쓸 수 있게 클라 좌표계로 변환해 보관.
-	const Vector3& p = character->GetPosition();
-	lastLocations_[player->GetUserId()] = LastLocation{
-		character->GetMap()->GetMapId(),
-		syncnet::Vec3(p.convert_x(), p.convert_y(), p.convert_z()) };
-}
-
-bool World::GetLastLocation(const std::string& userId, int& outMapId, syncnet::Vec3& outPos) const
-{
-	if (userId.empty())
-		return false;
-
-	auto it = lastLocations_.find(userId);
-	if (it == lastLocations_.end())
-		return false;
-
-	outMapId = it->second.mapId;
-	outPos = it->second.pos;
-	return true;
-}
 
 Map* World::FindMap(int mapId)
 {

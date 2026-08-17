@@ -247,3 +247,6 @@ __pycache__/
 
 # Map JSON Updater 자동 백업
 GameData/Map.json.bak
+
+# 서버 실행 설정(DB 비밀번호 등 환경별 값). 템플릿은 Game/server_config.example.json.
+server_config.json

@@ -1,10 +1,25 @@
 <database>
+  <!-- name 은 계정 식별자(userId)다. 로그인 시 session_token.player_id 로 행을 찾고,
+       그 값이 없으면 name 으로 조회/생성해 계정과 캐릭터 행을 잇는다.
+       exp 가 없던 시절에는 재접속마다 현재 레벨의 시작 경험치로 되돌아갔다. -->
   <table name="player" class_name="PlayerDAO" file_name="dao">
     <column name="id" type="BIGINT" auto_increment="true" nullable="false"/>
     <column name="name" type="VARCHAR(50)" nullable="false"/>
     <column name="level" type="INT" default="1"/>
+    <column name="exp" type="BIGINT" default="0" nullable="false"/>
     <primary_key>id</primary_key>
     <unique_key>name</unique_key>
+  </table>
+
+  <!-- 마지막 접속 위치. player 행에 붙이지 않는 이유는 player_wallet 과 같다 —
+       PlayerLevel 이 저장할 때 PlayerVO 를 통째로 다시 만들어 같은 행을 덮어쓴다. -->
+  <table name="player_location" class_name="PlayerLocationDAO" file_name="dao">
+    <column name="character_id" type="BIGINT" nullable="false"/>
+    <column name="map_id" type="INT" default="0" nullable="false"/>
+    <column name="x" type="DOUBLE" default="0" nullable="false"/>
+    <column name="y" type="DOUBLE" default="0" nullable="false"/>
+    <column name="z" type="DOUBLE" default="0" nullable="false"/>
+    <primary_key>character_id</primary_key>
   </table>
   <!--
     인벤토리/보유 스킬은 (캐릭터, 종류) 한 쌍이 곧 한 줄이다. 자동 증가 id 를 쓰면
@@ -49,5 +64,16 @@
     <column name="character_id" type="BIGINT" nullable="false"/>
     <column name="flags" type="BLOB" nullable="false"/>
     <primary_key>character_id</primary_key>
+  </table>
+  <!-- 로그인 세션 토큰. 게임 서버는 이 표를 읽기만 하고, 발급은 로그인/로비 서비스가 한다
+       (지금은 그 연동이 없어 운영 도구/수동 INSERT 로 채운다).
+       token 이 조회 키이므로 유일해야 하고, user_id 로도 찾을 수 있어야 한다. -->
+  <table name="session_token" class_name="SessionTokenDAO" file_name="dao">
+    <column name="token" type="VARCHAR(128)" nullable="false"/>
+    <column name="user_id" type="VARCHAR(64)" nullable="false"/>
+    <column name="player_id" type="BIGINT" default="0" nullable="false"/>
+    <column name="issued_at" type="DATETIME" nullable="false"/>
+    <primary_key>token</primary_key>
+    <index>user_id</index>
   </table>
 </database>

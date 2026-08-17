@@ -1,4 +1,6 @@
 #pragma once
+#include <string>
+
 #include "syncnet_generated.h"
 
 class World;
@@ -42,6 +44,15 @@ public:
 	void handle(const syncnet::PartyQuestShare* msg);
 	void handle(const syncnet::PartyQuestShareReply* msg);
 	void handle(const syncnet::DialogSelect* msg);
+
+	// 인증 검증(DB 스레드 왕복) 이후 게임 스레드에서 이어지는 로그인 처리.
+	// handle(Login) / 로드 완료 콜백이 비동기로 호출하므로 public 이다.
+	//   CompleteLogin    : 인증 통과 직후. 재접속 핸드오버를 처리하거나 계정 로드를 건다.
+	//   SendLoginSuccess : 계정 로드까지 끝난 뒤 스폰 정보를 담아 응답한다.
+	void CompleteLogin(const std::string& userId, const std::string& reconnectToken,
+		int messageId, long long authPlayerId);
+	void SendLoginSuccess(const std::string& userId, int messageId);
+	void RejectLogin(int messageId, const std::string& userId, const std::string& reason);
 
 private:
 	// 지금 열려 있는 대화 노드를 클라에 보낸다. node 가 nullptr 이면 "닫힘"을 보낸다.

@@ -61,18 +61,26 @@ public static class PacketFactory
         return builder.SizedByteArray();
     }
 
-    public static byte[] CreateLoginMessage(int messageId, string reconnectToken = "")
+    // 로그인 요청. 서버는 authToken 을 session_token 테이블과 대조해 userId 소유를 확인한다
+    // (서버 설정 auth.mode=allow_all 이면 토큰 없이도 통과한다 — 로컬 개발 전용).
+    // 비밀번호는 더 이상 게임 서버로 보내지 않는다.
+    public static byte[] CreateLoginMessage(int messageId, string userId, string authToken, string reconnectToken = "")
     {
         var builder = new FlatBufferBuilder(1024);
         // 문자열은 StartLogin(테이블 시작) 전에 만들어야 한다(flatbuffers 제약).
-        var nameOffSet = builder.CreateString("test");
-        var passwordOffSet = builder.CreateString("1234");
+        var userIdOffSet = builder.CreateString(userId ?? string.Empty);
+
+        bool hasToken = !string.IsNullOrEmpty(authToken);
+        StringOffset tokenOffSet = hasToken ? builder.CreateString(authToken) : default(StringOffset);
+
         // 재접속 토큰(uuid). 없으면(최초 로그인) 필드를 넣지 않아 서버에서 빈 값으로 처리된다.
         bool hasUuid = !string.IsNullOrEmpty(reconnectToken);
         StringOffset uuidOffSet = hasUuid ? builder.CreateString(reconnectToken) : default(StringOffset);
+
         syncnet.Login.StartLogin(builder);
-        syncnet.Login.AddUserId(builder, nameOffSet);
-        syncnet.Login.AddPassword(builder, passwordOffSet);
+        syncnet.Login.AddUserId(builder, userIdOffSet);
+        if (hasToken)
+            syncnet.Login.AddAuthToken(builder, tokenOffSet);
         if (hasUuid)
             syncnet.Login.AddUuid(builder, uuidOffSet);
         var offset = syncnet.Login.EndLogin(builder);

@@ -16,6 +16,8 @@ namespace party_credit
 	//
 	// victim_pos 는 서버 좌표계의 처치 지점이다. 반경은 xz 평면에서만 잰다 — 높이 차로
 	// 크레딧이 갈리면 다리 위아래 같은 지형에서 결과가 들쭉날쭉해진다.
+	// victim_reward_exp 는 처치 보상 경험치(monster.json 의 exp)다. 분배(인원수로 나누기)는
+	// 수신 측 PlayerLevel 이 credit_share 로 처리한다.
 	void PublishActorDead(Map* map, int killer_actor_id, const Vector3& victim_pos,
-		int victim_actor_id, int victim_data_id);
+		int victim_actor_id, int victim_data_id, int victim_reward_exp);
 }

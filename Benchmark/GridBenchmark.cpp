@@ -43,6 +43,7 @@ namespace
 		int GetActorId() const override { return id_; }
 		void DecrementHealth(int) override {}
 		void SetLastAttacker(int) override {}
+		int GetDefense() const override { return 0; }
 
 		void SetPos(float x, float y) { x_ = x; y_ = y; }
 

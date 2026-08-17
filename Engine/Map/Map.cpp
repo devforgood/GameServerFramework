@@ -26,8 +26,9 @@
 //const float g_fDistance = std::powf(10.0f, 2);
 const float g_fDistance = 10.0f;
 
-// 부활 시 회복할 체력. Actor::health_ 의 초기값과 같다(최대 체력 개념이 아직 없다).
-static constexpr int kRespawnHealth = 100;
+// 게임 모드가 부활 시간을 정하지 않았을 때 쓰는 기본값(초).
+// (부활 시 체력은 캐릭터의 최대 체력으로 회복한다 — Map::RespawnPlayer)
+static constexpr float kDefaultRespawnSeconds = 5.0f;
 
 Map::Map(World* world)
 {
@@ -760,6 +761,7 @@ void Map::update(float deltaTime)
 	UpdateActors(deltaTime);
 	UpdateMovement(deltaTime);
 	UpdateSystems(deltaTime);
+	UpdatePlayerDeath(deltaTime);
 	UpdateGameMode(deltaTime);
 	SendWorldState();
 	//LOG.info("World update end");
@@ -806,23 +808,50 @@ void Map::UpdateGameMode(float deltaTime)
 		}
 	}
 
-	// 플레이어 사망 판정. 체력이 0 이하로 떨어지는 순간 한 번만 처리한다.
-	// 생존 수를 먼저 갱신해야 lua 의 전멸 판정(GM_GetAlivePlayerCount)이 맞는다.
+	gameMode_->Update(deltaTime);
+}
+
+// 단계 4: 플레이어 사망/부활.
+//
+// 게임 모드와 무관하게 항상 돌아야 한다. 예전에는 UpdateGameMode 안에 있어서
+// 게임 모드가 없는 필드 맵(또는 모드 종료 후)에서는 죽어도 아무 일이 없었다 —
+// 체력이 0 인 채로 계속 돌아다닐 수 있었다.
+void Map::UpdatePlayerDeath(float deltaTime)
+{
+	// 사망 판정. 체력이 0 이하로 떨어지는 순간 한 번만 처리한다.
 	for (auto& entry : players_)
 	{
 		if (entry.second == nullptr)
 			continue;
 		auto character = entry.second->GetCharacter();
-		if (character == nullptr || character->GetHealth() > 0)
+		if (character == nullptr || !character->IsDead())
 			continue;
 		if (deadPlayers_.find(entry.first) != deadPlayers_.end())
 			continue;
 
 		deadPlayers_.insert(entry.first);
 		character->SetState(syncnet::AIState::AIState_Dead);
-		gameMode_->set_alive_player_count(CountAlivePlayers());
-		LOG.info("Map {} 플레이어 {} 사망(생존 {}명)", GetMapId(), entry.first, gameMode_->alive_player_count());
-		gameMode_->OnPlayerDead(entry.second.get());
+
+		// 죽은 캐릭터는 조작할 수 없다. 입력 잠금 하나로 이동/스킬이 모두 막힌다
+		// (SetMoveTarget/UseSkill 핸들러와 SkillSet::TryCast 가 이 값을 본다).
+		character->SetInputLocked(true);
+		movement_->Stop(character->GetActorId());
+
+		// 부활 예약. 게임 모드가 있으면 그 규칙(respawn_time)을, 없으면 기본값을 쓴다.
+		// lua 의 on_player_dead 가 GM_SchedulePlayerRespawn 으로 덮어쓸 수 있다.
+		SchedulePlayerRespawn(entry.first, ResolveRespawnSeconds());
+
+		// 생존 수를 먼저 갱신해야 lua 의 전멸 판정(GM_GetAlivePlayerCount)이 맞는다.
+		if (gameMode_ != nullptr && !gameMode_->IsEnded())
+		{
+			gameMode_->set_alive_player_count(CountAlivePlayers());
+			LOG.info("Map {} 플레이어 {} 사망(생존 {}명)", GetMapId(), entry.first, gameMode_->alive_player_count());
+			gameMode_->OnPlayerDead(entry.second.get());
+		}
+		else
+		{
+			LOG.info("Map {} 플레이어 {} 사망", GetMapId(), entry.first);
+		}
 	}
 
 	// 부활 대기 시간 소진. on_player_dead 가 방금 넣은 항목도 여기서 함께 줄어든다.
@@ -838,8 +867,16 @@ void Map::UpdateGameMode(float deltaTime)
 		itr = pendingRespawns_.erase(itr);
 		RespawnPlayer(playerId);
 	}
+}
 
-	gameMode_->Update(deltaTime);
+float Map::ResolveRespawnSeconds() const
+{
+	if (gameMode_ != nullptr && gameMode_->gamedata != nullptr
+		&& gameMode_->gamedata->rules.respawn_time > 0)
+	{
+		return static_cast<float>(gameMode_->gamedata->rules.respawn_time);
+	}
+	return kDefaultRespawnSeconds;
 }
 
 std::vector<std::shared_ptr<Player>> Map::GetPlayers() const
@@ -892,10 +929,13 @@ void Map::RespawnPlayer(long playerId)
 	character->SetPosition(serverPos.x, serverPos.y, serverPos.z);
 	gridManager_->move(character.get(), serverPos.x, serverPos.z);
 
-	character->SetHealth(kRespawnHealth);
+	// 최대 체력으로 되살린다. 예전에는 상수 100 이라, 레벨이 오를수록 부활 직후
+	// 체력이 최대치에 한참 못 미쳤다(레벨 20 이면 1500 중 100).
+	character->SetHealth(character->GetMaxHealth());
 	character->SetState(syncnet::AIState::AIState_Patrol); // 살아있는 기본 상태
+	character->SetInputLocked(false);                      // 사망 시 걸었던 조작 잠금 해제
 
-	if (gameMode_ != nullptr)
+	if (gameMode_ != nullptr && !gameMode_->IsEnded())
 		gameMode_->set_alive_player_count(CountAlivePlayers());
 
 	LOG.info("Map {} 플레이어 {} 부활(pos {}, {}, {})",

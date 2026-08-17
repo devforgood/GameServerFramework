@@ -32,8 +32,7 @@ private:
 	void connect();
 
 public:
-	static void test();
-
+	// 접속 정보는 ServerConfig(db.url / db.user / db.password)에서 온다.
 	SqlClient();
 	~SqlClient();
 

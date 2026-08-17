@@ -10,9 +10,14 @@
 #include "SendMessage.h"
 #include "Map.h"
 #include "PlayerRepository.h"
+#include "PlayerDbDispatcher.h"
+#include "IAuthenticator.h"
+#include "MessagePolicy.h"
+#include "ServerConfig.h"
 #include "Server.h"
 #include "Common.h" // gamedata::Map/MapGate 전체 정의
 #include "PlayerLevel.h"
+#include "PlayerLocation.h"
 #include "PlayerEventBroker.h"
 #include "PlayerQuest.h"
 #include "PlayerParty.h"
@@ -86,7 +91,42 @@ void PlayerController::handle(const syncnet::GameMessage* msg)
 {
 	lastMessageId_ = msg->id();
 
-	switch (msg->msg_type())
+	const syncnet::GameMessages type = msg->msg_type();
+
+	// --- 페이로드 존재 확인 ---
+	// FlatBuffers Verifier 는 union 페이로드가 아예 없는 경우를 통과시킨다
+	// (VerifyTable(nullptr) 이 true). 그래서 "msg_type=UseSkill 인데 본문 없음" 같은 패킷이
+	// 검증을 지나 핸들러까지 오고, msg_as_UseSkill() 이 준 nullptr 를 역참조해 죽는다.
+	// 타입이 붙어 있는데 본문이 없으면 정상 클라이언트가 만들 수 없는 패킷이므로 여기서 끊는다.
+	if (type != syncnet::GameMessages::GameMessages_NONE && msg->msg() == nullptr)
+	{
+		LOG.warn("본문 없는 메시지 거부: type {}. 세션을 끊는다.", static_cast<int>(type));
+		if (player_ != nullptr)
+			player_->Close();
+		return;
+	}
+
+	// --- 인가 게이트 ---
+	// 접속만으로 Player 가 만들어지므로, 이 검사가 없으면 로그인하지 않은 연결이
+	// 모든 핸들러에 도달한다.
+	auto session = player_ != nullptr ? player_->GetSession() : nullptr;
+	const bool authenticated = session != nullptr && session->IsAuthenticated();
+
+	if (!authenticated && !message_policy::IsAllowedBeforeAuth(type))
+	{
+		LOG.warn("인증 전 메시지 거부: type {}. 세션을 끊는다.", static_cast<int>(type));
+		if (player_ != nullptr)
+			player_->Close();
+		return;
+	}
+
+	if (message_policy::IsDebugOnly(type) && !ServerConfig::Instance().Network().allow_debug_commands)
+	{
+		LOG.warn("디버그 전용 메시지 거부: type {} (allow_debug_commands=false)", static_cast<int>(type));
+		return;
+	}
+
+	switch (type)
 	{
 	case syncnet::GameMessages::GameMessages_AddAgent:			handle(msg->msg_as_AddAgent()); break;
 	case syncnet::GameMessages::GameMessages_RemoveAgent:		handle(msg->msg_as_RemoveAgent()); break;
@@ -114,9 +154,31 @@ void PlayerController::handle(const syncnet::GameMessage* msg)
 
 void PlayerController::handle(const syncnet::AddAgent* msg)
 {
-	LOG.info("add agent pos:({},{},{})", msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
+	// 클라가 만들 수 있는 것은 자기 캐릭터 하나뿐이다.
+	// 예전에는 요청의 gameObjectType 을 그대로 썼는데, 그러면 클라가 몬스터를 무제한
+	// 스폰할 수 있었다. 타입은 서버가 정하고, 이미 캐릭터가 있으면 거부한다.
+	if (player_->GetCharacter() != nullptr)
+	{
+		LOG.warn("AddAgent 거부: 플레이어 {} 는 이미 캐릭터를 가지고 있다", player_->GetPlayerId());
+		player_->Send(
+			syncnet::CreateAddAgent
+			, syncnet::GameMessages::GameMessages_AddAgent
+			, lastMessageId_
+			, syncnet::StatusCode::StatusCode_AlreadyExists
+			, syncnet::GameObjectType::GameObjectType_Character
+			, msg->pos()
+			, 0
+		);
+		return;
+	}
 
-	auto actor = world_->OnAddAgent(player_, msg->gameObjectType(), msg->pos());
+	// 스폰 위치도 클라가 정하지 않는다. 로그인 응답에서 서버가 이미 정해 클라에 알려준
+	// 좌표를 그대로 쓴다(요청의 pos 를 믿으면 임의 좌표로 들어올 수 있다).
+	syncnet::Vec3 spawnPos = player_->GetSpawnPos();
+
+	LOG.info("add agent pos:({},{},{})", spawnPos.x(), spawnPos.y(), spawnPos.z());
+
+	auto actor = world_->OnAddAgent(player_, syncnet::GameObjectType::GameObjectType_Character, &spawnPos);
 	auto status = syncnet::StatusCode::StatusCode_Success;
 	int actor_id = 0;
 	if (!actor) {
@@ -124,7 +186,7 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 		status = syncnet::StatusCode::StatusCode_Failed;
 	}
 	else
-	{ 
+	{
 		actor_id = actor->GetActorId();
 	}
 
@@ -133,8 +195,8 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 		, syncnet::GameMessages::GameMessages_AddAgent
 		, lastMessageId_
 		, status
-		, msg->gameObjectType()
-		, msg->pos()
+		, syncnet::GameObjectType::GameObjectType_Character
+		, &spawnPos
 		, actor_id
 	);
 
@@ -142,6 +204,16 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 
 void PlayerController::handle(const syncnet::RemoveAgent* msg)
 {
+	// 자기 캐릭터만 제거할 수 있다. 예전에는 요청의 actorId 를 그대로 넘겨서
+	// 남의 캐릭터나 몬스터를 지울 수 있었다.
+	auto character = player_->GetCharacter();
+	if (character == nullptr || character->GetActorId() != msg->actorId())
+	{
+		LOG.warn("RemoveAgent 거부: 플레이어 {} 가 소유하지 않은 actorId {}",
+			player_->GetPlayerId(), msg->actorId());
+		return;
+	}
+
 	LOG.info("remove actor id :{}", msg->actorId());
 	world_->OnRemoveAgent(msg->actorId());
 }
@@ -166,6 +238,13 @@ void PlayerController::handle(const syncnet::SetMoveTarget* msg)
 		return;
 	}
 
+	// pos 는 선택 필드라 Verifier 를 통과해도 없을 수 있다(조작 패킷).
+	if (msg->pos() == nullptr)
+	{
+		LOG.warn("SetMoveTarget 거부: pos 없음");
+		return;
+	}
+
 	LOG.debug("move target actor id :{}, pos:({},{},{})", player_->GetCharacter()->GetActorId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 	// 캐릭터가 현재 속한 맵으로 라우팅한다(게이트 이동 후 비기본 맵에 있을 수 있음).
 	player_->GetCharacter()->GetMap()->OnSetMoveTarget(player_->GetCharacter()->GetActorId(), msg->pos());
@@ -186,6 +265,12 @@ void PlayerController::handle(const syncnet::Ping* msg)
 
 void PlayerController::handle(const syncnet::SetRaycast* msg)
 {
+	if (msg->pos() == nullptr)
+	{
+		LOG.warn("SetRaycast 거부: pos 없음");
+		return;
+	}
+
 	LOG.info("SetRaycast pos:({},{},{})", msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 	world_->OnSetRaycast(msg->pos());
 }
@@ -193,9 +278,97 @@ void PlayerController::handle(const syncnet::SetRaycast* msg)
 void PlayerController::handle(const syncnet::Login* msg)
 {
 	const std::string userId = msg->userId() != nullptr ? msg->userId()->c_str() : "";
-	const char* password = msg->password() != nullptr ? msg->password()->c_str() : "";
+	const std::string authToken = msg->authToken() != nullptr ? msg->authToken()->c_str() : "";
 	const std::string reconnectToken = msg->uuid() != nullptr ? msg->uuid()->c_str() : "";
-	LOG.info("Login id :{}, uuid:'{}', lastMessageId:{}", userId, reconnectToken, lastMessageId_);
+	const int messageId = lastMessageId_;
+	LOG.info("Login id :{}, uuid:'{}', lastMessageId:{}", userId, reconnectToken, messageId);
+
+	auto session = player_->GetSession();
+	if (session == nullptr)
+	{
+		LOG.error("Login: session expired");
+		return;
+	}
+
+	// 이미 인증된 세션의 재로그인 요청은 무시한다. 인증 후 다른 계정으로 갈아타는 경로를
+	// 열어두면, 로그인 한 번으로 얻은 세션으로 임의 계정을 돌아가며 점유할 수 있다.
+	if (session->IsAuthenticated())
+	{
+		LOG.warn("Login: 이미 인증된 세션의 중복 로그인 요청 거부 (userId '{}')", userId);
+		return;
+	}
+
+	// 인증은 DB 조회(블로킹)라 게임 스레드에서 할 수 없다. DB 스레드에서 검증하고
+	// 결과를 게임 스레드로 되돌려 CompleteLogin 으로 이어간다.
+	//
+	// 세션은 검증 왕복 동안 끊어질 수 있고, Player 는 재접속 유예 때문에 세션보다
+	// 오래 살 수 있다. 그래서 Player 가 아니라 세션을 weak 으로 잡고, 살아있을 때만 잇는다.
+	std::weak_ptr<GameSession> weakSession = session;
+
+	PlayerDbDispatcher::Dispatch(player_, "auth.verify",
+		[userId, authToken](sql::Connection* conn, long) {
+			auto result = std::make_shared<AuthResult>();
+			try
+			{
+				IAuthenticator* authenticator = AuthService::Instance().Get();
+				*result = authenticator != nullptr
+					? authenticator->Verify(conn, userId, authToken)
+					: AuthResult::Fail("authenticator not initialized");
+			}
+			catch (const std::exception& e)
+			{
+				// 인증 경로의 예외는 절대 통과로 해석하지 않는다.
+				*result = AuthResult::Fail(std::string("verify threw: ") + e.what());
+			}
+			return result;
+		},
+		[weakSession, userId, reconnectToken, messageId](Player&, const AuthResult& result) {
+			auto session = weakSession.lock();
+			if (session == nullptr)
+				return; // 검증 도중 끊겼다.
+
+			PlayerController* controller = session->GetController();
+			if (controller == nullptr)
+				return;
+
+			if (!result.ok)
+			{
+				controller->RejectLogin(messageId, userId, result.reason);
+				return;
+			}
+
+			session->SetAuthenticated(true);
+			controller->CompleteLogin(userId, reconnectToken, messageId, result.playerId);
+		});
+}
+
+void PlayerController::RejectLogin(int messageId, const std::string& userId, const std::string& reason)
+{
+	// 사유는 로그에만 남긴다. 클라에 그대로 내려주면 "계정 없음/토큰 만료"가 구분돼
+	// 계정 존재 여부를 캐낼 수 있다.
+	LOG.warn("Login rejected (userId '{}'): {}", userId, reason);
+
+	player_->Send(
+		syncnet::CreateLoginDirect
+		, syncnet::GameMessages::GameMessages_Login
+		, messageId
+		, syncnet::StatusCode::StatusCode_Failed
+		, userId.c_str()
+		, 0 /* mapId */
+		, nullptr /* pos */
+		, 0 /* actorId */
+		, nullptr /* uuid */
+		, nullptr /* authToken: 응답에는 절대 담지 않는다 */
+	);
+
+	// 인증에 실패한 연결은 유지하지 않는다(재시도 도배로 DB 조회를 반복시키지 못하게).
+	player_->Close();
+}
+
+void PlayerController::CompleteLogin(const std::string& userId, const std::string& reconnectToken,
+	int messageId, long long authPlayerId)
+{
+	lastMessageId_ = messageId;
 
 	// 재접속 핸드오버: 클라가 되돌려 보낸 uuid(재접속 토큰)로 유예 대기 중인 기존 플레이어를
 	// 찾으면, 이 세션을 그 플레이어에 재바인딩하고 기존 캐릭터(맵/위치/actorId)를 넘겨받는다.
@@ -242,11 +415,11 @@ void PlayerController::handle(const syncnet::Login* msg)
 			, lastMessageId_
 			, syncnet::StatusCode::StatusCode_Success
 			, userId.c_str()
-			, password
 			, mapId
 			, &pos
 			, actorId
 			, uuid.c_str()
+			, nullptr /* authToken: 응답에는 담지 않는다 */
 		);
 
 		if (character != nullptr && character->GetMap() != nullptr)
@@ -256,11 +429,44 @@ void PlayerController::handle(const syncnet::Login* msg)
 
 	// 신규 로그인.
 	player_->SetUserId(userId);
-	PlayerRepository::AsyncLoad(player_);
 
-	// 최초 로그인 시 클라가 어느 맵(씬)을 로드하고 어디에 스폰할지 알 수 있도록
-	// 맵 id 와 스폰 위치를 함께 반환한다. 기본은 기본 맵의 player_spawn 마커,
-	// 같은 userId 로 로그아웃한 이력이 있으면 그 마지막 위치(맵 포함)를 우선한다.
+	// 같은 계정이 이미 들어와 있으면 그쪽을 정리한다. 한 계정이 두 세션으로 동시에
+	// 돌아다니면 두 세션이 같은 DB 행에 번갈아 저장해 서로의 진행을 덮어쓴다.
+	world_->EvictExistingLogin(userId, player_.get());
+
+	// 계정 행을 확정하고 로드가 끝난 뒤에 응답한다.
+	// 예전에는 로드를 던져 놓고 곧바로 응답했는데, 그러면 저장된 위치가 아직 없어서
+	// 항상 기본 스폰 지점으로 보냈다. 스폰 좌표는 로드 결과가 있어야 알 수 있다.
+	std::weak_ptr<GameSession> weakSession = player_->GetSession();
+
+	PlayerRepository::AsyncResolveAndLoad(player_, userId, authPlayerId,
+		[weakSession, userId, messageId](Player& player, bool ok) {
+			auto session = weakSession.lock();
+			if (session == nullptr)
+				return;
+
+			PlayerController* controller = session->GetController();
+			if (controller == nullptr)
+				return;
+
+			if (!ok)
+			{
+				// 계정 행을 확정하지 못했다(DB 장애 등). 이 상태로 진행하면 진행 상황이
+				// 저장되지 않는 유령 세션이 된다 — 차라리 로그인을 실패시킨다.
+				controller->RejectLogin(messageId, userId, "failed to resolve account row");
+				return;
+			}
+
+			controller->SendLoginSuccess(userId, messageId);
+		});
+}
+
+void PlayerController::SendLoginSuccess(const std::string& userId, int messageId)
+{
+	lastMessageId_ = messageId;
+
+	// 클라가 어느 맵(씬)을 로드하고 어디에 스폰할지 알려준다. 기본은 기본 맵의
+	// player_spawn 마커, 저장된 마지막 위치가 있으면 그쪽을 우선한다.
 	int mapId = 0;
 	syncnet::Vec3 spawnPos(0, 0, 0);
 	Map* primaryMap = world_->GetPrimaryMap();
@@ -270,18 +476,28 @@ void PlayerController::handle(const syncnet::Login* msg)
 		spawnPos = primaryMap->GetPlayerSpawnPos();
 	}
 
-	int lastMapId = 0;
-	syncnet::Vec3 lastPos(0, 0, 0);
-	if (world_->GetLastLocation(userId, lastMapId, lastPos) && world_->FindMap(lastMapId) != nullptr)
+	int savedMapId = 0;
+	float savedX = 0.0f, savedY = 0.0f, savedZ = 0.0f;
+	if (auto* location = player_->GetComponent<PlayerLocation>())
 	{
-		mapId = lastMapId;
-		spawnPos = lastPos;
-		LOG.info("Login: userId '{}' 이전 위치로 스폰. mapId {}, pos({},{},{})",
-			userId, mapId, spawnPos.x(), spawnPos.y(), spawnPos.z());
+		// 저장된 맵이 지금 이 서버에 로드되어 있을 때만 쓴다(맵 구성이 바뀔 수 있다).
+		if (location->TryGet(savedMapId, savedX, savedY, savedZ)
+			&& world_->FindMap(savedMapId) != nullptr)
+		{
+			mapId = savedMapId;
+			// 저장은 서버 좌표계, 프로토콜(Login 응답 / Map.json 스폰 마커)은 클라 좌표계다.
+			// 변환을 빠뜨리면 x 부호가 뒤집힌 지점으로 스폰된다.
+			spawnPos = syncnet::Vec3(
+				Vector3::convert_x(savedX),
+				Vector3::convert_y(savedY),
+				Vector3::convert_z(savedZ));
+			LOG.info("Login: userId '{}' 저장된 위치로 스폰. mapId {}, pos({},{},{})",
+				userId, mapId, spawnPos.x(), spawnPos.y(), spawnPos.z());
+		}
 	}
 
-	// 클라의 AddAgent(Character) 를 이 맵으로 라우팅하기 위해 기억해 둔다.
-	player_->SetSpawnMapId(mapId);
+	// 클라의 AddAgent(Character) 가 쓸 맵/좌표로 기억해 둔다(응답과 실제 스폰을 일치시킨다).
+	player_->SetSpawnLocation(mapId, spawnPos);
 
 	// 최초 로그인 응답에 플레이어 uuid(재접속 토큰)를 실어 보낸다. 클라는 이를 저장했다가
 	// 재접속 시 되돌려 보낸다.
@@ -292,16 +508,24 @@ void PlayerController::handle(const syncnet::Login* msg)
 		, lastMessageId_
 		, syncnet::StatusCode::StatusCode_Success
 		, userId.c_str()
-		, password
 		, mapId
 		, &spawnPos
 		, 0 /* actorId: 신규 로그인은 0 */
 		, uuid.c_str()
+		, nullptr /* authToken: 응답에는 담지 않는다 */
 	);
 }
 
 void PlayerController::handle(const syncnet::UseSkill* msg)
 {
+	// pos 는 선택 필드라 Verifier 를 통과해도 없을 수 있다(조작 패킷).
+	// Character::use_skill 도 같은 검사를 하지만, 여기 로그가 먼저 역참조한다.
+	if (msg->pos() == nullptr)
+	{
+		LOG.warn("UseSkill 거부: pos 없음");
+		return;
+	}
+
 	LOG.info("UseSkill id :{}, skillId :{}, targetId :{} pos:({},{},{})", msg->id(), msg->skillId(), msg->targetId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 
 	auto character = player_->GetCharacter();

@@ -12,8 +12,12 @@
 #include "PlayerQuest.h"
 #include "PlayerItem.h"
 #include "PlayerSkill.h"
+#include "SkillSet.h"
+#include <vector>
 #include "PlayerLevel.h"
 #include "PlayerWallet.h"
+#include "PlayerLocation.h"
+#include "PlayerLoot.h"
 #include "PlayerParty.h"
 #include "PlayerDialog.h"
 #include "PlayerSender.h"
@@ -38,6 +42,8 @@ Player::Player()
 	this->AddComponent<PlayerSkill>();
 	this->AddComponent<PlayerLevel>();
 	this->AddComponent<PlayerWallet>();
+	this->AddComponent<PlayerLocation>();
+	this->AddComponent<PlayerLoot>();
 
 	// 파티는 캐릭터가 아니라 플레이어 단위다(맵을 옮겨도 유지된다). 다른 파티원이 이
 	// 플레이어를 찾을 수 있도록 여기서 바로 등록한다 — 로그인/로드를 기다리면 그 사이에
@@ -81,6 +87,15 @@ void Player::Possess(std::shared_ptr<Character> character)
 	auto* proxy = character_->AddComponent<PlayerEventBrokerProxy>();
 	proxy->SetBrokerOwner(weak_from_this());
 
+	// 레벨에 맞는 전투 스탯을 새 캐릭터에 싣는다. 이걸 빠뜨리면 캐릭터가 항상
+	// Actor 기본값(체력 100/공격 10)으로 남아 레벨이 전투에 아무 영향을 주지 않는다.
+	// 맵 이동은 UnPossess -> Possess 로 캐릭터를 다시 만들므로 여기서 매번 다시 적용된다.
+	if (auto* level = GetComponent<PlayerLevel>())
+		level->ApplyStatsTo(character_.get(), /*resetHealth=*/true);
+
+	// 배운 스킬만 캐릭터에 싣는다(서버 권위). 목록에 없는 스킬은 TryCast 가 SkillNotFound.
+	ApplyOwnedSkillsToCharacter();
+
 	// 파티 로스터에 실을 내 캐릭터 위치. 컴포넌트 층에서는 캐릭터를 볼 수 없으므로
 	// 여기서 알려 준다. 맵 이동은 UnPossess -> Possess 로 캐릭터를 다시 만들므로
 	// 이 두 지점만 챙기면 값이 어긋나지 않는다.
@@ -89,6 +104,28 @@ void Player::Possess(std::shared_ptr<Character> character)
 		party->SetLocation(character_->GetActorId(),
 			character_->GetMap() != nullptr ? character_->GetMap()->GetMapId() : 0);
 	}
+}
+
+void Player::ApplyOwnedSkillsToCharacter()
+{
+	if (character_ == nullptr)
+		return;
+
+	auto* skills = GetComponent<PlayerSkill>();
+	if (skills == nullptr)
+		return;
+
+	// 신규 캐릭터에게 기본 스킬을 지급한다(skill.json 의 starter=true).
+	// 이게 없으면 첫 접속 캐릭터가 평타조차 쓸 수 없다.
+	if (skills->Count() == 0)
+	{
+		for (int starterId : SkillSet::CollectStarterSkillIds())
+			skills->LearnSkill(starterId);
+	}
+
+	std::vector<int> owned;
+	skills->CollectSkillIds(owned);
+	character_->GetSkillSet().InitFromOwned(owned);
 }
 
 void Player::UnPossess()
@@ -193,6 +230,17 @@ std::optional<boost::asio::strand<boost::asio::thread_pool::executor_type>> Play
 
 void Player::SavePlayerData()
 {
+	// 저장 직전에 현재 위치를 찍는다. 컴포넌트는 캐릭터를 모르므로 여기서 넘겨준다.
+	// (캐릭터가 없으면 마지막으로 기록된 값이 그대로 남는다 — 사망/로그아웃 후에도 유효)
+	if (auto* location = GetComponent<PlayerLocation>())
+	{
+		if (character_ != nullptr && character_->GetMap() != nullptr)
+		{
+			const Vector3& pos = character_->GetPosition();
+			location->Remember(character_->GetMap()->GetMapId(), pos.x, pos.y, pos.z);
+		}
+	}
+
 	// 각 컴포넌트에서 플레이어 데이터를 수집
 	auto save_data = std::make_shared<PlayerSaveData>();
 

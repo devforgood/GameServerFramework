@@ -67,7 +67,9 @@ public:
         if (!strand)
             return; // 세션 만료
 
-        const long playerId = player->GetPlayerId();
+        // 영속 행 id 를 쓴다. 런타임 핸들(GetPlayerId)은 프로세스 로컬 카운터라
+        // 그것으로 저장하면 재시작 후 접속 순서에 따라 남의 행을 읽고 덮어쓴다.
+        const long playerId = static_cast<long>(player->GetDbPlayerId());
         auto ioContext = player->GetServer()->get_io_context();
         std::weak_ptr<Player> weakPlayer = player;
 
@@ -94,6 +96,43 @@ public:
             });
     }
 
+    // 아직 영속 행 id 가 정해지지 않은 단계에서 쓰는 변형(로그인 시 계정 행 확정 + 로드).
+    // dbWork 는 커넥션만 받는다.
+    template <typename DbWork, typename OnComplete>
+    static void DispatchWithoutId(const std::shared_ptr<Player>& player,
+                                  std::string taskName,
+                                  DbWork&& dbWork,
+                                  OnComplete&& onComplete)
+    {
+        auto strand = player->GetStrand();
+        if (!strand)
+            return; // 세션 만료
+
+        auto ioContext = player->GetServer()->get_io_context();
+        std::weak_ptr<Player> weakPlayer = player;
+
+        const uint64_t monToken = DbThreadMonitor::Instance().BeginEnqueue(taskName, 0);
+
+        boost::asio::post(strand.value(),
+            [ioContext, weakPlayer, monToken,
+             dbWork = std::forward<DbWork>(dbWork),
+             onComplete = std::forward<OnComplete>(onComplete)]() mutable
+            {
+                DbTaskScope mon_scope(monToken);
+
+                auto result = RunWithReconnect(
+                    [&](sql::Connection* conn) { return dbWork(conn); });
+
+                boost::asio::post(*ioContext,
+                    [weakPlayer, result = std::move(result),
+                     onComplete = std::move(onComplete)]() mutable
+                    {
+                        if (auto player = weakPlayer.lock())
+                            onComplete(*player, *result);
+                    });
+            });
+    }
+
     // 결과 후처리가 필요 없는 fire-and-forget 작업(예: 저장).
     template <typename DbWork>
     static void Dispatch(const std::shared_ptr<Player>& player,
@@ -104,7 +143,9 @@ public:
         if (!strand)
             return; // 세션 만료
 
-        const long playerId = player->GetPlayerId();
+        // 영속 행 id 를 쓴다. 런타임 핸들(GetPlayerId)은 프로세스 로컬 카운터라
+        // 그것으로 저장하면 재시작 후 접속 순서에 따라 남의 행을 읽고 덮어쓴다.
+        const long playerId = static_cast<long>(player->GetDbPlayerId());
         const uint64_t monToken = DbThreadMonitor::Instance().BeginEnqueue(taskName, playerId);
 
         boost::asio::post(strand.value(),

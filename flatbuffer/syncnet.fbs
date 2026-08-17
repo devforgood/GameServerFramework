@@ -127,7 +127,9 @@ table SetRaycast {
 
 table Login {
   userId:string;
-  password:string;
+  // 사용하지 않는다. 게임 서버는 비밀번호를 다루지 않으며(인증은 authToken 으로 한다),
+  // 응답에도 절대 실어 보내지 않는다. 구 클라이언트 호환을 위해 자리만 남겨 둔다.
+  password:string (deprecated);
   mapId:int = 0;
   pos:Vec3;
   // 재접속 핸드오버: 0 이면 신규 로그인, 0 이 아니면 서버가 유지하던 기존 캐릭터의
@@ -136,6 +138,10 @@ table Login {
   // 재접속 토큰. 서버가 최초 로그인 응답에 플레이어 uuid 를 실어 보내면 클라가 저장했다가
   // 재접속 요청 시 되돌려 보낸다. 서버는 이 값으로 유예 대기 중인 기존 플레이어를 식별한다.
   uuid:string;
+  // 인증 토큰. 로그인/로비 서비스가 발급해 session_token 테이블에 넣어 둔 값을 클라가
+  // 그대로 실어 보내면, 게임 서버가 그 표를 조회해 userId 소유 여부를 확인한다.
+  // 요청 전용 — 응답에는 담지 않는다.
+  authToken:string;
 }
 
 table UseSkill {

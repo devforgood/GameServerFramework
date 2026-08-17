@@ -56,8 +56,13 @@ public:
 	// 배회(patrol) 의 중심점. 스폰 시 네비메시에 스냅된 위치다.
 	const float* GetSpawnPos() const { return spawnPos_; }
 
-	void SetDataId(int dataId) { dataId_ = dataId; }
+	// 종류 id 를 새기면서 그 종류의 전투 스탯(monster.json 의 hp/attack/defense)을 적용한다.
+	// 예전에는 종류만 새기고 스탯은 쓰지 않아, 슬라임과 고대 드래곤이 똑같이 체력 100 이었다.
+	void SetDataId(int dataId);
 	int GetDataId() const { return dataId_; }
+
+	// 처치 보상 경험치(monster.json 의 exp). 데이터가 없으면 0.
+	int GetRewardExp() const;
 
 	// 사망 시 킬한 플레이어에게 EventActorDead 이벤트를 발행한다(최초 1회).
 	void NotifyKilledBy();

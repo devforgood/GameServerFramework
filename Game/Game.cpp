@@ -7,12 +7,15 @@
 #include "LogHelper.h"
 //#include "BehaviorTreeCPP.h"
 #include "SqlClient.h"
+#include "ServerConfig.h"
 #include "Common.h"
 
 #include <thread>
 #include <chrono>
 #include <cstdlib>
+#include <cstring>
 #include <cerrno>
+#include <string>
 #include <boost/array.hpp>
 
 using namespace std::chrono_literals;
@@ -30,13 +33,38 @@ int main(int argc, char* argv[])
 
 		if (argc < 2)
 		{
-			std::cerr << "Usage: game_server <port> [<port> ...]\n";
+			std::cerr << "Usage: game_server <port> [<port> ...] [--config <path>]\n";
+			return 1;
+		}
+
+		// 설정 파일 경로. --config 로 지정하지 않으면 실행 디렉터리의 server_config.json.
+		// 파일이 없으면 안전한 기본값으로 뜬다(인증 활성 / 디버그 핸들러 비활성).
+		std::string configPath = "server_config.json";
+		for (int i = 1; i + 1 < argc; ++i)
+		{
+			if (std::strcmp(argv[i], "--config") == 0)
+			{
+				configPath = argv[i + 1];
+				break;
+			}
+		}
+
+		if (!ServerConfig::Instance().Load(configPath))
+		{
+			std::cerr << "Failed to load config: " << configPath << "\n";
 			return 1;
 		}
 
 		std::list<tcp::endpoint> endpoints;
 		for (int i = 1; i < argc; ++i)
 		{
+			// --config <path> 는 포트 목록이 아니다.
+			if (std::strcmp(argv[i], "--config") == 0)
+			{
+				++i;
+				continue;
+			}
+
 			char* end = nullptr;
 			errno = 0;
 			long port = std::strtol(argv[i], &end, 10);

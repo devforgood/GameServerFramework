@@ -24,6 +24,10 @@ public:
 	virtual int GetActorId() const = 0; // 순수 가상 함수
 	virtual void DecrementHealth(int amount) = 0; // 순수 가상 함수 - 임시 주석 처리
 	virtual void SetLastAttacker(int attacker_actor_id) = 0; // 마지막 공격자(킬러) 액터 ID 기록
+
+	// 피해 경감 계산에 쓰는 방어력. 데미지 적용이 그리드에서 찾은 대상에게 이뤄지므로
+	// (combat::ApplyAoEDamage) 여기에 있어야 대상을 Actor 로 다운캐스트하지 않는다.
+	virtual int GetDefense() const = 0;
 };
 
 #endif // IGRID_ACTOR_H

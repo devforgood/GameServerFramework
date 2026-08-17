@@ -10,6 +10,7 @@ struct PlayerSaveData {
     std::optional<std::vector<DbRecord<PlayerItemVO>>> items;
     std::optional<std::vector<DbRecord<PlayerSkillVO>>> skills;
     std::optional<DbRecord<PlayerWalletVO>> wallet;
+    std::optional<DbRecord<PlayerLocationVO>> location;
     std::optional<std::vector<DbRecord<QuestActiveVO>>> quest_actives;
     std::optional<DbRecord<QuestStateVO>> quest_state;
 };

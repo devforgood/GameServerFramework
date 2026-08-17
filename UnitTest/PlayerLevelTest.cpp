@@ -298,10 +298,11 @@ TEST_F(PlayerLevelTest, OnEventActorDead_GrantsExp)
     PlayerLevel* level = AttachLevel(go);
     level->Load(MakePlayerData(1001, 1));
 
+    // 보상 경험치는 이벤트가 실어 온다(monster.json 의 exp). 예전에는 상수 50 이었다.
     auto* broker = go.GetComponent<PlayerEventBroker>();
-    broker->publish(EventActorDead{ 1, 100 }); // killer, victim
+    broker->publish(EventActorDead{ 1, 100, 0, 1, 50 }); // killer, victim, data_id, share, reward_exp
 
-    EXPECT_EQ(level->GetExp(), 50); // 처치당 50 exp
+    EXPECT_EQ(level->GetExp(), 50);
     EXPECT_EQ(level->GetLevel(), 1);
 }
 
@@ -312,8 +313,8 @@ TEST_F(PlayerLevelTest, OnEventActorDead_RepeatedKillsLevelUp)
     level->Load(MakePlayerData(1001, 1));
 
     auto* broker = go.GetComponent<PlayerEventBroker>();
-    broker->publish(EventActorDead{ 1, 100 }); // 50
-    broker->publish(EventActorDead{ 1, 101 }); // 100 -> 레벨 2
+    broker->publish(EventActorDead{ 1, 100, 0, 1, 50 }); // 50
+    broker->publish(EventActorDead{ 1, 101, 0, 1, 50 }); // 100 -> 레벨 2
 
     EXPECT_EQ(level->GetLevel(), 2);
 }
@@ -357,12 +358,47 @@ TEST_F(PlayerLevelTest, DirtyFlag_SetOnLevelUp)
     EXPECT_TRUE(level->IsDirty());
 }
 
-TEST_F(PlayerLevelTest, DirtyFlag_NotSetWhenNoLevelUp)
+// 레벨이 그대로여도 경험치가 늘면 저장 대상이다.
+// exp 컬럼이 생기기 전에는 레벨업 때만 dirty 였고, 그래서 레벨 중간 진행도가
+// 재접속마다 사라졌다(로드 시 현재 레벨의 시작 경험치로 되돌아갔다).
+TEST_F(PlayerLevelTest, DirtyFlag_SetWhenExpGainedWithoutLevelUp)
 {
     GameObject go;
     PlayerLevel* level = AttachLevel(go);
     level->Load(MakePlayerData(1001, 1));
 
-    level->GainExp(50); // 레벨 변동 없음 -> exp 만 누적(미영속)
-    EXPECT_FALSE(level->IsDirty());
+    level->GainExp(50); // 레벨 변동 없음 -> exp 만 누적
+    EXPECT_EQ(level->GetLevel(), 1);
+    EXPECT_EQ(level->GetExp(), 50);
+    EXPECT_TRUE(level->IsDirty()) << "경험치 진행도가 저장되지 않으면 재접속 시 사라진다";
+}
+
+// 저장에 exp 가 실린다(PlayerVO.exp).
+TEST_F(PlayerLevelTest, Save_WritesExp)
+{
+    GameObject go;
+    PlayerLevel* level = AttachLevel(go);
+    level->Load(MakePlayerData(1001, 1));
+
+    level->GainExp(50);
+
+    PlayerSaveData save{};
+    level->Save(&save);
+
+    ASSERT_TRUE(save.player.has_value());
+    EXPECT_EQ(save.player->exp, 50);
+}
+
+// 로드가 저장된 exp 를 그대로 복원한다(레벨 중간 진행도 유지).
+TEST_F(PlayerLevelTest, Load_RestoresExactExp)
+{
+    GameObject go;
+    PlayerLevel* level = AttachLevel(go);
+
+    PlayerLoadData data = MakePlayerData(1001, 3);
+    data.player.exp = 450; // 레벨 3(300) 과 레벨 4(600) 사이
+    level->Load(data);
+
+    EXPECT_EQ(level->GetLevel(), 3);
+    EXPECT_EQ(level->GetExp(), 450);
 }

@@ -1332,17 +1332,14 @@ struct Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef LoginBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_USERID = 4,
-    VT_PASSWORD = 6,
     VT_MAPID = 8,
     VT_POS = 10,
     VT_ACTORID = 12,
-    VT_UUID = 14
+    VT_UUID = 14,
+    VT_AUTHTOKEN = 16
   };
   const flatbuffers::String *userId() const {
     return GetPointer<const flatbuffers::String *>(VT_USERID);
-  }
-  const flatbuffers::String *password() const {
-    return GetPointer<const flatbuffers::String *>(VT_PASSWORD);
   }
   int32_t mapId() const {
     return GetField<int32_t>(VT_MAPID, 0);
@@ -1356,17 +1353,20 @@ struct Login FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *uuid() const {
     return GetPointer<const flatbuffers::String *>(VT_UUID);
   }
+  const flatbuffers::String *authToken() const {
+    return GetPointer<const flatbuffers::String *>(VT_AUTHTOKEN);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_USERID) &&
            verifier.VerifyString(userId()) &&
-           VerifyOffset(verifier, VT_PASSWORD) &&
-           verifier.VerifyString(password()) &&
            VerifyField<int32_t>(verifier, VT_MAPID) &&
            VerifyField<syncnet::Vec3>(verifier, VT_POS) &&
            VerifyField<int32_t>(verifier, VT_ACTORID) &&
            VerifyOffset(verifier, VT_UUID) &&
            verifier.VerifyString(uuid()) &&
+           VerifyOffset(verifier, VT_AUTHTOKEN) &&
+           verifier.VerifyString(authToken()) &&
            verifier.EndTable();
   }
 };
@@ -1377,9 +1377,6 @@ struct LoginBuilder {
   flatbuffers::uoffset_t start_;
   void add_userId(flatbuffers::Offset<flatbuffers::String> userId) {
     fbb_.AddOffset(Login::VT_USERID, userId);
-  }
-  void add_password(flatbuffers::Offset<flatbuffers::String> password) {
-    fbb_.AddOffset(Login::VT_PASSWORD, password);
   }
   void add_mapId(int32_t mapId) {
     fbb_.AddElement<int32_t>(Login::VT_MAPID, mapId, 0);
@@ -1392,6 +1389,9 @@ struct LoginBuilder {
   }
   void add_uuid(flatbuffers::Offset<flatbuffers::String> uuid) {
     fbb_.AddOffset(Login::VT_UUID, uuid);
+  }
+  void add_authToken(flatbuffers::Offset<flatbuffers::String> authToken) {
+    fbb_.AddOffset(Login::VT_AUTHTOKEN, authToken);
   }
   explicit LoginBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -1408,17 +1408,17 @@ struct LoginBuilder {
 inline flatbuffers::Offset<Login> CreateLogin(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> userId = 0,
-    flatbuffers::Offset<flatbuffers::String> password = 0,
     int32_t mapId = 0,
     const syncnet::Vec3 *pos = 0,
     int32_t actorId = 0,
-    flatbuffers::Offset<flatbuffers::String> uuid = 0) {
+    flatbuffers::Offset<flatbuffers::String> uuid = 0,
+    flatbuffers::Offset<flatbuffers::String> authToken = 0) {
   LoginBuilder builder_(_fbb);
+  builder_.add_authToken(authToken);
   builder_.add_uuid(uuid);
   builder_.add_actorId(actorId);
   builder_.add_pos(pos);
   builder_.add_mapId(mapId);
-  builder_.add_password(password);
   builder_.add_userId(userId);
   return builder_.Finish();
 }
@@ -1426,22 +1426,22 @@ inline flatbuffers::Offset<Login> CreateLogin(
 inline flatbuffers::Offset<Login> CreateLoginDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *userId = nullptr,
-    const char *password = nullptr,
     int32_t mapId = 0,
     const syncnet::Vec3 *pos = 0,
     int32_t actorId = 0,
-    const char *uuid = nullptr) {
+    const char *uuid = nullptr,
+    const char *authToken = nullptr) {
   auto userId__ = userId ? _fbb.CreateString(userId) : 0;
-  auto password__ = password ? _fbb.CreateString(password) : 0;
   auto uuid__ = uuid ? _fbb.CreateString(uuid) : 0;
+  auto authToken__ = authToken ? _fbb.CreateString(authToken) : 0;
   return syncnet::CreateLogin(
       _fbb,
       userId__,
-      password__,
       mapId,
       pos,
       actorId,
-      uuid__);
+      uuid__,
+      authToken__);
 }
 
 struct UseSkill FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

@@ -123,10 +123,33 @@ void SqlClientManager::init()
 
 bool SqlClientManager::create_tables()
 {
-    std::ifstream file("SQL/generated/create_tables.sql");
+    // 실행 디렉터리에 따라 위치가 달라진다(Game/ 에서 실행하면 SQL/generated,
+    // x64/Debug 같은 출력 폴더에서 실행하면 소스 트리를 거슬러 올라가야 한다).
+    // 찾지 못하면 마이그레이션이 통째로 건너뛰어지고, 나중에 없는 컬럼을 읽다 죽는다 —
+    // 조용히 지나가지 않도록 후보 경로를 모두 시도하고 실패를 크게 남긴다.
+    static const char* kScriptCandidates[] = {
+        "SQL/generated/create_tables.sql",
+        "../../Game/SQL/generated/create_tables.sql",
+        "../../Engine/SQL/generated/create_tables.sql",
+        "Engine/SQL/generated/create_tables.sql",
+    };
+
+    std::ifstream file;
+    for (const char* candidate : kScriptCandidates)
+    {
+        file.open(candidate);
+        if (file)
+        {
+            LOG.info("create_tables: '{}' 사용", candidate);
+            break;
+        }
+        file.clear();
+    }
+
     if (!file)
     {
-        LOG.error("create_tables.sql file not found.");
+        LOG.error("create_tables.sql 을 찾지 못했습니다 — 스키마 마이그레이션을 건너뜁니다. "
+                  "새 컬럼/테이블이 없는 DB 라면 이후 쿼리가 실패합니다.");
         return false;
     }
 

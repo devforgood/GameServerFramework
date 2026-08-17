@@ -1,5 +1,6 @@
 #pragma once
 #include <unordered_map>
+#include <vector>
 #include "CastContext.h"
 #include "SkillState.h"
 
@@ -15,8 +16,17 @@ class Skill;
 class SkillSet
 {
 public:
-	// ResourceLoader 의 전체 스킬 테이블을 등록한다. (todo: DB 보유 스킬 목록으로 대체)
+	// ResourceLoader 의 전체 스킬 테이블을 등록한다.
+	// 플레이어 캐릭터에는 쓰지 않는다 — 보유 여부와 무관하게 모든 스킬을 쓸 수 있게 된다.
+	// 몬스터/NPC 처럼 "가진 것"이 데이터로 고정된 액터나 테스트에서만 쓴다.
 	void InitFromResources();
+
+	// 플레이어가 실제로 배운 스킬만 등록한다(player_skill 테이블 → PlayerSkill 컴포넌트).
+	// 기존 등록을 비우고 다시 채운다.
+	void InitFromOwned(const std::vector<int>& skillIds);
+
+	// skill.json 에서 starter=true 인 스킬 id 목록(신규 캐릭터 기본 지급용).
+	static std::vector<int> CollectStarterSkillIds();
 
 	// 외부에서 만든 스킬 정의를 직접 등록한다(테스트/특수용). 소유권은 호출 측에 있다.
 	void AddSkill(int skillId, Skill* skill);

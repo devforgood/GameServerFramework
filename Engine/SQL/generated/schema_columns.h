@@ -24,6 +24,12 @@ inline constexpr SchemaColumn kSchemaColumns[] =
 {
 	{ "player", "name", "VARCHAR(50) NOT NULL", "id" },
 	{ "player", "level", "INT DEFAULT 1", "name" },
+	{ "player", "exp", "BIGINT NOT NULL DEFAULT 0", "level" },
+	{ "player_location", "character_id", "BIGINT NOT NULL", nullptr },
+	{ "player_location", "map_id", "INT NOT NULL DEFAULT 0", "character_id" },
+	{ "player_location", "x", "DOUBLE NOT NULL DEFAULT 0", "map_id" },
+	{ "player_location", "y", "DOUBLE NOT NULL DEFAULT 0", "x" },
+	{ "player_location", "z", "DOUBLE NOT NULL DEFAULT 0", "y" },
 	{ "player_item", "character_id", "BIGINT NOT NULL", nullptr },
 	{ "player_item", "item_id", "INT NOT NULL", "character_id" },
 	{ "player_item", "count", "INT NOT NULL DEFAULT 0", "item_id" },
@@ -42,4 +48,8 @@ inline constexpr SchemaColumn kSchemaColumns[] =
 	{ "quest_active", "accept_time", "DATETIME NOT NULL", "progress3" },
 	{ "quest_state", "character_id", "BIGINT NOT NULL", nullptr },
 	{ "quest_state", "flags", "BLOB NOT NULL", "character_id" },
+	{ "session_token", "token", "VARCHAR(128) NOT NULL", nullptr },
+	{ "session_token", "user_id", "VARCHAR(64) NOT NULL", "token" },
+	{ "session_token", "player_id", "BIGINT NOT NULL DEFAULT 0", "user_id" },
+	{ "session_token", "issued_at", "DATETIME NOT NULL", "player_id" },
 };

@@ -24,6 +24,42 @@ void SkillSet::InitFromResources()
 	}
 }
 
+void SkillSet::InitFromOwned(const std::vector<int>& skillIds)
+{
+	entries_.clear();
+
+	for (int skillId : skillIds)
+	{
+		const gamedata::Skill* data = ResourceLoader::Instance().GetSkill(skillId);
+		if (data == nullptr)
+		{
+			LOG.warn("SkillSet: skill.json 에 id {} 가 없다. 등록하지 않는다.", skillId);
+			continue;
+		}
+
+		// 배웠더라도 몬스터 전용 스킬은 캐릭터가 쓸 수 없다(데이터 오류 방어).
+		if (data->monster_only)
+			continue;
+
+		Skill* skill = SkillRegistry::Instance().Get(skillId);
+		if (skill != nullptr)
+			AddSkill(skillId, skill);
+	}
+}
+
+std::vector<int> SkillSet::CollectStarterSkillIds()
+{
+	std::vector<int> result;
+	for (const auto& pair : ResourceLoader::Instance().GetSkills())
+	{
+		const gamedata::Skill* data = pair.second;
+		if (data == nullptr || !data->starter || data->monster_only)
+			continue;
+		result.push_back(static_cast<int>(pair.first));
+	}
+	return result;
+}
+
 void SkillSet::AddSkill(int skillId, Skill* skill)
 {
 	Entry entry;

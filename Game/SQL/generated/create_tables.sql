@@ -3,8 +3,20 @@ CREATE TABLE IF NOT EXISTS `player`
     `id`                 BIGINT          NOT NULL AUTO_INCREMENT,
     `name`               VARCHAR(50)     NOT NULL,
     `level`              INT             DEFAULT 1,
+    `exp`                BIGINT          NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`),
     UNIQUE KEY (`name`)
+);
+
+
+CREATE TABLE IF NOT EXISTS `player_location`
+(
+    `character_id`       BIGINT          NOT NULL,
+    `map_id`             INT             NOT NULL DEFAULT 0,
+    `x`                  DOUBLE          NOT NULL DEFAULT 0,
+    `y`                  DOUBLE          NOT NULL DEFAULT 0,
+    `z`                  DOUBLE          NOT NULL DEFAULT 0,
+    PRIMARY KEY (`character_id`)
 );
 
 
@@ -56,4 +68,15 @@ CREATE TABLE IF NOT EXISTS `quest_state`
     `character_id`       BIGINT          NOT NULL,
     `flags`              BLOB            NOT NULL,
     PRIMARY KEY (`character_id`)
+);
+
+
+CREATE TABLE IF NOT EXISTS `session_token`
+(
+    `token`              VARCHAR(128)    NOT NULL,
+    `user_id`            VARCHAR(64)     NOT NULL,
+    `player_id`          BIGINT          NOT NULL DEFAULT 0,
+    `issued_at`          DATETIME        NOT NULL,
+    PRIMARY KEY (`token`),
+    INDEX (`user_id`)
 );

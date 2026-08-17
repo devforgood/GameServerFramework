@@ -20,20 +20,24 @@ public:
     void GainExp(int amount);
 
     int GetLevel() const { return level_; }
-    int GetExp() const { return exp_; }
+    long long GetExp() const { return exp_; }
     const std::string& GetName() const { return name_; }
+
+    // 현재 레벨의 전투 스탯을 캐릭터에 적용한다.
+    // 캐릭터 스폰 직후(resetHealth=true)와 레벨업 시(false)에 호출한다.
+    void ApplyStatsTo(class Actor* actor, bool resetHealth) const;
 
 private:
     // 주어진 누적 경험치에 해당하는 레벨(required_exp <= exp 중 최고 레벨)을 Level 테이블에서 찾는다.
-    int ResolveLevel(int exp) const;
+    int ResolveLevel(long long exp) const;
 
     // 몬스터 1마리 처치당 획득 경험치. 추후 몬스터 데이터의 보상 경험치로 대체 가능.
     static constexpr int kExpPerKill = 50;
 
     int level_ = 1;
-    int exp_ = 0;
+    long long exp_ = 0;
 
     // 저장 시 PlayerVO 전체를 재구성하기 위해 보관 (name 컬럼을 빈 값으로 덮어쓰지 않도록)
-    int characterId_ = 0;
+    long long characterId_ = 0;
     std::string name_;
 };

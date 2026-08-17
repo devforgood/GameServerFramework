@@ -35,6 +35,7 @@ namespace Gamedata
         public double pulse_interval;
         public int radius;
         public int range;
+        public bool starter;
         public string type;
     }
 
@@ -488,9 +489,21 @@ namespace Gamedata
     [Serializable]
     public class Level
     {
+        public int attack;
+        public int defense;
+        public int hp;
         public int id;
         public int level;
         public int required_exp;
+    }
+
+
+    [Serializable]
+    public class MonsterDataDrop
+    {
+        public double chance;
+        public int count;
+        public int item_id;
     }
 
 
@@ -499,7 +512,10 @@ namespace Gamedata
     {
         public int attack;
         public int defense;
+        public System.Collections.Generic.List<MonsterDataDrop> drops;
         public int exp;
+        public int gold_max;
+        public int gold_min;
         public int hp;
         public int id;
         public int level;

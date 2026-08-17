@@ -87,6 +87,9 @@ private:
 	// 부활 대기가 끝난 플레이어를 스폰 지점에 되살린다.
 	void RespawnPlayer(long playerId);
 
+	// 사망 시 적용할 부활 대기 시간(초). 게임 모드 규칙이 있으면 그 값, 없으면 기본값.
+	float ResolveRespawnSeconds() const;
+
 	// 맵을 떠난 플레이어의 사망/부활 대기 상태를 지운다.
 	void ForgetPlayerModeState(long playerId);
 
@@ -190,6 +193,9 @@ public:
 
 	// 캐릭터 체력이 남아 있는 플레이어 수. lua 의 전멸 판정에 쓰인다.
 	int CountAlivePlayers();
+
+	// 단계 4: 플레이어 사망 판정과 부활 타이머. 게임 모드와 무관하게 매 틱 돈다.
+	void UpdatePlayerDeath(float deltaTime);
 
 	// seconds 뒤에 플레이어를 스폰 지점에 되살린다(GM_SchedulePlayerRespawn).
 	void SchedulePlayerRespawn(long playerId, float seconds);

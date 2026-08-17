@@ -15,6 +15,12 @@ public class LoginController
 {
     private const string ReconnectTokenKey = "reconnectToken";
 
+    // 계정 식별자와 인증 토큰. 로그인/로비 서비스가 발급한 토큰을 여기에 넣으면 서버가
+    // session_token 테이블과 대조한다. 아직 발급 연동이 없으므로 PlayerPrefs 에서 읽고,
+    // 비어 있으면 토큰 없이 보낸다(서버가 auth.mode=allow_all 일 때만 통과한다).
+    private const string UserIdKey = "userId";
+    private const string AuthTokenKey = "authToken";
+
     private readonly ServerConnection connection;
     private readonly MapTransition mapTransition;
     private readonly Action<int> setPlayerActorId;
@@ -51,9 +57,12 @@ public class LoginController
     public void Login()
     {
         int messageId = connection.NextMessageId();
+        string userId = PlayerPrefs.GetString(UserIdKey, "test");
+        string authToken = PlayerPrefs.GetString(AuthTokenKey, "");
+
         // 보유한 재접속 토큰(uuid)을 함께 보낸다. 최초 로그인이면 빈 문자열이라 신규 로그인으로
         // 처리되고, 재접속이면 서버가 이 토큰으로 유예 중이던 기존 캐릭터를 넘겨준다.
-        connection.Send(PacketFactory.CreateLoginMessage(messageId, reconnectToken), response =>
+        connection.Send(PacketFactory.CreateLoginMessage(messageId, userId, authToken, reconnectToken), response =>
         {
             if (response.MsgType != GameMessages.Login)
             {

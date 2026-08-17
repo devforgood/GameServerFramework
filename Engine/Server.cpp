@@ -11,6 +11,9 @@
 #include "PlayerController.h"
 #include "Common.h"
 #include "DbThreadMonitor.h"
+#include "ServerConfig.h"
+#include "IAuthenticator.h"
+#include "MessagePolicy.h"
 
 GameChannel::GameChannel()
 {
@@ -59,10 +62,20 @@ GameSession::GameSession(tcp::socket socket, GameChannel& room, boost::asio::thr
 	player_ = nullptr;
 	playerController_ = new PlayerController();
 	ringBuf_ = new RingBuffer(8192); // 8192 bytes
+
+	const NetworkConfig& netCfg = ServerConfig::Instance().Network();
+	packetBucket_.Configure(netCfg.max_packets_per_second, netCfg.packet_burst,
+		std::chrono::steady_clock::now());
+
+	if (server_ != nullptr)
+		server_->OnSessionOpened();
 }
 
 GameSession::~GameSession()
 {
+	if (server_ != nullptr)
+		server_->OnSessionClosed();
+
 	if (playerController_ != nullptr)
 	{
 		delete playerController_;
@@ -84,6 +97,25 @@ void GameSession::Start()
 
 }
 
+bool GameSession::ConsumePacketToken()
+{
+	return packetBucket_.Consume(std::chrono::steady_clock::now());
+}
+
+void GameSession::Disconnect(const char* reason)
+{
+	if (closed_)
+		return;
+	closed_ = true;
+
+	LOG.warn("session disconnected: {}", reason);
+
+	boost::system::error_code ignored;
+	socket_.shutdown(tcp::socket::shutdown_both, ignored);
+	socket_.close(ignored);
+	room_.Leave(shared_from_this());
+}
+
 void GameSession::SetPlayer(std::shared_ptr<Player> player)
 {
 	player_ = player;
@@ -95,6 +127,19 @@ void GameSession::SetPlayer(std::shared_ptr<Player> player)
 
 void GameSession::Send(std::shared_ptr<send_message>& msg)
 {
+	if (closed_)
+		return;
+
+	// 백프레셔: 수신을 멈춘 클라이언트가 있으면 async_write 가 완료되지 않아 큐가 계속 쌓인다.
+	// 상한이 없으면 그 세션 하나가 서버 메모리를 끝까지 끌어올린다(브로드캐스트가 매 틱 밀어넣는다).
+	// 따라가지 못하는 연결은 살려둘 가치가 없으므로 끊는다.
+	const int limit = ServerConfig::Instance().Network().max_send_queue;
+	if (limit > 0 && static_cast<int>(writeMsgs_.size()) >= limit)
+	{
+		Disconnect("send queue overflow (client not reading)");
+		return;
+	}
+
 	bool write_in_progress = !writeMsgs_.empty();
 	writeMsgs_.push_back(msg);
 	if (!write_in_progress)
@@ -105,12 +150,19 @@ void GameSession::Send(std::shared_ptr<send_message>& msg)
 
 void GameSession::Close()
 {
+	if (closed_)
+		return;
+	closed_ = true;
+
 	boost::system::error_code ignored_ec;
 	socket_.close(ignored_ec);
 	room_.Leave(shared_from_this());
 }
 
 void GameSession::DoRead() {
+	if (closed_)
+		return;
+
 	size_t space = 0;
 	char* write_ptr = ringBuf_->write_ptr(space);
 	if (!write_ptr || space == 0) return;
@@ -127,13 +179,16 @@ void GameSession::DoRead() {
 				// 클라 종료/연결 끊김. 세션과 플레이어(현재 맵의 액터/브로드캐스트 목록)를
 				// 즉시 정리한다. 이 분기가 없으면 read 는 멈추지만 정리가 안 돼, 다음 브로드
 				// 캐스트 write 실패 시점까지 세션이 남아 있게 된다.
-				room_.Leave(shared_from_this());
+				if (!closed_) {
+					closed_ = true;
+					room_.Leave(shared_from_this());
+				}
 			}
 		});
 }
 
 void GameSession::ProcessPackets() {
-	while (true) {
+	while (!closed_) {
 		if (ringBuf_->size() < GameMessage::header_length)
 			return;
 
@@ -149,8 +204,21 @@ void GameSession::ProcessPackets() {
 			std::memcpy(&body_len, tmp, GameMessage::header_length);
 		}
 
+		// 길이를 먼저 검사한다(자세한 이유는 message_policy::IsValidBodyLength).
+		// 정상 클라이언트는 절대 보내지 않는 값이므로 프로토콜 위반으로 끊는다.
+		if (!message_policy::IsValidBodyLength(body_len)) {
+			Disconnect("invalid packet length");
+			return;
+		}
+
 		if (ringBuf_->size() < GameMessage::header_length + body_len)
 			return;
+
+		// 레이트리밋은 파싱 전에 건다(파싱 비용 자체가 공격 표면이다).
+		if (!ConsumePacketToken()) {
+			Disconnect("packet rate limit exceeded");
+			return;
+		}
 
 		ringBuf_->read(nullptr, GameMessage::header_length);  // consume header
 
@@ -170,56 +238,30 @@ void GameSession::ProcessPackets() {
 
 void GameSession::HandlePacket(std::span<const char> data) {
 	const uint8_t* udata = reinterpret_cast<const uint8_t*>(data.data());
-	playerController_->handle(syncnet::GetGameMessage(udata));
+
+	// FlatBuffers 는 신뢰할 수 없는 입력을 검증 없이 읽으면 버퍼 밖을 참조한다.
+	// (오프셋/길이가 전부 버퍼 안의 값이므로 조작된 패킷 하나로 임의 주소를 읽게 만들 수 있다.)
+	// Verifier 는 모든 오프셋·문자열·벡터가 버퍼 경계 안인지 확인한다.
+	flatbuffers::Verifier verifier(udata, data.size());
+	if (!syncnet::VerifyGameMessageBuffer(verifier)) {
+		Disconnect("malformed flatbuffer");
+		return;
+	}
+
+	const syncnet::GameMessage* msg = syncnet::GetGameMessage(udata);
+	if (msg == nullptr) {
+		Disconnect("empty game message");
+		return;
+	}
+
+	playerController_->handle(msg);
 }
-
-
-void GameSession::DoReadHeader()
-{
-	auto self(shared_from_this());
-	boost::asio::async_read(socket_,
-		boost::asio::buffer(readMsg_.data(), GameMessage::header_length),
-		[this, self](boost::system::error_code ec, std::size_t /*length*/)
-		{
-			//std::cout << "recv header" << std::endl;
-
-			if (!ec && readMsg_.decode_header())
-			{
-				DoReadBody();
-			}
-			else
-			{
-				room_.Leave(shared_from_this());
-			}
-		});
-}
-
-void GameSession::DoReadBody()
-{
-	auto self(shared_from_this());
-	boost::asio::async_read(socket_,
-		boost::asio::buffer(readMsg_.body(), readMsg_.body_length()),
-		[this, self](boost::system::error_code ec, std::size_t /*length*/)
-		{
-			if (!ec)
-			{
-				//room_.deliver(readMsg_);
-
-				playerController_->handle(syncnet::GetGameMessage(readMsg_.body()));
-				//std::cout << "recv message type : " << msg->msg_type() << std::endl;
-
-				DoReadHeader();
-			}
-			else
-			{
-				room_.Leave(shared_from_this());
-			}
-		});
-}
-
 
 void GameSession::DoWrite()
 {
+	if (closed_)
+		return;
+
 	auto self(shared_from_this());
 	boost::asio::async_write(socket_, writeMsgs_.front()->to_buffers(),
 		[this, self](boost::system::error_code ec, std::size_t /*length*/)
@@ -234,7 +276,10 @@ void GameSession::DoWrite()
 			}
 			else
 			{
-				room_.Leave(shared_from_this());
+				if (!closed_) {
+					closed_ = true;
+					room_.Leave(shared_from_this());
+				}
 			}
 		});
 }
@@ -289,6 +334,9 @@ void GameServer::InitializeDbThreadPool()
 
 void GameServer::DoAccept()
 {
+	if (!acceptingConnections_)
+		return;
+
 	LOG.info("Game Server Ready");
 
 	acceptor_.async_accept(
@@ -296,13 +344,41 @@ void GameServer::DoAccept()
 		{
 			if (!ec)
 			{
-				std::cout << "connected" << std::endl;
-
-				std::make_shared<GameSession>(std::move(socket), channel_, dbThreadPool_, this)->Start();
+				// 동시 접속 상한. 세션을 만들기 전에 끊는다 — 세션을 만들고 나서 끊으면
+				// 상한을 넘긴 만큼의 Player/World join/leave 비용을 그대로 지불한다.
+				const int limit = ServerConfig::Instance().Network().max_connections;
+				if (limit > 0 && sessionCount_ >= limit)
+				{
+					LOG.warn("연결 거부: 동시 접속 상한 {} 도달", limit);
+					boost::system::error_code ignored;
+					socket.shutdown(tcp::socket::shutdown_both, ignored);
+					socket.close(ignored);
+				}
+				else
+				{
+					std::make_shared<GameSession>(std::move(socket), channel_, dbThreadPool_, this)->Start();
+				}
 			}
 
 			DoAccept();
 		});
+}
+
+void GameServer::BeginShutdown()
+{
+	acceptingConnections_ = false;
+
+	boost::system::error_code ignored;
+	acceptor_.close(ignored);
+
+	// 접속 중인 플레이어를 전부 저장한다. 예전에는 60초 주기 저장뿐이라
+	// 재시작할 때마다 최대 60초치 진행이 사라졌다.
+	World* world = channel_.GetWorld();
+	if (world != nullptr)
+	{
+		const int saved = world->SaveAllPlayers();
+		LOG.info("shutdown: {} 명의 플레이어 저장 요청", saved);
+	}
 }
 
 void GameServer::UpdateGameLogic(float delta)
@@ -364,6 +440,8 @@ bool ServerManager::Initialize(std::list<tcp::endpoint>& endpoints)
 {
 	try
 	{
+		// 인증기는 설정(auth.mode)을 읽어 고른다. ServerConfig::Load 는 main 에서 이미 끝났다.
+		AuthService::Instance().InitFromConfig();
 
 		ResourceLoader::Instance().LoadResources();
 
@@ -407,6 +485,21 @@ void ServerManager::Run()
 		return;
 	}
 
+	// SIGINT(Ctrl+C) / SIGTERM 을 받으면 루프를 멈추게 한다.
+	// 핸들러는 별도 io_context 에서 돌린다 — 워커의 io_context 는 poll() 로만 돌아가서
+	// 게임 로직이 길어지면 시그널 처리가 늦어진다.
+	boost::asio::io_context signalContext;
+	boost::asio::signal_set signals(signalContext, SIGINT, SIGTERM);
+	signals.async_wait([this](const boost::system::error_code& ec, int signalNumber)
+		{
+			if (!ec)
+			{
+				LOG.info("signal {} 수신 — 정상 종료를 시작한다", signalNumber);
+				RequestShutdown();
+			}
+		});
+	std::thread signalThread([&signalContext]() { signalContext.run(); });
+
 	// 워커가 1개면 추가 스레드 없이 현재 스레드에서 단일 실행한다(기존 동작).
 	// 워커가 N개면 추가로 N-1개의 스레드를 띄우고, 첫 워커는 현재 스레드에서 돈다.
 	std::vector<std::thread> threads;
@@ -428,12 +521,38 @@ void ServerManager::Run()
 			t.join();
 		}
 	}
+
+	signalContext.stop();
+	if (signalThread.joinable())
+		signalThread.join();
+
+	LOG.info("모든 워커 종료 완료");
+}
+
+void ServerManager::ShutdownWorker(IoWorker& worker)
+{
+	// 1) 새 연결을 막고, 접속 중인 플레이어의 저장을 요청한다(DB 스레드로 나간다).
+	for (auto& server : worker.servers)
+	{
+		server->BeginShutdown();
+	}
+
+	// 2) 저장 작업이 DB 스레드에 도달하고 완료 콜백이 io_context 로 돌아올 시간을 준다.
+	//    저장은 fire-and-forget 이라 완료를 기다릴 핸들이 없으므로, 남은 핸들러를 흘려보내며
+	//    짧게 폴링한다. 무한정 기다리지 않도록 상한(3초)을 둔다.
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+	while (std::chrono::steady_clock::now() < deadline)
+	{
+		if (worker.ioContext->poll() == 0)
+			std::this_thread::sleep_for(std::chrono::milliseconds(20));
+	}
 }
 
 void ServerManager::RunWorker(IoWorker& worker, bool primary)
 {
 	bool running = true;
 	const std::chrono::milliseconds targetInterval(16);
+	(void)running; // 종료 조건은 shutdownRequested_ 가 정한다
 	TimeVal lastTime = getPerfTime();
 
 	// DB 스레드 풀의 멈춘(데드락/슬로우) 작업 감시 주기 (1초).
@@ -445,7 +564,7 @@ void ServerManager::RunWorker(IoWorker& worker, bool primary)
 
 	boost::asio::io_context& ioContext = *worker.ioContext;
 
-	while (running)
+	while (!shutdownRequested_.load(std::memory_order_relaxed))
 	{
 		auto frameStart = std::chrono::steady_clock::now();
 
@@ -485,6 +604,8 @@ void ServerManager::RunWorker(IoWorker& worker, bool primary)
 			std::this_thread::sleep_for(sleepTime);
 		}
 	}
+
+	ShutdownWorker(worker);
 }
 
 

@@ -21,7 +21,7 @@ namespace
 }
 
 void party_credit::PublishActorDead(Map* map, int killer_actor_id, const Vector3& victim_pos,
-	int victim_actor_id, int victim_data_id)
+	int victim_actor_id, int victim_data_id, int victim_reward_exp)
 {
 	if (map == nullptr)
 		return;
@@ -73,5 +73,5 @@ void party_credit::PublishActorDead(Map* map, int killer_actor_id, const Vector3
 
 	const int share = static_cast<int>(receivers.size());
 	for (auto* receiver : receivers)
-		receiver->publish(EventActorDead{ killer_actor_id, victim_actor_id, victim_data_id, share });
+		receiver->publish(EventActorDead{ killer_actor_id, victim_actor_id, victim_data_id, share, victim_reward_exp });
 }

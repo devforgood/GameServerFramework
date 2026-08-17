@@ -48,6 +48,7 @@ namespace gamedata
     struct MapSpawnPoints;
     struct Map;
     struct Level;
+    struct MonsterDataDrop;
     struct MonsterData;
 
 
@@ -79,6 +80,7 @@ namespace gamedata
         double pulse_interval = 0.0;
         int radius = 0;
         int range = 0;
+        bool starter = false;
         std::string type;
     };
 
@@ -494,9 +496,20 @@ namespace gamedata
 
     struct Level
     {
+        int attack = 0;
+        int defense = 0;
+        int hp = 0;
         int id = 0;
         int level = 0;
         int required_exp = 0;
+    };
+
+
+    struct MonsterDataDrop
+    {
+        double chance = 0.0;
+        int count = 0;
+        int item_id = 0;
     };
 
 
@@ -504,7 +517,10 @@ namespace gamedata
     {
         int attack = 0;
         int defense = 0;
+        std::vector<MonsterDataDrop> drops;
         int exp = 0;
+        int gold_max = 0;
+        int gold_min = 0;
         int hp = 0;
         int id = 0;
         int level = 0;
@@ -542,6 +558,7 @@ namespace gamedata
         if (j.contains("pulse_interval") && !j.at("pulse_interval").is_null()) j.at("pulse_interval").get_to(o.pulse_interval);
         if (j.contains("radius") && !j.at("radius").is_null()) j.at("radius").get_to(o.radius);
         if (j.contains("range") && !j.at("range").is_null()) j.at("range").get_to(o.range);
+        if (j.contains("starter") && !j.at("starter").is_null()) j.at("starter").get_to(o.starter);
         if (j.contains("type") && !j.at("type").is_null()) j.at("type").get_to(o.type);
     }
 
@@ -929,9 +946,20 @@ namespace gamedata
 
     inline void from_json(const nlohmann::json& j, Level& o)
     {
+        if (j.contains("attack") && !j.at("attack").is_null()) j.at("attack").get_to(o.attack);
+        if (j.contains("defense") && !j.at("defense").is_null()) j.at("defense").get_to(o.defense);
+        if (j.contains("hp") && !j.at("hp").is_null()) j.at("hp").get_to(o.hp);
         if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("level") && !j.at("level").is_null()) j.at("level").get_to(o.level);
         if (j.contains("required_exp") && !j.at("required_exp").is_null()) j.at("required_exp").get_to(o.required_exp);
+    }
+
+
+    inline void from_json(const nlohmann::json& j, MonsterDataDrop& o)
+    {
+        if (j.contains("chance") && !j.at("chance").is_null()) j.at("chance").get_to(o.chance);
+        if (j.contains("count") && !j.at("count").is_null()) j.at("count").get_to(o.count);
+        if (j.contains("item_id") && !j.at("item_id").is_null()) j.at("item_id").get_to(o.item_id);
     }
 
 
@@ -939,7 +967,10 @@ namespace gamedata
     {
         if (j.contains("attack") && !j.at("attack").is_null()) j.at("attack").get_to(o.attack);
         if (j.contains("defense") && !j.at("defense").is_null()) j.at("defense").get_to(o.defense);
+        if (j.contains("drops") && !j.at("drops").is_null()) j.at("drops").get_to(o.drops);
         if (j.contains("exp") && !j.at("exp").is_null()) j.at("exp").get_to(o.exp);
+        if (j.contains("gold_max") && !j.at("gold_max").is_null()) j.at("gold_max").get_to(o.gold_max);
+        if (j.contains("gold_min") && !j.at("gold_min").is_null()) j.at("gold_min").get_to(o.gold_min);
         if (j.contains("hp") && !j.at("hp").is_null()) j.at("hp").get_to(o.hp);
         if (j.contains("id") && !j.at("id").is_null()) j.at("id").get_to(o.id);
         if (j.contains("level") && !j.at("level").is_null()) j.at("level").get_to(o.level);

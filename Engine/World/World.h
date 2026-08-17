@@ -62,18 +62,8 @@ private:
 	};
 	std::unordered_map<std::string, PendingReconnect> pendingReconnects_;
 
-	// 로그아웃(재접속 유예 만료)한 플레이어의 마지막 위치. 같은 userId 로 다시 로그인하면
-	// 기본 스폰 대신 이 위치로 스폰한다. 키는 userId, 위치는 클라 좌표계(Map.json 기준).
-	// 서버 프로세스 메모리에만 유지된다(재시작 시 초기화. DB 영속화는 추후 과제).
-	struct LastLocation
-	{
-		int mapId;
-		syncnet::Vec3 pos;
-	};
-	std::unordered_map<std::string, LastLocation> lastLocations_;
-
-	// 캐릭터가 월드에서 최종 제거되기 직전에 마지막 위치를 lastLocations_ 에 기록한다.
-	void RememberLastLocation(const std::shared_ptr<Player>& player);
+	// 마지막 위치는 PlayerLocation 컴포넌트가 player_location 테이블에 영속화한다.
+	// (예전에는 여기 인메모리 맵에만 있어서 재시작하면 전원이 시작 지점으로 돌아갔다)
 
 	// 진행이 끝났거나 빈 인스턴스를 정리한다. 매 틱 update 에서 호출.
 	void CleanupInstances();
@@ -121,10 +111,6 @@ public:
 	// 서버 기동 시(Init 이후) 1회 호출한다. 벤치마크/테스트가 쓰는 Init 과 분리해
 	// 측정/검증 환경에서는 몬스터가 자동 스폰되지 않게 한다.
 	void SpawnMapMonsters();
-
-	// userId 의 마지막 로그아웃 위치를 조회한다. 있으면 out 파라미터를 채우고 true.
-	// 위치는 클라 좌표계(Login 응답에 그대로 실어 보낼 수 있다).
-	bool GetLastLocation(const std::string& userId, int& outMapId, syncnet::Vec3& outPos) const;
 
 	// 프로파일링/벤치마크용: 첫 번째(기본) 맵 접근자. 맵이 없으면 nullptr.
 	Map* GetPrimaryMap() { return mapList_.empty() ? nullptr : mapList_.front().get(); }
@@ -193,6 +179,15 @@ public:
 	// (재바인딩은 호출 측에서 수행). 없으면 nullptr. 반환 시 월드/맵 브로드캐스트 목록에
 	// 다시 등록한다.
 	std::shared_ptr<Player> TryReconnect(const std::string& uuid);
+
+	// 접속 중인 플레이어와 재접속 유예 중인 플레이어를 전부 저장한다(서버 종료 시).
+	// 저장은 비동기(fire-and-forget)라 반환값은 "요청한 인원수"다.
+	int SaveAllPlayers();
+
+	// 같은 계정(userId)으로 이미 들어와 있는 세션과 유예 대기 캐릭터를 정리한다.
+	// 로그인 성공 직후에 부른다. exclude 는 지금 로그인 중인 플레이어(자기 자신).
+	// 반환값은 정리한 수.
+	int EvictExistingLogin(const std::string& userId, const Player* exclude);
 
 	friend class Actor;
 	friend class ActorFactory;

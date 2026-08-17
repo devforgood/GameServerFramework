@@ -10,9 +10,9 @@
 
 Character::Character(Map* map) : Actor(map)
 {
-	// todo : load skills from DB table (현재는 전체 스킬 테이블을 등록한다)
-	skillSet_.InitFromResources();
-
+	// 스킬은 여기서 채우지 않는다. 플레이어가 실제로 배운 목록(PlayerSkill)을
+	// Player::Possess 가 실어 준다 — 예전에는 여기서 전체 스킬 테이블을 등록해
+	// 아무나 모든 스킬을 쓸 수 있었다.
 	isInputLocked_ = false;
 	gameObjectType_ = syncnet::GameObjectType::GameObjectType_Character;
 

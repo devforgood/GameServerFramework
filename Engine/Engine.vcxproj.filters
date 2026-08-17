@@ -20,6 +20,9 @@
     <Filter Include="AI">
       <UniqueIdentifier>{30aba9c6-232f-46e0-9bfb-0d7c441bd6e1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Auth">
+      <UniqueIdentifier>{a71f0c11-9d21-4f0e-9b3a-6b2f7c1d4e01}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Controller">
       <UniqueIdentifier>{ce6fade7-ea59-4be4-9fb6-55eb8bdd1100}</UniqueIdentifier>
     </Filter>
@@ -168,6 +171,12 @@
     <ClCompile Include="skill\NormalAttackSkill.cpp">
       <Filter>skill</Filter>
     </ClCompile>
+    <ClCompile Include="Auth\Authenticators.cpp">
+      <Filter>Auth</Filter>
+    </ClCompile>
+    <ClCompile Include="System\ServerConfig.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
     <ClCompile Include="System\PerfTimer.cpp">
       <Filter>System</Filter>
     </ClCompile>
@@ -202,6 +211,12 @@
       <Filter>Player</Filter>
     </ClCompile>
     <ClCompile Include="Player\PlayerSkill.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Player\PlayerLoot.cpp">
+      <Filter>Player</Filter>
+    </ClCompile>
+    <ClCompile Include="Player\PlayerLocation.cpp">
       <Filter>Player</Filter>
     </ClCompile>
     <ClCompile Include="Player\PlayerLevel.cpp">
@@ -425,6 +440,21 @@
     <ClInclude Include="skill\NormalAttackSkill.h">
       <Filter>skill</Filter>
     </ClInclude>
+    <ClInclude Include="Auth\Authenticators.h">
+      <Filter>Auth</Filter>
+    </ClInclude>
+    <ClInclude Include="Auth\IAuthenticator.h">
+      <Filter>Auth</Filter>
+    </ClInclude>
+    <ClInclude Include="System\ServerConfig.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\TokenBucket.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="Controller\MessagePolicy.h">
+      <Filter>Controller</Filter>
+    </ClInclude>
     <ClInclude Include="System\PerfTimer.h">
       <Filter>System</Filter>
     </ClInclude>
@@ -465,6 +495,12 @@
       <Filter>Party</Filter>
     </ClInclude>
     <ClInclude Include="Player\PlayerSkill.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Player\PlayerLoot.h">
+      <Filter>Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Player\PlayerLocation.h">
       <Filter>Player</Filter>
     </ClInclude>
     <ClInclude Include="Player\PlayerLevel.h">

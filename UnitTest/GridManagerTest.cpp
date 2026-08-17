@@ -37,6 +37,7 @@ public:
     virtual int GetActorId() const override { return actorId; }
 	virtual void DecrementHealth(int amount) override {}
     virtual void SetLastAttacker(int attacker_actor_id) override { lastAttackerActorId = attacker_actor_id; }
+    virtual int GetDefense() const override { return 0; }
 
     // 위치 설정 메서드
     void setPosition(float newX, float newY) {

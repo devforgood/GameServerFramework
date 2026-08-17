@@ -7,6 +7,16 @@ struct PlayerVO {
     long long id;
     std::string name;
     int level;
+    long long exp;
+};
+// ----------------------------------------
+
+struct PlayerLocationVO {
+    long long character_id;
+    int map_id;
+    double x;
+    double y;
+    double z;
 };
 // ----------------------------------------
 
@@ -45,4 +55,12 @@ struct QuestActiveVO {
 struct QuestStateVO {
     long long character_id;
     std::string flags;
+};
+// ----------------------------------------
+
+struct SessionTokenVO {
+    std::string token;
+    std::string user_id;
+    long long player_id;
+    std::chrono::system_clock::time_point issued_at;
 };

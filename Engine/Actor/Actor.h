@@ -29,7 +29,16 @@ protected:
 	Vector3 frontVector_;    // 캐릭터가 바라보는 방향
 	float rotationSpeed_ = 5.0f; // 회전 속도 (초당 회전 각도)
 	Vector3 position_;        // 위치 정보를 protected로 이동
+
+	// 전투 스탯. 전부 데이터에서 온다 —
+	//   캐릭터: level.json 의 해당 레벨 행(hp/attack/defense)
+	//   몬스터/NPC: monster.json / npc.json 의 행
+	// 데이터가 없으면 아래 기본값으로 남는다(레벨 1 캐릭터와 같은 수준).
 	int health_ = 100;
+	int maxHealth_ = 100;
+	int attack_ = 10;
+	int defense_ = 0;
+
 	int lastAttackerActorId_ = -1; // 마지막으로 데미지를 입힌 액터 ID (킬 판정용)
 	syncnet::GameObjectType gameObjectType_;
 	int32_t entityId_ = -1; // 엔티티 ID (필요시 사용)
@@ -177,15 +186,22 @@ public:
 		}
 	}
 
-	virtual void IncrementHealth(int amount) 
+	// 회복은 최대 체력을 넘지 않는다.
+	virtual void IncrementHealth(int amount)
 	{
 		health_ += amount;
+		if (health_ > maxHealth_)
+			health_ = maxHealth_;
 		AddChangedFlag(static_cast<long>(GameObjectChangeType::Health));
 	}
 
-	virtual void DecrementHealth(int amount) 
+	// 체력은 0 아래로 내려가지 않는다. 예전에는 음수로 계속 내려가서,
+	// 사망 후 회복하면 0 에 닿기까지 여러 번 맞아야 했다.
+	virtual void DecrementHealth(int amount)
 	{
 		health_ -= amount;
+		if (health_ < 0)
+			health_ = 0;
 		AddChangedFlag(static_cast<long>(GameObjectChangeType::Health));
 	}
 
@@ -205,6 +221,29 @@ public:
 	{
 		health_ = health;
 		AddChangedFlag(static_cast<long>(GameObjectChangeType::Health));
+	}
+
+	// --- 전투 스탯 ---
+
+	int GetMaxHealth() const { return maxHealth_; }
+	int GetAttack() const { return attack_; }
+	int GetDefense() const override { return defense_; }
+
+	bool IsDead() const { return health_ <= 0; }
+
+	// 스탯을 한 번에 적용한다(데이터 로드/레벨업 시점).
+	// resetHealth 가 true 면 체력을 최대치로 채운다(스폰/부활).
+	// false 면 현재 체력을 유지하되 새 최대치를 넘지 않게 자른다(레벨업).
+	void SetCombatStats(int maxHealth, int attack, int defense, bool resetHealth)
+	{
+		maxHealth_ = maxHealth > 0 ? maxHealth : 1;
+		attack_ = attack;
+		defense_ = defense;
+
+		if (resetHealth)
+			SetHealth(maxHealth_);
+		else if (health_ > maxHealth_)
+			SetHealth(maxHealth_);
 	}
 
 	// 마지막으로 데미지를 입힌 액터(킬러) ID
