@@ -9,6 +9,7 @@ from generate_resource_loader import (
     generate_gamedata_header,
     generate_resource_loader,
     generate_csharp_model,
+    generate_csharp_resource_loader,
 )
 
 # ANSI escape codes
@@ -29,6 +30,8 @@ SERVER_SRC_DIR = "../Engine/"
 CLIENT_SRC_DIR = "../Client/Assets/Scripts/"
 # Generated C# data model (Unity client)
 CLIENT_MODEL_PATH = "../Client/Assets/Scripts/GameData/Gamedata.cs"
+# Generated half of the Unity ResourceLoader (table dictionaries + load coroutine)
+CLIENT_LOADER_PATH = "../Client/Assets/Scripts/GameData/ResourceLoader.Tables.cs"
 
 
 def load_table_meta():
@@ -125,6 +128,14 @@ def main():
         print(f"{GREEN}[OK] Generated C# Gamedata model{RESET}")
     except Exception as e:
         print(f"{RED}[ERROR] Failed to generate C# model: {e}{RESET}")
+
+    # C# ResourceLoader (Unity client). 팩토리가 참조하는 테이블 사전이므로 팩토리와
+    # 같은 테이블 목록에서 만들어야 한다.
+    try:
+        generate_csharp_resource_loader(CLIENT_LOADER_PATH, tables)
+        print(f"{GREEN}[OK] Generated C# ResourceLoader tables{RESET}")
+    except Exception as e:
+        print(f"{RED}[ERROR] Failed to generate C# ResourceLoader: {e}{RESET}")
 
     # 검증/로드 실패가 있으면 빌드 파이프라인이 실패하도록 종료 코드로 알린다.
     if had_error:

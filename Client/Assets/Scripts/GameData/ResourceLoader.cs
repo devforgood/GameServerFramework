@@ -6,7 +6,7 @@ using Gamedata; // Gamedata.Skill, Gamedata.Item, Gamedata.Quest, Gamedata.Skill
 
 namespace Assets.Scripts.GameData
 {
-    public class ResourceLoader
+    public partial class ResourceLoader
     {
         // 예시: 리소스 로드 메서드
         public T Load<T>(string path) where T : UnityEngine.Object
@@ -64,39 +64,17 @@ namespace Assets.Scripts.GameData
         }
 
         /// <summary>
-        /// 모든 GameData 파일의 로드를 동시에 시작하여(I/O 병렬) 디스크 대기 시간을 겹친 뒤,
-        /// 완료된 TextAsset들을 메인 스레드에서 파싱한다.
+        /// 모든 GameData 파일을 읽어 테이블 사전을 채운다.
         /// 호출 측에서 StartCoroutine(LoadAsync()) 형태로 실행한다.
+        ///
+        /// 테이블별 사전과 실제 로딩은 ResourceLoader.Tables.cs 가 table_meta.json 에서
+        /// 생성한다 — 테이블이 늘어도 여기는 건드릴 필요가 없다.
         /// </summary>
         public IEnumerator LoadAsync()
         {
             Debug.Log("ResourceLoader initialized.");
 
-            // 모든 로드 요청을 먼저 띄워 동시에 진행되도록 한다.
-            var skillReq = Resources.LoadAsync<TextAsset>("GameData/skill");
-            var itemReq = Resources.LoadAsync<TextAsset>("GameData/item");
-            var questReq = Resources.LoadAsync<TextAsset>("GameData/quest");
-            var levelReq = Resources.LoadAsync<TextAsset>("GameData/level");
-            var monsterReq = Resources.LoadAsync<TextAsset>("GameData/monster");
-            var mapReq = Resources.LoadAsync<TextAsset>("GameData/Map");
-            var npcReq = Resources.LoadAsync<TextAsset>("GameData/npc");
-
-            // 모든 요청이 끝날 때까지 대기. (요청은 이미 동시에 진행 중)
-            yield return skillReq;
-            yield return itemReq;
-            yield return questReq;
-            yield return levelReq;
-            yield return monsterReq;
-            yield return mapReq;
-            yield return npcReq;
-
-            ParseTable<Gamedata.SkillList, Gamedata.Skill>((TextAsset)skillReq.asset, "GameData/skill", l => l.items, s => s.id, Skills);
-            ParseTable<Gamedata.ItemList, Gamedata.Item>((TextAsset)itemReq.asset, "GameData/item", l => l.items, i => i.id, Items);
-            ParseTable<Gamedata.QuestList, Gamedata.Quest>((TextAsset)questReq.asset, "GameData/quest", l => l.items, q => q.id, Quests);
-            ParseTable<Gamedata.LevelList, Gamedata.Level>((TextAsset)levelReq.asset, "GameData/level", l => l.items, lv => lv.id, Levels);
-            ParseTable<Gamedata.MonsterDataList, Gamedata.MonsterData>((TextAsset)monsterReq.asset, "GameData/monster", l => l.items, m => m.id, MonsterDatas);
-            ParseTable<Gamedata.MapList, Gamedata.Map>((TextAsset)mapReq.asset, "GameData/Map", l => l.items, m => m.id, Maps);
-            ParseTable<Gamedata.NpcList, Gamedata.Npc>((TextAsset)npcReq.asset, "GameData/npc", l => l.items, n => n.id, Npcs);
+            yield return LoadAllTables();
 
             BuildMapIndexes();
 
@@ -136,13 +114,7 @@ namespace Assets.Scripts.GameData
             }
         }
 
-        public Dictionary<int, Gamedata.Skill> Skills = new Dictionary<int, Gamedata.Skill>();
-        public Dictionary<int, Gamedata.Item> Items = new Dictionary<int, Gamedata.Item>();
-        public Dictionary<int, Gamedata.Quest> Quests = new Dictionary<int, Gamedata.Quest>();
-        public Dictionary<int, Gamedata.Level> Levels = new Dictionary<int, Gamedata.Level>();
-        public Dictionary<int, Gamedata.MonsterData> MonsterDatas = new Dictionary<int, Gamedata.MonsterData>();
-        public Dictionary<int, Gamedata.Map> Maps = new Dictionary<int, Gamedata.Map>();
-        public Dictionary<int, Gamedata.Npc> Npcs = new Dictionary<int, Gamedata.Npc>();
+        // 테이블 사전(Skills, Items, ...)은 ResourceLoader.Tables.cs 에 생성된다.
 
         // 맵 안 오브젝트의 전역 id 인덱스. BuildMapIndexes 가 채운다.
         public Dictionary<int, Gamedata.MapGate> MapGates = new Dictionary<int, Gamedata.MapGate>();

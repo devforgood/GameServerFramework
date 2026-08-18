@@ -1,0 +1,42 @@
+// This file is auto-generated. Do not modify directly.
+//
+// table_meta.json 의 테이블 목록에서 만들어진다. 클라이언트 팩토리
+// ({Table}Factory.cs) 는 여기 있는 {Table}s 사전을 참조하므로, 테이블을 추가하면
+// 사전과 로딩 코드가 함께 생겨야 한다. 손으로 유지하던 시절에는 테이블을 늘릴 때마다
+// 팩토리만 생기고 사전이 빠져 클라이언트 컴파일이 깨졌다.
+//
+// 손으로 쓰는 나머지 부분(ParseTable, 맵 인덱스, 조회 헬퍼)은 ResourceLoader.cs 에 있다.
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace Assets.Scripts.GameData
+{
+    public partial class ResourceLoader
+    {
+{%- for t in tables %}
+        public Dictionary<int, Gamedata.{{ t.name }}> {{ t.name }}s = new Dictionary<int, Gamedata.{{ t.name }}>();
+{%- endfor %}
+
+        /// <summary>
+        /// 모든 테이블의 로드 요청을 먼저 띄워 디스크 대기를 겹친 뒤, 완료된 TextAsset 을
+        /// 메인 스레드에서 파싱한다(JsonUtility 는 스레드 안전하지 않다).
+        /// </summary>
+        private IEnumerator LoadAllTables()
+        {
+{%- for t in tables %}
+            var {{ t.var }}Req = Resources.LoadAsync<TextAsset>("{{ t.resource_path }}");
+{%- endfor %}
+
+{%- for t in tables %}
+            yield return {{ t.var }}Req;
+{%- endfor %}
+
+{% for t in tables %}
+            ParseTable<Gamedata.{{ t.name }}List, Gamedata.{{ t.name }}>(
+                (TextAsset){{ t.var }}Req.asset, "{{ t.resource_path }}", l => l.items, e => e.id, {{ t.name }}s);
+{%- endfor %}
+        }
+    }
+}
