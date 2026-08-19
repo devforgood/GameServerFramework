@@ -106,6 +106,14 @@ public:
 private:
 	void DoWrite();
 	void DoRead();
+
+	// 비동기 read/write 완료 콜백. bind_front 로 shared_from_this() 를 앞에 묶어서 넘기므로
+	// 핸들러가 살아 있는 동안 세션도 함께 유지된다(기존 [this, self] 캡처와 같은 역할).
+	void OnRead(const boost::system::error_code& ec, std::size_t bytesTransferred);
+	void OnWrite(const boost::system::error_code& ec, std::size_t length);
+
+	// read/write 실패로 연결이 끊겼을 때 한 번만 정리한다.
+	void HandleIoFailure();
 	void ProcessPackets();
 	void HandlePacket(std::span<const char> data);
 
@@ -163,6 +171,10 @@ public:
 
 private:
 	void DoAccept();
+
+	// 수락 완료 콜백. 상한을 넘으면 세션을 만들기 전에 끊고, 아니면 세션을 시작한 뒤
+	// 다음 수락을 다시 건다. 소켓은 이동으로 받는다.
+	void OnAccept(const boost::system::error_code& ec, tcp::socket socket);
 
 	tcp::acceptor acceptor_;
 
@@ -262,6 +274,9 @@ private:
 
 	// 단일 워커(스레드)의 메인 루프.
 	void RunWorker(IoWorker& worker);
+
+	// SIGINT/SIGTERM 수신 콜백. 시그널용 io_context 스레드에서 불린다.
+	void OnSignal(const boost::system::error_code& ec, int signalNumber);
 
 	// 종료 요청을 받은 워커가 자기 서버들을 정리한다(수락 중단 + 플레이어 저장).
 	void ShutdownWorker(IoWorker& worker);

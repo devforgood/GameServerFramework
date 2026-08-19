@@ -1,4 +1,6 @@
 #include "Server.h"
+
+#include <functional>
 #include "World.h"
 #include "flatbuffers/flatbuffers.h"
 #include "syncnet_generated.h"
@@ -167,24 +169,33 @@ void GameSession::DoRead() {
 	char* write_ptr = ringBuf_->write_ptr(space);
 	if (!write_ptr || space == 0) return;
 
-	auto self(shared_from_this());
+	// 핸들러 앞에 shared_from_this() 를 묶어 세션 수명을 잡는다(기존 self 캡처와 동일).
 	socket_.async_read_some(boost::asio::buffer(write_ptr, space),
-		[this, self](boost::system::error_code ec, std::size_t bytes_transferred) {
-			if (!ec) {
-				ringBuf_->commit_write(bytes_transferred);
-				ProcessPackets();
-				DoRead();
-			}
-			else {
-				// 클라 종료/연결 끊김. 세션과 플레이어(현재 맵의 액터/브로드캐스트 목록)를
-				// 즉시 정리한다. 이 분기가 없으면 read 는 멈추지만 정리가 안 돼, 다음 브로드
-				// 캐스트 write 실패 시점까지 세션이 남아 있게 된다.
-				if (!closed_) {
-					closed_ = true;
-					room_.Leave(shared_from_this());
-				}
-			}
-		});
+		std::bind_front(&GameSession::OnRead, shared_from_this()));
+}
+
+void GameSession::OnRead(const boost::system::error_code& ec, std::size_t bytesTransferred)
+{
+	if (ec) {
+		// 클라 종료/연결 끊김. 세션과 플레이어(현재 맵의 액터/브로드캐스트 목록)를
+		// 즉시 정리한다. 이 분기가 없으면 read 는 멈추지만 정리가 안 돼, 다음 브로드
+		// 캐스트 write 실패 시점까지 세션이 남아 있게 된다.
+		HandleIoFailure();
+		return;
+	}
+
+	ringBuf_->commit_write(bytesTransferred);
+	ProcessPackets();
+	DoRead();
+}
+
+void GameSession::HandleIoFailure()
+{
+	if (closed_)
+		return;
+
+	closed_ = true;
+	room_.Leave(shared_from_this());
 }
 
 void GameSession::ProcessPackets() {
@@ -262,26 +273,23 @@ void GameSession::DoWrite()
 	if (closed_)
 		return;
 
-	auto self(shared_from_this());
 	boost::asio::async_write(socket_, writeMsgs_.front()->to_buffers(),
-		[this, self](boost::system::error_code ec, std::size_t /*length*/)
-		{
-			if (!ec)
-			{
-				writeMsgs_.pop_front();
-				if (!writeMsgs_.empty())
-				{
-					DoWrite();
-				}
-			}
-			else
-			{
-				if (!closed_) {
-					closed_ = true;
-					room_.Leave(shared_from_this());
-				}
-			}
-		});
+		std::bind_front(&GameSession::OnWrite, shared_from_this()));
+}
+
+void GameSession::OnWrite(const boost::system::error_code& ec, std::size_t /*length*/)
+{
+	if (ec)
+	{
+		HandleIoFailure();
+		return;
+	}
+
+	writeMsgs_.pop_front();
+	if (!writeMsgs_.empty())
+	{
+		DoWrite();
+	}
 }
 
 //----------------------------------------------------------------------
@@ -302,6 +310,30 @@ GameServer::GameServer(std::shared_ptr<boost::asio::io_context> io_context, cons
 
 std::atomic<int> initialized_threads(0); // 초기화된 스레드 수 추적
 
+// DB 스레드 풀의 각 스레드에서 한 번씩 도는 초기화 작업.
+// 스레드마다 SqlClient 를 초기화하고, 모든 스레드가 끝날 때까지 서로 기다린다.
+static void InitializeDbThread(int index, int poolSize)
+{
+	static thread_local bool initialized = false;
+	if (initialized)
+		return;
+
+	LOG.info("DB thread pool initialized on thread: {}, thread ID {}", index, std::hash<std::thread::id>{}(std::this_thread::get_id()));
+
+	// 스레드별 초기화 작업
+	SqlClientManager::getInstance().init();
+	initialized = true;
+
+	// 초기화 완료를 semaphore로 알림
+	initialized_threads.fetch_add(1, std::memory_order_relaxed);
+	while (initialized_threads.load(std::memory_order_relaxed) < poolSize)
+	{
+		LOG.info("Waiting for other threads to initialize... {}", index);
+		std::this_thread::yield(); // 다른 스레드가 초기화 완료를 기다리도록 함
+	}
+	LOG.info("threads initialized. Proceeding with DB operations. {}", index);
+}
+
 void GameServer::InitializeDbThreadPool()
 {
 	std::cout << "Initializing DB thread pool..." 
@@ -310,25 +342,7 @@ void GameServer::InitializeDbThreadPool()
 
 	// 각 스레드에서 초기화 작업 수행
 	for (int i = 0; i < DB_THREAD_POOL_SIZE; ++i) {
-		boost::asio::post(dbThreadPool_, [i]() {
-			static thread_local bool initialized = false;
-			if (!initialized) {
-				LOG.info("DB thread pool initialized on thread: {}, thread ID {}", i, std::hash<std::thread::id>{}(std::this_thread::get_id()));
-
-				// 스레드별 초기화 작업
-				SqlClientManager::getInstance().init();
-				initialized = true;
-
-				// 초기화 완료를 semaphore로 알림
-				initialized_threads.fetch_add(1, std::memory_order_relaxed);
-				while (initialized_threads.load(std::memory_order_relaxed) < DB_THREAD_POOL_SIZE)
-				{
-					LOG.info("Waiting for other threads to initialize... {}", i);
-					std::this_thread::yield(); // 다른 스레드가 초기화 완료를 기다리도록 함
-				}
-				LOG.info("threads initialized. Proceeding with DB operations. {}", i);
-			}
-			});
+		boost::asio::post(dbThreadPool_, std::bind_front(InitializeDbThread, i, DB_THREAD_POOL_SIZE));
 	}
 }
 
@@ -339,29 +353,33 @@ void GameServer::DoAccept()
 
 	LOG.info("Game Server Ready");
 
-	acceptor_.async_accept(
-		[this](boost::system::error_code ec, tcp::socket socket)
-		{
-			if (!ec)
-			{
-				// 동시 접속 상한. 세션을 만들기 전에 끊는다 — 세션을 만들고 나서 끊으면
-				// 상한을 넘긴 만큼의 Player/World join/leave 비용을 그대로 지불한다.
-				const int limit = ServerConfig::Instance().Network().max_connections;
-				if (limit > 0 && sessionCount_ >= limit)
-				{
-					LOG.warn("연결 거부: 동시 접속 상한 {} 도달", limit);
-					boost::system::error_code ignored;
-					socket.shutdown(tcp::socket::shutdown_both, ignored);
-					socket.close(ignored);
-				}
-				else
-				{
-					std::make_shared<GameSession>(std::move(socket), channel_, dbThreadPool_, this)->Start();
-				}
-			}
+	// 핸들러는 멤버 함수로 뺀다. bind_front 는 인자를 완전 전달하므로
+	// 이동만 되는 tcp::socket 도 그대로 넘어간다.
+	acceptor_.async_accept(std::bind_front(&GameServer::OnAccept, this));
+}
 
-			DoAccept();
-		});
+void GameServer::OnAccept(const boost::system::error_code& ec, tcp::socket socket)
+{
+	if (!ec)
+	{
+		// 동시 접속 상한. 세션을 만들기 전에 끊는다 — 세션을 만들고 나서 끊으면
+		// 상한을 넘긴 만큼의 Player/World join/leave 비용을 그대로 지불한다.
+		const int limit = ServerConfig::Instance().Network().max_connections;
+		if (limit > 0 && sessionCount_ >= limit)
+		{
+			LOG.warn("연결 거부: 동시 접속 상한 {} 도달", limit);
+			boost::system::error_code ignored;
+			socket.shutdown(tcp::socket::shutdown_both, ignored);
+			socket.close(ignored);
+		}
+		else
+		{
+			std::make_shared<GameSession>(std::move(socket), channel_, dbThreadPool_, this)->Start();
+		}
+	}
+
+	// 다음 연결을 계속 기다린다.
+	DoAccept();
 }
 
 void GameServer::BeginShutdown()
@@ -478,6 +496,22 @@ bool ServerManager::Initialize(std::list<tcp::endpoint>& endpoints)
 	}
 }
 
+// 시그널 전용 io_context 를 돌리는 스레드 진입점.
+// io_context::run 은 오버로드가 있어 함수 포인터로 바로 넘기기 어렵기 때문에 감싼다.
+static void RunSignalContext(boost::asio::io_context* context)
+{
+	context->run();
+}
+
+void ServerManager::OnSignal(const boost::system::error_code& ec, int signalNumber)
+{
+	if (ec)
+		return;
+
+	LOG.info("signal {} 수신 — 정상 종료를 시작한다", signalNumber);
+	RequestShutdown();
+}
+
 void ServerManager::Run()
 {
 	if (workers_.empty())
@@ -490,15 +524,8 @@ void ServerManager::Run()
 	// 게임 로직이 길어지면 시그널 처리가 늦어진다.
 	boost::asio::io_context signalContext;
 	boost::asio::signal_set signals(signalContext, SIGINT, SIGTERM);
-	signals.async_wait([this](const boost::system::error_code& ec, int signalNumber)
-		{
-			if (!ec)
-			{
-				LOG.info("signal {} 수신 — 정상 종료를 시작한다", signalNumber);
-				RequestShutdown();
-			}
-		});
-	std::thread signalThread([&signalContext]() { signalContext.run(); });
+	signals.async_wait(std::bind_front(&ServerManager::OnSignal, this));
+	std::thread signalThread(RunSignalContext, &signalContext);
 
 	// DB 스레드 풀 감시/리포트는 전역 공유 자원을 건드리므로 primary 워커에서만 돈다.
 	// 주기 계산은 DbMonitorTicker 안에 있고, 여기서는 프레임마다 Tick 만 호출한다.
@@ -510,10 +537,8 @@ void ServerManager::Run()
 	threads.reserve(workers_.size() - 1);
 	for (size_t i = 1; i < workers_.size(); ++i)
 	{
-		threads.emplace_back([this, i]()
-			{
-				RunWorker(workers_[i]);
-			});
+		// workers_ 는 Run 동안 크기가 변하지 않으므로 원소 참조를 넘겨도 안전하다.
+		threads.emplace_back(&ServerManager::RunWorker, this, std::ref(workers_[i]));
 	}
 
 	// 첫 워커는 추가 스레드 없이 현재 스레드에서 돈다. 이 호출이 돌아오면 종료 절차에 들어간다.
