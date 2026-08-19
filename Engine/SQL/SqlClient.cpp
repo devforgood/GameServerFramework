@@ -48,7 +48,7 @@ bool SqlClient::TryConnect(const char* phase)
         LOG.error("SqlClient: DB 연결 실패 ({}) — 드라이버가 널을 돌려줌. url='{}', user='{}'",
             phase, url_, user_);
     }
-    catch (const sql::SQLException& e)
+    catch (sql::SQLException& e)  // getErrorCode() 가 const 가 아니라 const 참조로 못 잡는다
     {
         LOG.error("SqlClient: DB 연결 실패 ({}) url='{}', user='{}': [{}] {}",
             phase, url_, user_, e.getErrorCode(), e.what());
