@@ -24,6 +24,7 @@
 #include <boost/bind.hpp>
 #include "GameMessage.h"
 #include "PerfTimer.h"
+#include "DbMonitorTicker.h"
 #include "PlayerController.h"
 #include "SendMessage.h"
 #include "TokenBucket.h"
@@ -221,10 +222,46 @@ private:
 	{
 		std::shared_ptr<boost::asio::io_context> ioContext;
 		std::vector<std::shared_ptr<GameServer>> servers;
+		// DB 스레드 풀 감시 티커. 감시 대상이 전역 공유 자원이라 워커 하나만 보유하고
+		// 나머지 워커는 비어 있다(nullptr). 수명은 이 shared_ptr 이 관리한다.
+		std::shared_ptr<DbMonitorTicker> dbMonitor;
+
+		// 배정된 서버들을 한 프레임 진행시킨다. 프레임 루프에서 매번 불리므로 인라인이다.
+		void UpdateGameLogic(float delta)
+		{
+			for (auto& server : servers)
+			{
+				server->UpdateGameLogic(delta);
+			}
+		}
+
+		// 배정된 서버들의 새 연결 수락을 멈추고 접속 중인 플레이어 저장을 요청한다.
+		void BeginShutdown()
+		{
+			for (auto& server : servers)
+			{
+				server->BeginShutdown();
+			}
+		}
+
+		// 대기 중인 IO 핸들러를 처리하고 실행한 핸들러 수를 돌려준다.
+		size_t PollIo()
+		{
+			return ioContext->poll();
+		}
+
+		// DB 스레드 풀 감시 티커를 가진 워커에서만 실제로 동작한다(나머지는 즉시 반환).
+		void TickDbMonitor(std::chrono::steady_clock::time_point now)
+		{
+			if (dbMonitor)
+			{
+				dbMonitor->Tick(now);
+			}
+		}
 	};
 
-	// 단일 워커(스레드)의 메인 루프. primary 워커만 DB 스레드 풀 감시를 수행한다.
-	void RunWorker(IoWorker& worker, bool primary);
+	// 단일 워커(스레드)의 메인 루프.
+	void RunWorker(IoWorker& worker);
 
 	// 종료 요청을 받은 워커가 자기 서버들을 정리한다(수락 중단 + 플레이어 저장).
 	void ShutdownWorker(IoWorker& worker);

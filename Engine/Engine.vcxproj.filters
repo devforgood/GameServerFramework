@@ -183,6 +183,9 @@
     <ClCompile Include="System\DbThreadMonitor.cpp">
       <Filter>System</Filter>
     </ClCompile>
+    <ClCompile Include="System\DbMonitorTicker.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
     <ClCompile Include="Player\Player.cpp">
       <Filter>Player</Filter>
     </ClCompile>
@@ -562,6 +565,9 @@
       <Filter>World</Filter>
     </ClInclude>
     <ClInclude Include="System\DbThreadMonitor.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\DbMonitorTicker.h">
       <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="System\DbChangeTracker.h">

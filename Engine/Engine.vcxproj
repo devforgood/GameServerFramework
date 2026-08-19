@@ -192,6 +192,7 @@
     <ClCompile Include="System\PerfTimer.cpp" />
     <ClCompile Include="System\ServerConfig.cpp" />
     <ClCompile Include="System\DbThreadMonitor.cpp" />
+    <ClCompile Include="System\DbMonitorTicker.cpp" />
     <ClCompile Include="Player\Player.cpp" />
     <ClCompile Include="Controller\PlayerController.cpp" />
     <ClCompile Include="Player\PlayerRepository.cpp" />
@@ -258,6 +259,7 @@
     <ClInclude Include="GameObject\ComponentTypeId.h" />
     <ClInclude Include="System\DbChangeTracker.h" />
     <ClInclude Include="System\DbThreadMonitor.h" />
+    <ClInclude Include="System\DbMonitorTicker.h" />
     <ClInclude Include="SQL\DbRecord.h" />
     <ClInclude Include="GameMode\GameMode.h" />
     <ClInclude Include="GameMode\GameModeFactory.h" />

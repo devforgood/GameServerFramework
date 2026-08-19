@@ -10,7 +10,7 @@
 #include "SqlClientManager.h"
 #include "PlayerController.h"
 #include "Common.h"
-#include "DbThreadMonitor.h"
+#include "DbMonitorTicker.h"
 #include "ServerConfig.h"
 #include "IAuthenticator.h"
 #include "MessagePolicy.h"
@@ -500,6 +500,10 @@ void ServerManager::Run()
 		});
 	std::thread signalThread([&signalContext]() { signalContext.run(); });
 
+	// DB 스레드 풀 감시/리포트는 전역 공유 자원을 건드리므로 primary 워커에서만 돈다.
+	// 주기 계산은 DbMonitorTicker 안에 있고, 여기서는 프레임마다 Tick 만 호출한다.
+	workers_[0].dbMonitor = std::make_shared<DbMonitorTicker>(std::chrono::steady_clock::now());
+
 	// 워커가 1개면 추가 스레드 없이 현재 스레드에서 단일 실행한다(기존 동작).
 	// 워커가 N개면 추가로 N-1개의 스레드를 띄우고, 첫 워커는 현재 스레드에서 돈다.
 	std::vector<std::thread> threads;
@@ -508,11 +512,12 @@ void ServerManager::Run()
 	{
 		threads.emplace_back([this, i]()
 			{
-				RunWorker(workers_[i], /*primary=*/false);
+				RunWorker(workers_[i]);
 			});
 	}
 
-	RunWorker(workers_[0], /*primary=*/true);
+	// 첫 워커는 추가 스레드 없이 현재 스레드에서 돈다. 이 호출이 돌아오면 종료 절차에 들어간다.
+	RunWorker(workers_[0]);
 
 	for (auto& t : threads)
 	{
@@ -532,10 +537,7 @@ void ServerManager::Run()
 void ServerManager::ShutdownWorker(IoWorker& worker)
 {
 	// 1) 새 연결을 막고, 접속 중인 플레이어의 저장을 요청한다(DB 스레드로 나간다).
-	for (auto& server : worker.servers)
-	{
-		server->BeginShutdown();
-	}
+	worker.BeginShutdown();
 
 	// 2) 저장 작업이 DB 스레드에 도달하고 완료 콜백이 io_context 로 돌아올 시간을 준다.
 	//    저장은 fire-and-forget 이라 완료를 기다릴 핸들이 없으므로, 남은 핸들러를 흘려보내며
@@ -543,57 +545,31 @@ void ServerManager::ShutdownWorker(IoWorker& worker)
 	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
 	while (std::chrono::steady_clock::now() < deadline)
 	{
-		if (worker.ioContext->poll() == 0)
+		if (worker.PollIo() == 0)
 			std::this_thread::sleep_for(std::chrono::milliseconds(20));
 	}
 }
 
-void ServerManager::RunWorker(IoWorker& worker, bool primary)
+void ServerManager::RunWorker(IoWorker& worker)
 {
 	bool running = true;
 	const std::chrono::milliseconds targetInterval(16);
 	(void)running; // 종료 조건은 shutdownRequested_ 가 정한다
 	TimeVal lastTime = getPerfTime();
 
-	// DB 스레드 풀의 멈춘(데드락/슬로우) 작업 감시 주기 (1초).
-	auto lastDbCheck = std::chrono::steady_clock::now();
-	const std::chrono::milliseconds dbCheckInterval(1000);
-	// 스레드별 사용 시간 리포트 주기 (10초).
-	auto lastDbReport = lastDbCheck;
-	const std::chrono::milliseconds dbReportInterval(10000);
-
-	boost::asio::io_context& ioContext = *worker.ioContext;
-
 	while (!shutdownRequested_.load(std::memory_order_relaxed))
 	{
 		auto frameStart = std::chrono::steady_clock::now();
 
-		ioContext.poll();
+		worker.PollIo();
 
 		TimeVal curTime = getPerfTime();
 		float delta = getPerfTimeUsec(curTime - lastTime) / 1000000.0f;
 		lastTime = curTime;
 
-		for (auto& server : worker.servers)
-		{
-			server->UpdateGameLogic(delta);
-		}
+		worker.UpdateGameLogic(delta);
 
-		// DB 스레드 풀 감시/리포트는 전역 공유 자원이므로 primary 워커에서만 수행한다.
-		if (primary)
-		{
-			if (frameStart - lastDbCheck >= dbCheckInterval)
-			{
-				DbThreadMonitor::Instance().CheckStuckTasks();
-				lastDbCheck = frameStart;
-			}
-
-			if (frameStart - lastDbReport >= dbReportInterval)
-			{
-				DbThreadMonitor::Instance().ReportThreadUsage();
-				lastDbReport = frameStart;
-			}
-		}
+		worker.TickDbMonitor(frameStart);
 
 		auto frameEnd = std::chrono::steady_clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(frameEnd - frameStart);
