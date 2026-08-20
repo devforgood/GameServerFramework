@@ -75,8 +75,11 @@ Could not triangulate contours.
 | 설정 | 뜻 |
 | --- | --- |
 | `Type` | Player / Monster / Boss |
-| `Count` | 요청 개수. **몬스터는 지점 하나당 한 마리** 스폰됩니다 |
+| `Count` | 뿌릴 **지점(마커)** 개수 |
 | `Monster` | `monster.json` 목록에서 선택. `(random)` 은 지점마다 무작위 |
+| `Monsters per point` | 지점 하나가 유지할 마리 수. 실제 몬스터 수 = `Count × 이 값` |
+| `Scatter radius` | 지점 중심에서 몬스터를 흩뿌릴 반경(m). 0 이면 마커 지점에 정확히 겹쳐 섭니다 |
+| `Respawn interval` | 죽은 자리를 다시 채우기까지의 시간(초). 0 이면 리스폰하지 않습니다 |
 | `Min spacing` | 점 사이 최소 거리(m). 0 이면 검사하지 않습니다 |
 | `Edge margin` | navmesh 가장자리·장애물에서 띄울 거리(m) |
 | `Seed` | 0 이면 매번 다른 배치. 같은 값이면 같은 배치가 재현됩니다 |
@@ -88,6 +91,9 @@ Could not triangulate contours.
   Arcadia Plains(이동 가능 면적 184,328m²)에서 간격 5m 로 8,000개를 요청했을 때
   육각 기준으로는 8,514개였지만 실제로는 5,287개에서 멈췄습니다.
 - 마커는 `MapDesign/SpawnPoints/Scattered_{타입}` 아래에 모입니다. 되돌리기는 한 번이면 됩니다.
+- **대량 스폰은 지점을 늘리는 것보다 `Monsters per point` 를 올리는 쪽이 쌉니다.** 마커 하나가
+  여러 마리를 담당하므로 Map.json 이 그만큼 작아집니다. 다만 `Scatter radius` 가 navmesh 밖으로
+  나가면 그만큼 스폰이 실패하니(서버 로그에 경고가 남습니다) 지형에 맞는 크기로 잡으세요.
 
 ## 구성
 
@@ -158,7 +164,7 @@ Auto Sync를 끄고 씬을 연 뒤 **Scan Scene → JSON** + **Save Map JSON**�
 | 컴포넌트 | 기록 위치 | 주요 필드 |
 | --- | --- | --- |
 | `Gate` | `gates` | id, gateName, gateType, targetId, requiredLevel |
-| `SpawnPoint` | `spawn_points.player/monster/boss_spawn` | spawnType, monsterId, spawnInterval, bossId, spawnDelay |
+| `SpawnPoint` | `spawn_points.player/monster/boss_spawn` | spawnType, monsterId, count, radius, spawnInterval, bossId, spawnDelay |
 | `MapObjectMarker` | `objects.static_objects` / `objects.movable_objects` | kind, objectType, collision, damage, lootTableId, movementRange, movementSpeed, patrolPath |
 
 - Static 오브젝트의 **크기는 transform.localScale**, 위치는 transform.position으로 기록됩니다.
@@ -236,7 +242,7 @@ Client(Resources)/Game/UnitTest로 배포하려면 `GameDataFlow/GameDataFlow.py
 
 - **Gate**: 파란색 와이어 큐브 (BoxCollider 크기)
 - **Player Spawn**: 초록색 와이어 구
-- **Monster Spawn**: 빨간색 와이어 구
+- **Monster Spawn**: 빨간색 와이어 구 (+ `radius` 가 0 보다 크면 주황색 흩뿌림 반경 구)
 - **Boss Spawn**: 노란색 와이어 구
 - **Static Object**: 주황(충돌) / 청록(비충돌) 와이어 큐브 (localScale 크기)
 - **Movable Object**: 자홍색 와이어 구 + 이동 범위 + 순찰 경로 라인
@@ -263,8 +269,8 @@ Client(Resources)/Game/UnitTest로 배포하려면 `GameDataFlow/GameDataFlow.py
     }
   ],
   "spawn_points": {
-    "player_spawn": [ { "position": { "x": 100.0, "y": 0.0, "z": 100.0 }, "monster_id": 0, "spawn_interval": 0, "boss_id": 0, "spawn_delay": 0 } ],
-    "monster_spawn": [ { "position": { "x": 300.0, "y": 0.0, "z": 300.0 }, "monster_id": 1, "spawn_interval": 30, "boss_id": 0, "spawn_delay": 0 } ],
+    "player_spawn": [ { "position": { "x": 100.0, "y": 0.0, "z": 100.0 }, "monster_id": 0, "count": 1, "radius": 0.0, "spawn_interval": 0, "boss_id": 0, "spawn_delay": 0 } ],
+    "monster_spawn": [ { "position": { "x": 300.0, "y": 0.0, "z": 300.0 }, "monster_id": 1, "count": 8, "radius": 6.0, "spawn_interval": 30, "boss_id": 0, "spawn_delay": 0 } ],
     "boss_spawn": []
   },
   "objects": {
@@ -283,6 +289,24 @@ Client(Resources)/Game/UnitTest로 배포하려면 `GameDataFlow/GameDataFlow.py
   "navmesh_path": "Starting Village_navmesh.bin"
 }
 ```
+
+### monster_spawn 마커가 곧 스포너다
+
+서버(`Engine/Map/MonsterSpawner`)는 마커 하나를 "몬스터 `count` 마리를 유지하는 스포너"로 다룹니다.
+마커 = 몬스터 한 마리가 아닙니다.
+
+| 필드 | 뜻 |
+| --- | --- |
+| `count` | 이 마커가 유지할 마리 수. 없거나 0 이면 1 로 봅니다(옛 데이터 호환) |
+| `radius` | 마커 중심에서 흩뿌릴 반경. 0 이면 마커 지점에 정확히 겹쳐 섭니다 |
+| `spawn_interval` | 죽은 자리를 다시 채우기까지의 시간(초). **0 이면 리스폰하지 않습니다** |
+| `spawn_delay` | 맵이 열린 뒤 최초 스폰까지 기다리는 시간(초) |
+
+리스폰 시계는 정원이 빈 동안에만 돕니다. 즉 몬스터가 죽고 나서 `spawn_interval` 초 뒤에
+부족분이 **한꺼번에** 채워지고, 정원이 차 있는 동안 흐른 시간은 다음 죽음에 쓰이지 않습니다.
+
+`radius` 가 navmesh 밖으로 나가면 그 자리의 스폰이 실패하고 서버 로그에 경고가 남습니다
+(다음 주기에 다시 시도하므로 정원은 결국 채워지지만, 경고가 계속 쌓입니다).
 
 ## 주의사항
 

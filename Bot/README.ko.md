@@ -147,12 +147,11 @@ ActiveSelector
   `session_token` 에 있는 값을 `--token` 으로 넘겨야 한다.
 * **끊긴 봇** — 서버는 세션이 끊겨도 60초 동안 캐릭터를 유지한다(재접속 유예). 테스트를
   반복하면 그 시간 동안 이전 실행의 캐릭터가 월드에 남아 `view` 를 부풀린다.
-* **몬스터가 부족하면 전투가 측정되지 않는다** — 지금 기본 맵(Starting Village)의
-  `monster_spawn` 마커는 3개이고, 마커의 `spawn_interval` 은 서버가 아직 사용하지 않는다
-  (죽은 몬스터가 다시 살아나지 않는다). 그래서 서버를 새로 띄운 직후에만 전투가 발생하고,
-  이후에는 봇이 배회만 한다. 지속적인 전투 부하가 필요하면 서버에 몬스터 리스폰을 넣거나
-  `Map.json` 의 기본 맵에 `monster_spawn` 마커를 늘려야 한다.
-  (배회만 해도 이동·AoI·브로드캐스트 부하는 그대로 측정된다.)
+* **전투 부하의 크기는 맵 데이터가 정한다** — `monster_spawn` 마커 하나가 `count` 마리를
+  유지하고, 죽으면 `spawn_interval` 초 뒤에 다시 채워진다(`Engine/Map/MonsterSpawner`).
+  기본 맵(Starting Village)은 마커 3곳 × 6마리 = 18마리이고 리스폰 주기는 20초다.
+  더 센 전투 부하가 필요하면 `Map.json` 의 `count` 를 올리거나 마커를 늘린다
+  (Unity 맵 툴의 `Scatter spawns` → `Monsters per point`).
 
 ---
 
