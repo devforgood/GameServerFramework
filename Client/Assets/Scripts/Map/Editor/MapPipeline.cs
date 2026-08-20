@@ -710,6 +710,11 @@ public static class MapPipeline
 
         public int monsterId;
         public int bossId;
+
+        // 마커 하나가 유지할 몬스터 수와 흩뿌림 반경. 마커 수 × count 가 실제 몬스터 수다.
+        public int monsterCount = 1;
+        public float monsterRadius = 0f;
+
         public int spawnInterval = 30;
         public int spawnDelay;
 
@@ -785,12 +790,16 @@ public static class MapPipeline
             comp.bossId = 0;
             comp.spawnInterval = 0;
             comp.spawnDelay = 0;
+            comp.count = 1;
+            comp.radius = 0f;
 
             switch (settings.type)
             {
                 case SpawnType.Monster:
                     comp.monsterId = PickMonsterId(settings, rng);
                     comp.spawnInterval = settings.spawnInterval;
+                    comp.count = Mathf.Max(1, settings.monsterCount);
+                    comp.radius = Mathf.Max(0f, settings.monsterRadius);
                     break;
                 case SpawnType.Boss:
                     comp.bossId = settings.bossId;

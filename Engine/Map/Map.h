@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include "syncnet_generated.h"
+#include "MonsterSpawner.h"
 
 class GameSession;
 class Monster;
@@ -87,6 +88,11 @@ private:
 	// 부활 대기가 끝난 플레이어를 스폰 지점에 되살린다.
 	void RespawnPlayer(long playerId);
 
+	// 마커 하나가 요구하는 위치에 몬스터 한 마리를 세운다(최초 스폰/리스폰 공용).
+	// 성공하면 actor id, 실패하면 -1. 좌표는 클라이언트 좌표계다.
+	int SpawnMonsterAt(const gamedata::MapSpawnPointsMonsterSpawn& marker,
+		double x, double y, double z);
+
 	// 사망 시 적용할 부활 대기 시간(초). 게임 모드 규칙이 있으면 그 값, 없으면 기본값.
 	float ResolveRespawnSeconds() const;
 
@@ -103,6 +109,10 @@ private:
 
 	// GM_SpawnBoss 로 스폰한 보스 액터 id(-1 이면 없음).
 	int bossActorId_ = -1;
+
+	// monster_spawn 마커별 스포너(수량 유지 + 리스폰 주기). SpawnMonstersFromData 가 만들고
+	// UpdateMonsterSpawns 가 매 틱 돌린다. 마커가 없는 맵에서는 비어 있어 비용이 없다.
+	MonsterSpawner monsterSpawner_;
 
 	// 사망 처리를 플레이어당 한 번만 하기 위한 집합(플레이어 id).
 	std::unordered_set<long> deadPlayers_;
@@ -138,7 +148,8 @@ public:
 	// 맵 데이터의 첫 번째 player_spawn 위치(클라 좌표계). 없으면 (0,0,0).
 	syncnet::Vec3 GetPlayerSpawnPos() const;
 
-	// 맵 데이터(Map.json)의 monster_spawn 지점마다 몬스터를 1마리씩 스폰한다.
+	// 맵 데이터(Map.json)의 monster_spawn 마커마다 count 마리를 radius 안에 흩뿌려 스폰한다.
+	// spawn_delay 가 걸린 마커는 여기서 세우지 않고 UpdateMonsterSpawns 가 시간이 찬 뒤 채운다.
 	// 스폰에 성공한 수를 반환한다. 서버 기동 시 World::SpawnMapMonsters 에서 호출된다
 	// (벤치마크/테스트는 World::Init 만 호출하므로 몬스터가 자동 스폰되지 않는다).
 	int SpawnMonstersFromData();
@@ -196,6 +207,15 @@ public:
 
 	// 단계 4: 플레이어 사망 판정과 부활 타이머. 게임 모드와 무관하게 매 틱 돈다.
 	void UpdatePlayerDeath(float deltaTime);
+
+	// 단계 4: monster_spawn 마커의 정원(count)을 유지한다. 죽은 자리는 마커의
+	// spawn_interval 초 뒤에 다시 채우고, spawn_delay 가 걸린 마커는 그만큼 늦게 연다.
+	// 이번 틱에 새로 세운 마리 수를 반환한다.
+	int UpdateMonsterSpawns(float deltaTime);
+
+	// 스포너가 관리 중인 몬스터 수 / 마커가 요구하는 총 마리 수.
+	int SpawnedMonsterCount() const { return monsterSpawner_.AliveCount(); }
+	int DesiredMonsterCount() const { return monsterSpawner_.DesiredCount(); }
 
 	// seconds 뒤에 플레이어를 스폰 지점에 되살린다(GM_SchedulePlayerRespawn).
 	void SchedulePlayerRespawn(long playerId, float seconds);

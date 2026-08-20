@@ -21,6 +21,7 @@
 #include "GameMode.h"
 #include "GameModeFactory.h"
 #include "GridManager.h"
+#include "World.h"
 
 
 //const float g_fDistance = std::powf(10.0f, 2);
@@ -594,39 +595,73 @@ syncnet::Vec3 Map::GetPlayerSpawnPos() const
 	return syncnet::Vec3(0, 0, 0);
 }
 
+// 마커 하나가 요구하는 위치에 몬스터 한 마리를 세운다. 성공하면 actor id, 실패하면 -1.
+// MonsterSpawner 가 최초 스폰과 리스폰 양쪽에서 이 경로를 쓴다.
+int Map::SpawnMonsterAt(const gamedata::MapSpawnPointsMonsterSpawn& marker,
+	double x, double y, double z)
+{
+	// 스폰 위치는 Map.json(클라 좌표계) 기준. OnAddAgent 내부(Vector3 변환)에서
+	// 클라 AddAgent 와 동일하게 서버 좌표계로 변환된다.
+	syncnet::Vec3 pos(
+		static_cast<float>(x),
+		static_cast<float>(y),
+		static_cast<float>(z));
+
+	auto monster = OnAddAgent(nullptr, syncnet::GameObjectType::GameObjectType_Monster, &pos);
+	if (monster == nullptr)
+		return -1;
+
+	// 마커가 정한 종류를 액터에 새긴다. 사망 이벤트에 실려 퀘스트의 kill 목표를
+	// 종류별로 세는 근거가 된다(없으면 어떤 몬스터를 잡았는지 알 수 없다).
+	if (auto* mob = dynamic_cast<Monster*>(monster.get()))
+		mob->SetDataId(marker.monster_id);
+
+	return monster->GetActorId();
+}
+
 int Map::SpawnMonstersFromData()
 {
 	if (mapData_ == nullptr)
 		return 0;
 
-	int spawned = 0;
-	for (const auto& s : mapData_->spawn_points.monster_spawn)
-	{
-		// 스폰 위치는 Map.json(클라 좌표계) 기준. OnAddAgent 내부(Vector3 변환)에서
-		// 클라 AddAgent 와 동일하게 서버 좌표계로 변환된다.
-		syncnet::Vec3 pos(
-			static_cast<float>(s.position.x),
-			static_cast<float>(s.position.y),
-			static_cast<float>(s.position.z));
+	monsterSpawner_.Build(mapData_, world_ != nullptr ? world_->random_util() : nullptr);
 
-		auto monster = OnAddAgent(nullptr, syncnet::GameObjectType::GameObjectType_Monster, &pos);
-		if (monster == nullptr)
+	const int spawned = monsterSpawner_.SpawnInitial(
+		[this](const gamedata::MapSpawnPointsMonsterSpawn& marker, double x, double y, double z)
 		{
-			LOG.error("Map {} monster_spawn {} 위치({}, {}, {}) 몬스터 스폰 실패",
-				GetMapId(), s.id, s.position.x, s.position.y, s.position.z);
-			continue;
-		}
-
-		// 마커가 정한 종류를 액터에 새긴다. 사망 이벤트에 실려 퀘스트의 kill 목표를
-		// 종류별로 세는 근거가 된다(없으면 어떤 몬스터를 잡았는지 알 수 없다).
-		if (auto* mob = dynamic_cast<Monster*>(monster.get()))
-			mob->SetDataId(s.monster_id);
-
-		++spawned;
-	}
+			return SpawnMonsterAt(marker, x, y, z);
+		});
 
 	if (spawned > 0)
-		LOG.info("Map {} 몬스터 {}마리 스폰(monster_spawn 마커 기준)", GetMapId(), spawned);
+	{
+		LOG.info("Map {} 몬스터 {}마리 스폰(monster_spawn 마커 {}곳, 정원 {}마리)",
+			GetMapId(), spawned, monsterSpawner_.GroupCount(), monsterSpawner_.DesiredCount());
+	}
+	return spawned;
+}
+
+// 마커의 정원을 유지한다. 죽은 개체는 여기서 걷어내고, spawn_interval 이 지나면 다시 채운다.
+int Map::UpdateMonsterSpawns(float deltaTime)
+{
+	if (monsterSpawner_.GroupCount() == 0)
+		return 0;
+
+	const int spawned = monsterSpawner_.Update(deltaTime,
+		[this](int actor_id)
+		{
+			// 체력이 0 이 되는 순간 정원에서 빠진다. 시체가 치워질 때까지(Destroyed 2초)
+			// 기다리면 리스폰이 그만큼 늦어진다.
+			auto actor = FindActor(actor_id);
+			return actor != nullptr && !actor->IsDead();
+		},
+		[this](const gamedata::MapSpawnPointsMonsterSpawn& marker, double x, double y, double z)
+		{
+			return SpawnMonsterAt(marker, x, y, z);
+		});
+
+	if (spawned > 0)
+		LOG.debug("Map {} 몬스터 {}마리 리스폰", GetMapId(), spawned);
+
 	return spawned;
 }
 
@@ -762,6 +797,7 @@ void Map::update(float deltaTime)
 	UpdateMovement(deltaTime);
 	UpdateSystems(deltaTime);
 	UpdatePlayerDeath(deltaTime);
+	UpdateMonsterSpawns(deltaTime);
 	UpdateGameMode(deltaTime);
 	SendWorldState();
 	//LOG.info("World update end");

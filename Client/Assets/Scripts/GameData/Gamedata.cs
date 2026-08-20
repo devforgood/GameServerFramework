@@ -396,9 +396,11 @@ namespace Gamedata
     public class MapSpawnPointsBossSpawn
     {
         public int boss_id;
+        public int count;
         public int id;
         public int monster_id;
         public MapSpawnPointsBossSpawnPosition position;
+        public double radius;
         public int spawn_delay;
         public int spawn_interval;
 
@@ -421,9 +423,11 @@ namespace Gamedata
     public class MapSpawnPointsMonsterSpawn
     {
         public int boss_id;
+        public int count;
         public int id;
         public int monster_id;
         public MapSpawnPointsMonsterSpawnPosition position;
+        public double radius;
         public int spawn_delay;
         public int spawn_interval;
 
@@ -446,9 +450,11 @@ namespace Gamedata
     public class MapSpawnPointsPlayerSpawn
     {
         public int boss_id;
+        public int count;
         public int id;
         public int monster_id;
         public MapSpawnPointsPlayerSpawnPosition position;
+        public double radius;
         public int spawn_delay;
         public int spawn_interval;
 

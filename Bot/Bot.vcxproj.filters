@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Net">
+      <UniqueIdentifier>{2f5d3d1e-5b41-4d0a-9a2f-1b6f0c4a7c11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AI">
+      <UniqueIdentifier>{8a1c6f22-0f74-4c8b-9d33-4a51a2f9b022}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Runtime">
+      <UniqueIdentifier>{c3b9a45d-6e18-4f6a-8f7e-9c2d7b3e5033}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="BotConfig.cpp">
+      <Filter>Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="BotLog.cpp">
+      <Filter>Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="BotMetrics.cpp">
+      <Filter>Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="BotRunner.cpp">
+      <Filter>Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="BotWorker.cpp">
+      <Filter>Runtime</Filter>
+    </ClCompile>
+    <ClCompile Include="BotClient.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="BotSession.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="BotPacket.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="WorldView.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="BotBehaviorTree.cpp">
+      <Filter>AI</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BotConfig.h">
+      <Filter>Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="BotLog.h">
+      <Filter>Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="BotMetrics.h">
+      <Filter>Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="BotRunner.h">
+      <Filter>Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="BotWorker.h">
+      <Filter>Runtime</Filter>
+    </ClInclude>
+    <ClInclude Include="BotClient.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="BotSession.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="BotPacket.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldView.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="BotBehaviorTree.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="BotBTNodes.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="BotBlackboard.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="bot_config.example.json" />
+    <None Include="README.ko.md" />
+  </ItemGroup>
+</Project>

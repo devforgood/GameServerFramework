@@ -43,6 +43,7 @@ The current codebase is organized around Windows and Visual Studio 2022. Most pr
 | [GameDataProtobuf/](GameDataProtobuf/README.md) | Generated game-data Protobuf loader and native bindings | C++ Static Library |
 | [recastnavigation/](recastnavigation/README.md) | Recast/Detour navigation mesh and pathfinding code | C++ Static Library |
 | [UnitTest/](UnitTest/) | Native tests for engine/data-structure code | C++ Application |
+| [Bot/](Bot/README.ko.md) | Multi-threaded load/perf client that logs in and hunts monsters over the real protocol | C++ Application |
 
 ### Data, Protocols, and Client
 

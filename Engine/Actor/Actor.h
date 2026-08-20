@@ -44,8 +44,16 @@ protected:
 	int32_t entityId_ = -1; // 엔티티 ID (필요시 사용)
 
 	Map* map_;
-	syncnet::AIState state_;
-	long changeFlag_;
+
+	// 초기화를 빠뜨리면 안 된다. 몬스터는 BT 가 매 틱 상태를 덮어쓰지만 캐릭터는
+	// 아무도 쓰지 않아서, 값이 남은 쓰레기 그대로 ActorInfo 에 실려 나간다.
+	// 그 값이 우연히 Dead/Destroyed 면 다른 클라이언트에는 멀쩡한 플레이어가
+	// 죽은 것으로 보인다(봇 부하 테스트에서 60명 중 1명꼴로 재현됐다).
+	syncnet::AIState state_ = syncnet::AIState::AIState_Patrol;
+
+	// 같은 이유로 초기화한다. 첫 틱의 IsChanged() 가 쓰레기 값을 읽으면
+	// 아직 아무것도 바뀌지 않은 액터가 변경분으로 브로드캐스트된다.
+	long changeFlag_ = static_cast<long>(GameObjectChangeType::None);
 
 public:
 	Actor(Map* map) : map_(map), frontVector_(0, 0, 1)  // 초기 방향은 z축 양의 방향

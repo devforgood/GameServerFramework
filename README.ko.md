@@ -43,6 +43,7 @@
 | [GameDataProtobuf/](GameDataProtobuf/README.md) | 게임 데이터 Protobuf 로더와 생성 산출물 | C++ Static Library |
 | [recastnavigation/](recastnavigation/README.md) | Recast/Detour 기반 네비게이션 메시와 경로 탐색 | C++ Static Library |
 | [UnitTest/](UnitTest/) | C++ 엔진/자료구조 테스트 프로젝트 | C++ Application |
+| [Bot/](Bot/README.ko.md) | 실제 프로토콜로 접속해 몬스터를 사냥하는 부하/성능 테스트 클라이언트(멀티스레드) | C++ Application |
 
 ### 데이터, 프로토콜, 클라이언트
 

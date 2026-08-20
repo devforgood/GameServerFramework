@@ -602,8 +602,14 @@ public class MapToolWindow : EditorWindow
             if (scatter.type == SpawnType.Monster)
             {
                 DrawMonsterPicker();
-                scatter.spawnInterval = EditorGUILayout.IntField("Spawn interval (s)", scatter.spawnInterval);
-                EditorGUILayout.LabelField("The server spawns one monster per point.", EditorStyles.miniLabel);
+                scatter.monsterCount = Mathf.Max(1, EditorGUILayout.IntField("Monsters per point", scatter.monsterCount));
+                scatter.monsterRadius = Mathf.Max(0f, EditorGUILayout.FloatField("Scatter radius (m)", scatter.monsterRadius));
+                scatter.spawnInterval = EditorGUILayout.IntField("Respawn interval (s)", scatter.spawnInterval);
+                EditorGUILayout.LabelField(
+                    $"The server keeps {scatter.monsterCount} monster(s) alive per point "
+                    + $"({scatter.count * scatter.monsterCount:N0} total) and refills "
+                    + (scatter.spawnInterval > 0 ? $"{scatter.spawnInterval}s after a death." : "never (interval 0)."),
+                    EditorStyles.miniLabel);
             }
             else if (scatter.type == SpawnType.Boss)
             {

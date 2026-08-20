@@ -84,6 +84,12 @@ public static class MapJsonUpdater
         public int id;
         public Vec3 position;
         public int monster_id;
+
+        // 몬스터 스폰 마커가 유지할 수량과 흩뿌림 반경. 서버(MonsterSpawner)가 읽는다.
+        // 세 목록(player/monster/boss)이 같은 모양을 쓰므로 여기 함께 둔다.
+        public int count;
+        public double radius;
+
         public int spawn_interval;
         public int boss_id;
         public int spawn_delay;
@@ -550,6 +556,8 @@ public static class MapJsonUpdater
                 id = id,
                 position = new Vec3(comp.transform.position),
                 monster_id = comp.monsterId,
+                count = comp.count > 0 ? comp.count : 1,
+                radius = comp.radius,
                 spawn_interval = comp.spawnInterval,
                 boss_id = comp.bossId,
                 spawn_delay = comp.spawnDelay,

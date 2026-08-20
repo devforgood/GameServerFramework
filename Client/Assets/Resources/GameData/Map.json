@@ -37,7 +37,9 @@
           "monster_id": 0,
           "spawn_interval": 0,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 0.0
         }
       ],
       "monster_spawn": [
@@ -49,9 +51,11 @@
             "z": 3.0
           },
           "monster_id": 1,
-          "spawn_interval": 30,
+          "spawn_interval": 20,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 6,
+          "radius": 4.0
         },
         {
           "id": 10003,
@@ -61,9 +65,11 @@
             "z": -3.0
           },
           "monster_id": 1,
-          "spawn_interval": 30,
+          "spawn_interval": 20,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 6,
+          "radius": 4.0
         },
         {
           "id": 10004,
@@ -73,9 +79,11 @@
             "z": 4.0
           },
           "monster_id": 2,
-          "spawn_interval": 30,
+          "spawn_interval": 20,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 6,
+          "radius": 4.0
         }
       ],
       "boss_spawn": []
@@ -144,7 +152,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 8,
+          "radius": 6.0
         },
         {
           "id": 10006,
@@ -156,7 +166,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 8,
+          "radius": 6.0
         },
         {
           "id": 10007,
@@ -168,7 +180,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 8,
+          "radius": 6.0
         }
       ],
       "boss_spawn": []
@@ -218,7 +232,9 @@
           "monster_id": 0,
           "spawn_interval": 0,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 0.0
         },
         {
           "id": 10009,
@@ -230,7 +246,9 @@
           "monster_id": 0,
           "spawn_interval": 0,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 0.0
         }
       ],
       "monster_spawn": [],
@@ -245,7 +263,9 @@
           "monster_id": 0,
           "spawn_interval": 0,
           "boss_id": 1001,
-          "spawn_delay": 10
+          "spawn_delay": 10,
+          "count": 1,
+          "radius": 0.0
         }
       ]
     },
@@ -361,7 +381,9 @@
           "monster_id": 0,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 0.0
         }
       ],
       "monster_spawn": [
@@ -375,7 +397,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 8,
+          "radius": 6.0
         },
         {
           "id": 10013,
@@ -387,7 +411,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 8,
+          "radius": 6.0
         },
         {
           "id": 10014,
@@ -399,7 +425,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 8,
+          "radius": 6.0
         }
       ],
       "boss_spawn": []
@@ -450,7 +478,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 8,
+          "radius": 6.0
         },
         {
           "id": 10016,
@@ -462,7 +492,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 8,
+          "radius": 6.0
         },
         {
           "id": 10017,
@@ -474,7 +506,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 8,
+          "radius": 6.0
         }
       ],
       "boss_spawn": []
@@ -511,7 +545,9 @@
           "monster_id": 0,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 0.0
         }
       ],
       "monster_spawn": [
@@ -525,7 +561,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10020,
@@ -537,7 +575,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10021,
@@ -549,7 +589,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10022,
@@ -561,7 +603,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10023,
@@ -573,7 +617,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10024,
@@ -585,7 +631,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10025,
@@ -597,7 +645,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10026,
@@ -609,7 +659,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10027,
@@ -621,7 +673,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10028,
@@ -633,7 +687,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10029,
@@ -645,7 +701,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10030,
@@ -657,7 +715,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10031,
@@ -669,7 +729,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10032,
@@ -681,7 +743,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10033,
@@ -693,7 +757,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10034,
@@ -705,7 +771,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10035,
@@ -717,7 +785,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10036,
@@ -729,7 +799,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10037,
@@ -741,7 +813,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10038,
@@ -753,7 +827,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10039,
@@ -765,7 +841,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10040,
@@ -777,7 +855,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10041,
@@ -789,7 +869,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10042,
@@ -801,7 +883,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10043,
@@ -813,7 +897,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10044,
@@ -825,7 +911,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10045,
@@ -837,7 +925,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10046,
@@ -849,7 +939,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10047,
@@ -861,7 +953,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10048,
@@ -873,7 +967,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10049,
@@ -885,7 +981,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10050,
@@ -897,7 +995,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10051,
@@ -909,7 +1009,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10052,
@@ -921,7 +1023,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10053,
@@ -933,7 +1037,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10054,
@@ -945,7 +1051,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10055,
@@ -957,7 +1065,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10056,
@@ -969,7 +1079,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10057,
@@ -981,7 +1093,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10058,
@@ -993,7 +1107,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10059,
@@ -1005,7 +1121,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10060,
@@ -1017,7 +1135,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10061,
@@ -1029,7 +1149,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10062,
@@ -1041,7 +1163,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10063,
@@ -1053,7 +1177,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10064,
@@ -1065,7 +1191,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10065,
@@ -1077,7 +1205,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10066,
@@ -1089,7 +1219,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10067,
@@ -1101,7 +1233,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10068,
@@ -1113,7 +1247,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10069,
@@ -1125,7 +1261,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10070,
@@ -1137,7 +1275,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10071,
@@ -1149,7 +1289,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10072,
@@ -1161,7 +1303,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10073,
@@ -1173,7 +1317,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10074,
@@ -1185,7 +1331,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10075,
@@ -1197,7 +1345,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10076,
@@ -1209,7 +1359,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10077,
@@ -1221,7 +1373,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10078,
@@ -1233,7 +1387,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10079,
@@ -1245,7 +1401,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10080,
@@ -1257,7 +1415,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10081,
@@ -1269,7 +1429,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10082,
@@ -1281,7 +1443,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10083,
@@ -1293,7 +1457,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10084,
@@ -1305,7 +1471,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10085,
@@ -1317,7 +1485,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10086,
@@ -1329,7 +1499,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10087,
@@ -1341,7 +1513,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10088,
@@ -1353,7 +1527,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10089,
@@ -1365,7 +1541,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10090,
@@ -1377,7 +1555,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10091,
@@ -1389,7 +1569,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10092,
@@ -1401,7 +1583,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10093,
@@ -1413,7 +1597,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10094,
@@ -1425,7 +1611,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10095,
@@ -1437,7 +1625,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10096,
@@ -1449,7 +1639,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10097,
@@ -1461,7 +1653,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10098,
@@ -1473,7 +1667,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10099,
@@ -1485,7 +1681,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10100,
@@ -1497,7 +1695,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10101,
@@ -1509,7 +1709,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10102,
@@ -1521,7 +1723,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10103,
@@ -1533,7 +1737,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10104,
@@ -1545,7 +1751,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10105,
@@ -1557,7 +1765,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10106,
@@ -1569,7 +1779,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10107,
@@ -1581,7 +1793,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10108,
@@ -1593,7 +1807,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10109,
@@ -1605,7 +1821,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10110,
@@ -1617,7 +1835,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10111,
@@ -1629,7 +1849,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10112,
@@ -1641,7 +1863,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10113,
@@ -1653,7 +1877,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10114,
@@ -1665,7 +1891,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10115,
@@ -1677,7 +1905,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10116,
@@ -1689,7 +1919,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10117,
@@ -1701,7 +1933,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10118,
@@ -1713,7 +1947,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10119,
@@ -1725,7 +1961,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10120,
@@ -1737,7 +1975,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10121,
@@ -1749,7 +1989,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10122,
@@ -1761,7 +2003,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10123,
@@ -1773,7 +2017,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10124,
@@ -1785,7 +2031,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10125,
@@ -1797,7 +2045,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10126,
@@ -1809,7 +2059,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10127,
@@ -1821,7 +2073,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10128,
@@ -1833,7 +2087,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10129,
@@ -1845,7 +2101,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10130,
@@ -1857,7 +2115,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10131,
@@ -1869,7 +2129,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10132,
@@ -1881,7 +2143,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10133,
@@ -1893,7 +2157,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10134,
@@ -1905,7 +2171,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10135,
@@ -1917,7 +2185,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10136,
@@ -1929,7 +2199,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10137,
@@ -1941,7 +2213,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10138,
@@ -1953,7 +2227,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10139,
@@ -1965,7 +2241,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10140,
@@ -1977,7 +2255,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10141,
@@ -1989,7 +2269,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10142,
@@ -2001,7 +2283,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10143,
@@ -2013,7 +2297,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10144,
@@ -2025,7 +2311,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10145,
@@ -2037,7 +2325,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10146,
@@ -2049,7 +2339,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10147,
@@ -2061,7 +2353,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10148,
@@ -2073,7 +2367,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10149,
@@ -2085,7 +2381,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10150,
@@ -2097,7 +2395,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10151,
@@ -2109,7 +2409,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10152,
@@ -2121,7 +2423,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10153,
@@ -2133,7 +2437,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10154,
@@ -2145,7 +2451,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10155,
@@ -2157,7 +2465,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10156,
@@ -2169,7 +2479,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10157,
@@ -2181,7 +2493,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10158,
@@ -2193,7 +2507,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10159,
@@ -2205,7 +2521,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10160,
@@ -2217,7 +2535,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10161,
@@ -2229,7 +2549,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10162,
@@ -2241,7 +2563,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10163,
@@ -2253,7 +2577,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10164,
@@ -2265,7 +2591,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10165,
@@ -2277,7 +2605,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10166,
@@ -2289,7 +2619,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10167,
@@ -2301,7 +2633,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10168,
@@ -2313,7 +2647,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10169,
@@ -2325,7 +2661,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10170,
@@ -2337,7 +2675,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10171,
@@ -2349,7 +2689,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10172,
@@ -2361,7 +2703,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10173,
@@ -2373,7 +2717,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10174,
@@ -2385,7 +2731,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10175,
@@ -2397,7 +2745,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10176,
@@ -2409,7 +2759,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10177,
@@ -2421,7 +2773,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10178,
@@ -2433,7 +2787,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10179,
@@ -2445,7 +2801,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10180,
@@ -2457,7 +2815,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10181,
@@ -2469,7 +2829,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10182,
@@ -2481,7 +2843,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10183,
@@ -2493,7 +2857,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10184,
@@ -2505,7 +2871,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10185,
@@ -2517,7 +2885,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10186,
@@ -2529,7 +2899,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10187,
@@ -2541,7 +2913,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10188,
@@ -2553,7 +2927,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10189,
@@ -2565,7 +2941,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10190,
@@ -2577,7 +2955,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10191,
@@ -2589,7 +2969,9 @@
           "monster_id": 2,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10192,
@@ -2601,7 +2983,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10193,
@@ -2613,7 +2997,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10194,
@@ -2625,7 +3011,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10195,
@@ -2637,7 +3025,9 @@
           "monster_id": 9,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10196,
@@ -2649,7 +3039,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10197,
@@ -2661,7 +3053,9 @@
           "monster_id": 4,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10198,
@@ -2673,7 +3067,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10199,
@@ -2685,7 +3081,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10200,
@@ -2697,7 +3095,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10201,
@@ -2709,7 +3109,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10202,
@@ -2721,7 +3123,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10203,
@@ -2733,7 +3137,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10204,
@@ -2745,7 +3151,9 @@
           "monster_id": 6,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10205,
@@ -2757,7 +3165,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10206,
@@ -2769,7 +3179,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10207,
@@ -2781,7 +3193,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10208,
@@ -2793,7 +3207,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10209,
@@ -2805,7 +3221,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10210,
@@ -2817,7 +3235,9 @@
           "monster_id": 3,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10211,
@@ -2829,7 +3249,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10212,
@@ -2841,7 +3263,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10213,
@@ -2853,7 +3277,9 @@
           "monster_id": 1001,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10214,
@@ -2865,7 +3291,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10215,
@@ -2877,7 +3305,9 @@
           "monster_id": 7,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10216,
@@ -2889,7 +3319,9 @@
           "monster_id": 8,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10217,
@@ -2901,7 +3333,9 @@
           "monster_id": 5,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         },
         {
           "id": 10218,
@@ -2913,7 +3347,9 @@
           "monster_id": 1,
           "spawn_interval": 30,
           "boss_id": 0,
-          "spawn_delay": 0
+          "spawn_delay": 0,
+          "count": 1,
+          "radius": 3.0
         }
       ],
       "boss_spawn": []

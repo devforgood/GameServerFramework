@@ -312,8 +312,14 @@ public static class MapJsonAutoSync
         Vector3 pos = info.position != null ? info.position.ToVector3() : Vector3.zero;
 
         int changed = 0;
+        // count 가 없던 시절의 JSON 은 0 으로 읽힌다. 그때의 의미(마커 하나 = 한 마리)를 지킨다.
+        int infoCount = info.count > 0 ? info.count : 1;
+        float infoRadius = (float)info.radius;
+
         if ((info.id > 0 && comp.id != info.id) // id 0(미발급)인 JSON이 컴포넌트의 id를 지우지 않도록 info.id > 0 일 때만 동기화
             || comp.monsterId != info.monster_id
+            || comp.count != infoCount
+            || !Mathf.Approximately(comp.radius, infoRadius)
             || comp.spawnInterval != info.spawn_interval
             || comp.bossId != info.boss_id
             || comp.spawnDelay != info.spawn_delay)
@@ -322,6 +328,8 @@ public static class MapJsonAutoSync
             if (info.id > 0)
                 comp.id = info.id;
             comp.monsterId = info.monster_id;
+            comp.count = infoCount;
+            comp.radius = infoRadius;
             comp.spawnInterval = info.spawn_interval;
             comp.bossId = info.boss_id;
             comp.spawnDelay = info.spawn_delay;

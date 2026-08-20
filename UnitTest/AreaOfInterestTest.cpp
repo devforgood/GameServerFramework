@@ -112,6 +112,25 @@ protected:
 	}
 };
 
+// 회귀 테스트: 갓 생성된 액터의 상태/변경 플래그는 정해진 값이어야 한다.
+// 예전에는 Actor::state_ 와 changeFlag_ 가 초기화되지 않아, 아무도 상태를 쓰지 않는
+// 캐릭터가 남은 쓰레기 값을 그대로 ActorInfo 에 실어 보냈다. 그 값이 우연히
+// Dead/Destroyed 면 다른 클라이언트에는 멀쩡한 플레이어가 죽은 것으로 보인다.
+TEST_F(AreaOfInterestTest, NewActorsStartInAKnownState)
+{
+	std::shared_ptr<Player> player;
+	auto character = SpawnCharacter(player, 0.0f, 0.0f);
+	ASSERT_NE(character, nullptr);
+	EXPECT_EQ(character->GetState(), syncnet::AIState::AIState_Patrol);
+	// 스폰 직후에는 전체 스냅샷을 보내야 하므로 All 이 서 있는 것이 정상이다.
+	// 검사하는 것은 "정의된 비트만 서 있는가" 다 — 쓰레기 값이면 여기서 걸린다.
+	EXPECT_EQ(character->GetChangedFlag() & ~static_cast<long>(GameObjectChangeType::All), 0);
+
+	auto monster = SpawnMonster(1.0f, 0.0f);
+	ASSERT_NE(monster, nullptr);
+	EXPECT_NE(monster->GetState(), syncnet::AIState::AIState_Destroyed);
+}
+
 // 캐릭터가 생기면 그 주변 셀을 구독한다 — 가까운 액터는 시야 안, 먼 액터는 시야 밖.
 TEST_F(AreaOfInterestTest, SubscribesToCellsAroundCharacter)
 {

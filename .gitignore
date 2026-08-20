@@ -250,3 +250,6 @@ GameData/Map.json.bak
 
 # 서버 실행 설정(DB 비밀번호 등 환경별 값). 템플릿은 Game/server_config.example.json.
 server_config.json
+
+# 봇 부하 테스트 실행 설정. 템플릿은 Bot/bot_config.example.json.
+bot_config.json
