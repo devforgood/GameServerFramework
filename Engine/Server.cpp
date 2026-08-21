@@ -203,17 +203,11 @@ void GameSession::ProcessPackets() {
 		if (ringBuf_->size() < GameMessage::header_length)
 			return;
 
-		const char* hdr_ptr = nullptr;
-		uint16_t body_len = 0;
-
-		if (ringBuf_->peek_ptr(hdr_ptr, GameMessage::header_length)) {
-			std::memcpy(&body_len, hdr_ptr, GameMessage::header_length);
-		}
-		else {
-			char tmp[GameMessage::header_length];
-			if (!ringBuf_->peek(tmp, GameMessage::header_length)) return;
-			std::memcpy(&body_len, tmp, GameMessage::header_length);
-		}
+		// 헤더가 링 경계에 걸치는 경우까지 RingBuffer 안에서 처리한다.
+		static_assert(GameMessage::header_length == sizeof(uint16_t));
+		const auto body_len_opt = ringBuf_->peek_value<uint16_t>();
+		if (!body_len_opt) return;
+		const uint16_t body_len = *body_len_opt;
 
 		// 길이를 먼저 검사한다(자세한 이유는 message_policy::IsValidBodyLength).
 		// 정상 클라이언트는 절대 보내지 않는 값이므로 프로토콜 위반으로 끊는다.

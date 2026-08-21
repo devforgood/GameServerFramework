@@ -1,4 +1,7 @@
 #pragma once
+#include <array>
+#include <bit>
+#include <type_traits>
 #include <vector>
 #include <optional>
 #include <span>
@@ -120,6 +123,16 @@ public:
             idx = (idx + 1) % buffer_.size();
         }
         return true;
+    }
+
+    // 헤더처럼 고정 크기 값 하나를 그대로 꺼낸다.
+    // 링 경계에 걸쳐 있는지 여부는 버퍼가 알아서 처리하므로, 호출부가
+    // 연속/분할 두 경로를 따로 들고 있을 필요가 없다.
+    template<TriviallyCopyable T>
+    [[nodiscard]] constexpr std::optional<T> peek_value() const noexcept {
+        std::array<value_type, sizeof(T)> raw{};
+        if (!peek(raw.data(), raw.size())) return std::nullopt;
+        return std::bit_cast<T>(raw);
     }
 
     // 데이터 읽기 (복사 여부 선택 가능)

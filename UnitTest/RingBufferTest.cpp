@@ -862,6 +862,38 @@ TEST_F(RingBufferTest, ContiguousSizeTest) {
     EXPECT_GT(expected_contiguous_write, 0);
 }
 
+// peek_value: 값이 링 경계에 걸쳐 쪼개져 있어도 그대로 복원되어야 한다
+TEST_F(RingBufferTest, PeekValueAcrossWrap) {
+    // head 를 버퍼 끝 직전으로 옮긴다.
+    rb->commit_write(buffer_size - 1);
+    rb->read(nullptr, buffer_size - 1);
+
+    // 2바이트 헤더를 경계에 걸치도록 한 바이트씩 써 넣는다.
+    const uint16_t expected = 0xBEEF;
+    const char* raw = reinterpret_cast<const char*>(&expected);
+    for (int i = 0; i < 2; ++i) {
+        RingBuffer::size_type available_size = 0;
+        char* write_ptr = rb->write_ptr(available_size);
+        ASSERT_NE(write_ptr, nullptr);
+        ASSERT_GT(available_size, 0u);
+        *write_ptr = raw[i];
+        rb->commit_write(1);
+    }
+
+    ASSERT_EQ(rb->contiguous_read_size(), 1u);  // 실제로 쪼개져 있는지 확인
+
+    const auto value = rb->peek_value<uint16_t>();
+    ASSERT_TRUE(value.has_value());
+    EXPECT_EQ(*value, expected);
+    EXPECT_EQ(rb->size(), 2u);  // peek 이므로 소비되지 않는다
+}
+
+// peek_value: 데이터가 모자라면 값을 만들지 않는다
+TEST_F(RingBufferTest, PeekValueInsufficientData) {
+    rb->commit_write(1);
+    EXPECT_FALSE(rb->peek_value<uint16_t>().has_value());
+}
+
 // peek_ptr 경계 조건 테스트
 TEST_F(RingBufferTest, PeekPtrBoundaryTest) {
     // 버퍼를 거의 가득 채우기 (순환 발생)
