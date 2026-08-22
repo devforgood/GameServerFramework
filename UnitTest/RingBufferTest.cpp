@@ -894,6 +894,127 @@ TEST_F(RingBufferTest, PeekValueInsufficientData) {
     EXPECT_FALSE(rb->peek_value<uint16_t>().has_value());
 }
 
+// normalize: 쪼개진 데이터가 순서 그대로 연속이 되어야 한다
+TEST_F(RingBufferTest, NormalizeJoinsWrappedData) {
+    // head 를 버퍼 끝 근처로 옮긴다.
+    rb->commit_write(buffer_size - 4);
+    rb->read(nullptr, buffer_size - 4);
+
+    // 경계를 넘겨 10바이트를 써 넣는다(끝 4바이트 + 앞 6바이트로 쪼개짐).
+    std::vector<char> written;
+    while (written.size() < 10) {
+        RingBuffer::size_type available_size = 0;
+        char* write_ptr = rb->write_ptr(available_size);
+        ASSERT_NE(write_ptr, nullptr);
+        const size_t chunk = std::min<size_t>(available_size, 10 - written.size());
+        for (size_t i = 0; i < chunk; ++i) {
+            const char value = static_cast<char>('a' + written.size() + i);
+            write_ptr[i] = value;
+        }
+        written.insert(written.end(), write_ptr, write_ptr + chunk);
+        rb->commit_write(chunk);
+    }
+    ASSERT_EQ(rb->contiguous_read_size(), 4u);  // 실제로 쪼개져 있는지 확인
+
+    rb->normalize();
+
+    EXPECT_EQ(rb->size(), 10u);
+    EXPECT_EQ(rb->contiguous_read_size(), 10u);
+    EXPECT_EQ(rb->contiguous_write_size(), buffer_size - 10);
+
+    const char* ptr = nullptr;
+    ASSERT_TRUE(rb->peek_ptr(ptr, 10));
+    EXPECT_EQ(std::memcmp(ptr, written.data(), 10), 0);
+}
+
+// normalize: 쪼개지지 않은 데이터도 앞으로 당겨지되 내용은 그대로여야 한다
+TEST_F(RingBufferTest, NormalizeMovesContiguousData) {
+    const char test_data[] = "hello ring";
+    const size_t data_len = sizeof(test_data) - 1;
+
+    RingBuffer::size_type available_size = 0;
+    char* write_ptr = rb->write_ptr(available_size);
+    std::memcpy(write_ptr, test_data, data_len);
+    rb->commit_write(data_len);
+    rb->read(nullptr, 6);  // head_ 를 앞으로 밀어둔다
+
+    rb->normalize();
+
+    ASSERT_EQ(rb->size(), data_len - 6);
+    const char* ptr = nullptr;
+    ASSERT_TRUE(rb->peek_ptr(ptr, rb->size()));
+    EXPECT_EQ(std::memcmp(ptr, test_data + 6, data_len - 6), 0);
+    EXPECT_EQ(rb->contiguous_write_size(), buffer_size - (data_len - 6));
+}
+
+// reserve_linear_write: 데이터 뒤쪽 공간만 세고, 필요하면 앞으로 몰아 자리를 만든다
+TEST_F(RingBufferTest, ReserveLinearWritePolicy) {
+    // 빈 버퍼는 이미 충분하므로 옮기지 않는다.
+    EXPECT_TRUE(rb->reserve_linear_write(512));
+    EXPECT_EQ(rb->trailing_write_size(), buffer_size);
+
+    // tail_ 을 버퍼 끝 근처로 보내 뒤쪽 공간을 좁힌다.
+    rb->commit_write(buffer_size - 8);
+    rb->read(nullptr, buffer_size - 8);
+    ASSERT_EQ(rb->trailing_write_size(), 8u);
+
+    EXPECT_TRUE(rb->reserve_linear_write(512));
+    EXPECT_EQ(rb->trailing_write_size(), buffer_size);
+
+    // 남은 데이터가 너무 많으면 옮겨도 자리가 나지 않는다.
+    rb->commit_write(buffer_size - 100);
+    EXPECT_FALSE(rb->reserve_linear_write(512));
+}
+
+// trailing_write_size: 이미 쪼개진 상태에서는 0 이어야 한다
+// (contiguous_write_size 는 head_ 앞쪽 공간을 세므로 0 이 아니다)
+TEST_F(RingBufferTest, TrailingWriteSizeIsZeroWhenWrapped) {
+    rb->commit_write(buffer_size - 4);
+    rb->read(nullptr, buffer_size - 4);
+    rb->commit_write(4);   // 버퍼 끝까지 채운다
+    rb->commit_write(6);   // 경계를 넘겨 앞쪽으로 이어 쓴다
+
+    ASSERT_EQ(rb->size(), 10u);
+    ASSERT_LT(rb->contiguous_read_size(), rb->size());  // 실제로 쪼개진 상태
+
+    EXPECT_EQ(rb->trailing_write_size(), 0u);
+    EXPECT_GT(rb->contiguous_write_size(), 0u);
+
+    EXPECT_TRUE(rb->reserve_linear_write(512));
+    EXPECT_EQ(rb->contiguous_read_size(), rb->size());  // 다시 연속
+}
+
+// 매 쓰기 전에 reserve_linear_write 를 부르면 데이터는 절대 쪼개지지 않는다
+// (GameSession::DoRead 가 지키는 불변식 - 이게 깨지면 body 스팬 획득이 실패한다)
+TEST_F(RingBufferTest, ReserveLinearWriteKeepsFramesContiguous) {
+    constexpr RingBuffer::size_type kMaxFrame = 514;  // 헤더 2 + 본문 512
+    std::mt19937 rng(12345);
+    std::uniform_int_distribution<size_t> frame_dist(1, kMaxFrame);
+
+    size_t produced = 0;
+    for (int iteration = 0; iteration < 200; ++iteration) {
+        ASSERT_TRUE(rb->reserve_linear_write(kMaxFrame)) << "iteration " << iteration;
+
+        RingBuffer::size_type space = 0;
+        char* write_ptr = rb->write_ptr(space);
+        ASSERT_NE(write_ptr, nullptr);
+        ASSERT_GE(space, kMaxFrame);  // 최대 프레임이 한 번에 들어갈 창
+
+        const size_t frame = frame_dist(rng);
+        std::memset(write_ptr, 'x', frame);
+        rb->commit_write(frame);
+
+        // 쪼개짐 없음 - 들어있는 전부를 연속으로 읽을 수 있어야 한다.
+        ASSERT_EQ(rb->contiguous_read_size(), rb->size()) << "iteration " << iteration;
+        ASSERT_TRUE(rb->try_peek_span_cpp20(frame).has_value());
+
+        rb->read(nullptr, frame);
+        produced += frame;
+    }
+
+    EXPECT_GT(produced, buffer_size);  // 버퍼를 여러 바퀴 돌았는지 확인
+}
+
 // peek_ptr 경계 조건 테스트
 TEST_F(RingBufferTest, PeekPtrBoundaryTest) {
     // 버퍼를 거의 가득 채우기 (순환 발생)

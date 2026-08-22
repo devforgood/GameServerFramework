@@ -152,6 +152,49 @@ public:
         size_ -= len;
     }
 
+    // 남은 데이터를 버퍼 앞쪽으로 몰아 head_ 를 0 으로 만든다.
+    // 쪼개져 있던 데이터가 연속이 되고, 연속 쓰기 창도 available_space() 만큼 넓어진다.
+    //
+    // 주의: 버퍼 내부를 가리키던 포인터/스팬(write_ptr, peek_ptr, try_peek_span 의 결과)은
+    // 전부 무효가 된다. 진행 중인 비동기 읽기가 그 포인터를 들고 있다면 호출하면 안 된다.
+    constexpr void normalize() noexcept {
+        if (size_ == 0) {
+            head_ = tail_ = 0;
+            return;
+        }
+        if (head_ == 0) return;
+
+        if (head_ + size_ <= buffer_.size()) {
+            // 연속 구간 - 앞으로 당기기만 하면 된다(dest 가 src 보다 앞이라 겹쳐도 안전).
+            std::copy(buffer_.begin() + head_, buffer_.begin() + head_ + size_, buffer_.begin());
+        } else {
+            // 끝과 처음으로 쪼개져 있다 - 회전시켜 이어 붙인다.
+            std::rotate(buffer_.begin(), buffer_.begin() + head_, buffer_.end());
+        }
+
+        head_ = 0;
+        tail_ = size_ % buffer_.size();
+    }
+
+    // 데이터 끝 뒤쪽에 남아 있는 연속 공간.
+    // contiguous_write_size 와 달리 head_ '앞쪽' 의 빈 공간은 세지 않는다. 그쪽에 쓰면
+    // 데이터가 경계를 넘어 쪼개지기 때문이다. 이미 쪼개져 있으면 0 이다.
+    [[nodiscard]] constexpr size_type trailing_write_size() const noexcept {
+        if (head_ + size_ >= buffer_.size()) return 0;
+        return buffer_.size() - (head_ + size_);
+    }
+
+    // 다음 쓰기가 링 경계를 넘지 않도록, 데이터 뒤에 desired 만큼의 연속 공간을 확보한다.
+    // 성공하면 write_ptr 은 반드시 데이터 끝에 이어지는 영역을 돌려주므로, 매 쓰기 전에
+    // 이 함수를 부르는 한 버퍼 안의 데이터는 절대 쪼개지지 않는다(= peek 계열이 항상 성공).
+    // 실패는 남은 데이터가 그만큼 많아 자리를 못 만든다는 뜻이다.
+    [[nodiscard]] constexpr bool reserve_linear_write(size_type desired) noexcept {
+        if (trailing_write_size() >= desired) return true;
+
+        normalize();
+        return trailing_write_size() >= desired;
+    }
+
     // 범위 기반 읽기 (C++20 ranges 활용)
     [[nodiscard]] constexpr auto read_range(size_type max_length) const noexcept {
         return std::views::iota(size_type{0}, std::min(size_, max_length))

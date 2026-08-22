@@ -1,5 +1,6 @@
 #include "Server.h"
 
+#include <cassert>
 #include <functional>
 #include "World.h"
 #include "flatbuffers/flatbuffers.h"
@@ -165,6 +166,22 @@ void GameSession::DoRead() {
 	if (closed_)
 		return;
 
+	// 한 프레임의 최대 크기 = 길이 헤더 + 본문 상한(message_policy::IsValidBodyLength).
+	constexpr size_t kMaxFrameLength = GameMessage::header_length + GameMessage::max_body_length;
+
+	// 최대 크기 패킷 하나가 통째로 들어갈 연속 공간을 데이터 뒤에 확보한 뒤에 읽는다.
+	// 이 read 는 그 영역 안에서만 끝나므로 어떤 패킷도 버퍼 끝에서 쪼개지지 않고,
+	// 덕분에 ProcessPackets 는 헤더든 본문이든 항상 연속 스팬으로 집어낼 수 있다.
+	// 옮기는 시점도 여기가 가장 싸다 - ProcessPackets 가 완성된 패킷을 모두 소비한
+	// 직후라 남은 건 미완성 패킷 하나뿐이고, 대개는 0바이트다.
+	// 진행 중인 async_read 도, 살아있는 body 스팬도 없으므로 내부 포인터를 옮겨도 안전하다.
+	if (!ringBuf_->reserve_linear_write(kMaxFrameLength)) {
+		// 도달 불가 - 남는 건 미완성 패킷 하나(< kMaxFrameLength)뿐이라 자리는 항상 난다.
+		// 그래도 걸린다면 버퍼 상태가 깨진 것이므로, 조용히 멈추지 말고 끊는다.
+		Disconnect("receive buffer exhausted");
+		return;
+	}
+
 	size_t space = 0;
 	char* write_ptr = ringBuf_->write_ptr(space);
 	if (!write_ptr || space == 0) return;
@@ -227,17 +244,17 @@ void GameSession::ProcessPackets() {
 
 		ringBuf_->read(nullptr, GameMessage::header_length);  // consume header
 
-		auto body_view = ringBuf_->try_peek_span_cpp20(body_len);
-		if (body_view) {
-			HandlePacket(*body_view);
-			ringBuf_->read(nullptr, body_len);  // consume body
+		// DoRead 가 매 읽기 전에 선형 공간을 확보하므로 본문은 언제나 연속이다.
+		const auto body_view = ringBuf_->try_peek_span_cpp20(body_len);
+		if (!body_view) {
+			// 불변식이 깨진 경우. 잘못된 메모리를 파싱하느니 끊는다.
+			assert(false && "body wrapped despite reserve_linear_write");
+			Disconnect("internal buffer state");
+			return;
 		}
-		else {
-			// fallback
-			std::vector<char> body(body_len);
-			ringBuf_->read(body.data(), body_len);
-			HandlePacket(std::span<const char>(body));
-		}
+
+		HandlePacket(*body_view);
+		ringBuf_->read(nullptr, body_len);  // consume body
 	}
 }
 
