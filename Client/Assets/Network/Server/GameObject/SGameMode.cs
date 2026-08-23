@@ -2,6 +2,7 @@
 #if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_IOS || UNITY_ANDROID
 #else
 using Newtonsoft.Json;
+using StackExchange.Redis;
 #endif
 using Serilog;
 using System;
@@ -9,7 +10,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using StackExchange.Redis;
 
 namespace Server
 {
