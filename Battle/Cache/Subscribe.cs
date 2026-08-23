@@ -26,7 +26,7 @@ namespace Server
             {
                 Log.Information("sub {0}", subscript_key);
                 ISubscriber sub = Cache.sInstance.cache.GetSubscriber();
-                sub.Subscribe(subscript_key, (channel, message) =>
+                sub.Subscribe(RedisChannel.Literal(subscript_key), (channel, message) =>
                 {
                     try
                     {

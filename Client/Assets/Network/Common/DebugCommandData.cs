@@ -15,7 +15,7 @@ public class DebugCommandData
                 dataMap[data.ID] = data;
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
 
         }

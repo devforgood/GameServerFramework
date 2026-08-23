@@ -172,11 +172,11 @@ namespace Lobby
         }
 
 
-        public static async Task<(bool, string)> SetStartPlayerCount(Session session, string Param1, string Param2, string Param3, string Param4)
+        public static Task<(bool, string)> SetStartPlayerCount(Session session, string Param1, string Param2, string Param3, string Param4)
         {
             RankMatchmaking.StartPlayerCount = int.Parse(Param1);
 
-            return (true, string.Empty);
+            return Task.FromResult((true, string.Empty));
         }
         public static async Task<(bool, string)> SetCharacterBattleScore(Session session, string Param1, string Param2, string Param3, string Param4)
         {
@@ -200,7 +200,7 @@ namespace Lobby
             return (true, string.Empty);
         }
 
-        public static async Task<(bool, string)> SetMinimumStartPlay(Session session, string Param1, string Param2, string Param3, string Param4)
+        public static Task<(bool, string)> SetMinimumStartPlay(Session session, string Param1, string Param2, string Param3, string Param4)
         {
             var minimumStartPlay = new MinimumStartPlay();
             minimumStartPlay.Enable = bool.Parse(Param1);
@@ -209,7 +209,7 @@ namespace Lobby
             int map_id = int.Parse(Param4);
 
             RankMatchmaking.minimumStartPlayMap[map_id] = minimumStartPlay;
-            return (true, string.Empty);
+            return Task.FromResult((true, string.Empty));
         }
 
         public static async Task<(bool, string)> SendMail(Session session, string Param1, string Param2, string Param3, string Param4)

@@ -16,7 +16,7 @@ static void BM_ECSCacheSequential(benchmark::State& state) {
     entityManager.RegisterComponent<PositionComponent>();
     entityManager.RegisterComponent<VelocityComponent>();
 
-    const int entityCount = state.range(0);
+    const int entityCount = static_cast<int>(state.range(0));
     std::vector<EntityID> entities;
     
     for (int i = 0; i < entityCount; ++i) {
@@ -47,7 +47,7 @@ static void BM_ECSCacheRandom(benchmark::State& state) {
     entityManager.RegisterComponent<PositionComponent>();
     entityManager.RegisterComponent<VelocityComponent>();
 
-    const int entityCount = state.range(0);
+    const int entityCount = static_cast<int>(state.range(0));
     std::vector<EntityID> entities;
     
     for (int i = 0; i < entityCount; ++i) {
@@ -88,7 +88,7 @@ static void BM_ECSCacheStrided(benchmark::State& state) {
     entityManager.RegisterComponent<PositionComponent>();
     entityManager.RegisterComponent<VelocityComponent>();
 
-    const int entityCount = state.range(0);
+    const int entityCount = static_cast<int>(state.range(0));
     std::vector<EntityID> entities;
     
     for (int i = 0; i < entityCount; ++i) {
@@ -121,7 +121,7 @@ static void BM_ECSUpdateSystem(benchmark::State& state) {
     entityManager.RegisterComponent<VelocityComponent>();
     entityManager.RegisterComponent<HealthComponent>();
 
-    const int entityCount = state.range(0);
+    const int entityCount = static_cast<int>(state.range(0));
     
     for (int i = 0; i < entityCount; ++i) {
         EntityID entity = entityManager.CreateEntity();
@@ -157,7 +157,7 @@ struct LinkedListNode {
 
 // Performance: Linked List Update
 static void BM_LinkedListUpdate(benchmark::State& state) {
-    const int entityCount = state.range(0);
+    const int entityCount = static_cast<int>(state.range(0));
     
     LinkedListNode* head = nullptr;
     LinkedListNode* tail = nullptr;

@@ -22,7 +22,7 @@ namespace GmTool.Pages.Users
             _commonContext = commonContext;
         }
 
-        public IList<User> User { get;set; }
+        public new IList<User> User { get;set; }
 
         [BindProperty(SupportsGet = true)]
         public string SearchString { get; set; }

@@ -76,13 +76,16 @@
       <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;..\Engine\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <!-- vcpkg 의 benchmarkd.lib 는 PDB 없이 배포된다. 우리가 고칠 수 있는 것이 아니라
+           LNK4099(“PDB 를 찾을 수 없어 디버그 정보 없이 링크한다”)를 무시한다. -->
+      <AdditionalOptions>/IGNORE:4099 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>advapi32.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -93,13 +96,16 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <!-- vcpkg 의 benchmarkd.lib 는 PDB 없이 배포된다. 우리가 고칠 수 있는 것이 아니라
+           LNK4099(“PDB 를 찾을 수 없어 디버그 정보 없이 링크한다”)를 무시한다. -->
+      <AdditionalOptions>/IGNORE:4099 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>advapi32.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -108,13 +114,16 @@
       <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;..\Engine\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <!-- vcpkg 의 benchmarkd.lib 는 PDB 없이 배포된다. 우리가 고칠 수 있는 것이 아니라
+           LNK4099(“PDB 를 찾을 수 없어 디버그 정보 없이 링크한다”)를 무시한다. -->
+      <AdditionalOptions>/IGNORE:4099 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalLibraryDirectories>..\Engine\3thparty\mariadb;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>advapi32.lib;bcrypt.lib;mariadbcpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -129,13 +138,16 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;MI_DEBUG=0;_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <!-- vcpkg 의 benchmarkd.lib 는 PDB 없이 배포된다. 우리가 고칠 수 있는 것이 아니라
+           LNK4099(“PDB 를 찾을 수 없어 디버그 정보 없이 링크한다”)를 무시한다. -->
+      <AdditionalOptions>/IGNORE:4099 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalLibraryDirectories>..\Engine\3thparty\mariadb;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>advapi32.lib;bcrypt.lib;mariadbcpp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using StackExchange.Redis;
 
 namespace Lobby
 {
@@ -26,7 +27,7 @@ namespace Lobby
 
             Interlocked.Increment(ref RankMatchmaking.MatchCount);
 
-            var queue = Cache.Instance.GetSubscriber().Subscribe(key);
+            var queue = Cache.Instance.GetSubscriber().Subscribe(RedisChannel.Literal(key));
 
             var cts = new CancellationTokenSource();
             cts.CancelAfter((int)game_result_expire.TotalMilliseconds);

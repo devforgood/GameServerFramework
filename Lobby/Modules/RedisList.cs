@@ -22,7 +22,7 @@ public class RedisList<T> : IList<T>
     {
         return JsonConvert.SerializeObject(obj);
     }
-    private T Deserialize<T>(string serialized)
+    private T Deserialize(string serialized)
     {
         return JsonConvert.DeserializeObject<T>(serialized);
     }
@@ -46,7 +46,7 @@ public class RedisList<T> : IList<T>
         get
         {
             var value = GetRedisDb().ListGetByIndex(key, index);
-            return Deserialize<T>(value.ToString());
+            return Deserialize(value.ToString());
         }
         set
         {
@@ -103,14 +103,14 @@ public class RedisList<T> : IList<T>
     {
         for (int i = 0; i < this.Count; i++)
         {
-            yield return Deserialize<T>(GetRedisDb().ListGetByIndex(key, i).ToString());
+            yield return Deserialize(GetRedisDb().ListGetByIndex(key, i).ToString());
         }
     }
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
     {
         for (int i = 0; i < this.Count; i++)
         {
-            yield return Deserialize<T>(GetRedisDb().ListGetByIndex(key, i).ToString());
+            yield return Deserialize(GetRedisDb().ListGetByIndex(key, i).ToString());
         }
     }
 }

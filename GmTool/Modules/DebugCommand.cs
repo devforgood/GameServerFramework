@@ -22,7 +22,7 @@ namespace GmTool
 
             logger.LogInformation($" redis {Cache.RedisIpAddress}, {Cache.RedisPort}, {Cache.Instance.GetDatabase().IsConnected(default(RedisKey))}, {Cache.Instance.GetConnection().IsConnected}, v1.0.3 ");
             msg.msg_id = (long)await Cache.Instance.GetDatabase().StringIncrementAsync("lobby_msg_instance_id");
-            await Cache.Instance.GetSubscriber().PublishAsync($"lobby", JsonConvert.SerializeObject(msg));
+            await Cache.Instance.GetSubscriber().PublishAsync(RedisChannel.Literal($"lobby"), JsonConvert.SerializeObject(msg));
         }
 
         public static async Task SendMessageToBattle(string playerId, string Cmd, string Param1, string Param2, string Param3, string Param4, ILogger logger)
@@ -48,7 +48,7 @@ namespace GmTool
 
 
             var pubMessage = JsonConvert.SerializeObject(msg);
-            await Cache.Instance.GetSubscriber().PublishAsync($"channel_msg:{player_location.channel_id}", pubMessage);
+            await Cache.Instance.GetSubscriber().PublishAsync(RedisChannel.Literal($"channel_msg:{player_location.channel_id}"), pubMessage);
         }
 
         public static async Task<bool> Execute(string target, string playerId, string Cmd, string Param1, string Param2, string Param3, string Param4, ILogger logger)

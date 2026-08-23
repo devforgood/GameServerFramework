@@ -116,7 +116,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;BOOST_BIND_GLOBAL_PLACEHOLDERS;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;BOOST_BIND_GLOBAL_PLACEHOLDERS;PROTOBUF_USE_DLLS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>..\thirdparty\mimalloc\include;..\Engine;..\Engine\AI;..\Engine\Actor;..\Engine\Controller;..\ECS;..\Engine\Item;..\Engine\Map;..\Engine\System;..\EventBroker;..\Engine\EventMessage;..\Engine\GameMode;..\Engine\GameObject;..\Grid;..\Engine\Level;..\Engine\Message;..\Engine\MonsterData;..\Engine\Movement;..\Engine\Player;..\Engine\Quest;..\Engine\Random;..\RingBuffer;..\Engine\SQL;..\Engine\Time;..\Engine\World;..\Engine\flatbuffers;..\Engine\skill;..\Engine\GameData;..\recastnavigation;..\flatbuffer\flatbuffers-1.12.0\include;..\Engine\3thparty\mariadb\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>

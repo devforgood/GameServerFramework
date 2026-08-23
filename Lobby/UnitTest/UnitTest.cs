@@ -23,6 +23,11 @@ namespace Lobby
             var r111 = TestRanking().Result;
             return;
 
+            // 아래는 손으로 돌려 보던 확인용 코드다. 위의 return 으로 이미 닿지 않는
+            // 상태였는데, 컴파일러가 CS0162(접근할 수 없는 코드)로 잡았다. 지우는 대신
+            // 조건부 컴파일로 막아 "일부러 꺼 둔 코드"임을 드러낸다.
+            // 되살리려면 이 심볼을 정의한 뒤 위의 return 을 지운다.
+#if LOBBY_MANUAL_PROBE
             {
                 var values = new StackExchange.Redis.SortedSetEntry[]
                 {
@@ -177,6 +182,7 @@ namespace Lobby
 
             Task.Run(async () => await TestCache());
 
+#endif
         }
 
         public static void QueryListUp()

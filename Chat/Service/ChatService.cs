@@ -31,7 +31,7 @@ namespace Lobby
             await Cache.Instance.GetDatabase().StringIncrementAsync($"room_user_cnt:{roomId}");
 
             // 조건에 만족하는 유저가 없다면 대기 (redis puh로 활성화)
-            var queue = Cache.Instance.GetSubscriber().Subscribe($"room:{roomId}");
+            var queue = Cache.Instance.GetSubscriber().Subscribe(RedisChannel.Literal($"room:{roomId}"));
 
 
             while (true)
@@ -75,7 +75,7 @@ namespace Lobby
             };
 
             var msg = JsonConvert.SerializeObject(chat_msg);
-            await Cache.Instance.GetSubscriber().PublishAsync($"room:{roomId}", msg);
+            await Cache.Instance.GetSubscriber().PublishAsync(RedisChannel.Literal($"room:{roomId}"), msg);
         }
 
         public static async Task<List<GameChat.ChatRoom>> GetChatRoomList(long skip, long take)

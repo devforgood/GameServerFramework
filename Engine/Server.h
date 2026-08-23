@@ -26,7 +26,6 @@
 #endif
 
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
 #include "GameMessage.h"
 #include "PerfTimer.h"
 #include "DbMonitorTicker.h"

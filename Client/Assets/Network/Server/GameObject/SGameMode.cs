@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using StackExchange.Redis;
 
 namespace Server
 {
@@ -149,7 +150,7 @@ namespace Server
 #else
 
                     string key = $"game_result:{channel_id}";
-                    Cache.sInstance.cache.GetSubscriber().PublishAsync(key, JsonConvert.SerializeObject(gameResult)).ConfigureAwait(false);
+                    Cache.sInstance.cache.GetSubscriber().PublishAsync(RedisChannel.Literal(key), JsonConvert.SerializeObject(gameResult)).ConfigureAwait(false);
                     Log.Information($"PubGameRessult {key}");
 #endif
                 }

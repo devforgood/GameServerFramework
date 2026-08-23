@@ -10,6 +10,7 @@ using GmTool.Models;
 using Lobby.Models;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 
 namespace GmTool.Pages.Members
 {
@@ -34,12 +35,12 @@ namespace GmTool.Pages.Members
         public bool is_suspend { get; set; }
 
 
-        public async Task<IActionResult> OnGetAsync(string id, bool action)
+        public Task<IActionResult> OnGetAsync(string id, bool action)
         {
             channel_id = id;
             is_suspend = action;
 
-            return Page();
+            return Task.FromResult<IActionResult>(Page());
         }
 
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
@@ -60,7 +61,7 @@ namespace GmTool.Pages.Members
 
 
             var pubMessage = JsonConvert.SerializeObject(msg);
-            await Cache.Instance.GetSubscriber().PublishAsync($"channel_msg:{channel_id}", pubMessage);
+            await Cache.Instance.GetSubscriber().PublishAsync(RedisChannel.Literal($"channel_msg:{channel_id}"), pubMessage);
 
             return RedirectToPage("./Index");
         }

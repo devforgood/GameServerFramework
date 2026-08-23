@@ -169,7 +169,7 @@ namespace Lobby
             Log.Information($"PubStartPlay {pubMessage}");
 
             // 배틀 체널에 참여자 명단을 알림
-            await Cache.Instance.GetSubscriber().PublishAsync($"channel_msg:{channel_id}", pubMessage);
+            await Cache.Instance.GetSubscriber().PublishAsync(RedisChannel.Literal($"channel_msg:{channel_id}"), pubMessage);
         }
 
         /// <summary>
@@ -222,7 +222,7 @@ namespace Lobby
             // 매칭된 유저들에게 알림
             for (int i = 0; i < player_list.Count; ++i)
             {
-                await Cache.Instance.GetSubscriber().PublishAsync($"sub_user:{player_list[i]}", reply_str);
+                await Cache.Instance.GetSubscriber().PublishAsync(RedisChannel.Literal($"sub_user:{player_list[i]}"), reply_str);
             }
 
             await SequentialMatchmaking.RemoveMatchUser(session.user_no, request.MapId);
@@ -272,7 +272,7 @@ namespace Lobby
 
 
             // 조건에 만족하는 유저가 없다면 대기 (redis puh로 활성화)
-            var queue = Cache.Instance.GetSubscriber().Subscribe($"sub_user:{session.user_no}");
+            var queue = Cache.Instance.GetSubscriber().Subscribe(RedisChannel.Literal($"sub_user:{session.user_no}"));
 
             var cts = new CancellationTokenSource();
             cts.CancelAfter((int)startplay_polling_period.TotalMilliseconds);
@@ -341,7 +341,7 @@ namespace Lobby
         {
             string key = $"game_result:{channel_id}";
             Log.Information($"WaitGameResult {key}");
-            var queue = Cache.Instance.GetSubscriber().Subscribe(key);
+            var queue = Cache.Instance.GetSubscriber().Subscribe(RedisChannel.Literal(key));
 
             var cts = new CancellationTokenSource();
             cts.CancelAfter((int)game_result_expire.TotalMilliseconds);

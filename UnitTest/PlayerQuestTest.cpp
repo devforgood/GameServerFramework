@@ -1,6 +1,7 @@
 #include "pch.h"
 #include <gtest/gtest.h>
 #include <chrono>
+#include <ctime>
 #include <filesystem>
 #include "PlayerQuest.h"
 #include "PlayerLevel.h"
@@ -268,7 +269,22 @@ TEST_F(PlayerQuestTest, Definition_StageCompletionLogic)
 TEST_F(PlayerQuestTest, Definition_ResetBoundary)
 {
 	using namespace std::chrono;
-	const auto now = system_clock::now();
+
+	// 실제 현재 시각을 쓰면 안 된다. 리셋 경계는 **로컬 자정**(주간은 월요일 자정)이라,
+	// now() 로 재면 자정 직후 1분과 월요일 자정 직후 1시간 동안 아래 단언이 뒤집힌다.
+	// 실제로 월요일 00:18 에 돌렸다가 주간 단언이 깨졌다.
+	// 경계에서 충분히 떨어진 수요일 정오를 기준으로 삼는다(로컬 달력 필드로 만들므로
+	// 표준시대와 무관하게 같은 자리다).
+	std::tm wednesday_noon{};
+	wednesday_noon.tm_year = 2026 - 1900;
+	wednesday_noon.tm_mon = 8 - 1;
+	wednesday_noon.tm_mday = 19;   // 2026-08-19 는 수요일
+	wednesday_noon.tm_hour = 12;
+	wednesday_noon.tm_isdst = -1;
+	const std::time_t raw = std::mktime(&wednesday_noon);
+	ASSERT_NE(raw, static_cast<std::time_t>(-1));
+	ASSERT_EQ(wednesday_noon.tm_wday, 3) << "기준 시각이 수요일이 아닙니다";
+	const auto now = system_clock::from_time_t(raw);
 
 	EXPECT_FALSE(QuestResetBoundaryPassed(QuestResetType::None, now - hours(240), now));
 	EXPECT_FALSE(QuestResetBoundaryPassed(QuestResetType::Daily, now - minutes(1), now));
@@ -528,7 +544,7 @@ TEST_F(PlayerQuestTest, Complete_ExpGoesToPlayerLevel)
 	level->Load(MakeNewPlayerData(1001, 1));
 	quest->Load(MakeNewPlayerData(1001, 1));
 
-	const int before = level->GetExp();
+	const long long before = level->GetExp();
 	ASSERT_EQ(quest->AcceptQuest(kFieldCleanup), QuestAcceptResult::Ok); // 보상 exp 200
 	quest->ReportProgress(QuestObjectiveType::Kill, kSlimeMonsterId, 10);
 

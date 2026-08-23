@@ -39,6 +39,28 @@ together different definitions of the same things.
 
 On the compiler command line the macro precedes every header, so no TU can disagree.
 
+## Zero-warning build
+
+`Debug|x64` and `Release|x64` both rebuild with **0 warnings and 0 errors**. Keep it that way —
+the log is only useful as a signal while it stays empty.
+
+Two of the settings that get you there are intentionally *not* fixes, and are commented as such
+in `Directory.Build.props`:
+
+- `_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING` — spdlog's bundled fmt uses
+  `stdext::checked_array_iterator`, which MSVC STL deprecated (C4996 / STL4043). Not ours to fix.
+- `CheckEolTargetFramework` / `SuppressTfmSupportBuildWarnings` / `NoWarn=NU1701` — the C# projects
+  target `netcoreapp3.1` and `net5.0`, both end-of-life, while referencing 9.0.x packages.
+  **The real fix is a TFM migration to net8.0+**; until then the noise is muted. Delete that block
+  after migrating.
+
+If a build starts warning again, the usual causes are:
+
+- a source file saved as CP949 instead of UTF-8 (C4828 — the whole repo compiles with `/utf-8`)
+- stale `*.tlog` folders left in another project's intermediate directory (MSB8028); they are
+  build artifacts, so deleting them is safe
+- a new C++ project that does not pick up `Directory.Build.props`
+
 ## FlatBuffers Code Generation
 
 The bundled compiler is:

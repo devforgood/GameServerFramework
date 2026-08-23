@@ -1461,7 +1461,7 @@ void dtCrowd::teleportAgent(int agentIdx, const float* targetPos) {
 		return;
 	}
 
-	// ³×ºñ°ÔÀÌ¼Ç ¸Þ½Ã¿¡¼­ °¡Àå °¡±î¿î Æú¸®°ïÀ» Ã£À½
+	// ë„¤ë¹„ê²Œì´ì…˜ ë©”ì‹œì—ì„œ ê°€ìž¥ ê°€ê¹Œìš´ í´ë¦¬ê³¤ì„ ì°¾ìŒ
 	float nearestPos[3];
 	dtPolyRef nearestRef = 0;
 	dtStatus status = m_navquery->findNearestPoly(
@@ -1475,15 +1475,15 @@ void dtCrowd::teleportAgent(int agentIdx, const float* targetPos) {
 		return;
 	}
 
-	// ¿¡ÀÌÀüÆ®ÀÇ À§Ä¡¸¦ ¾÷µ¥ÀÌÆ®
+	// ì—ì´ì „íŠ¸ì˜ ìœ„ì¹˜ë¥¼ ì—…ë°ì´íŠ¸
 	dtVcopy(agent->npos, nearestPos);
 
-	// °æ·Î Á¤º¸¸¦ ÃÊ±âÈ­
+	// ê²½ë¡œ ì •ë³´ë¥¼ ì´ˆê¸°í™”
 	agent->corridor.reset(nearestRef, nearestPos);
 	agent->boundary.reset();
 	agent->partial = false;
 
-	// ¼Óµµ ¹× ¸ñÇ¥ »óÅÂ ÃÊ±âÈ­
+	// ì†ë„ ë° ëª©í‘œ ìƒíƒœ ì´ˆê¸°í™”
 	dtVset(agent->vel, 0, 0, 0);
 	dtVset(agent->dvel, 0, 0, 0);
 	agent->targetState = DT_CROWDAGENT_TARGET_NONE;

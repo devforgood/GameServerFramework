@@ -9,7 +9,7 @@ namespace GmTool.getInfo.response
         public string appId;
         public string leaderboardId;
         public string desc;
-        Season season;
+        public Season season;
         public string sortingType;
         public bool friendsLeaderboard;
         public string recordType;
@@ -21,7 +21,7 @@ namespace GmTool.getInfo.response
         public long seasonEndTime;
     }
 
-    class Season
+    public class Season
     {
         public string type;
         public int resetDay;

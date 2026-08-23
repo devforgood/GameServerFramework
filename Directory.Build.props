@@ -12,6 +12,30 @@
   </PropertyGroup>
 
   <!--
+    ⚠ 여기서 끄는 것은 "고쳤다"가 아니라 "알고 넘어간다"다.
+
+    C# 프로젝트 대부분이 netcoreapp3.1(일부 net5.0)을 타깃으로 하는데 둘 다 지원이 끝났고,
+    참조하는 System.*/Microsoft.Extensions.* 는 9.0.5 다. 그래서 빌드마다 경고가 82줄 나온다:
+
+      NETSDK1138                 대상 프레임워크가 EOL 이라 보안 업데이트를 받지 못한다
+      (코드 없는 NuGet 경고)      9.0.5 패키지가 netcoreapp3.1 을 지원하지 않는다
+      NU1701                     MySql.Data.EntityFrameworkCore.Design 8.0.19 를
+                                 .NETFramework 로 대신 복원했다
+
+    진짜 해결책은 TFM 을 net8.0 이상으로 올리는 것이다. 다만 Login/GmTool 은 ASP.NET Core
+    3.1 Razor 앱이라 호스팅 모델부터 바뀌고, MySql.Data.EntityFrameworkCore.Design 8.0.19 는
+    그 위에서 돌지 않을 수 있다 — 경고 정리와는 규모가 다른 별도 작업이다.
+
+    그때까지 빌드 로그를 읽을 수 있게 소리만 줄여 둔다. TFM 을 올리고 나면 이 블록을 지워야
+    한다(지워도 경고가 없으면 마이그레이션이 끝난 것이다).
+  -->
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+  </PropertyGroup>
+
+  <!--
     소스를 항상 UTF-8로 해석한다. BOM 없는 UTF-8 파일을 시스템 코드페이지(CP949)로
     읽으면 한글 주석 끝 글자의 마지막 바이트가 2바이트 선행 바이트로 오인되어 개행을
     삼키고, 다음 줄이 주석에 빨려 들어가 사라지는 MSVC 버그가 발생한다.
@@ -27,6 +51,13 @@
 
     컴파일러 명령줄에 두면 어떤 헤더보다 먼저 서므로 TU 마다 갈릴 수 없다.
     프로젝트별로 두면 새 프로젝트에서 빠뜨리기 쉬워 여기서 일괄 적용한다.
+
+    _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING 도 같은 이유로 여기 있다.
+    spdlog 가 품고 있는 fmt(format.h)가 stdext::checked_array_iterator 를 쓰는데,
+    MSVC STL 이 이것을 deprecated 로 표시해 C4996(STL4043)을 낸다. 우리 코드에서 고칠 수
+    있는 것이 아니라 컴파일러가 안내하는 대로 끄는 것이 유일한 방법이다.
+    Engine/Game/Bot/Benchmark 는 각자 정의하고 있었고 UnitTest 만 빠뜨려서, 그 프로젝트
+    하나가 경고 6136줄을 냈다 — 프로젝트별로 두면 이렇게 된다는 산 증거였다.
   -->
   <!--
     cl.exe는 기본적으로 한 프로젝트의 .cpp를 순차 컴파일한다. Engine은 71개 TU를 가지고
@@ -37,7 +68,7 @@
     <ClCompile>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <PreprocessorDefinitions>_WIN32_WINNT=0x0A00;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x0A00;_SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>

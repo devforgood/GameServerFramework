@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using StackExchange.Redis;
 
 namespace Lobby
 {
@@ -153,7 +154,7 @@ namespace Lobby
             Log.Information($"PubStartPlay {pubMessage}");
 
             // 배틀 체널에 참여자 명단을 알림
-            await Cache.Instance.GetSubscriber().PublishAsync($"channel_msg:{msg.channel_id}", pubMessage);
+            await Cache.Instance.GetSubscriber().PublishAsync(RedisChannel.Literal($"channel_msg:{msg.channel_id}"), pubMessage);
         }
 
         public static async Task<bool> StartPlay(long match_id, Session session, StartPlayRequest request, IServerStreamWriter<StartPlayReply> responseStream, MatchResult matchResult, JMapData map_data, JGameModeData game_mode)

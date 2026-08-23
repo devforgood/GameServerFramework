@@ -456,7 +456,7 @@ TEST_F(GameModeInstanceTest, ClearGrantsExpToSurvivors)
 
 	auto* level = player->GetComponent<PlayerLevel>();
 	ASSERT_NE(level, nullptr);
-	const int before = level->GetExp();
+	const long long before = level->GetExp();
 
 	mode->set_boss_dead(true);
 	instance->update(0.1f); // on_end 안에서 GM_GrantRewards 가 돈다

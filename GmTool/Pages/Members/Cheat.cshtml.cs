@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using GmTool.Models;
 using Lobby.Models;
 using Newtonsoft.Json;
+using StackExchange.Redis;
 
 namespace GmTool.Pages.Members
 {
@@ -92,7 +93,7 @@ namespace GmTool.Pages.Members
             msg.param4 = Param4;
 
             msg.msg_id = (long)Cache.Instance.GetDatabase().StringIncrement("lobby_msg_instance_id");
-            await Cache.Instance.GetSubscriber().PublishAsync($"lobby", JsonConvert.SerializeObject(msg));
+            await Cache.Instance.GetSubscriber().PublishAsync(RedisChannel.Literal($"lobby"), JsonConvert.SerializeObject(msg));
         }
 
 
