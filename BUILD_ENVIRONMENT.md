@@ -41,8 +41,12 @@ On the compiler command line the macro precedes every header, so no TU can disag
 
 ## Zero-warning build
 
-`Debug|x64` and `Release|x64` both rebuild with **0 warnings and 0 errors**. Keep it that way —
-the log is only useful as a signal while it stays empty.
+`Debug|x64` and `Release|x64` both rebuild with **0 errors, 0 warnings, and 0 `message :` lines**.
+Keep it that way — the log is only useful as a signal while it stays empty.
+
+Check all three when verifying. MSVC and Boost emit some deprecation notices as `message :`
+rather than `warning`, so grepping only for `warning` will report a clean build that is not one
+(this is exactly how the `boost/bind.hpp` notice survived a "0 warnings" run).
 
 Two of the settings that get you there are intentionally *not* fixes, and are commented as such
 in `Directory.Build.props`:
@@ -57,6 +61,11 @@ in `Directory.Build.props`:
 If a build starts warning again, the usual causes are:
 
 - a source file saved as CP949 instead of UTF-8 (C4828 — the whole repo compiles with `/utf-8`)
+- an unused third-party header pulled in for no reason. `Engine/Server.h` included
+  `<boost/bind.hpp>` while nothing used `boost::bind`, and it printed a deprecation notice in
+  every project that had not defined `BOOST_BIND_GLOBAL_PLACEHOLDERS`. Deleting the include
+  removed the notice *and* made that macro unnecessary in all four projects that carried it —
+  prefer dropping the dependency over adding another silencing macro.
 - stale `*.tlog` folders left in another project's intermediate directory (MSB8028); they are
   build artifacts, so deleting them is safe
 - a new C++ project that does not pick up `Directory.Build.props`
