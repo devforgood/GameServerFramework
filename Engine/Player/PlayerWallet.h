@@ -22,7 +22,7 @@ public:
 	long long GetGold() const { return gold_; }
 
 private:
-	VOPlayerWallet buildVO() const;
+	void fillVO(VOPlayerWallet& vo) const;
 
 	DbRowTracker<VOPlayerWallet> row_;
 	long long gold_ = 0;

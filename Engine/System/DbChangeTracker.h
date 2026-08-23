@@ -1,7 +1,6 @@
 #pragma once
 #include <unordered_map>
 #include <vector>
-#include <optional>
 #include <cstdint>
 #include "DbRecord.h"
 
@@ -169,17 +168,23 @@ public:
     // 저장할 변경분이 있는지 (신규 행이거나 값이 변경됨)
     bool HasPendingChanges() const { return dirty_ || !persisted_; }
 
-    // 변경분이 있으면 DbRecord 를 만들고 상태를 초기화(persisted=true, dirty=false).
-    // 변경분이 없으면 std::nullopt.
-    std::optional<DbRecord<TVO>> Flush(TVO vo)
+    // 변경분이 있으면 out 에 레코드를 만들고 상태를 초기화(persisted=true,
+    // dirty=false). 변경분이 없으면 false 를 돌려주고 out 은 건드리지 않는다.
+    //
+    // VO 는 fill(out.vo) 로 "이미 있는 자리"에 채운다. 임시 VO 를 만들어 move 로
+    // 넣으면 VO 안의 문자열/벡터가 매 저장마다 새 버퍼로 바뀌어, 저장 버퍼를
+    // 돌려쓰는(PlayerSaveBufferPool) 의미가 사라진다.
+    template<typename TFill>
+    bool Flush(DbRecord<TVO>& out, TFill&& fill)
     {
         if (!HasPendingChanges())
-            return std::nullopt;
+            return false;
 
-        DbAction action = persisted_ ? DbAction::Update : DbAction::Insert;
+        fill(out.vo);
+        out.action = persisted_ ? DbAction::Update : DbAction::Insert;
         persisted_ = true;
         dirty_ = false;
-        return DbRecord<TVO>{ std::move(vo), action };
+        return true;
     }
 
 private:

@@ -1,4 +1,5 @@
 #include "PlayerQuest.h"
+#include "SendMessagePool.h"
 #include "PlayerLoadData.h"
 #include "PlayerSaveData.h"
 #include "PlayerEventBroker.h"
@@ -76,7 +77,7 @@ void PlayerQuest::sendSync()
 	std::vector<int> completed;
 	DrainSync(changed, removed, completed);
 
-	auto builder_ptr = std::make_shared<send_message>();
+	auto builder_ptr = SendMessagePool::Acquire();
 
 	std::vector<flatbuffers::Offset<syncnet::QuestInfo>> infos;
 	infos.reserve(changed.size());
@@ -952,9 +953,11 @@ void PlayerQuest::Save(std::any data)
 	if (activeQuests_.HasPendingChanges())
 		activeQuests_.Flush(save_data->quest_actives.emplace());
 
-	// 완료 플래그가 변경되었거나 신규 행이면 quest_state 레코드 생성
-	if (auto record = questState_.Flush(buildStateVO()))
-		save_data->quest_state = std::move(*record);
+	// 완료 플래그가 변경되었거나 신규 행이면 quest_state 레코드 생성.
+	// flags 는 퀘스트 수만큼 길어지는 문자열이라, 유지 중인 버퍼에 직접 채운다.
+	if (questState_.HasPendingChanges())
+		questState_.Flush(save_data->quest_state.emplace(),
+			[this](VOQuestState& vo) { fillStateVO(vo); });
 }
 
 void PlayerQuest::setCompleted(int quest_id)
@@ -993,12 +996,11 @@ void PlayerQuest::resetActiveRow(VOQuestActive& vo)
 	vo.accept_time = now();
 }
 
-VOQuestState PlayerQuest::buildStateVO() const
+void PlayerQuest::fillStateVO(VOQuestState& vo) const
 {
-	VOQuestState vo;
 	vo.character_id = characterId_;
+	// assign 은 남아 있는 버퍼를 그대로 쓴다(용량이 충분하면 재할당 없음).
 	vo.flags.assign(completedBits_.begin(), completedBits_.end());
-	return vo;
 }
 
 void PlayerQuest::pushUnique(std::vector<int>& list, int quest_id)

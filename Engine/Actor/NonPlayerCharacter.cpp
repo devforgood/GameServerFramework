@@ -151,7 +151,9 @@ void NonPlayerCharacter::FollowNearestPlayer()
 	Character* nearest = nullptr;
 	float nearestSq = rangeSq;
 
-	for (const auto& player : map_->GetPlayers())
+	// 거리만 재는 읽기 전용 순회다. 복사본을 뜨면 NPC 마다 0.5초마다 벡터 하나와
+	// 인원수만큼의 참조 수 증감이 생긴다.
+	for (const auto& [playerId, player] : map_->GetPlayerMap())
 	{
 		if (player == nullptr)
 			continue;

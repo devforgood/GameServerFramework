@@ -1,4 +1,5 @@
 #include "Map.h"
+#include "SendMessagePool.h"
 #include "syncnet_generated.h"
 #include <iostream>
 #include "Server.h"
@@ -101,7 +102,7 @@ bool Map::Init(const std::string& movementType, const gamedata::Map* mapData)
 		return false;
 
 	gridManager_ = CreateGrid();
-	sendMessageBuilder_ = std::make_shared<send_message>();
+	sendMessageBuilder_ = SendMessagePool::Acquire();
 
 	RefreshAoIMode(); // 맵 데이터의 aoi_radius 로 관심영역 사용 여부를 정한다
 
@@ -245,6 +246,11 @@ struct Map::AoIState
 	std::vector<int> freeSlots;
 	std::vector<IGridActor*> scratch;       // 셀 순회용 임시 버퍼(호출당 힙 할당 방지)
 	float radiusOverride = 0.0f;            // 0 이하면 맵 데이터 값
+
+	// 슬롯 하나의 메시지를 조립하는 동안만 쓰는 버퍼. 슬롯마다 지역 변수로 두면
+	// 매 틱 '접속자 수' 만큼 힙 할당이 생긴다(조립이 끝나면 곧바로 버려지는데도).
+	// 한 슬롯을 다 조립한 뒤에야 다음 슬롯으로 넘어가므로 하나면 충분하다.
+	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> infoScratch;
 
 	int AcquireSlot(long playerId)
 	{
@@ -499,8 +505,11 @@ void Map::SendPendingViews()
 			continue;
 		}
 
-		auto builder = std::make_shared<send_message>();
-		std::vector<flatbuffers::Offset<syncnet::ActorInfo>> actors;
+		auto builder = SendMessagePool::Acquire();
+
+		// 용량은 남겨 두고 내용만 비운다. reserve 는 이미 충분하면 아무것도 하지 않는다.
+		std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& actors = aoi_->infoScratch;
+		actors.clear();
 		actors.reserve(view.enters.size() + view.updates.size());
 
 		for (Actor* actor : view.enters)
@@ -1034,7 +1043,7 @@ int Map::ProfileDetectEnemyAll()
 // 실제 전송은 하지 않고, 만든 오프셋과 빌더는 그대로 버린다.
 int Map::ProfileSerializeAll()
 {
-	auto builder = std::make_shared<send_message>();
+	auto builder = SendMessagePool::Acquire();
 	int count = 0;
 	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
 	{
@@ -1099,7 +1108,7 @@ void Map::SendBroadcastState()
 
 	SendBroadcast(sendMessageBuilder_);
 
-	sendMessageBuilder_ = std::make_shared<send_message>();
+	sendMessageBuilder_ = SendMessagePool::Acquire();
 	actorPendingUpdates_.clear();
 }
 
@@ -1109,7 +1118,7 @@ void Map::SendDebugRaycasts()
 	if (raycasts_.empty())
 		return;
 
-	auto builder = std::make_shared<send_message>();
+	auto builder = SendMessagePool::Acquire();
 	std::vector<flatbuffers::Offset<syncnet::DebugRaycast>> debugs;
 	debugs.reserve(raycasts_.size());
 	for (size_t i = 0; i < raycasts_.size(); ++i)
@@ -1327,7 +1336,7 @@ void Map::SendStateTo(std::shared_ptr<Player> player)
 	if (!AoIEnabled())
 	{
 		// 브로드캐스트 모드: 맵의 모든 액터 상태를 그대로 보낸다.
-		auto builder_ptr = std::make_shared<send_message>();
+		auto builder_ptr = SendMessagePool::Acquire();
 		std::vector<flatbuffers::Offset<syncnet::ActorInfo>> agents;
 		GetAgentsInfo(builder_ptr, agents);
 		auto updateActorNotify = syncnet::CreateUpdateActorNotifyDirect(*builder_ptr, &agents, nullptr, nullptr);

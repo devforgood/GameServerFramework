@@ -8,6 +8,7 @@
 #include "Player.h"
 #include "Character.h"
 #include "SendMessage.h"
+#include "SendMessagePool.h"
 #include "Map.h"
 #include "PlayerRepository.h"
 #include "PlayerDbDispatcher.h"
@@ -563,7 +564,7 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 		return;
 	}
 
-	auto builder_ptr = std::make_shared<send_message>();
+	auto builder_ptr = SendMessagePool::Acquire();
 	auto send_msg = syncnet::CreateGameMessage(
 		*builder_ptr,
 		syncnet::GameMessages::GameMessages_UseSkill,
@@ -1047,7 +1048,7 @@ void PlayerController::handle(const syncnet::PartyQuestShareReply* msg)
 }
 void PlayerController::SendDialogNode(const gamedata::Dialog* node, int npc_id, syncnet::StatusCode status)
 {
-	auto builder_ptr = std::make_shared<send_message>();
+	auto builder_ptr = SendMessagePool::Acquire();
 
 	std::vector<flatbuffers::Offset<syncnet::DialogChoiceInfo>> choices;
 	flatbuffers::Offset<flatbuffers::String> text_offset = 0;

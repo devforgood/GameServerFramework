@@ -377,8 +377,55 @@ std::vector<IGridActor*> GridManager::getEntitiesInAoEMask(float x, float y, flo
     alignas(32) float x_coords[MAX_BATCH_SIZE];    // x 좌표 배열 (32바이트 정렬)
     alignas(32) float y_coords[MAX_BATCH_SIZE];    // y 좌표 배열 (32바이트 정렬)
     alignas(32) float distances_sq[MAX_BATCH_SIZE]; // 거리 제곱 배열 (32바이트 정렬)
-    std::vector<IGridActor*> batch_actors;              // 배치 처리할 엔티티들의 임시 저장소
-    batch_actors.reserve(MAX_BATCH_SIZE);
+
+    // 한 목록을 배치 단위로 훑어 범위 안의 엔티티를 result 에 담는다.
+    //
+    // 예전에는 셀마다 characters/monsters 를 벡터 하나로 합친 뒤 훑었는데, 그
+    // "합치는" 일 자체가 호출당 힙 할당 하나(256칸 예약)와 포인터 복사였다.
+    // 배치 경계가 달라질 뿐 결과는 같으므로 두 목록을 각각 넘긴다.
+    auto collect = [&](const std::vector<IGridActor*>& list) {
+        for (size_t batch_start = 0; batch_start < list.size(); batch_start += MAX_BATCH_SIZE) {
+            const size_t batch_size = std::min(MAX_BATCH_SIZE, list.size() - batch_start);
+
+            // 현재 배치의 좌표들을 배열에 수집
+            for (size_t i = 0; i < batch_size; ++i) {
+                IGridActor* e = list[batch_start + i];
+                x_coords[i] = e->GetVector2X();
+                y_coords[i] = e->GetVector2Y();
+            }
+
+            // SIMD를 사용하여 거리 계산
+            calculateDistancesSIMD(x_coords, y_coords, x, y, distances_sq, batch_size);
+
+            // 각 엔티티에 대한 결과 처리
+            for (size_t i = 0; i < batch_size; ++i) {
+                if (distances_sq[i] > rangeSq)  // 범위 밖
+                    continue;
+
+                IGridActor* e = list[batch_start + i];
+                if (isFullCircle) {  // 완전한 원형인 경우
+                    result.push_back(e);
+                    continue;
+                }
+
+                // 부채꼴인 경우: 엔티티의 각도 계산 (표준 수학 좌표계 사용)
+                // 표준 수학 좌표계: atan2(y, x) 사용 (0도는 동쪽, 90도는 북쪽)
+                float entityAngle = std::atan2(y_coords[i] - y, x_coords[i] - x);
+                if (entityAngle < 0) entityAngle += TWO_PI;  // 0-2π 범위로 정규화
+
+                // 각도 차이 계산 및 보정
+                float angleDiff = std::abs(entityAngle - dirRad);
+                if (angleDiff > PI) {
+                    angleDiff = TWO_PI - angleDiff;
+                }
+
+                // 부채꼴 범위 내에 있는지 확인
+                if (angleDiff <= halfAngleRad + EPSILON) {
+                    result.push_back(e);
+                }
+            }
+        }
+    };
 
     // 주변 셀들을 순회
     for (int dx = -cells; dx <= cells; ++dx) {
@@ -390,53 +437,8 @@ std::vector<IGridActor*> GridManager::getEntitiesInAoEMask(float x, float y, flo
 
             auto& cell = grid_->get(nx, ny);
 
-            // 현재 셀의 모든 엔티티를 배치 처리 목록에 추가
-            batch_actors.clear();
-            batch_actors.insert(batch_actors.end(), cell.characters.begin(), cell.characters.end());
-            batch_actors.insert(batch_actors.end(), cell.monsters.begin(), cell.monsters.end());
-
-            // 배치 단위로 SIMD 처리 수행
-            for (size_t batch_start = 0; batch_start < batch_actors.size(); batch_start += MAX_BATCH_SIZE) {
-                size_t batch_size = std::min(MAX_BATCH_SIZE, batch_actors.size() - batch_start);
-
-                // 현재 배치의 좌표들을 배열에 수집
-                for (size_t i = 0; i < batch_size; ++i) {
-                    IGridActor* e = batch_actors[batch_start + i];
-                    x_coords[i] = e->GetVector2X();
-                    y_coords[i] = e->GetVector2Y();
-                }
-
-                // SIMD를 사용하여 거리 계산
-                calculateDistancesSIMD(x_coords, y_coords, x, y, distances_sq, batch_size);
-
-                // 각 엔티티에 대한 결과 처리
-                for (size_t i = 0; i < batch_size; ++i) {
-                    if (distances_sq[i] <= rangeSq) {  // 거리가 범위 내에 있는 경우
-                        IGridActor* e = batch_actors[batch_start + i];
-                        if (isFullCircle) {  // 완전한 원형인 경우
-                            result.push_back(e);
-                        } else {  // 부채꼴인 경우
-                            // 엔티티의 각도 계산 (표준 수학 좌표계 사용)
-                            float dx = x_coords[i] - x;
-                            float dy = y_coords[i] - y;
-                            // 표준 수학 좌표계: atan2(y, x) 사용 (0도는 동쪽, 90도는 북쪽)
-                            float entityAngle = std::atan2(dy, dx);
-                            if (entityAngle < 0) entityAngle += TWO_PI;  // 0-2π 범위로 정규화
-                            
-                            // 각도 차이 계산 및 보정
-                            float angleDiff = std::abs(entityAngle - dirRad);
-                            if (angleDiff > PI) {
-                                angleDiff = TWO_PI - angleDiff;
-                            }
-                            
-                            // 부채꼴 범위 내에 있는지 확인
-                            if (angleDiff <= halfAngleRad + EPSILON) {
-                                result.push_back(e);
-                            }
-                        }
-                    }
-                }
-            }
+            collect(cell.characters);
+            collect(cell.monsters);
         }
     }
     return result;

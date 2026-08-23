@@ -536,6 +536,9 @@
     <ClInclude Include="Message\SendMessage.h">
       <Filter>Message</Filter>
     </ClInclude>
+    <ClInclude Include="Message\SendMessagePool.h">
+      <Filter>Message</Filter>
+    </ClInclude>
     <ClInclude Include="Server.h" />
     <ClInclude Include="skill\Skill.h">
       <Filter>skill</Filter>

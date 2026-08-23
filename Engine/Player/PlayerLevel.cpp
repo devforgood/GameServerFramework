@@ -103,10 +103,11 @@ void PlayerLevel::Save(std::any data)
 {
     auto* save_data = std::any_cast<PlayerSaveData*>(data);
 
-    VOPlayer vo;
+    // 유지 중인 버퍼에 직접 채운다. 임시 VO 를 만들어 move 로 넣으면 name 문자열이
+    // 매 저장마다 새 버퍼로 바뀌어, 저장 버퍼를 돌려쓰는 의미가 없어진다.
+    VOPlayer& vo = save_data->player.emplace();
     vo.id = characterId_;
-    vo.name = name_;
+    vo.name = name_;   // 남아 있는 버퍼에 복사 대입 - 용량이 충분하면 재할당 없음
     vo.level = level_;
     vo.exp = exp_;
-    save_data->player = std::move(vo);
 }

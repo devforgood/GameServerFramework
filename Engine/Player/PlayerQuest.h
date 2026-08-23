@@ -161,7 +161,7 @@ private:
 	void setCompleted(int quest_id);
 	void clearCompleted(int quest_id);
 	void resetActiveRow(VOQuestActive& vo);
-	VOQuestState buildStateVO() const;
+	void fillStateVO(VOQuestState& vo) const;
 
 	static int readProgress(const VOQuestActive& vo, int slot);
 	static void writeProgress(VOQuestActive& vo, int slot, int value);

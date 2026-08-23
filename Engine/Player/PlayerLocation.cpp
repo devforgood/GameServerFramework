@@ -21,8 +21,9 @@ void PlayerLocation::Save(std::any data)
 {
 	auto* save_data = std::any_cast<PlayerSaveData*>(data);
 
-	if (auto record = row_.Flush(buildVO()))
-		save_data->location = std::move(*record);
+	if (row_.HasPendingChanges())
+		row_.Flush(save_data->location.emplace(),
+			[this](VOPlayerLocation& vo) { fillVO(vo); });
 }
 
 void PlayerLocation::Remember(int mapId, float x, float y, float z)
@@ -51,13 +52,11 @@ bool PlayerLocation::TryGet(int& outMapId, float& outX, float& outY, float& outZ
 	return true;
 }
 
-VOPlayerLocation PlayerLocation::buildVO() const
+void PlayerLocation::fillVO(VOPlayerLocation& vo) const
 {
-	VOPlayerLocation vo{};
 	vo.character_id = characterId_;
 	vo.map_id = mapId_;
 	vo.x = x_;
 	vo.y = y_;
 	vo.z = z_;
-	return vo;
 }

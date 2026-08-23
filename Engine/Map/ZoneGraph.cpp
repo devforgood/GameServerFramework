@@ -2,8 +2,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <limits>
+#include <memory_resource>
 #include <queue>
+#include <span>
 
 #include "GameData/ResourceLoader.h"
 #include "LogHelper.h"
@@ -14,6 +17,17 @@ namespace
 	constexpr float kPortalCost = 0.0f;
 
 	constexpr float kInfinity = std::numeric_limits<float>::infinity();
+
+	// FindRoute/AreConnected 가 쓰는 스크래치 메모리 크기(스택).
+	//
+	// 정점 하나에 16바이트(dist/prev/viaGate/edgeCost)를 쓰고, 우선순위 큐가 간선 수만큼
+	// 8바이트 항목을 담는다(monotonic 은 재사용하지 않으므로 큐가 커지며 버린 블록도
+	// 그대로 쌓인다 - 대략 두 배로 잡는다). 실제 데이터는 정점 7 / 간선 10 규모라
+	// 1KB 도 쓰지 않으며, 4KB 면 정점 100 개까지 스택 안에서 끝난다.
+	//
+	// 모자라도 monotonic_buffer_resource 가 기본 리소스(힙)에서 더 받아 온다. 즉 크기를
+	// 잘못 잡으면 느려질 뿐 깨지지 않는다.
+	constexpr std::size_t kScratchBytes = 4 * 1024;
 
 	template<typename TPosition>
 	syncnet::Vec3 ToVec3(const TPosition& p)
@@ -311,8 +325,17 @@ ZoneGraph::Route ZoneGraph::FindRoute(int fromMapId, const syncnet::Vec3& fromPo
 	const int goal = nodeCount + 1;     // 목적지 위치를 나타내는 임시 정점.
 	const int total = nodeCount + 2;
 
+	// 아래 컨테이너들은 전부 이 함수 안에서 태어나 이 함수 안에서 죽는다. 종류가
+	// 제각각이고(float/int/Edge/pair) 크기가 정점 수에 따라 변해서, 스크래치 멤버로는
+	// 대체할 수 없다 — 멤버로 올리면 FindRoute 가 재진입 불가능해진다.
+	//
+	// 이런 모양이 std::pmr 이 이기는 자리다. 스택 버퍼 하나에 전부 밀어 넣고, 함수가
+	// 끝나면 통째로 버린다(개별 해제 없음). 예전에는 호출마다 힙 할당이 7번이었다.
+	alignas(std::max_align_t) std::byte scratchBuffer[kScratchBytes];
+	std::pmr::monotonic_buffer_resource scratch(scratchBuffer, sizeof(scratchBuffer));
+
 	// 임시 정점의 간선. 출발 위치는 자기 맵의 모든 마커로, 목적지 맵의 모든 마커는 목적지로 잇는다.
-	std::vector<Edge> startEdges;
+	std::pmr::vector<Edge> startEdges(&scratch);
 	auto fromList = nodesByMap_.find(fromMapId);
 	if (fromList != nodesByMap_.end())
 	{
@@ -323,13 +346,14 @@ ZoneGraph::Route ZoneGraph::FindRoute(int fromMapId, const syncnet::Vec3& fromPo
 	if (fromMapId == toMapId)
 		startEdges.push_back(Edge{ goal, MeasureWalk(fromMapId, fromPos, toPos), 0 });
 
-	std::vector<float> dist(total, kInfinity);
-	std::vector<int> prev(total, -1);
-	std::vector<int> viaGate(total, 0);
-	std::vector<float> edgeCost(total, 0.0f);
+	std::pmr::vector<float> dist(total, kInfinity, &scratch);
+	std::pmr::vector<int> prev(total, -1, &scratch);
+	std::pmr::vector<int> viaGate(total, 0, &scratch);
+	std::pmr::vector<float> edgeCost(total, 0.0f, &scratch);
 
 	using Entry = std::pair<float, int>;
-	std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> queue;
+	std::priority_queue<Entry, std::pmr::vector<Entry>, std::greater<Entry>> queue(
+		std::greater<Entry>{}, std::pmr::vector<Entry>(&scratch));
 	dist[start] = 0.0f;
 	queue.push({ 0.0f, start });
 
@@ -343,7 +367,10 @@ ZoneGraph::Route ZoneGraph::FindRoute(int fromMapId, const syncnet::Vec3& fromPo
 			break;
 
 		// u 에서 나가는 간선. 임시 출발 정점만 별도 목록을 쓴다.
-		const std::vector<Edge>& edges = (u == start) ? startEdges : adjacency_[u];
+		// (startEdges 는 스크래치 할당자를 쓰므로 adjacency_ 와 타입이 다르다 — span 으로 받는다)
+		const std::span<const Edge> edges = (u == start)
+			? std::span<const Edge>(startEdges)
+			: std::span<const Edge>(adjacency_[u]);
 		for (const Edge& edge : edges)
 		{
 			if (edge.gateId != 0)
@@ -386,7 +413,7 @@ ZoneGraph::Route ZoneGraph::FindRoute(int fromMapId, const syncnet::Vec3& fromPo
 		return route;   // found = false.
 
 	// ── 경로 복원 ──
-	std::vector<int> sequence;
+	std::pmr::vector<int> sequence(&scratch);
 	for (int at = goal; at != -1; at = prev[at])
 		sequence.push_back(at);
 	std::reverse(sequence.begin(), sequence.end());
@@ -435,8 +462,12 @@ bool ZoneGraph::AreConnected(int fromMapId, int toMapId, int level) const
 		return false;
 
 	// 포탈 간선만 따라가는 너비 우선 탐색(도보 비용은 보지 않는다).
-	std::vector<bool> visited(nodes_.size(), false);
-	std::vector<int> frontier = fromList->second;
+	// FindRoute 와 같은 이유로 스크래치에 담는다 — 둘 다 이 함수 안에서만 산다.
+	alignas(std::max_align_t) std::byte scratchBuffer[kScratchBytes];
+	std::pmr::monotonic_buffer_resource scratch(scratchBuffer, sizeof(scratchBuffer));
+
+	std::pmr::vector<bool> visited(nodes_.size(), false, &scratch);
+	std::pmr::vector<int> frontier(fromList->second.begin(), fromList->second.end(), &scratch);
 	for (int index : frontier)
 		visited[index] = true;
 

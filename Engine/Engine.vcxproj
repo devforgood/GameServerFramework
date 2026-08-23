@@ -335,6 +335,7 @@
     <ClInclude Include="Quest\QuestPolicy.h" />
     <ClInclude Include="Quest\SubQuest.h" />
     <ClInclude Include="Message\SendMessage.h" />
+    <ClInclude Include="Message\SendMessagePool.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="skill\Skill.h" />
     <ClInclude Include="skill\SkillFactory.h" />

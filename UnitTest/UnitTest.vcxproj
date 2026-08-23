@@ -141,6 +141,7 @@
     <ClCompile Include="ServerManagerTest.cpp" />
     <ClCompile Include="PlayerRepositoryTest.cpp" />
     <ClCompile Include="PlayerSaveBufferPoolTest.cpp" />
+    <ClCompile Include="SendMessagePoolTest.cpp" />
     <ClCompile Include="ResourceTest.cpp" />
     <ClCompile Include="GameModeInstanceTest.cpp" />
     <ClCompile Include="ZoneGraphTest.cpp" />

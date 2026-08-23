@@ -28,7 +28,7 @@ public:
 	bool HasSavedLocation() const { return mapId_ != 0; }
 
 private:
-	VOPlayerLocation buildVO() const;
+	void fillVO(VOPlayerLocation& vo) const;
 
 	DbRowTracker<VOPlayerLocation> row_;
 	long long characterId_ = 0;

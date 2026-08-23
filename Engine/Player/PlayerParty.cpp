@@ -6,6 +6,7 @@
 #include "PlayerSender.h"
 #include "QuestRegistry.h"
 #include "SendMessage.h"
+#include "SendMessagePool.h"
 #include "gamedata.h"
 #include "syncnet_generated.h"
 
@@ -144,7 +145,7 @@ void PlayerParty::sendSync()
 	PartyInvite invite;
 	if (TakeInviteNotify(invite))
 	{
-		auto builder_ptr = std::make_shared<send_message>();
+		auto builder_ptr = SendMessagePool::Acquire();
 		auto name_offset = builder_ptr->CreateString(resolveName(invite.inviter_id));
 		auto payload = syncnet::CreatePartyInvite(
 			*builder_ptr,
@@ -167,7 +168,7 @@ void PlayerParty::sendSync()
 	QuestShareOffer offer;
 	if (TakeShareNotify(offer))
 	{
-		auto builder_ptr = std::make_shared<send_message>();
+		auto builder_ptr = SendMessagePool::Acquire();
 		auto name_offset = builder_ptr->CreateString(resolveName(offer.from_player_id));
 		auto payload = syncnet::CreatePartyQuestShare(
 			*builder_ptr,
@@ -194,7 +195,7 @@ void PlayerParty::sendSync()
 	// 전달되므로, 클라는 사유별 메시지를 따로 다루지 않고 이것만 보면 된다.
 	const Party* roster = GetParty();
 
-	auto builder_ptr = std::make_shared<send_message>();
+	auto builder_ptr = SendMessagePool::Acquire();
 	std::vector<flatbuffers::Offset<syncnet::PartyMemberInfo>> members;
 
 	if (roster != nullptr)

@@ -17,8 +17,9 @@ void PlayerWallet::Save(std::any data)
 {
 	auto* save_data = std::any_cast<PlayerSaveData*>(data);
 
-	if (auto record = row_.Flush(buildVO()))
-		save_data->wallet = std::move(*record);
+	if (row_.HasPendingChanges())
+		row_.Flush(save_data->wallet.emplace(),
+			[this](VOPlayerWallet& vo) { fillVO(vo); });
 }
 
 long long PlayerWallet::AddGold(long long amount)
@@ -43,10 +44,8 @@ bool PlayerWallet::SpendGold(long long amount)
 	return true;
 }
 
-VOPlayerWallet PlayerWallet::buildVO() const
+void PlayerWallet::fillVO(VOPlayerWallet& vo) const
 {
-	VOPlayerWallet vo{};
 	vo.character_id = characterId_;
 	vo.gold = gold_;
-	return vo;
 }

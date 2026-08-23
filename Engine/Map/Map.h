@@ -193,7 +193,16 @@ public:
 	bool IsInstance() const { return instanceId_ != 0; }
 
 	size_t GetPlayerCount() const { return players_.size(); }
+
+	// 순회 도중 맵의 플레이어 목록이 바뀔 수 있을 때 쓴다(ChangeMap 처럼 Enter/leave 를
+	// 부르는 순회). 복사본이라 안전한 대신 호출마다 벡터 할당 + 인원수만큼의 참조 수
+	// 증감이 붙는다 — 그럴 필요가 없으면 GetPlayerMap() 을 쓴다.
 	std::vector<std::shared_ptr<Player>> GetPlayers() const;
+
+	// 읽기 전용 순회용. 할당도 참조 수 증감도 없다.
+	// 순회 중에 플레이어가 맵에 들어오거나 나가면 반복자가 깨지므로, 목록을 바꿀 수
+	// 있는 일(맵 이동, 이벤트 발행 등)을 하는 순회는 GetPlayers() 를 써야 한다.
+	const std::unordered_map<long, std::shared_ptr<Player>>& GetPlayerMap() const { return players_; }
 
 	// boss_spawn 마커에 보스를 스폰한다. 액터 id 를 반환하며 실패 시 -1.
 	// 스폰한 보스는 UpdateGameMode 가 사망을 감시한다.

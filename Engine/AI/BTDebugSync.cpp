@@ -1,6 +1,7 @@
 #include "BTDebugSync.h"
 #include "BTDebugManager.h"
 #include "SendMessage.h"
+#include "SendMessagePool.h"
 #include "syncnet_generated.h"
 
 #if defined(ENABLE_BT_DEBUG)
@@ -47,7 +48,7 @@ std::shared_ptr<send_message> BTDebugSync::BuildMessage()
 	if (snapshot.empty())
 		return nullptr;
 
-	auto builder_ptr = std::make_shared<send_message>();
+	auto builder_ptr = SendMessagePool::Acquire();
 	std::vector<flatbuffers::Offset<syncnet::TreeDebugDefinition>> definition_vector;
 	definition_vector.reserve(snapshot.definitions.size());
 	for (const auto& definition : snapshot.definitions)

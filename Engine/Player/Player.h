@@ -7,6 +7,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include "syncnet_generated.h"
 #include "SendMessage.h"
+#include "SendMessagePool.h"
 #include "GameObject.h"
 #include "PlayerSaveBufferPool.h"
 
@@ -123,7 +124,7 @@ public:
 		syncnet::StatusCode result,
 		Args&&... args)
 	{
-		auto builder_ptr = std::make_shared<send_message>();
+		auto builder_ptr = SendMessagePool::Acquire();
 		auto msgOffset = createFunc(*builder_ptr, std::forward<Args>(args)...);
 		auto send_msg = syncnet::CreateGameMessage(
 			*builder_ptr,
