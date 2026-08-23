@@ -8,6 +8,7 @@
 #include "syncnet_generated.h"
 #include "SendMessage.h"
 #include "GameObject.h"
+#include "PlayerSaveBufferPool.h"
 
 class GameSession;
 class GameServer;
@@ -32,6 +33,9 @@ private:
 	GameServer* server_;
 
 	float playerLazySaveAcc_;
+
+	// 저장 버퍼는 매번 할당하지 않고 여기서 돌려쓴다.
+	PlayerSaveBufferPool saveBuffers_;
 
 	// 게이트 이동 쿨타임: 마지막으로 게이트 이동에 성공한 시각(ms, epoch). 0 = 이동 이력 없음.
 	// Character 는 맵 이동 때마다 재생성되므로, 이동에도 유지되는 Player 에 보관한다.

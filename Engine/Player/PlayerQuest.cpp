@@ -950,11 +950,11 @@ void PlayerQuest::Save(std::any data)
 
 	// 변경된 진행 퀘스트만 INSERT/UPDATE/DELETE 레코드로
 	if (activeQuests_.HasPendingChanges())
-		save_data->quest_actives = activeQuests_.Flush();
+		activeQuests_.Flush(save_data->quest_actives.emplace());
 
 	// 완료 플래그가 변경되었거나 신규 행이면 quest_state 레코드 생성
 	if (auto record = questState_.Flush(buildStateVO()))
-		save_data->quest_state = std::move(record);
+		save_data->quest_state = std::move(*record);
 }
 
 void PlayerQuest::setCompleted(int quest_id)

@@ -18,7 +18,7 @@ void PlayerWallet::Save(std::any data)
 	auto* save_data = std::any_cast<PlayerSaveData*>(data);
 
 	if (auto record = row_.Flush(buildVO()))
-		save_data->wallet = std::move(record);
+		save_data->wallet = std::move(*record);
 }
 
 long long PlayerWallet::AddGold(long long amount)

@@ -19,7 +19,7 @@ void PlayerSkill::Save(std::any data)
 	auto* save_data = std::any_cast<PlayerSaveData*>(data);
 
 	if (skills_.HasPendingChanges())
-		save_data->skills = skills_.Flush();
+		skills_.Flush(save_data->skills.emplace());
 }
 
 bool PlayerSkill::LearnSkill(int skill_id, int level)

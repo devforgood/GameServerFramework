@@ -307,6 +307,7 @@
     <ClInclude Include="Player\PlayerRepository.h" />
     <ClInclude Include="Player\PlayerItem.h" />
     <ClInclude Include="Player\PlayerLoadData.h" />
+    <ClInclude Include="Player\PlayerSaveBufferPool.h" />
     <ClInclude Include="Dialog\Dialog.h" />
     <ClInclude Include="Dialog\DialogFactory.h" />
     <ClInclude Include="Dialog\DialogAction.h" />

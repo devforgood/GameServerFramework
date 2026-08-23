@@ -476,6 +476,9 @@
     <ClInclude Include="Player\PlayerLoadData.h">
       <Filter>Player</Filter>
     </ClInclude>
+    <ClInclude Include="Player\PlayerSaveBufferPool.h">
+      <Filter>Player</Filter>
+    </ClInclude>
     <ClInclude Include="Player\PlayerQuest.h">
       <Filter>Player</Filter>
     </ClInclude>

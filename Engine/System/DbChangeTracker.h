@@ -103,24 +103,34 @@ public:
 
     // 변경분을 DbRecord 목록으로 만들고 추적 상태를 초기화한다.
     // (New/Modified -> Persisted 로 승격, 삭제 대기열 비움)
-    std::vector<DbRecord<TVO>> Flush()
+    //
+    // out 은 비우고 채우지만 이미 확보된 용량은 그대로 쓴다. 저장 버퍼를
+    // 돌려쓰는 쪽(PlayerSaveBufferPool)이 매 저장마다 벡터를 새로 할당하지
+    // 않도록 하기 위한 오버로드다.
+    void Flush(std::vector<DbRecord<TVO>>& out)
     {
-        std::vector<DbRecord<TVO>> records;
-        records.reserve(rows_.size() + deleted_.size());
+        out.clear();
+        out.reserve(rows_.size() + deleted_.size());
 
         for (auto& [key, entry] : rows_)
         {
             if (entry.state == RowState::New)
-                records.push_back({ entry.vo, DbAction::Insert });
+                out.push_back({ entry.vo, DbAction::Insert });
             else if (entry.state == RowState::Modified)
-                records.push_back({ entry.vo, DbAction::Update });
+                out.push_back({ entry.vo, DbAction::Update });
             entry.state = RowState::Persisted;
         }
 
         for (auto& vo : deleted_)
-            records.push_back({ std::move(vo), DbAction::Remove });
+            out.push_back({ std::move(vo), DbAction::Remove });
         deleted_.clear();
+    }
 
+    // 새 벡터를 돌려주는 편의 오버로드(테스트/일회성 경로).
+    std::vector<DbRecord<TVO>> Flush()
+    {
+        std::vector<DbRecord<TVO>> records;
+        Flush(records);
         return records;
     }
 

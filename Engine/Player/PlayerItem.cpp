@@ -25,7 +25,7 @@ void PlayerItem::Save(std::any data)
 	auto* save_data = std::any_cast<PlayerSaveData*>(data);
 
 	if (items_.HasPendingChanges())
-		save_data->items = items_.Flush();
+		items_.Flush(save_data->items.emplace());
 }
 
 int PlayerItem::AddItem(int item_id, int count)

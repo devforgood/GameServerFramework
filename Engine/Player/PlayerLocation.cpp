@@ -22,7 +22,7 @@ void PlayerLocation::Save(std::any data)
 	auto* save_data = std::any_cast<PlayerSaveData*>(data);
 
 	if (auto record = row_.Flush(buildVO()))
-		save_data->location = std::move(record);
+		save_data->location = std::move(*record);
 }
 
 void PlayerLocation::Remember(int mapId, float x, float y, float z)

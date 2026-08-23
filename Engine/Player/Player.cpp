@@ -241,11 +241,19 @@ void Player::SavePlayerData()
 		}
 	}
 
-	// 각 컴포넌트에서 플레이어 데이터를 수집
-	auto save_data = std::make_shared<PlayerSaveData>();
+	// 저장 버퍼는 새로 할당하지 않고 플레이어마다 가진 풀에서 빌려 쓴다.
+	// 셋 다 DB 에 물려 있으면 이번 주기는 건너뛴다 — 담을 곳이 없는데 Save()
+	// 를 부르면 컴포넌트가 dirty 를 지우면서 변경분을 흘려버린다.
+	auto save_data = saveBuffers_.Acquire();
+	if (save_data == nullptr)
+	{
+		LOG.warn("Player {} 저장 버퍼가 모두 사용 중이라 이번 저장을 건너뜁니다", playerId_);
+		return;
+	}
 
+	// 각 컴포넌트에서 플레이어 데이터를 수집
 	Save(save_data.get());
 
 	// 변경된 데이터만 비동기로 전달
-	PlayerRepository::AsyncSave(shared_from_this(), save_data);
+	PlayerRepository::AsyncSave(shared_from_this(), std::move(save_data));
 }
