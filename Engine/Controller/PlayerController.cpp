@@ -1055,10 +1055,19 @@ void PlayerController::SendDialogNode(const gamedata::Dialog* node, int npc_id, 
 
 	if (node != nullptr)
 	{
+		// node 는 언제나 지금 열려 있는 노드다(호출부 전부가 그렇게 부른다). 무엇을
+		// 내보낼지는 그 노드로 옮겨 올 때 이미 정해져 있으므로 여기서는 읽기만 한다 —
+		// 여기서 다시 판정하면 클라가 본 목록과 서버가 번호를 되짚는 목록이 갈릴 수 있다.
+		auto* dialog = player_ != nullptr ? player_->GetComponent<PlayerDialog>() : nullptr;
+
 		text_offset = builder_ptr->CreateString(node->text_id);
 		choices.reserve(node->choices.size());
-		for (const auto& choice : node->choices)
+		for (int i = 0; i < static_cast<int>(node->choices.size()); ++i)
 		{
+			if (dialog != nullptr && !dialog->IsChoiceVisible(i))
+				continue;
+
+			const auto& choice = node->choices[i];
 			choices.push_back(syncnet::CreateDialogChoiceInfo(
 				*builder_ptr,
 				builder_ptr->CreateString(choice.text_id),

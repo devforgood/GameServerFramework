@@ -555,6 +555,55 @@ DIALOG_ACTIONS = {
     'complete_quest': 'Quest',
 }
 
+# dialog.json 의 choices[].show_if.state. C++ 의 ParseDialogCondition 과 짝을 이룬다.
+# 오타는 파싱에서 "조건 없음"이 되어 선택지가 늘 보이게 되는데, 데이터만 봐서는
+# 조건을 적었으니 걸러진다고 믿게 된다 — 그래서 여기서 막는다.
+DIALOG_CONDITION_STATES = {
+    'acceptable',
+    'in_progress',
+    'ready_to_complete',
+    'completed',
+    'not_completed',
+    'failed',
+}
+
+# PlayerDialog 가 "무엇을 내보냈는가"를 비트 하나로 들고 있어 노드당 선택지가 여기를
+# 넘으면 넘친 선택지는 영영 보이지 않는다.
+MAX_DIALOG_CHOICES = 32
+
+
+def _validate_dialog_condition(clabel, choice, quest_ids, errors):
+    """선택지에 걸린 show_if 를 본다. 조건이 없으면 아무것도 하지 않는다.
+
+    반환값은 "조건 없는 선택지인가" — 노드마다 하나는 있어야 하기 때문이다.
+    """
+    show_if = choice.get('show_if')
+    if show_if is None:
+        return True
+
+    if not isinstance(show_if, dict):
+        errors.append(f"{clabel} — show_if 는 객체여야 합니다")
+        return False
+
+    quest_id = show_if.get('quest_id', 0)
+    state = show_if.get('state')
+
+    # quest_id 0 은 코드에서 "조건 없음"으로 읽힌다. 조건을 적어 놓고 빠뜨린 쪽이
+    # 훨씬 흔하므로 실수로 본다.
+    if not isinstance(quest_id, int) or isinstance(quest_id, bool) or quest_id <= 0:
+        errors.append(
+            f"{clabel} — show_if.quest_id 는 1 이상의 퀘스트 id 여야 합니다 "
+            f"(현재: {quest_id!r})")
+    elif quest_ids is not None and quest_id not in quest_ids:
+        errors.append(f"{clabel} — show_if.quest_id {quest_id} 가 Quest 테이블에 없습니다")
+
+    if state not in DIALOG_CONDITION_STATES:
+        errors.append(
+            f"{clabel} — 알 수 없는 show_if.state {state!r}. "
+            f"지원: {sorted(DIALOG_CONDITION_STATES)}")
+
+    return False
+
 
 def _validate_dialogs(table_name, entries, tables):
     """대화 노드가 서로 이어져 있고, 각 선택지가 실제로 무언가를 하는지 본다.
@@ -589,6 +638,14 @@ def _validate_dialogs(table_name, entries, tables):
                 f"선택지가 없으면 플레이어가 대화를 닫을 방법이 없습니다")
             continue
 
+        if len(choices) > MAX_DIALOG_CHOICES:
+            errors.append(
+                f"{label} — 선택지가 {len(choices)}개입니다. "
+                f"서버가 무엇을 내보냈는지 비트 하나로 들고 있어 "
+                f"{MAX_DIALOG_CHOICES}개까지만 보낼 수 있습니다")
+
+        has_unconditional = False
+
         for i, choice in enumerate(choices):
             clabel = f"{label} choices[{i}]"
             if not isinstance(choice, dict):
@@ -597,6 +654,9 @@ def _validate_dialogs(table_name, entries, tables):
 
             if not choice.get('text_id'):
                 errors.append(f"{clabel} — text_id 가 비어 있습니다")
+
+            if _validate_dialog_condition(clabel, choice, quest_ids, errors):
+                has_unconditional = True
 
             action = choice.get('action')
             if action not in DIALOG_ACTIONS:
@@ -623,6 +683,13 @@ def _validate_dialogs(table_name, entries, tables):
                 if quest_ids is not None and param not in quest_ids:
                     errors.append(
                         f"{clabel} — {action} 의 param {param!r} 이 Quest 테이블에 없습니다")
+
+        # 조건이 다 어긋나면 남는 선택지가 없어 대화를 닫을 수 없다. 노드는 서버가
+        # 들고 있으므로 그 상태에서는 창을 닫아도 다음 상호작용이 같은 자리로 돌아온다.
+        if not has_unconditional:
+            errors.append(
+                f"{label} — 모든 선택지에 show_if 가 걸려 있습니다. 조건이 전부 어긋나면 "
+                f"플레이어가 대화를 닫을 방법이 없으니 조건 없는 선택지가 하나는 필요합니다")
 
     # 대화가 걸린 NPC 의 시작 노드가 실제로 존재하는지도 함께 본다.
     npcs = tables.get('Npc') if tables else None

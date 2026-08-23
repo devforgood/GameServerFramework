@@ -43,9 +43,9 @@
     "npc_id": 2001,
     "text_id": "dlg_maren_missing_ships",
     "choices": [
-      { "text_id": "dlg_maren_accept_ships", "action": "accept_quest", "param": 11001, "next_id": 0 },
-      { "text_id": "dlg_maren_report_vanished", "action": "complete_quest", "param": 11007, "next_id": 0 },
-      { "text_id": "dlg_maren_accept_mural", "action": "accept_quest", "param": 11008, "next_id": 0 },
+      { "text_id": "dlg_maren_accept_ships", "action": "accept_quest", "param": 11001, "next_id": 0, "show_if": { "quest_id": 11001, "state": "acceptable" } },
+      { "text_id": "dlg_maren_report_vanished", "action": "complete_quest", "param": 11007, "next_id": 0, "show_if": { "quest_id": 11007, "state": "ready_to_complete" } },
+      { "text_id": "dlg_maren_accept_mural", "action": "accept_quest", "param": 11008, "next_id": 0, "show_if": { "quest_id": 11008, "state": "acceptable" } },
       { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3001 }
     ]
   },
@@ -54,9 +54,9 @@
     "npc_id": 2004,
     "text_id": "dlg_rinne_greet",
     "choices": [
-      { "text_id": "dlg_rinne_report_ships", "action": "complete_quest", "param": 11001, "next_id": 0 },
-      { "text_id": "dlg_rinne_ask_shortcut", "action": "goto", "param": 0, "next_id": 3202 },
-      { "text_id": "dlg_rinne_ask_tally", "action": "goto", "param": 0, "next_id": 3203 },
+      { "text_id": "dlg_rinne_report_ships", "action": "complete_quest", "param": 11001, "next_id": 0, "show_if": { "quest_id": 11001, "state": "ready_to_complete" } },
+      { "text_id": "dlg_rinne_ask_shortcut", "action": "goto", "param": 0, "next_id": 3202, "show_if": { "quest_id": 11001, "state": "completed" } },
+      { "text_id": "dlg_rinne_ask_tally", "action": "goto", "param": 0, "next_id": 3203, "show_if": { "quest_id": 11002, "state": "completed" } },
       { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
     ]
   },
@@ -65,8 +65,8 @@
     "npc_id": 2004,
     "text_id": "dlg_rinne_shortcut",
     "choices": [
-      { "text_id": "dlg_rinne_accept_shortcut", "action": "accept_quest", "param": 11002, "next_id": 0 },
-      { "text_id": "dlg_rinne_report_shortcut", "action": "complete_quest", "param": 11002, "next_id": 0 },
+      { "text_id": "dlg_rinne_accept_shortcut", "action": "accept_quest", "param": 11002, "next_id": 0, "show_if": { "quest_id": 11002, "state": "acceptable" } },
+      { "text_id": "dlg_rinne_report_shortcut", "action": "complete_quest", "param": 11002, "next_id": 0, "show_if": { "quest_id": 11002, "state": "ready_to_complete" } },
       { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3201 }
     ]
   },
@@ -75,9 +75,9 @@
     "npc_id": 2004,
     "text_id": "dlg_rinne_tally",
     "choices": [
-      { "text_id": "dlg_rinne_accept_tally", "action": "accept_quest", "param": 11003, "next_id": 0 },
-      { "text_id": "dlg_rinne_report_tally", "action": "complete_quest", "param": 11003, "next_id": 0 },
-      { "text_id": "dlg_rinne_accept_verdant", "action": "accept_quest", "param": 11004, "next_id": 0 },
+      { "text_id": "dlg_rinne_accept_tally", "action": "accept_quest", "param": 11003, "next_id": 0, "show_if": { "quest_id": 11003, "state": "acceptable" } },
+      { "text_id": "dlg_rinne_report_tally", "action": "complete_quest", "param": 11003, "next_id": 0, "show_if": { "quest_id": 11003, "state": "ready_to_complete" } },
+      { "text_id": "dlg_rinne_accept_verdant", "action": "accept_quest", "param": 11004, "next_id": 0, "show_if": { "quest_id": 11004, "state": "acceptable" } },
       { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3201 }
     ]
   },
@@ -86,8 +86,8 @@
     "npc_id": 2005,
     "text_id": "dlg_kyle_greet",
     "choices": [
-      { "text_id": "dlg_kyle_report_orc", "action": "complete_quest", "param": 11004, "next_id": 0 },
-      { "text_id": "dlg_kyle_ask_logbook", "action": "goto", "param": 0, "next_id": 3302 },
+      { "text_id": "dlg_kyle_report_orc", "action": "complete_quest", "param": 11004, "next_id": 0, "show_if": { "quest_id": 11004, "state": "ready_to_complete" } },
+      { "text_id": "dlg_kyle_ask_logbook", "action": "goto", "param": 0, "next_id": 3302, "show_if": { "quest_id": 11004, "state": "completed" } },
       { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
     ]
   },
@@ -96,7 +96,7 @@
     "npc_id": 2005,
     "text_id": "dlg_kyle_logbook",
     "choices": [
-      { "text_id": "dlg_kyle_accept_logbook", "action": "accept_quest", "param": 11005, "next_id": 0 },
+      { "text_id": "dlg_kyle_accept_logbook", "action": "accept_quest", "param": 11005, "next_id": 0, "show_if": { "quest_id": 11005, "state": "acceptable" } },
       { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3301 }
     ]
   },
@@ -105,9 +105,9 @@
     "npc_id": 2006,
     "text_id": "dlg_aisha_greet",
     "choices": [
-      { "text_id": "dlg_aisha_report_logbook", "action": "complete_quest", "param": 11005, "next_id": 0 },
-      { "text_id": "dlg_aisha_report_mural", "action": "complete_quest", "param": 11008, "next_id": 0 },
-      { "text_id": "dlg_aisha_ask_ruins", "action": "goto", "param": 0, "next_id": 3402 },
+      { "text_id": "dlg_aisha_report_logbook", "action": "complete_quest", "param": 11005, "next_id": 0, "show_if": { "quest_id": 11005, "state": "ready_to_complete" } },
+      { "text_id": "dlg_aisha_report_mural", "action": "complete_quest", "param": 11008, "next_id": 0, "show_if": { "quest_id": 11008, "state": "ready_to_complete" } },
+      { "text_id": "dlg_aisha_ask_ruins", "action": "goto", "param": 0, "next_id": 3402, "show_if": { "quest_id": 11005, "state": "completed" } },
       { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
     ]
   },
@@ -116,9 +116,9 @@
     "npc_id": 2006,
     "text_id": "dlg_aisha_ruins",
     "choices": [
-      { "text_id": "dlg_aisha_accept_ruins", "action": "accept_quest", "param": 11006, "next_id": 0 },
-      { "text_id": "dlg_aisha_report_ruins", "action": "complete_quest", "param": 11006, "next_id": 0 },
-      { "text_id": "dlg_aisha_accept_vanished", "action": "accept_quest", "param": 11007, "next_id": 0 },
+      { "text_id": "dlg_aisha_accept_ruins", "action": "accept_quest", "param": 11006, "next_id": 0, "show_if": { "quest_id": 11006, "state": "acceptable" } },
+      { "text_id": "dlg_aisha_report_ruins", "action": "complete_quest", "param": 11006, "next_id": 0, "show_if": { "quest_id": 11006, "state": "ready_to_complete" } },
+      { "text_id": "dlg_aisha_accept_vanished", "action": "accept_quest", "param": 11007, "next_id": 0, "show_if": { "quest_id": 11007, "state": "acceptable" } },
       { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3401 }
     ]
   }

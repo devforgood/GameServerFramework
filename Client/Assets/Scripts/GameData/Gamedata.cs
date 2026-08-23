@@ -191,11 +191,20 @@ namespace Gamedata
 
 
     [Serializable]
+    public class DialogChoiceShowIf
+    {
+        public int quest_id;
+        public string state;
+    }
+
+
+    [Serializable]
     public class DialogChoice
     {
         public string action;
         public int next_id;
         public int param;
+        public DialogChoiceShowIf show_if;
         public string text_id;
     }
 

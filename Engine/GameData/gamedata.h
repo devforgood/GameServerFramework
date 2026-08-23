@@ -22,6 +22,7 @@ namespace gamedata
     struct Quest;
     struct NpcPosition;
     struct Npc;
+    struct DialogChoiceShowIf;
     struct DialogChoice;
     struct Dialog;
     struct GameModeBossInfo;
@@ -223,11 +224,19 @@ namespace gamedata
     };
 
 
+    struct DialogChoiceShowIf
+    {
+        int quest_id = 0;
+        std::string state;
+    };
+
+
     struct DialogChoice
     {
         std::string action;
         int next_id = 0;
         int param = 0;
+        DialogChoiceShowIf show_if;
         std::string text_id;
     };
 
@@ -703,11 +712,19 @@ namespace gamedata
     }
 
 
+    inline void from_json(const nlohmann::json& j, DialogChoiceShowIf& o)
+    {
+        if (j.contains("quest_id") && !j.at("quest_id").is_null()) j.at("quest_id").get_to(o.quest_id);
+        if (j.contains("state") && !j.at("state").is_null()) j.at("state").get_to(o.state);
+    }
+
+
     inline void from_json(const nlohmann::json& j, DialogChoice& o)
     {
         if (j.contains("action") && !j.at("action").is_null()) j.at("action").get_to(o.action);
         if (j.contains("next_id") && !j.at("next_id").is_null()) j.at("next_id").get_to(o.next_id);
         if (j.contains("param") && !j.at("param").is_null()) j.at("param").get_to(o.param);
+        if (j.contains("show_if") && !j.at("show_if").is_null()) j.at("show_if").get_to(o.show_if);
         if (j.contains("text_id") && !j.at("text_id").is_null()) j.at("text_id").get_to(o.text_id);
     }
 

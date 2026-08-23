@@ -1,6 +1,8 @@
 #include "pch.h"
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <filesystem>
+#include "DialogCondition.h"
 #include "GameObject.h"
 #include "PlayerDialog.h"
 #include "PlayerEventBroker.h"
@@ -18,10 +20,17 @@
 // 편이, 데이터만 바꾸고 서버가 조용히 다르게 도는 것보다 낫다.
 //
 // 데이터에서 쓰는 노드(dialog.json):
-//   3001 촌장 인사      → [0] 3002 로, [1] 3003 으로, [2] 닫기
+//   3001 촌장 인사      → [0] 3002 로, [1] 3003 으로, [2] 닫기, [3] 3004 로
 //   3002 고블린 이야기  → [0] 퀘스트 1001 수락, [1] 3001 로 되돌아가기, [2] 닫기
 //   3003 상인 이야기    → [0] 퀘스트 1006 수락, [1] 퀘스트 1006 완료, [2] 3001 로
 //   3101 대장장이       → [0] 닫기
+//
+// 조건(show_if)이 걸린 노드. 조건이 어긋난 선택지는 아예 내보내지 않으므로 클라가
+// 세는 번호와 데이터의 번호가 다르다:
+//   3004 마렌 스토리    → [0] 11001 수락(acceptable), [1] 11007 완료(ready_to_complete),
+//                         [2] 11008 수락(acceptable), [3] 3001 로 되돌아가기(조건 없음)
+//   3201 리네 인사      → [0] 11001 완료(ready_to_complete), [1] 3202 로(11001 completed),
+//                         [2] 3203 으로(11002 completed), [3] 닫기(조건 없음)
 
 namespace
 {
@@ -29,14 +38,24 @@ namespace
 constexpr int kElderNpc = 2001;
 constexpr int kBlacksmithNpc = 2002;
 constexpr int kMerchantNpc = 2003;   // 대화가 없는 NPC(호위 대상)
+constexpr int kRinneNpc = 2004;
 
 constexpr int kElderRoot = 3001;
 constexpr int kGoblinTalk = 3002;
 constexpr int kMerchantTalk = 3003;
 constexpr int kBlacksmithRoot = 3101;
+constexpr int kMarenStory = 3004;
+constexpr int kRinneRoot = 3201;
 
 constexpr int kGoblinHunt = 1001;
 constexpr int kEscortMerchant = 1006;
+
+constexpr int kMissingShips = 11001;   // 1막 1번. min_level 1, 선행 없음
+constexpr int kFourWingedMural = 11008; // 1막 8번. 운영이 내려둔(disabled) 퀘스트
+
+// 3001 에서 마렌의 메인 스토리 노드(3004)로 들어가는 선택지 번호.
+// 3001 에는 조건이 없어 데이터의 번호가 그대로 나간다.
+constexpr int kElderRootToStory = 3;
 
 void EnsureResources()
 {
@@ -262,4 +281,126 @@ TEST_F(PlayerDialogTest, CompleteQuestChoiceRequiresReadyQuest)
 	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, 1));
 	EXPECT_EQ(DialogResult::Closed, player.dialog->Select(kMerchantTalk, 1));
 	EXPECT_TRUE(player.quests->IsCompleted(kEscortMerchant));
+}
+
+// ============================================================
+// 조건부 선택지 (show_if)
+// ============================================================
+
+TEST_F(PlayerDialogTest, ChoiceWithoutConditionIsAlwaysVisible)
+{
+	// 3001 에는 조건이 하나도 없다. 조건을 넣기 전과 똑같이 전부 나가야 한다.
+	TalkingPlayer player;
+	ASSERT_TRUE(player.dialog->Open(kElderNpc));
+
+	const gamedata::Dialog* node = player.dialog->GetCurrentNode();
+	ASSERT_NE(nullptr, node);
+	for (int i = 0; i < static_cast<int>(node->choices.size()); ++i)
+		EXPECT_TRUE(player.dialog->IsChoiceVisible(i)) << "choices[" << i << "]";
+}
+
+TEST_F(PlayerDialogTest, HidesChoicesWhoseConditionIsNotMet)
+{
+	// 아무것도 안 한 플레이어에게 리네는 할 말이 없다. 11001 을 완료 대기로 만들지도,
+	// 완료하지도 않았으니 앞의 세 선택지가 모두 빠지고 "그만 가 보겠습니다"만 남는다.
+	TalkingPlayer player;
+	ASSERT_TRUE(player.dialog->Open(kRinneNpc));
+	ASSERT_EQ(kRinneRoot, player.dialog->GetCurrentNodeId());
+
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(0)); // 11001 완료
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(1)); // 3202 로
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(2)); // 3203 으로
+	EXPECT_TRUE(player.dialog->IsChoiceVisible(3));  // 닫기
+
+	// 클라가 받은 목록에서 0번은 닫기다. 데이터의 0번(완료)이 아니다.
+	EXPECT_EQ(3, player.dialog->ResolveVisibleChoice(0));
+	EXPECT_EQ(-1, player.dialog->ResolveVisibleChoice(1));
+	EXPECT_EQ(DialogResult::Closed, player.dialog->Select(kRinneRoot, 0));
+	EXPECT_FALSE(player.quests->IsCompleted(kMissingShips));
+}
+
+TEST_F(PlayerDialogTest, ShowsChoiceOnceConditionIsMet)
+{
+	TalkingPlayer player;
+
+	// 11001 을 받아 마지막 스테이지까지 채우면 완료 대기가 된다.
+	ASSERT_EQ(QuestAcceptResult::Ok, player.quests->AcceptQuest(kMissingShips));
+	ASSERT_TRUE(player.quests->GmSetProgress(kMissingShips, 3, 1, 0, 0));
+	ASSERT_EQ(QuestState::ReadyToComplete, player.quests->GetState(kMissingShips));
+
+	ASSERT_TRUE(player.dialog->Open(kRinneNpc));
+	EXPECT_TRUE(player.dialog->IsChoiceVisible(0));  // 이제 완료 선택지가 보인다
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(1)); // 아직 완료는 아니라 다음 이야기는 잠겨 있다
+
+	EXPECT_EQ(DialogResult::Closed, player.dialog->Select(kRinneRoot, 0));
+	EXPECT_TRUE(player.quests->IsCompleted(kMissingShips));
+}
+
+TEST_F(PlayerDialogTest, DisabledQuestIsNotOfferedAsAcceptable)
+{
+	// acceptable 은 Quest::CanAccept 를 그대로 쓴다. 운영이 내려둔 퀘스트는 수락이
+	// 거절되므로 선택지 자체가 나가지 않는다 — 눌러도 반드시 실패할 것을 보여주지 않는다.
+	TalkingPlayer player;
+	ASSERT_TRUE(player.dialog->Open(kElderNpc));
+	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, kElderRootToStory));
+	ASSERT_EQ(kMarenStory, player.dialog->GetCurrentNodeId());
+
+	EXPECT_TRUE(player.dialog->IsChoiceVisible(0));  // 11001 수락
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(1)); // 11007 완료 — 받은 적도 없다
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(2)); // 11008 수락 — disabled
+	EXPECT_TRUE(player.dialog->IsChoiceVisible(3));  // 되돌아가기
+
+	EXPECT_FALSE(player.quests->IsActive(kFourWingedMural));
+}
+
+TEST_F(PlayerDialogTest, VisibleIndexMapsBackToOriginalChoice)
+{
+	// 3004 에서 실제로 나가는 것은 [11001 수락, 되돌아가기] 둘뿐이다.
+	// 클라가 보낸 1번은 데이터의 3번(되돌아가기)으로 되짚어져야 한다.
+	TalkingPlayer player;
+	ASSERT_TRUE(player.dialog->Open(kElderNpc));
+	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, kElderRootToStory));
+
+	EXPECT_EQ(0, player.dialog->ResolveVisibleChoice(0));
+	EXPECT_EQ(3, player.dialog->ResolveVisibleChoice(1));
+
+	EXPECT_EQ(DialogResult::Ok, player.dialog->Select(kMarenStory, 1));
+	EXPECT_EQ(kElderRoot, player.dialog->GetCurrentNodeId());
+	EXPECT_FALSE(player.quests->IsActive(kMissingShips));
+}
+
+TEST_F(PlayerDialogTest, VisibleListIsFixedWhenTheNodeIsShown)
+{
+	// 노드를 보여 준 뒤 퀘스트 상태가 바뀌어도, 플레이어가 누른 번호는 그때 본 목록으로
+	// 되짚는다. 매번 다시 계산하면 화면은 그대로인데 번호의 뜻만 조용히 바뀐다.
+	TalkingPlayer player;
+	ASSERT_TRUE(player.dialog->Open(kElderNpc));
+	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, kElderRootToStory));
+	ASSERT_EQ(3, player.dialog->ResolveVisibleChoice(1)); // 되돌아가기
+
+	// 창이 열려 있는 사이에 다른 경로로 11001 을 받는다(파티 공유, GM 조작 등).
+	// 지금 다시 판정하면 "11001 수락"이 빠져 1번이 범위를 벗어난다.
+	ASSERT_EQ(QuestAcceptResult::Ok, player.quests->AcceptQuest(kMissingShips));
+
+	EXPECT_EQ(3, player.dialog->ResolveVisibleChoice(1));
+	EXPECT_EQ(DialogResult::Ok, player.dialog->Select(kMarenStory, 1));
+	EXPECT_EQ(kElderRoot, player.dialog->GetCurrentNodeId());
+}
+
+TEST_F(PlayerDialogTest, EveryNodeKeepsOneChoiceWithoutCondition)
+{
+	// 조건이 전부 어긋나면 남는 선택지가 없어 대화를 닫을 방법이 사라진다.
+	// 데이터 검증도 같은 것을 막지만, 실제로 읽은 데이터로 한 번 더 확인한다.
+	for (const auto& [id, node] : ResourceLoader::Instance().GetDialogs())
+	{
+		ASSERT_NE(nullptr, node);
+		const bool has_unconditional = std::any_of(
+			node->choices.begin(), node->choices.end(),
+			[](const gamedata::DialogChoice& c)
+			{
+				return c.show_if.quest_id == 0
+					|| ParseDialogCondition(c.show_if.state) == DialogConditionType::None;
+			});
+		EXPECT_TRUE(has_unconditional) << "노드 " << id << " 에 조건 없는 선택지가 없습니다";
+	}
 }

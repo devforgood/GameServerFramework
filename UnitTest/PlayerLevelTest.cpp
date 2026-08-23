@@ -124,7 +124,7 @@ TEST_F(PlayerLevelTest, LevelTable_RequiredExpIsMonotonic)
 TEST_F(PlayerLevelTest, MonsterTable_Loaded)
 {
     auto& loader = ResourceLoader::Instance();
-    EXPECT_EQ(loader.GetMonsterDatas().size(), 10u);
+    EXPECT_EQ(loader.GetMonsterDatas().size(), 11u);
 
     const gamedata::MonsterData* slime = loader.GetMonsterData(1);
     ASSERT_NE(slime, nullptr);
