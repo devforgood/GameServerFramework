@@ -943,8 +943,7 @@
       ],
       "choice_items": [],
       "skill_ids": []
-    },
-    "disabled": true
+    }
   },
   {
     "id": 11005,
@@ -1023,8 +1022,7 @@
       ],
       "choice_items": [],
       "skill_ids": []
-    },
-    "disabled": true
+    }
   },
   {
     "id": 11006,
@@ -1114,8 +1112,7 @@
         }
       ],
       "skill_ids": []
-    },
-    "disabled": true
+    }
   },
   {
     "id": 11007,
@@ -1201,8 +1198,7 @@
       ],
       "choice_items": [],
       "skill_ids": []
-    },
-    "disabled": true
+    }
   },
   {
     "id": 11008,
@@ -1290,7 +1286,6 @@
         }
       ],
       "skill_ids": []
-    },
-    "disabled": true
+    }
   }
 ]
