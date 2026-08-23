@@ -69,6 +69,17 @@ If a build starts warning again, the usual causes are:
 - stale `*.tlog` folders left in another project's intermediate directory (MSB8028); they are
   build artifacts, so deleting them is safe
 - a new C++ project that does not pick up `Directory.Build.props`
+- a `Rebuild` started while `x64\Debug\Game.exe` (or a test binary) is still running. Clean
+  cannot delete the locked files and warns "access denied" for `game.exe` / `lua51.dll`.
+  Nothing is wrong with the tree — stop the server and rebuild.
+
+### Files under `Client/Assets/` are compiled twice
+
+Unity compiles everything under `Client/Assets/`, and several server projects (`core`, `Battle`)
+link the same files in. Server-only dependencies must sit inside the
+`#if UNITY_EDITOR || UNITY_STANDALONE_WIN || UNITY_IOS || UNITY_ANDROID` / `#else` guard —
+including the `using` directives. A `using StackExchange.Redis;` added outside the guard builds
+fine on the server and breaks the Unity editor with CS0246, which the solution build never shows.
 
 ## FlatBuffers Code Generation
 
