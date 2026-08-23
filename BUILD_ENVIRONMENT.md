@@ -18,6 +18,27 @@ x64\Debug\Game.exe
 
 The first build may take longer than two minutes. If the sandbox blocks writes to C++ build state files under project `x64\Debug\*.tlog`, rerun the same MSBuild command with elevated permission.
 
+## Windows SDK target (`_WIN32_WINNT`)
+
+`Directory.Build.props` defines `_WIN32_WINNT=0x0A00` (Windows 10) for every C++ project.
+Do not remove it and do not re-declare it per project.
+
+Boost.Asio prints this when the macro is missing:
+
+```text
+Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. ...
+Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
+```
+
+It is not only noise — Boost then **silently defines `_WIN32_WINNT` as `0x0601`** for that
+translation unit. `Engine/Server.h` used to be the only place setting `0x0A00`, and a header
+can only win when it is included before Boost. So `Engine.lib` ended up mixing TUs built
+against Windows 10 headers with TUs built against Windows 7 headers. The Windows SDK changes
+structures and declarations between those versions, so the link succeeds while stitching
+together different definitions of the same things.
+
+On the compiler command line the macro precedes every header, so no TU can disagree.
+
 ## FlatBuffers Code Generation
 
 The bundled compiler is:

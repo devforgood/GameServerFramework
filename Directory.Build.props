@@ -17,6 +17,18 @@
     삼키고, 다음 줄이 주석에 빨려 들어가 사라지는 MSVC 버그가 발생한다.
   -->
   <!--
+    Windows SDK 타깃 버전. Boost.Asio 는 이 값이 없으면 경고를 내고 **조용히
+    _WIN32_WINNT=0x0601(Windows 7)로 정의해 버린다**(boost/asio/detail/config.hpp).
+
+    예전에는 Engine/Server.h 안에서만 0x0A00 으로 정의했는데, 그 방식은 Server.h 가
+    boost 보다 먼저 include 된 TU 에서만 먹는다. 그래서 같은 Engine.lib 안에 0x0A00 로
+    컴파일된 TU 와 0x0601 로 컴파일된 TU 가 섞였다 — Windows SDK 헤더가 버전에 따라
+    구조체와 선언을 바꾸므로, 링크는 되지만 서로 다른 정의를 하나로 묶는 상태가 된다.
+
+    컴파일러 명령줄에 두면 어떤 헤더보다 먼저 서므로 TU 마다 갈릴 수 없다.
+    프로젝트별로 두면 새 프로젝트에서 빠뜨리기 쉬워 여기서 일괄 적용한다.
+  -->
+  <!--
     cl.exe는 기본적으로 한 프로젝트의 .cpp를 순차 컴파일한다. Engine은 71개 TU를 가지고
     있어 16코어 머신에서도 전체 리빌드가 284초 걸렸다. /MP를 켜면 37.9초로 줄어든다.
     프로젝트별로 두면 새 프로젝트에서 빠뜨리기 쉬워 여기서 일괄 적용한다.
@@ -25,6 +37,7 @@
     <ClCompile>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PreprocessorDefinitions>_WIN32_WINNT=0x0A00;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
 </Project>

@@ -16,9 +16,14 @@
 #include <atomic>
 #include <chrono>
 
-#ifndef _WIN32_WINNT         
+// 실제 정의는 Directory.Build.props 가 컴파일러 명령줄로 넘긴다(_WIN32_WINNT=0x0A00).
+// 여기 있는 것은 이 헤더를 그 설정 없이 컴파일했을 때를 위한 보험이다 — 헤더에서만
+// 정의하면 Server.h 가 boost 보다 먼저 include 된 TU 에서만 먹어서, 같은 라이브러리
+// 안에 Windows 10 으로 컴파일된 TU 와 Boost 가 기본값으로 밀어 넣은 Windows 7 TU 가
+// 섞이게 된다.
+#ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0A00   // Windows 10
-#endif  
+#endif
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
