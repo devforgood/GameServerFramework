@@ -37,7 +37,7 @@ private:
     int level_ = 1;
     long long exp_ = 0;
 
-    // 저장 시 PlayerVO 전체를 재구성하기 위해 보관 (name 컬럼을 빈 값으로 덮어쓰지 않도록)
+    // 저장 시 VOPlayer 전체를 재구성하기 위해 보관 (name 컬럼을 빈 값으로 덮어쓰지 않도록)
     long long characterId_ = 0;
     std::string name_;
 };

@@ -7,7 +7,7 @@
 
 // PlayerRepository 단위 테스트.
 //
-// PlayerRepository 는 생성된 DAO(PlayerDAO/ItemDAO/...) 위에 얹는 얇은
+// PlayerRepository 는 생성된 DAO(DAOPlayer/DAOPlayerItem/...) 위에 얹는 얇은
 // 오케스트레이션 계층이라, 실제 쿼리 동작은 살아있는 DB 연결이 필요하다.
 // 여기서는 DB 연결 없이 검증 가능한 핵심 계약만 다룬다.
 //
@@ -34,9 +34,9 @@ TEST(PlayerRepositoryTest, EmptySaveDataTouchesNoConnection)
 TEST(PlayerRepositoryTest, EmptyCollectionsIssueNoQuery)
 {
     PlayerSaveData data{};
-    data.items = std::vector<DbRecord<PlayerItemVO>>{};
-    data.skills = std::vector<DbRecord<PlayerSkillVO>>{};
-    data.quest_actives = std::vector<DbRecord<QuestActiveVO>>{};
+    data.items = std::vector<DbRecord<VOPlayerItem>>{};
+    data.skills = std::vector<DbRecord<VOPlayerSkill>>{};
+    data.quest_actives = std::vector<DbRecord<VOQuestActive>>{};
     // player / quest_state 는 단일 레코드라 set 되면 즉시 기록되므로 비워둔다.
 
     PlayerRepository::SaveAll(nullptr, data);
@@ -49,7 +49,7 @@ TEST(PlayerRepositoryTest, EmptyCollectionsIssueNoQuery)
 TEST(PlayerRepositoryTest, NoQuestActiveRecordsDispatchNoAction)
 {
     PlayerSaveData data{};
-    data.quest_actives = std::vector<DbRecord<QuestActiveVO>>{}; // 레코드 0개
+    data.quest_actives = std::vector<DbRecord<VOQuestActive>>{}; // 레코드 0개
 
     PlayerRepository::SaveAll(nullptr, data);
 

@@ -13,7 +13,7 @@ struct PlayerSaveData;
 //
 // PlayerRepository
 // ------------------------------------------------------------------
-// 생성된 테이블 단위 DAO(PlayerDAO, ItemDAO, ...) 위에 얹는
+// 생성된 테이블 단위 DAO(DAOPlayer, DAOPlayerItem, ...) 위에 얹는
 // Player 애그리거트 단위 영속화 리포지토리.
 //
 // 비동기 실행(스레드 디스패치/모니터링/커넥션 획득)은 PlayerDbDispatcher

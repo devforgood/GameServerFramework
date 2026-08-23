@@ -1,5 +1,18 @@
 {% if include_header %}
 #pragma once
+
+// ============================================================
+// 이 파일은 SqlCodeGenerator 가 자동 생성한다. 직접 수정하지 마세요.
+// 고칠 곳: SqlCodeGenerator/schema.xml + templates/dao.h.j2
+// 다시 만들기: SqlCodeGenerator/build.bat (또는 python generate.py)
+// ------------------------------------------------------------
+// DAO = Data Access Object (데이터 접근 객체)
+//   테이블 하나에 대한 CRUD 만 담당한다. 커넥션을 들고 SQL 을 실행할 뿐,
+//   여러 테이블을 묶는 규칙이나 게임 로직은 갖지 않는다.
+//   그 위층(캐릭터 단위로 묶어 저장/로드) 은 Engine/Player/PlayerRepository.
+//   다루는 행 구조체는 VO(vo.h).
+// ============================================================
+
 #include <mariadb/conncpp.hpp>
 #include <string>
 #include <sstream>

@@ -83,7 +83,7 @@ public:
 	QuestState GetState(int quest_id) const;
 	int GetStage(int quest_id) const;
 	int GetProgress(int quest_id, int slot) const;
-	const QuestActiveVO* GetActiveQuest(int quest_id) const;
+	const VOQuestActive* GetActiveQuest(int quest_id) const;
 
 	// 지급 확정된 보상을 꺼낸다(꺼내면 목록은 비워진다).
 	std::vector<QuestRewardGrant> TakePendingRewards();
@@ -120,15 +120,15 @@ private:
 
 	// 진행도를 반영하고, 스테이지가 끝났으면 다음 스테이지로 넘기거나
 	// 완료 대기 상태로 만든다.
-	void applyProgress(const Quest& quest, QuestActiveVO& vo,
+	void applyProgress(const Quest& quest, VOQuestActive& vo,
 		QuestObjectiveType type, int target_id, int amount);
 
 	// 이미 골라 둔 목표 슬롯에 진행도를 반영한다(목표 매칭을 두 번 하지 않기 위해).
-	void applyMatched(const Quest& quest, QuestActiveVO& vo, QuestObjectiveType type,
+	void applyMatched(const Quest& quest, VOQuestActive& vo, QuestObjectiveType type,
 		const QuestObjectiveSlot* matched, int matched_count, int amount);
 
 	// 스테이지 전환. 마지막 스테이지였다면 완료 대기(또는 자동 완료)로 간다.
-	void advanceStage(const Quest& quest, QuestActiveVO& vo);
+	void advanceStage(const Quest& quest, VOQuestActive& vo);
 
 	// 완료 NPC 와 대화했을 때 완료 접수를 시도한다.
 	void tryCompleteByNpc(int npc_id);
@@ -160,17 +160,17 @@ private:
 
 	void setCompleted(int quest_id);
 	void clearCompleted(int quest_id);
-	void resetActiveRow(QuestActiveVO& vo);
-	QuestStateVO buildStateVO() const;
+	void resetActiveRow(VOQuestActive& vo);
+	VOQuestState buildStateVO() const;
 
-	static int readProgress(const QuestActiveVO& vo, int slot);
-	static void writeProgress(QuestActiveVO& vo, int slot, int value);
+	static int readProgress(const VOQuestActive& vo, int slot);
+	static void writeProgress(VOQuestActive& vo, int slot, int value);
 
 	// 진행 중 퀘스트의 DB 변경 추적 (quest_id 기준)
-	DbCollectionTracker<int, QuestActiveVO> activeQuests_;
+	DbCollectionTracker<int, VOQuestActive> activeQuests_;
 
 	// quest_state 행(완료 플래그)의 DB 변경 추적
-	DbRowTracker<QuestStateVO> questState_;
+	DbRowTracker<VOQuestState> questState_;
 
 	// 완료 퀘스트 플래그: quest_id 당 1비트, 바이트 단위로 패킹
 	std::vector<uint8_t> completedBits_;

@@ -4,13 +4,13 @@
 #include "./SQL/generated/vo.h"
 
 struct PlayerLoadData {
-    PlayerVO player;
-    std::vector<PlayerItemVO> items;
-    std::vector<PlayerSkillVO> skills;
-    PlayerWalletVO wallet;
-    PlayerLocationVO location;
-    std::vector<QuestActiveVO> quest_actives;
-    QuestStateVO quest_state;
+    VOPlayer player;
+    std::vector<VOPlayerItem> items;
+    std::vector<VOPlayerSkill> skills;
+    VOPlayerWallet wallet;
+    VOPlayerLocation location;
+    std::vector<VOQuestActive> quest_actives;
+    VOQuestState quest_state;
 };
 
 // 계정 행 확정 + 로드를 한 번의 DB 왕복으로 처리한 결과.

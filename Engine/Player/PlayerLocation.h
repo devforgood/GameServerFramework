@@ -28,9 +28,9 @@ public:
 	bool HasSavedLocation() const { return mapId_ != 0; }
 
 private:
-	PlayerLocationVO buildVO() const;
+	VOPlayerLocation buildVO() const;
 
-	DbRowTracker<PlayerLocationVO> row_;
+	DbRowTracker<VOPlayerLocation> row_;
 	long long characterId_ = 0;
 	int mapId_ = 0;
 	double x_ = 0.0;

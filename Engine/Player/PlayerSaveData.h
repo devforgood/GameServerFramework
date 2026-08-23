@@ -54,13 +54,13 @@ private:
 // 버퍼는 남아 다음 저장에서 재사용된다.
 //
 struct PlayerSaveData {
-    DbSaveField<PlayerVO>                            player;
-    DbSaveField<std::vector<DbRecord<PlayerItemVO>>> items;
-    DbSaveField<std::vector<DbRecord<PlayerSkillVO>>> skills;
-    DbSaveField<DbRecord<PlayerWalletVO>>            wallet;
-    DbSaveField<DbRecord<PlayerLocationVO>>          location;
-    DbSaveField<std::vector<DbRecord<QuestActiveVO>>> quest_actives;
-    DbSaveField<DbRecord<QuestStateVO>>              quest_state;
+    DbSaveField<VOPlayer>                            player;
+    DbSaveField<std::vector<DbRecord<VOPlayerItem>>> items;
+    DbSaveField<std::vector<DbRecord<VOPlayerSkill>>> skills;
+    DbSaveField<DbRecord<VOPlayerWallet>>            wallet;
+    DbSaveField<DbRecord<VOPlayerLocation>>          location;
+    DbSaveField<std::vector<DbRecord<VOQuestActive>>> quest_actives;
+    DbSaveField<DbRecord<VOQuestState>>              quest_state;
 
     // 모든 필드를 "없음" 으로 되돌린다. 값과 버퍼는 그대로 남는다.
     void Reset() noexcept

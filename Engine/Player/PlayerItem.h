@@ -38,6 +38,6 @@ public:
 private:
 	void publish(const EventMessage& message);
 
-	DbCollectionTracker<int, PlayerItemVO> items_;
+	DbCollectionTracker<int, VOPlayerItem> items_;
 	int characterId_ = 0;
 };

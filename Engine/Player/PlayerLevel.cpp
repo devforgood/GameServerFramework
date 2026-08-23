@@ -103,7 +103,7 @@ void PlayerLevel::Save(std::any data)
 {
     auto* save_data = std::any_cast<PlayerSaveData*>(data);
 
-    PlayerVO vo;
+    VOPlayer vo;
     vo.id = characterId_;
     vo.name = name_;
     vo.level = level_;

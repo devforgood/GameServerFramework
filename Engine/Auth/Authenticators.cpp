@@ -15,10 +15,10 @@ AuthResult DbTokenAuthenticator::Verify(sql::Connection* conn,
 	if (userId.empty() || token.empty())
 		return AuthResult::Fail("empty userId or token");
 
-	SessionTokenVO vo;
+	VOSessionToken vo;
 	try
 	{
-		SessionTokenDAO dao(conn);
+		DAOSessionToken dao(conn);
 		if (!dao.Select(token, vo))
 			return AuthResult::Fail("token not found");
 	}

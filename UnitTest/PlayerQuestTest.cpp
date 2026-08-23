@@ -82,7 +82,7 @@ PlayerLoadData MakeNewPlayerData(int character_id = 1001, int level = 10)
 
 PlayerLoadData MakeExistingPlayerData(
 	int character_id,
-	std::vector<QuestActiveVO> actives,
+	std::vector<VOQuestActive> actives,
 	std::string flags,
 	int level = 10)
 {
@@ -95,14 +95,14 @@ PlayerLoadData MakeExistingPlayerData(
 
 PlayerLoadData MakeExistingPlayerData(int character_id, int level = 10)
 {
-	return MakeExistingPlayerData(character_id, std::vector<QuestActiveVO>{}, std::string{}, level);
+	return MakeExistingPlayerData(character_id, std::vector<VOQuestActive>{}, std::string{}, level);
 }
 
-QuestActiveVO MakeQuestVO(
+VOQuestActive MakeQuestVO(
 	int char_id, int quest_id,
 	int state = 0, int stage = 1, int p1 = 0, int p2 = 0, int p3 = 0)
 {
-	QuestActiveVO vo{};
+	VOQuestActive vo{};
 	vo.character_id = char_id;
 	vo.quest_id = quest_id;
 	vo.state = state;
@@ -316,7 +316,7 @@ TEST_F(PlayerQuestTest, Accept_PrerequisiteSatisfied)
 {
 	PlayerQuest quest;
 	quest.Load(MakeExistingPlayerData(
-		1001, std::vector<QuestActiveVO>{}, FlagsWithCompleted({ kGoblinHunt })));
+		1001, std::vector<VOQuestActive>{}, FlagsWithCompleted({ kGoblinHunt })));
 
 	EXPECT_TRUE(quest.IsCompleted(kGoblinHunt));
 	EXPECT_EQ(quest.AcceptQuest(kGoblinChief), QuestAcceptResult::Ok);
@@ -326,7 +326,7 @@ TEST_F(PlayerQuestTest, Accept_CompletedNonRepeatableIsRejected)
 {
 	PlayerQuest quest;
 	quest.Load(MakeExistingPlayerData(
-		1001, std::vector<QuestActiveVO>{}, FlagsWithCompleted({ kGoblinHunt })));
+		1001, std::vector<VOQuestActive>{}, FlagsWithCompleted({ kGoblinHunt })));
 
 	EXPECT_EQ(quest.AcceptQuest(kGoblinHunt), QuestAcceptResult::AlreadyCompleted);
 }
@@ -658,7 +658,7 @@ TEST_F(PlayerQuestTest, Sync_SendsChangedRemovedAndCompleted)
 
 TEST_F(PlayerQuestTest, Sync_MarkAllRestoresLogOnLogin)
 {
-	std::vector<QuestActiveVO> actives;
+	std::vector<VOQuestActive> actives;
 	actives.push_back(MakeQuestVO(1001, kGoblinHunt, 0, 2, 5, 3, 0));
 
 	SyncHarness harness(MakeExistingPlayerData(1001, actives, std::string{}));
@@ -737,7 +737,7 @@ TEST_F(PlayerQuestTest, Repeatable_CannotBeReacceptedBeforeDailyReset)
 	PlayerQuest quest;
 	quest.SetClock([&fake_now] { return fake_now; });
 	quest.Load(MakeExistingPlayerData(
-		1001, std::vector<QuestActiveVO>{}, FlagsWithCompleted({ kWolfPelt })));
+		1001, std::vector<VOQuestActive>{}, FlagsWithCompleted({ kWolfPelt })));
 
 	ASSERT_EQ(quest.AcceptQuest(kDailyWolf), QuestAcceptResult::Ok);
 	quest.ReportProgress(QuestObjectiveType::Kill, kWolfMonsterId, 10);
@@ -765,7 +765,7 @@ TEST_F(PlayerQuestTest, LimitedTime_ExpiresIntoFailedState)
 	PlayerQuest quest;
 	quest.SetClock([&fake_now] { return fake_now; });
 	quest.Load(MakeExistingPlayerData(
-		1001, std::vector<QuestActiveVO>{},
+		1001, std::vector<VOQuestActive>{},
 		FlagsWithCompleted({ kGoblinHunt, kGoblinChief })));
 
 	ASSERT_EQ(quest.AcceptQuest(kAncientLetter), QuestAcceptResult::Ok);
@@ -789,7 +789,7 @@ TEST_F(PlayerQuestTest, LimitedTime_FailedQuestCanBeRetried)
 	PlayerQuest quest;
 	quest.SetClock([&fake_now] { return fake_now; });
 	quest.Load(MakeExistingPlayerData(
-		1001, std::vector<QuestActiveVO>{},
+		1001, std::vector<VOQuestActive>{},
 		FlagsWithCompleted({ kGoblinHunt, kGoblinChief })));
 
 	ASSERT_EQ(quest.AcceptQuest(kAncientLetter), QuestAcceptResult::Ok);
@@ -838,7 +838,7 @@ TEST_F(PlayerQuestTest, Event_NpcInteractionCompletesReadyQuest)
 	GameObject go;
 	PlayerQuest* quest = AttachQuest(go);
 	quest->Load(MakeExistingPlayerData(
-		1001, std::vector<QuestActiveVO>{}, FlagsWithCompleted({ kGoblinHunt })));
+		1001, std::vector<VOQuestActive>{}, FlagsWithCompleted({ kGoblinHunt })));
 
 	// 1002 는 선택 보상이 없으므로 완료 NPC 와 대화하는 것만으로 끝난다.
 	ASSERT_EQ(quest->AcceptQuest(kGoblinChief), QuestAcceptResult::Ok);
@@ -1063,13 +1063,13 @@ TEST_F(PlayerQuestTest, Load_NoActiveQuests)
 
 TEST_F(PlayerQuestTest, Load_ActiveQuestFieldsPreserved)
 {
-	std::vector<QuestActiveVO> actives;
+	std::vector<VOQuestActive> actives;
 	actives.push_back(MakeQuestVO(1001, kGoblinHunt, 0, 2, 5, 3, 0));
 
 	PlayerQuest quest;
 	quest.Load(MakeExistingPlayerData(1001, actives, std::string{}));
 
-	const QuestActiveVO* vo = quest.GetActiveQuest(kGoblinHunt);
+	const VOQuestActive* vo = quest.GetActiveQuest(kGoblinHunt);
 	ASSERT_NE(vo, nullptr);
 	EXPECT_EQ(vo->character_id, 1001);
 	EXPECT_EQ(vo->stage, 2);
@@ -1081,7 +1081,7 @@ TEST_F(PlayerQuestTest, Load_ActiveQuestFieldsPreserved)
 TEST_F(PlayerQuestTest, Load_LegacyRowWithoutStageBecomesStageOne)
 {
 	// stage 컬럼이 없던 시절 행은 0 으로 들어온다.
-	std::vector<QuestActiveVO> actives;
+	std::vector<VOQuestActive> actives;
 	actives.push_back(MakeQuestVO(1001, kGoblinHunt, 0, 0, 0, 0, 0));
 
 	PlayerQuest quest;
@@ -1097,7 +1097,7 @@ TEST_F(PlayerQuestTest, Load_CompletedFlagsCrossByteBoundary)
 	flags[1] = static_cast<char>(0x01);  // quest 8
 
 	PlayerQuest quest;
-	quest.Load(MakeExistingPlayerData(1001, std::vector<QuestActiveVO>{}, flags));
+	quest.Load(MakeExistingPlayerData(1001, std::vector<VOQuestActive>{}, flags));
 
 	EXPECT_FALSE(quest.IsCompleted(6));
 	EXPECT_TRUE(quest.IsCompleted(7));
@@ -1122,7 +1122,7 @@ TEST_F(PlayerQuestTest, Save_AcceptedQuestGetsInsertAction)
 
 TEST_F(PlayerQuestTest, Save_ProgressOnLoadedQuestGetsUpdateAction)
 {
-	std::vector<QuestActiveVO> actives;
+	std::vector<VOQuestActive> actives;
 	actives.push_back(MakeQuestVO(1001, kGoblinHunt, 0, 2, 0, 0, 0));
 
 	PlayerQuest quest;
@@ -1139,7 +1139,7 @@ TEST_F(PlayerQuestTest, Save_ProgressOnLoadedQuestGetsUpdateAction)
 
 TEST_F(PlayerQuestTest, Save_UnrelatedEventDoesNotDirtyTheRow)
 {
-	std::vector<QuestActiveVO> actives;
+	std::vector<VOQuestActive> actives;
 	actives.push_back(MakeQuestVO(1001, kGoblinHunt, 0, 2, 0, 0, 0));
 
 	PlayerQuest quest;
@@ -1155,7 +1155,7 @@ TEST_F(PlayerQuestTest, Save_UnrelatedEventDoesNotDirtyTheRow)
 
 TEST_F(PlayerQuestTest, Save_CompletedLoadedQuestGetsDeleteAction)
 {
-	std::vector<QuestActiveVO> actives;
+	std::vector<VOQuestActive> actives;
 	// 스테이지 1(or 목표) 진행 중인 auto_complete 퀘스트
 	actives.push_back(MakeQuestVO(1001, kFieldCleanup, 0, 1, 0, 0, 0));
 
@@ -1230,7 +1230,7 @@ TEST_F(PlayerQuestTest, RoundTrip_ProgressSurvivesReload)
 	ASSERT_EQ(saved.quest_actives->size(), 1u);
 
 	// 재접속: 저장된 행을 그대로 다시 로드한다.
-	std::vector<QuestActiveVO> reloaded;
+	std::vector<VOQuestActive> reloaded;
 	reloaded.push_back((*saved.quest_actives)[0].vo);
 
 	std::string flags;

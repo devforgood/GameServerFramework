@@ -31,7 +31,7 @@ bool PlayerSkill::LearnSkill(int skill_id, int level)
 	if (ResourceLoader::Instance().GetSkill(skill_id) == nullptr)
 		return false;
 
-	if (PlayerSkillVO* vo = skills_.Modify(skill_id))
+	if (VOPlayerSkill* vo = skills_.Modify(skill_id))
 	{
 		if (level > vo->level)
 		{
@@ -41,7 +41,7 @@ bool PlayerSkill::LearnSkill(int skill_id, int level)
 		return false;
 	}
 
-	PlayerSkillVO fresh{};
+	VOPlayerSkill fresh{};
 	fresh.character_id = characterId_;
 	fresh.skill_id = skill_id;
 	fresh.level = level;
@@ -54,6 +54,6 @@ bool PlayerSkill::LearnSkill(int skill_id, int level)
 
 int PlayerSkill::GetLevel(int skill_id) const
 {
-	const PlayerSkillVO* vo = skills_.Find(skill_id);
+	const VOPlayerSkill* vo = skills_.Find(skill_id);
 	return vo != nullptr ? vo->level : 0;
 }

@@ -1,4 +1,17 @@
 #pragma once
+
+// ============================================================
+// 이 파일은 SqlCodeGenerator 가 자동 생성한다. 직접 수정하지 마세요.
+// 고칠 곳: SqlCodeGenerator/schema.xml + templates/dao.h.j2
+// 다시 만들기: SqlCodeGenerator/build.bat (또는 python generate.py)
+// ------------------------------------------------------------
+// DAO = Data Access Object (데이터 접근 객체)
+//   테이블 하나에 대한 CRUD 만 담당한다. 커넥션을 들고 SQL 을 실행할 뿐,
+//   여러 테이블을 묶는 규칙이나 게임 로직은 갖지 않는다.
+//   그 위층(캐릭터 단위로 묶어 저장/로드) 은 Engine/Player/PlayerRepository.
+//   다루는 행 구조체는 VO(vo.h).
+// ============================================================
+
 #include <mariadb/conncpp.hpp>
 #include <string>
 #include <sstream>
@@ -17,16 +30,16 @@ inline std::string toMySQLDateTime(const std::chrono::system_clock::time_point& 
     return std::format("{:%Y-%m-%d %H:%M:%S}", tp);
 }
 
-class PlayerDAO {
+class DAOPlayer {
 public:
-    PlayerDAO(sql::Connection* conn);
+    DAOPlayer(sql::Connection* conn);
 
-    void Insert(const PlayerVO& vo);
-    void Update(const PlayerVO& vo);
-    void Delete(const PlayerVO& vo);
+    void Insert(const VOPlayer& vo);
+    void Update(const VOPlayer& vo);
+    void Delete(const VOPlayer& vo);
 
     // Select by primary key
-    bool Select(long long id, PlayerVO& out_vo);
+    bool Select(long long id, VOPlayer& out_vo);
 
     // Select by index columns (if any)
 
@@ -38,16 +51,16 @@ private:
 
 // ----------------------------------------
 
-class PlayerLocationDAO {
+class DAOPlayerLocation {
 public:
-    PlayerLocationDAO(sql::Connection* conn);
+    DAOPlayerLocation(sql::Connection* conn);
 
-    void Insert(const PlayerLocationVO& vo);
-    void Update(const PlayerLocationVO& vo);
-    void Delete(const PlayerLocationVO& vo);
+    void Insert(const VOPlayerLocation& vo);
+    void Update(const VOPlayerLocation& vo);
+    void Delete(const VOPlayerLocation& vo);
 
     // Select by primary key
-    bool Select(long long character_id, PlayerLocationVO& out_vo);
+    bool Select(long long character_id, VOPlayerLocation& out_vo);
 
     // Select by index columns (if any)
 
@@ -59,19 +72,19 @@ private:
 
 // ----------------------------------------
 
-class PlayerItemDAO {
+class DAOPlayerItem {
 public:
-    PlayerItemDAO(sql::Connection* conn);
+    DAOPlayerItem(sql::Connection* conn);
 
-    void Insert(const PlayerItemVO& vo);
-    void Update(const PlayerItemVO& vo);
-    void Delete(const PlayerItemVO& vo);
+    void Insert(const VOPlayerItem& vo);
+    void Update(const VOPlayerItem& vo);
+    void Delete(const VOPlayerItem& vo);
 
     // Select by primary key
-    bool Select(long long character_id, int item_id, PlayerItemVO& out_vo);
+    bool Select(long long character_id, int item_id, VOPlayerItem& out_vo);
 
     // Select by index columns (if any)
-    std::vector<PlayerItemVO> SelectByIndex(long long character_id);
+    std::vector<VOPlayerItem> SelectByIndex(long long character_id);
 
 private:
     sql::Connection* conn_;
@@ -81,19 +94,19 @@ private:
 
 // ----------------------------------------
 
-class PlayerSkillDAO {
+class DAOPlayerSkill {
 public:
-    PlayerSkillDAO(sql::Connection* conn);
+    DAOPlayerSkill(sql::Connection* conn);
 
-    void Insert(const PlayerSkillVO& vo);
-    void Update(const PlayerSkillVO& vo);
-    void Delete(const PlayerSkillVO& vo);
+    void Insert(const VOPlayerSkill& vo);
+    void Update(const VOPlayerSkill& vo);
+    void Delete(const VOPlayerSkill& vo);
 
     // Select by primary key
-    bool Select(long long character_id, int skill_id, PlayerSkillVO& out_vo);
+    bool Select(long long character_id, int skill_id, VOPlayerSkill& out_vo);
 
     // Select by index columns (if any)
-    std::vector<PlayerSkillVO> SelectByIndex(long long character_id);
+    std::vector<VOPlayerSkill> SelectByIndex(long long character_id);
 
 private:
     sql::Connection* conn_;
@@ -103,59 +116,16 @@ private:
 
 // ----------------------------------------
 
-class PlayerWalletDAO {
+class DAOPlayerWallet {
 public:
-    PlayerWalletDAO(sql::Connection* conn);
+    DAOPlayerWallet(sql::Connection* conn);
 
-    void Insert(const PlayerWalletVO& vo);
-    void Update(const PlayerWalletVO& vo);
-    void Delete(const PlayerWalletVO& vo);
+    void Insert(const VOPlayerWallet& vo);
+    void Update(const VOPlayerWallet& vo);
+    void Delete(const VOPlayerWallet& vo);
 
     // Select by primary key
-    bool Select(long long character_id, PlayerWalletVO& out_vo);
-
-    // Select by index columns (if any)
-
-private:
-    sql::Connection* conn_;
-};
-
-
-
-// ----------------------------------------
-
-class QuestActiveDAO {
-public:
-    QuestActiveDAO(sql::Connection* conn);
-
-    void Insert(const QuestActiveVO& vo);
-    void Update(const QuestActiveVO& vo);
-    void Delete(const QuestActiveVO& vo);
-
-    // Select by primary key
-    bool Select(long long character_id, int quest_id, QuestActiveVO& out_vo);
-
-    // Select by index columns (if any)
-    std::vector<QuestActiveVO> SelectByIndex(long long character_id);
-
-private:
-    sql::Connection* conn_;
-};
-
-
-
-// ----------------------------------------
-
-class QuestStateDAO {
-public:
-    QuestStateDAO(sql::Connection* conn);
-
-    void Insert(const QuestStateVO& vo);
-    void Update(const QuestStateVO& vo);
-    void Delete(const QuestStateVO& vo);
-
-    // Select by primary key
-    bool Select(long long character_id, QuestStateVO& out_vo);
+    bool Select(long long character_id, VOPlayerWallet& out_vo);
 
     // Select by index columns (if any)
 
@@ -167,19 +137,62 @@ private:
 
 // ----------------------------------------
 
-class SessionTokenDAO {
+class DAOQuestActive {
 public:
-    SessionTokenDAO(sql::Connection* conn);
+    DAOQuestActive(sql::Connection* conn);
 
-    void Insert(const SessionTokenVO& vo);
-    void Update(const SessionTokenVO& vo);
-    void Delete(const SessionTokenVO& vo);
+    void Insert(const VOQuestActive& vo);
+    void Update(const VOQuestActive& vo);
+    void Delete(const VOQuestActive& vo);
 
     // Select by primary key
-    bool Select(std::string token, SessionTokenVO& out_vo);
+    bool Select(long long character_id, int quest_id, VOQuestActive& out_vo);
 
     // Select by index columns (if any)
-    std::vector<SessionTokenVO> SelectByIndex(std::string user_id);
+    std::vector<VOQuestActive> SelectByIndex(long long character_id);
+
+private:
+    sql::Connection* conn_;
+};
+
+
+
+// ----------------------------------------
+
+class DAOQuestState {
+public:
+    DAOQuestState(sql::Connection* conn);
+
+    void Insert(const VOQuestState& vo);
+    void Update(const VOQuestState& vo);
+    void Delete(const VOQuestState& vo);
+
+    // Select by primary key
+    bool Select(long long character_id, VOQuestState& out_vo);
+
+    // Select by index columns (if any)
+
+private:
+    sql::Connection* conn_;
+};
+
+
+
+// ----------------------------------------
+
+class DAOSessionToken {
+public:
+    DAOSessionToken(sql::Connection* conn);
+
+    void Insert(const VOSessionToken& vo);
+    void Update(const VOSessionToken& vo);
+    void Delete(const VOSessionToken& vo);
+
+    // Select by primary key
+    bool Select(std::string token, VOSessionToken& out_vo);
+
+    // Select by index columns (if any)
+    std::vector<VOSessionToken> SelectByIndex(std::string user_id);
 
 private:
     sql::Connection* conn_;

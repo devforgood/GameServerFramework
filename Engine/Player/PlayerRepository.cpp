@@ -34,25 +34,25 @@ namespace
     // 읽기: 테이블별로 PlayerLoadData 를 채운다.
     const std::vector<LoaderFunc> kLoaders = {
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
-            PlayerDAO(conn).Select(id, data.player);
+            DAOPlayer(conn).Select(id, data.player);
         },
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
-            data.items = PlayerItemDAO(conn).SelectByIndex(id);
+            data.items = DAOPlayerItem(conn).SelectByIndex(id);
         },
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
-            data.skills = PlayerSkillDAO(conn).SelectByIndex(id);
+            data.skills = DAOPlayerSkill(conn).SelectByIndex(id);
         },
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
-            PlayerWalletDAO(conn).Select(id, data.wallet);
+            DAOPlayerWallet(conn).Select(id, data.wallet);
         },
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
-            PlayerLocationDAO(conn).Select(id, data.location);
+            DAOPlayerLocation(conn).Select(id, data.location);
         },
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
-            data.quest_actives = QuestActiveDAO(conn).SelectByIndex(id);
+            data.quest_actives = DAOQuestActive(conn).SelectByIndex(id);
         },
         [](sql::Connection* conn, long id, PlayerLoadData& data) {
-            QuestStateDAO(conn).Select(id, data.quest_state);
+            DAOQuestState(conn).Select(id, data.quest_state);
         },
     };
 
@@ -60,12 +60,12 @@ namespace
     const std::vector<SaverFunc> kSavers = {
         [](sql::Connection* conn, const PlayerSaveData& data) {
             if (data.player)
-                PlayerDAO(conn).Update(*data.player);
+                DAOPlayer(conn).Update(*data.player);
         },
         [](sql::Connection* conn, const PlayerSaveData& data) {
             if (data.items)
             {
-                PlayerItemDAO item_dao(conn);
+                DAOPlayerItem item_dao(conn);
                 for (const auto& record : *data.items)
                     ApplyRecord(item_dao, record);
             }
@@ -73,7 +73,7 @@ namespace
         [](sql::Connection* conn, const PlayerSaveData& data) {
             if (data.skills)
             {
-                PlayerSkillDAO skill_dao(conn);
+                DAOPlayerSkill skill_dao(conn);
                 for (const auto& record : *data.skills)
                     ApplyRecord(skill_dao, record);
             }
@@ -81,21 +81,21 @@ namespace
         [](sql::Connection* conn, const PlayerSaveData& data) {
             if (data.wallet)
             {
-                PlayerWalletDAO wallet_dao(conn);
+                DAOPlayerWallet wallet_dao(conn);
                 ApplyRecord(wallet_dao, *data.wallet);
             }
         },
         [](sql::Connection* conn, const PlayerSaveData& data) {
             if (data.location)
             {
-                PlayerLocationDAO location_dao(conn);
+                DAOPlayerLocation location_dao(conn);
                 ApplyRecord(location_dao, *data.location);
             }
         },
         [](sql::Connection* conn, const PlayerSaveData& data) {
             if (data.quest_actives)
             {
-                QuestActiveDAO quest_dao(conn);
+                DAOQuestActive quest_dao(conn);
                 for (const auto& record : *data.quest_actives)
                 {
                     if (record.action == DbAction::Insert)
@@ -110,7 +110,7 @@ namespace
         [](sql::Connection* conn, const PlayerSaveData& data) {
             if (data.quest_state)
             {
-                QuestStateDAO state_dao(conn);
+                DAOQuestState state_dao(conn);
                 if (data.quest_state->action == DbAction::Insert)
                     state_dao.Insert(data.quest_state->vo);
                 else
@@ -156,11 +156,11 @@ long long PlayerRepository::ResolveAccountRow(sql::Connection* conn,
         // 한쪽만 성공한다 — 실패한 쪽은 다시 조회해 같은 행을 쓴다.
         try
         {
-            PlayerVO vo{};
+            VOPlayer vo{};
             vo.name = userId;
             vo.level = 1;
             vo.exp = 0;
-            PlayerDAO(conn).Insert(vo);
+            DAOPlayer(conn).Insert(vo);
         }
         catch (const std::exception&)
         {

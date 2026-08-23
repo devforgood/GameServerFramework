@@ -38,13 +38,13 @@ int PlayerItem::AddItem(int item_id, int count)
 	if (ResourceLoader::Instance().GetItem(item_id) == nullptr)
 		return 0;
 
-	if (PlayerItemVO* vo = items_.Modify(item_id))
+	if (VOPlayerItem* vo = items_.Modify(item_id))
 	{
 		vo->count += count;
 	}
 	else
 	{
-		PlayerItemVO fresh{};
+		VOPlayerItem fresh{};
 		fresh.character_id = characterId_;
 		fresh.item_id = item_id;
 		fresh.count = count;
@@ -62,7 +62,7 @@ int PlayerItem::RemoveItem(int item_id, int count)
 	if (count <= 0)
 		return 0;
 
-	PlayerItemVO* vo = items_.Modify(item_id);
+	VOPlayerItem* vo = items_.Modify(item_id);
 	if (vo == nullptr || vo->count < count)
 		return 0;
 
@@ -98,7 +98,7 @@ int PlayerItem::RemoveQuestItems(int quest_id)
 		if (data == nullptr || data->type != "quest" || data->quest_id != quest_id)
 			continue;
 
-		const PlayerItemVO* vo = items_.Find(item_id);
+		const VOPlayerItem* vo = items_.Find(item_id);
 		if (vo == nullptr)
 			continue;
 
@@ -110,7 +110,7 @@ int PlayerItem::RemoveQuestItems(int quest_id)
 
 int PlayerItem::GetCount(int item_id) const
 {
-	const PlayerItemVO* vo = items_.Find(item_id);
+	const VOPlayerItem* vo = items_.Find(item_id);
 	return vo != nullptr ? vo->count : 0;
 }
 

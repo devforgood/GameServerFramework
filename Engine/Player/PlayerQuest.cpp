@@ -82,7 +82,7 @@ void PlayerQuest::sendSync()
 	infos.reserve(changed.size());
 	for (int quest_id : changed)
 	{
-		const QuestActiveVO* vo = GetActiveQuest(quest_id);
+		const VOQuestActive* vo = GetActiveQuest(quest_id);
 		if (vo == nullptr)
 			continue; // 모아 두는 사이에 사라졌다 — removed 로 이미 나간다
 
@@ -184,7 +184,7 @@ void PlayerQuest::OnEventNpcDead(const EventNpcDead& message)
 
 	for (int quest_id : quest_ids)
 	{
-		const QuestActiveVO* vo = activeQuests_.Find(quest_id);
+		const VOQuestActive* vo = activeQuests_.Find(quest_id);
 		if (vo == nullptr)
 			continue;
 
@@ -247,7 +247,7 @@ void PlayerQuest::ReportProgress(QuestObjectiveType type, int target_id, int amo
 		if (quest == nullptr)
 			continue;
 
-		const QuestActiveVO* current = activeQuests_.Find(quest_id);
+		const VOQuestActive* current = activeQuests_.Find(quest_id);
 		if (current == nullptr || static_cast<QuestState>(current->state) != QuestState::InProgress)
 			continue;
 
@@ -259,7 +259,7 @@ void PlayerQuest::ReportProgress(QuestObjectiveType type, int target_id, int amo
 
 		// 실제로 반응할 목표가 있을 때만 행을 수정 상태로 만든다
 		// (아니면 관계없는 이벤트마다 UPDATE 가 쌓인다).
-		QuestActiveVO* vo = activeQuests_.Modify(quest_id);
+		VOQuestActive* vo = activeQuests_.Modify(quest_id);
 		if (vo == nullptr)
 			continue;
 
@@ -278,7 +278,7 @@ void PlayerQuest::ReportProgress(QuestObjectiveType type, int target_id, int amo
 	}
 }
 
-void PlayerQuest::applyProgress(const Quest& quest, QuestActiveVO& vo,
+void PlayerQuest::applyProgress(const Quest& quest, VOQuestActive& vo,
 	QuestObjectiveType type, int target_id, int amount)
 {
 	QuestObjectiveSlot matched[Quest::kMaxObjectivesPerStage];
@@ -287,7 +287,7 @@ void PlayerQuest::applyProgress(const Quest& quest, QuestActiveVO& vo,
 	applyMatched(quest, vo, type, matched, matched_count, amount);
 }
 
-void PlayerQuest::applyMatched(const Quest& quest, QuestActiveVO& vo,
+void PlayerQuest::applyMatched(const Quest& quest, VOQuestActive& vo,
 	QuestObjectiveType type, const QuestObjectiveSlot* matched, int matched_count,
 	int amount)
 {
@@ -330,7 +330,7 @@ void PlayerQuest::applyMatched(const Quest& quest, QuestActiveVO& vo,
 		advanceStage(quest, vo);
 }
 
-void PlayerQuest::advanceStage(const Quest& quest, QuestActiveVO& vo)
+void PlayerQuest::advanceStage(const Quest& quest, VOQuestActive& vo)
 {
 	if (vo.stage < quest.StageCount())
 	{
@@ -363,7 +363,7 @@ void PlayerQuest::tryCompleteByNpc(int npc_id)
 
 	for (int quest_id : quest_ids)
 	{
-		const QuestActiveVO* vo = activeQuests_.Find(quest_id);
+		const VOQuestActive* vo = activeQuests_.Find(quest_id);
 		if (vo == nullptr || static_cast<QuestState>(vo->state) != QuestState::ReadyToComplete)
 			continue;
 
@@ -392,7 +392,7 @@ QuestAcceptResult PlayerQuest::AcceptQuest(int quest_id)
 	if (quest == nullptr || quest->gamedata == nullptr)
 		return QuestAcceptResult::NotFound;
 
-	if (const QuestActiveVO* existing = activeQuests_.Find(quest_id))
+	if (const VOQuestActive* existing = activeQuests_.Find(quest_id))
 	{
 		const QuestState state = static_cast<QuestState>(existing->state);
 		if (state == QuestState::InProgress || state == QuestState::ReadyToComplete)
@@ -420,13 +420,13 @@ QuestAcceptResult PlayerQuest::AcceptQuest(int quest_id)
 	if (result != QuestAcceptResult::Ok)
 		return result;
 
-	if (QuestActiveVO* existing = activeQuests_.Modify(quest_id))
+	if (VOQuestActive* existing = activeQuests_.Modify(quest_id))
 	{
 		resetActiveRow(*existing);
 	}
 	else
 	{
-		QuestActiveVO vo{};
+		VOQuestActive vo{};
 		vo.character_id = characterId_;
 		vo.quest_id = quest_id;
 		resetActiveRow(vo);
@@ -440,7 +440,7 @@ QuestAcceptResult PlayerQuest::AcceptQuest(int quest_id)
 
 	// 수락 시점에 이미 만족한 레벨 목표를 반영한다(수락 후 레벨이 오를 때까지
 	// 기다리게 두면 조건을 넘긴 플레이어가 진행할 방법이 없다).
-	if (QuestActiveVO* vo = activeQuests_.Modify(quest_id))
+	if (VOQuestActive* vo = activeQuests_.Modify(quest_id))
 	{
 		applyProgress(*quest, *vo, QuestObjectiveType::Level, 0, GetLevel());
 
@@ -458,7 +458,7 @@ bool PlayerQuest::CompleteQuest(int quest_id, int reward_choice)
 	if (quest == nullptr || quest->gamedata == nullptr)
 		return false;
 
-	const QuestActiveVO* current = activeQuests_.Find(quest_id);
+	const VOQuestActive* current = activeQuests_.Find(quest_id);
 	if (current == nullptr ||
 		static_cast<QuestState>(current->state) != QuestState::ReadyToComplete)
 		return false;
@@ -478,7 +478,7 @@ bool PlayerQuest::CompleteQuest(int quest_id, int reward_choice)
 	if (quest->IsRepeatable())
 	{
 		// 반복 퀘스트는 행을 남겨 마지막 완료 시각을 기억한다(쿨타임/일일 리셋 기준).
-		if (QuestActiveVO* vo = activeQuests_.Modify(quest_id))
+		if (VOQuestActive* vo = activeQuests_.Modify(quest_id))
 		{
 			vo->state = static_cast<int>(QuestState::Cooldown);
 			vo->stage = 1;
@@ -506,7 +506,7 @@ bool PlayerQuest::AbandonQuest(int quest_id)
 	if (quest == nullptr || !quest->IsAbandonable())
 		return false;
 
-	const QuestActiveVO* vo = activeQuests_.Find(quest_id);
+	const VOQuestActive* vo = activeQuests_.Find(quest_id);
 	if (vo == nullptr)
 		return false;
 
@@ -531,13 +531,13 @@ bool PlayerQuest::GmForceAccept(int quest_id)
 	if (quest == nullptr || quest->gamedata == nullptr)
 		return false;
 
-	if (QuestActiveVO* existing = activeQuests_.Modify(quest_id))
+	if (VOQuestActive* existing = activeQuests_.Modify(quest_id))
 	{
 		resetActiveRow(*existing);
 	}
 	else
 	{
-		QuestActiveVO vo{};
+		VOQuestActive vo{};
 		vo.character_id = characterId_;
 		vo.quest_id = quest_id;
 		resetActiveRow(vo);
@@ -561,7 +561,7 @@ bool PlayerQuest::GmForceComplete(int quest_id, int reward_choice)
 	if (activeQuests_.Find(quest_id) == nullptr && !GmForceAccept(quest_id))
 		return false;
 
-	QuestActiveVO* vo = activeQuests_.Modify(quest_id);
+	VOQuestActive* vo = activeQuests_.Modify(quest_id);
 	if (vo == nullptr)
 		return false;
 
@@ -585,7 +585,7 @@ bool PlayerQuest::GmSetProgress(int quest_id, int stage, int progress1, int prog
 	if (stage < 1 || stage > quest->StageCount())
 		return false;
 
-	QuestActiveVO* vo = activeQuests_.Modify(quest_id);
+	VOQuestActive* vo = activeQuests_.Modify(quest_id);
 	if (vo == nullptr)
 		return false;
 
@@ -644,7 +644,7 @@ void PlayerQuest::expireTimedOutQuests()
 
 	for (int quest_id : quest_ids)
 	{
-		const QuestActiveVO* found = activeQuests_.Find(quest_id);
+		const VOQuestActive* found = activeQuests_.Find(quest_id);
 		if (found == nullptr)
 			continue;
 
@@ -663,7 +663,7 @@ void PlayerQuest::expireTimedOutQuests()
 		if (current < found->accept_time + std::chrono::seconds(limit))
 			continue;
 
-		QuestActiveVO* vo = activeQuests_.Modify(quest_id);
+		VOQuestActive* vo = activeQuests_.Modify(quest_id);
 		if (vo == nullptr)
 			continue;
 
@@ -673,7 +673,7 @@ void PlayerQuest::expireTimedOutQuests()
 
 bool PlayerQuest::failQuest(int quest_id)
 {
-	QuestActiveVO* vo = activeQuests_.Modify(quest_id);
+	VOQuestActive* vo = activeQuests_.Modify(quest_id);
 	if (vo == nullptr)
 		return false;
 
@@ -701,7 +701,7 @@ void PlayerQuest::tickProtectObjectives(int seconds)
 	activeQuests_.CollectKeys(quest_ids);
 	for (int quest_id : quest_ids)
 	{
-		const QuestActiveVO* vo = activeQuests_.Find(quest_id);
+		const VOQuestActive* vo = activeQuests_.Find(quest_id);
 		if (vo == nullptr || static_cast<QuestState>(vo->state) != QuestState::InProgress)
 			continue;
 
@@ -734,7 +734,7 @@ void PlayerQuest::clearFinishedCooldowns()
 
 	for (int quest_id : quest_ids)
 	{
-		const QuestActiveVO* vo = activeQuests_.Find(quest_id);
+		const VOQuestActive* vo = activeQuests_.Find(quest_id);
 		if (vo == nullptr || static_cast<QuestState>(vo->state) != QuestState::Cooldown)
 			continue;
 
@@ -847,7 +847,7 @@ void PlayerQuest::publish(const EventMessage& message)
 
 bool PlayerQuest::IsActive(int quest_id) const
 {
-	const QuestActiveVO* vo = activeQuests_.Find(quest_id);
+	const VOQuestActive* vo = activeQuests_.Find(quest_id);
 	if (vo == nullptr)
 		return false;
 
@@ -865,23 +865,23 @@ bool PlayerQuest::IsCompleted(int quest_id) const
 
 QuestState PlayerQuest::GetState(int quest_id) const
 {
-	const QuestActiveVO* vo = activeQuests_.Find(quest_id);
+	const VOQuestActive* vo = activeQuests_.Find(quest_id);
 	return vo != nullptr ? static_cast<QuestState>(vo->state) : QuestState::InProgress;
 }
 
 int PlayerQuest::GetStage(int quest_id) const
 {
-	const QuestActiveVO* vo = activeQuests_.Find(quest_id);
+	const VOQuestActive* vo = activeQuests_.Find(quest_id);
 	return vo != nullptr ? vo->stage : 0;
 }
 
 int PlayerQuest::GetProgress(int quest_id, int slot) const
 {
-	const QuestActiveVO* vo = activeQuests_.Find(quest_id);
+	const VOQuestActive* vo = activeQuests_.Find(quest_id);
 	return vo != nullptr ? readProgress(*vo, slot) : 0;
 }
 
-const QuestActiveVO* PlayerQuest::GetActiveQuest(int quest_id) const
+const VOQuestActive* PlayerQuest::GetActiveQuest(int quest_id) const
 {
 	return activeQuests_.Find(quest_id);
 }
@@ -929,7 +929,7 @@ void PlayerQuest::Load(std::any data)
 	activeQuests_.Clear();
 	for (const auto& vo : load_data.quest_actives)
 	{
-		QuestActiveVO row = vo;
+		VOQuestActive row = vo;
 		// stage 컬럼이 없던 시절에 저장된 행은 0 으로 들어온다. 1 스테이지로 본다.
 		if (row.stage < 1)
 			row.stage = 1;
@@ -982,7 +982,7 @@ void PlayerQuest::clearCompleted(int quest_id)
 	markDirty();
 }
 
-void PlayerQuest::resetActiveRow(QuestActiveVO& vo)
+void PlayerQuest::resetActiveRow(VOQuestActive& vo)
 {
 	vo.character_id = characterId_;
 	vo.state = static_cast<int>(QuestState::InProgress);
@@ -993,9 +993,9 @@ void PlayerQuest::resetActiveRow(QuestActiveVO& vo)
 	vo.accept_time = now();
 }
 
-QuestStateVO PlayerQuest::buildStateVO() const
+VOQuestState PlayerQuest::buildStateVO() const
 {
-	QuestStateVO vo;
+	VOQuestState vo;
 	vo.character_id = characterId_;
 	vo.flags.assign(completedBits_.begin(), completedBits_.end());
 	return vo;
@@ -1044,7 +1044,7 @@ void PlayerQuest::MarkAllForSync()
 	}
 }
 
-int PlayerQuest::readProgress(const QuestActiveVO& vo, int slot)
+int PlayerQuest::readProgress(const VOQuestActive& vo, int slot)
 {
 	switch (slot)
 	{
@@ -1055,7 +1055,7 @@ int PlayerQuest::readProgress(const QuestActiveVO& vo, int slot)
 	}
 }
 
-void PlayerQuest::writeProgress(QuestActiveVO& vo, int slot, int value)
+void PlayerQuest::writeProgress(VOQuestActive& vo, int slot, int value)
 {
 	switch (slot)
 	{

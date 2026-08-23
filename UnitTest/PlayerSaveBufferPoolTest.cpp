@@ -27,7 +27,7 @@ namespace
         records.clear();
         for (int i = 0; i < count; ++i)
         {
-            PlayerItemVO vo{};
+            VOPlayerItem vo{};
             vo.item_id = i + 1;
             vo.count = 1;
             records.push_back({ vo, DbAction::Insert });
@@ -162,13 +162,13 @@ TEST(PlayerSaveBufferPoolTest, InFlightSlotOutlivesPool)
 // 트래커의 Flush(out) 은 out 을 비우고 채우되 버퍼는 그대로 쓴다.
 TEST(DbCollectionTrackerTest, FlushIntoExistingVectorReusesBuffer)
 {
-    DbCollectionTracker<int, PlayerItemVO> tracker;
+    DbCollectionTracker<int, VOPlayerItem> tracker;
 
-    std::vector<DbRecord<PlayerItemVO>> out;
+    std::vector<DbRecord<VOPlayerItem>> out;
     out.reserve(32);
     const void* buffer = out.data();
 
-    PlayerItemVO vo{};
+    VOPlayerItem vo{};
     vo.item_id = 7;
     vo.count = 3;
     tracker.Add(7, vo);

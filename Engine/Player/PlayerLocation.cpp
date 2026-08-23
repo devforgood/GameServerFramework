@@ -51,9 +51,9 @@ bool PlayerLocation::TryGet(int& outMapId, float& outX, float& outY, float& outZ
 	return true;
 }
 
-PlayerLocationVO PlayerLocation::buildVO() const
+VOPlayerLocation PlayerLocation::buildVO() const
 {
-	PlayerLocationVO vo{};
+	VOPlayerLocation vo{};
 	vo.character_id = characterId_;
 	vo.map_id = mapId_;
 	vo.x = x_;

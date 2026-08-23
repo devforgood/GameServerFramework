@@ -43,9 +43,9 @@ bool PlayerWallet::SpendGold(long long amount)
 	return true;
 }
 
-PlayerWalletVO PlayerWallet::buildVO() const
+VOPlayerWallet PlayerWallet::buildVO() const
 {
-	PlayerWalletVO vo{};
+	VOPlayerWallet vo{};
 	vo.character_id = characterId_;
 	vo.gold = gold_;
 	return vo;

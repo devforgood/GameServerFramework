@@ -39,8 +39,12 @@ def parse_schema(xml_file):
     root = tree.getroot()
     tables = []
     for table_node in root.findall('table'):
-        class_name = table_node.get("class_name") or table_node.get("name").capitalize() + "DAO"
-        vo_class_name = class_name.replace("DAO", "VO") if class_name.endswith("DAO") else table_node.get("name").capitalize() + "VO"
+        # DAO/VO 는 접두사로 붙인다. 목록에서 같은 종류끼리 모여 보이고,
+        # 접미사일 때처럼 이름 뒤쪽에서 종류를 찾지 않아도 된다.
+        # DAOPlayerItem <-> VOPlayerItem 처럼 접두사만 갈아끼우면 짝이 맞는다.
+        base_name = "".join(part.capitalize() for part in table_node.get("name").split("_"))
+        class_name = table_node.get("class_name") or "DAO" + base_name
+        vo_class_name = "VO" + class_name[len("DAO"):] if class_name.startswith("DAO") else "VO" + base_name
         table = {
             "name": table_node.get("name"),
             "class_name": class_name,
@@ -117,7 +121,7 @@ def render_templates(tables):
         with open(f"{pathname}/schema_columns.h", "a", encoding="utf-8") as f:
             f.write(env.get_template("schema_columns.h.j2").render(table=table, include_header=is_first_file))
 
-        create_sqls.append(env.get_template("create_table.sql.j2").render(table=table))
+        create_sqls.append(env.get_template("create_table.sql.j2").render(table=table, include_header=is_first_file))
 
         is_first_file = False
 

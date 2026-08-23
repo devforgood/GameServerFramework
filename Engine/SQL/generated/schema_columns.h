@@ -1,6 +1,8 @@
 #pragma once
 
-// schema.xml 에서 생성된 파일입니다. 직접 수정하지 마세요.
+// 이 파일은 SqlCodeGenerator 가 자동 생성한다. 직접 수정하지 마세요.
+// 고칠 곳: SqlCodeGenerator/schema.xml + templates/schema_columns.h.j2
+// 다시 만들기: SqlCodeGenerator/build.bat (또는 python generate.py)
 //
 // CREATE TABLE IF NOT EXISTS 는 이미 있는 테이블에 아무것도 하지 않는다. 스키마에 컬럼이
 // 추가되면 기존 DB 는 그대로 남아, 서버가 없는 컬럼을 읽으려다 죽는다. 기동 시 이 목록과

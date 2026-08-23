@@ -373,7 +373,7 @@ TEST_F(PlayerLevelTest, DirtyFlag_SetWhenExpGainedWithoutLevelUp)
     EXPECT_TRUE(level->IsDirty()) << "경험치 진행도가 저장되지 않으면 재접속 시 사라진다";
 }
 
-// 저장에 exp 가 실린다(PlayerVO.exp).
+// 저장에 exp 가 실린다(VOPlayer.exp).
 TEST_F(PlayerLevelTest, Save_WritesExp)
 {
     GameObject go;

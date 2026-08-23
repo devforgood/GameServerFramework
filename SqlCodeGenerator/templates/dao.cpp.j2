@@ -1,4 +1,10 @@
 {% if include_header %}
+// 이 파일은 SqlCodeGenerator 가 자동 생성한다. 직접 수정하지 마세요.
+// 고칠 곳: SqlCodeGenerator/schema.xml + templates/dao.cpp.j2
+// 다시 만들기: SqlCodeGenerator/build.bat (또는 python generate.py)
+//
+// DAO = Data Access Object (데이터 접근 객체) / VO = Value Object (값 객체)
+
 #include "{{ table.file_name }}.h"
 {% else %}
 

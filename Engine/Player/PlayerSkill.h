@@ -25,6 +25,6 @@ public:
 	size_t Count() const { return skills_.Size(); }
 
 private:
-	DbCollectionTracker<int, PlayerSkillVO> skills_;
+	DbCollectionTracker<int, VOPlayerSkill> skills_;
 	int characterId_ = 0;
 };

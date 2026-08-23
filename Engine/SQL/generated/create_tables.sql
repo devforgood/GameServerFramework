@@ -1,3 +1,7 @@
+-- 이 파일은 SqlCodeGenerator 가 자동 생성한다. 직접 수정하지 마세요.
+-- 고칠 곳: SqlCodeGenerator/schema.xml + templates/create_table.sql.j2
+-- 다시 만들기: SqlCodeGenerator/build.bat (또는 python generate.py)
+
 CREATE TABLE IF NOT EXISTS `player`
 (
     `id`                 BIGINT          NOT NULL AUTO_INCREMENT,

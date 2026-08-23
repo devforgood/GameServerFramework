@@ -5,7 +5,7 @@
 
 // 플레이어의 재화(골드).
 //
-// player 행이 아니라 별도 테이블을 쓴다 — PlayerLevel 이 저장할 때 PlayerVO 를 통째로
+// player 행이 아니라 별도 테이블을 쓴다 — PlayerLevel 이 저장할 때 VOPlayer 를 통째로
 // 다시 만들기 때문에, 같은 행에 골드를 얹으면 서로 덮어쓴다.
 class PlayerWallet : public ComponentBase<PlayerWallet>
 {
@@ -22,9 +22,9 @@ public:
 	long long GetGold() const { return gold_; }
 
 private:
-	PlayerWalletVO buildVO() const;
+	VOPlayerWallet buildVO() const;
 
-	DbRowTracker<PlayerWalletVO> row_;
+	DbRowTracker<VOPlayerWallet> row_;
 	long long gold_ = 0;
 	int characterId_ = 0;
 };

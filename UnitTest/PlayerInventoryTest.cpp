@@ -165,7 +165,7 @@ TEST_F(PlayerInventoryTest, Item_SaveEmitsInsertUpdateDelete)
 {
 	// 이미 DB 에 있는 줄 하나로 시작한다.
 	PlayerLoadData load = MakeLoadData();
-	PlayerItemVO existing{};
+	VOPlayerItem existing{};
 	existing.character_id = 1001;
 	existing.item_id = kPotionSmall;
 	existing.count = 2;
@@ -185,8 +185,8 @@ TEST_F(PlayerInventoryTest, Item_SaveEmitsInsertUpdateDelete)
 	ASSERT_TRUE(saved.items.has_value());
 	ASSERT_EQ(saved.items->size(), 2u);
 
-	const DbRecord<PlayerItemVO>* update = nullptr;
-	const DbRecord<PlayerItemVO>* insert = nullptr;
+	const DbRecord<VOPlayerItem>* update = nullptr;
+	const DbRecord<VOPlayerItem>* insert = nullptr;
 	for (const auto& record : *saved.items)
 	{
 		if (record.action == DbAction::Update) update = &record;
@@ -202,7 +202,7 @@ TEST_F(PlayerInventoryTest, Item_SaveEmitsInsertUpdateDelete)
 TEST_F(PlayerInventoryTest, Item_ExhaustedRowBecomesDelete)
 {
 	PlayerLoadData load = MakeLoadData();
-	PlayerItemVO existing{};
+	VOPlayerItem existing{};
 	existing.character_id = 1001;
 	existing.item_id = kPotionMedium;
 	existing.count = 1;
@@ -224,7 +224,7 @@ TEST_F(PlayerInventoryTest, Item_ExhaustedRowBecomesDelete)
 TEST_F(PlayerInventoryTest, Item_NoChangeWritesNothing)
 {
 	PlayerLoadData load = MakeLoadData();
-	PlayerItemVO existing{};
+	VOPlayerItem existing{};
 	existing.character_id = 1001;
 	existing.item_id = kPotionSmall;
 	existing.count = 2;
