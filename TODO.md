@@ -2,6 +2,10 @@
 
 2026-07-05 기준. Map JSON Updater(Auto Sync) 도입 후 남은 작업 목록.
 
+메인 퀘스트/대화 쪽 작업은 [doc/TODO_story.md](doc/TODO_story.md) 에 따로 있다.
+그쪽 A 항목(게이트·스폰)이 여기와 겹친다 — 1막 후반을 열려면 잿빛 숲 입구 게이트와
+몬스터 스폰 마커가 필요하고, 그것이 A3 의 씬 없는 맵 문제와도 이어진다.
+
 ## A. 데이터 정합
 
 - [x] **A1. Starting Village / Dark Forest 씬 ↔ Map.json 불일치**
@@ -13,8 +17,13 @@
   - 존재하지 않는 map 3(Shop) / map 4(Cave)를 가리키던 게이트 삭제 (map 1/2 재작성에 포함).
   - Dragon's Lair → map 2 gate 3, Ancient Dungeon → map 2 gate 2, Battle Arena → map 1 gate 3 참조를 실제 존재하는 gate 1로 수정.
 - [ ] **A3. 씬 없는 샘플 맵 3개 처리 결정** — Dragon's Lair(6), Ancient Dungeon(9), Battle Arena(12)
-  - 씬/navmesh 없음. game_mode_id 2/3/4라 field 월드에는 로드되지 않아 당장 무해.
+  - 씬 없음. game_mode_id 2/3/4라 field 월드에는 로드되지 않아 당장 무해.
   - 각 게임 모드(레이드/던전/아레나) 개발 시작할 때 씬을 만들거나, 불필요하면 삭제.
+  - **2026-08-23 갱신**: Ancient Dungeon(9) / Battle Arena(12)는 Map.json 에서 이미 사라졌고 남은 것은
+    Dragon's Lair(6)뿐이다. navmesh 는 없는 게 아니라 아르카디아 평원 것을 공유하고 있다
+    (`navmesh_path: "Arcadia Plains_navmesh.bin"`, size 도 501.92×501.96 으로 동일 —
+    평원 씬의 한 구역을 좌표로만 떼어 둔 상태). 서버 길찾기는 되지만 클라가 로드할 씬이 없다.
+    메인 스토리 5막 무대라 삭제 대상이 아니다 → [doc/TODO_story.md](doc/TODO_story.md) D3.
 - [x] **A4. Map.json 사본 배포 자동화 (JSON만)**
   - Save/자동 저장 시 `GameData/Map.json`을 Client(Resources)/Game/UnitTest GameData로 verbatim 복사하도록 툴에 추가.
   - [ ] 코드젠(Gamedata.cs / gamedata.h)과 navmesh 바이너리는 여전히 GameDataFlow.py 수동 실행 필요 — 스키마 변경 시 잊지 말 것.

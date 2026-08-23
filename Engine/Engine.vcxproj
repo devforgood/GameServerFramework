@@ -311,6 +311,7 @@
     <ClInclude Include="Dialog\Dialog.h" />
     <ClInclude Include="Dialog\DialogFactory.h" />
     <ClInclude Include="Dialog\DialogAction.h" />
+    <ClInclude Include="Dialog\DialogCondition.h" />
     <ClInclude Include="Player\PlayerDialog.h" />
     <ClInclude Include="Player\PlayerParty.h" />
     <ClInclude Include="Player\PlayerSender.h" />
