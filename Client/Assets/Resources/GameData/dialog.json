@@ -6,7 +6,8 @@
     "choices": [
       { "text_id": "dlg_elder_ask_work", "action": "goto", "param": 0, "next_id": 3002 },
       { "text_id": "dlg_elder_ask_merchant", "action": "goto", "param": 0, "next_id": 3003 },
-      { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
+      { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 },
+      { "text_id": "dlg_maren_ask_ships", "action": "goto", "param": 0, "next_id": 3004 }
     ]
   },
   {
@@ -35,6 +36,90 @@
     "text_id": "dlg_blacksmith_greet",
     "choices": [
       { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
+    ]
+  },
+  {
+    "id": 3004,
+    "npc_id": 2001,
+    "text_id": "dlg_maren_missing_ships",
+    "choices": [
+      { "text_id": "dlg_maren_accept_ships", "action": "accept_quest", "param": 11001, "next_id": 0 },
+      { "text_id": "dlg_maren_report_vanished", "action": "complete_quest", "param": 11007, "next_id": 0 },
+      { "text_id": "dlg_maren_accept_mural", "action": "accept_quest", "param": 11008, "next_id": 0 },
+      { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3001 }
+    ]
+  },
+  {
+    "id": 3201,
+    "npc_id": 2004,
+    "text_id": "dlg_rinne_greet",
+    "choices": [
+      { "text_id": "dlg_rinne_report_ships", "action": "complete_quest", "param": 11001, "next_id": 0 },
+      { "text_id": "dlg_rinne_ask_shortcut", "action": "goto", "param": 0, "next_id": 3202 },
+      { "text_id": "dlg_rinne_ask_tally", "action": "goto", "param": 0, "next_id": 3203 },
+      { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
+    ]
+  },
+  {
+    "id": 3202,
+    "npc_id": 2004,
+    "text_id": "dlg_rinne_shortcut",
+    "choices": [
+      { "text_id": "dlg_rinne_accept_shortcut", "action": "accept_quest", "param": 11002, "next_id": 0 },
+      { "text_id": "dlg_rinne_report_shortcut", "action": "complete_quest", "param": 11002, "next_id": 0 },
+      { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3201 }
+    ]
+  },
+  {
+    "id": 3203,
+    "npc_id": 2004,
+    "text_id": "dlg_rinne_tally",
+    "choices": [
+      { "text_id": "dlg_rinne_accept_tally", "action": "accept_quest", "param": 11003, "next_id": 0 },
+      { "text_id": "dlg_rinne_report_tally", "action": "complete_quest", "param": 11003, "next_id": 0 },
+      { "text_id": "dlg_rinne_accept_verdant", "action": "accept_quest", "param": 11004, "next_id": 0 },
+      { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3201 }
+    ]
+  },
+  {
+    "id": 3301,
+    "npc_id": 2005,
+    "text_id": "dlg_kyle_greet",
+    "choices": [
+      { "text_id": "dlg_kyle_report_orc", "action": "complete_quest", "param": 11004, "next_id": 0 },
+      { "text_id": "dlg_kyle_ask_logbook", "action": "goto", "param": 0, "next_id": 3302 },
+      { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
+    ]
+  },
+  {
+    "id": 3302,
+    "npc_id": 2005,
+    "text_id": "dlg_kyle_logbook",
+    "choices": [
+      { "text_id": "dlg_kyle_accept_logbook", "action": "accept_quest", "param": 11005, "next_id": 0 },
+      { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3301 }
+    ]
+  },
+  {
+    "id": 3401,
+    "npc_id": 2006,
+    "text_id": "dlg_aisha_greet",
+    "choices": [
+      { "text_id": "dlg_aisha_report_logbook", "action": "complete_quest", "param": 11005, "next_id": 0 },
+      { "text_id": "dlg_aisha_report_mural", "action": "complete_quest", "param": 11008, "next_id": 0 },
+      { "text_id": "dlg_aisha_ask_ruins", "action": "goto", "param": 0, "next_id": 3402 },
+      { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
+    ]
+  },
+  {
+    "id": 3402,
+    "npc_id": 2006,
+    "text_id": "dlg_aisha_ruins",
+    "choices": [
+      { "text_id": "dlg_aisha_accept_ruins", "action": "accept_quest", "param": 11006, "next_id": 0 },
+      { "text_id": "dlg_aisha_report_ruins", "action": "complete_quest", "param": 11006, "next_id": 0 },
+      { "text_id": "dlg_aisha_accept_vanished", "action": "accept_quest", "param": 11007, "next_id": 0 },
+      { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3401 }
     ]
   }
 ]

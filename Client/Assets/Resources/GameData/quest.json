@@ -605,5 +605,692 @@
       "choice_items": [],
       "skill_ids": []
     }
+  },
+  {
+    "id": 11001,
+    "code_name": "MainQuest",
+    "category": "explore",
+    "name_id": "quest_missing_ships_name",
+    "desc_id": "quest_missing_ships_desc",
+    "level": 1,
+    "min_level": 1,
+    "max_level": 0,
+    "priority": 200,
+    "map_id": 1,
+    "start_npc_id": 2001,
+    "end_npc_id": 2004,
+    "shareable": true,
+    "recommended_party_size": 1,
+    "auto_complete": false,
+    "chain_id": 101,
+    "chain_step": 1,
+    "prerequisites": {
+      "completed_quest_ids": [],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_missing_ships_stage1_desc",
+        "objectives": [
+          {
+            "type": "talk",
+            "target_id": 2001,
+            "count": 1,
+            "desc_id": "quest_missing_ships_obj_talk_maren"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_missing_ships_stage2_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 1,
+            "count": 5,
+            "desc_id": "quest_missing_ships_obj_kill_slime"
+          }
+        ]
+      },
+      {
+        "step": 3,
+        "logic": "and",
+        "desc_id": "quest_missing_ships_stage3_desc",
+        "objectives": [
+          {
+            "type": "talk",
+            "target_id": 2004,
+            "count": 1,
+            "desc_id": "quest_missing_ships_obj_talk_rinne"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 120,
+      "gold": 60,
+      "items": [
+        {
+          "item_id": 1,
+          "count": 3
+        }
+      ],
+      "choice_items": [],
+      "skill_ids": []
+    }
+  },
+  {
+    "id": 11002,
+    "code_name": "MainQuest",
+    "category": "explore",
+    "name_id": "quest_rinne_shortcut_name",
+    "desc_id": "quest_rinne_shortcut_desc",
+    "level": 2,
+    "min_level": 2,
+    "max_level": 0,
+    "priority": 200,
+    "map_id": 14,
+    "start_npc_id": 2004,
+    "end_npc_id": 2004,
+    "shareable": true,
+    "recommended_party_size": 1,
+    "auto_complete": false,
+    "chain_id": 101,
+    "chain_step": 2,
+    "prerequisites": {
+      "completed_quest_ids": [
+        11001
+      ],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_rinne_shortcut_stage1_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 2,
+            "count": 8,
+            "desc_id": "quest_rinne_shortcut_obj_kill_wolf"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_rinne_shortcut_stage2_desc",
+        "objectives": [
+          {
+            "type": "reach",
+            "target_id": 13,
+            "count": 1,
+            "desc_id": "quest_rinne_shortcut_obj_reach_field"
+          }
+        ]
+      },
+      {
+        "step": 3,
+        "logic": "and",
+        "desc_id": "quest_rinne_shortcut_stage3_desc",
+        "objectives": [
+          {
+            "type": "talk",
+            "target_id": 2004,
+            "count": 1,
+            "desc_id": "quest_rinne_shortcut_obj_report"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 250,
+      "gold": 120,
+      "items": [
+        {
+          "item_id": 1,
+          "count": 5
+        }
+      ],
+      "choice_items": [],
+      "skill_ids": []
+    }
+  },
+  {
+    "id": 11003,
+    "code_name": "MainQuest",
+    "category": "collect",
+    "name_id": "quest_smuggler_tally_name",
+    "desc_id": "quest_smuggler_tally_desc",
+    "level": 3,
+    "min_level": 3,
+    "max_level": 0,
+    "priority": 200,
+    "map_id": 14,
+    "start_npc_id": 2004,
+    "end_npc_id": 2004,
+    "shareable": true,
+    "recommended_party_size": 1,
+    "auto_complete": false,
+    "chain_id": 101,
+    "chain_step": 3,
+    "prerequisites": {
+      "completed_quest_ids": [
+        11002
+      ],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_smuggler_tally_stage1_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 3,
+            "count": 10,
+            "desc_id": "quest_smuggler_tally_obj_kill_goblin"
+          },
+          {
+            "type": "collect",
+            "target_id": 103,
+            "count": 3,
+            "desc_id": "quest_smuggler_tally_obj_collect_tally"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_smuggler_tally_stage2_desc",
+        "objectives": [
+          {
+            "type": "talk",
+            "target_id": 2004,
+            "count": 1,
+            "desc_id": "quest_smuggler_tally_obj_report"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 500,
+      "gold": 220,
+      "items": [],
+      "choice_items": [
+        {
+          "item_id": 4,
+          "count": 1
+        },
+        {
+          "item_id": 5,
+          "count": 1
+        }
+      ],
+      "skill_ids": []
+    }
+  },
+  {
+    "id": 11004,
+    "code_name": "MainQuest",
+    "category": "kill",
+    "name_id": "quest_verdant_problem_name",
+    "desc_id": "quest_verdant_problem_desc",
+    "level": 5,
+    "min_level": 5,
+    "max_level": 0,
+    "priority": 200,
+    "map_id": 2,
+    "start_npc_id": 2004,
+    "end_npc_id": 2005,
+    "shareable": true,
+    "recommended_party_size": 1,
+    "auto_complete": false,
+    "chain_id": 101,
+    "chain_step": 4,
+    "prerequisites": {
+      "completed_quest_ids": [
+        11003
+      ],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_verdant_problem_stage1_desc",
+        "objectives": [
+          {
+            "type": "talk",
+            "target_id": 2005,
+            "count": 1,
+            "desc_id": "quest_verdant_problem_obj_talk_kyle"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_verdant_problem_stage2_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 4,
+            "count": 6,
+            "desc_id": "quest_verdant_problem_obj_kill_orc"
+          }
+        ]
+      },
+      {
+        "step": 3,
+        "logic": "and",
+        "desc_id": "quest_verdant_problem_stage3_desc",
+        "objectives": [
+          {
+            "type": "talk",
+            "target_id": 2005,
+            "count": 1,
+            "desc_id": "quest_verdant_problem_obj_report"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 700,
+      "gold": 300,
+      "items": [
+        {
+          "item_id": 2,
+          "count": 3
+        }
+      ],
+      "choice_items": [],
+      "skill_ids": []
+    },
+    "disabled": true
+  },
+  {
+    "id": 11005,
+    "code_name": "MainQuest",
+    "category": "collect",
+    "name_id": "quest_torn_logbook_name",
+    "desc_id": "quest_torn_logbook_desc",
+    "level": 6,
+    "min_level": 6,
+    "max_level": 0,
+    "priority": 200,
+    "map_id": 2,
+    "start_npc_id": 2005,
+    "end_npc_id": 2006,
+    "shareable": true,
+    "recommended_party_size": 2,
+    "auto_complete": false,
+    "chain_id": 101,
+    "chain_step": 5,
+    "prerequisites": {
+      "completed_quest_ids": [
+        11004
+      ],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_torn_logbook_stage1_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 5,
+            "count": 8,
+            "desc_id": "quest_torn_logbook_obj_kill_dark_elf"
+          },
+          {
+            "type": "collect",
+            "target_id": 104,
+            "count": 1,
+            "desc_id": "quest_torn_logbook_obj_collect_logbook"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_torn_logbook_stage2_desc",
+        "objectives": [
+          {
+            "type": "talk",
+            "target_id": 2006,
+            "count": 1,
+            "desc_id": "quest_torn_logbook_obj_talk_aisha"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 1000,
+      "gold": 400,
+      "items": [
+        {
+          "item_id": 2,
+          "count": 5
+        }
+      ],
+      "choice_items": [],
+      "skill_ids": []
+    },
+    "disabled": true
+  },
+  {
+    "id": 11006,
+    "code_name": "MainQuest",
+    "category": "explore",
+    "name_id": "quest_ashen_ruins_name",
+    "desc_id": "quest_ashen_ruins_desc",
+    "level": 7,
+    "min_level": 7,
+    "max_level": 0,
+    "priority": 200,
+    "map_id": 2,
+    "start_npc_id": 2006,
+    "end_npc_id": 2006,
+    "shareable": true,
+    "recommended_party_size": 3,
+    "auto_complete": false,
+    "chain_id": 101,
+    "chain_step": 6,
+    "prerequisites": {
+      "completed_quest_ids": [
+        11005
+      ],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_ashen_ruins_stage1_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 6,
+            "count": 10,
+            "desc_id": "quest_ashen_ruins_obj_kill_skeleton"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_ashen_ruins_stage2_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 7,
+            "count": 8,
+            "desc_id": "quest_ashen_ruins_obj_kill_zombie"
+          }
+        ]
+      },
+      {
+        "step": 3,
+        "logic": "and",
+        "desc_id": "quest_ashen_ruins_stage3_desc",
+        "objectives": [
+          {
+            "type": "talk",
+            "target_id": 2006,
+            "count": 1,
+            "desc_id": "quest_ashen_ruins_obj_report"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 1400,
+      "gold": 550,
+      "items": [],
+      "choice_items": [
+        {
+          "item_id": 2,
+          "count": 5
+        },
+        {
+          "item_id": 3,
+          "count": 2
+        }
+      ],
+      "skill_ids": []
+    },
+    "disabled": true
+  },
+  {
+    "id": 11007,
+    "code_name": "MainQuest",
+    "category": "boss",
+    "name_id": "quest_the_vanished_name",
+    "desc_id": "quest_the_vanished_desc",
+    "level": 10,
+    "min_level": 10,
+    "max_level": 0,
+    "priority": 200,
+    "map_id": 2,
+    "start_npc_id": 2006,
+    "end_npc_id": 2001,
+    "shareable": true,
+    "recommended_party_size": 3,
+    "auto_complete": false,
+    "chain_id": 101,
+    "chain_step": 7,
+    "prerequisites": {
+      "completed_quest_ids": [
+        11006
+      ],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_the_vanished_stage1_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 8,
+            "count": 5,
+            "desc_id": "quest_the_vanished_obj_kill_wraith"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_the_vanished_stage2_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 10,
+            "count": 1,
+            "desc_id": "quest_the_vanished_obj_kill_captain"
+          }
+        ]
+      },
+      {
+        "step": 3,
+        "logic": "and",
+        "desc_id": "quest_the_vanished_stage3_desc",
+        "objectives": [
+          {
+            "type": "talk",
+            "target_id": 2001,
+            "count": 1,
+            "desc_id": "quest_the_vanished_obj_report"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 2000,
+      "gold": 800,
+      "items": [
+        {
+          "item_id": 3,
+          "count": 3
+        }
+      ],
+      "choice_items": [],
+      "skill_ids": []
+    },
+    "disabled": true
+  },
+  {
+    "id": 11008,
+    "code_name": "MainQuest",
+    "category": "boss",
+    "name_id": "quest_four_winged_mural_name",
+    "desc_id": "quest_four_winged_mural_desc",
+    "level": 12,
+    "min_level": 12,
+    "max_level": 0,
+    "priority": 200,
+    "map_id": 2,
+    "start_npc_id": 2001,
+    "end_npc_id": 2006,
+    "shareable": true,
+    "recommended_party_size": 3,
+    "auto_complete": false,
+    "chain_id": 101,
+    "chain_step": 8,
+    "prerequisites": {
+      "completed_quest_ids": [
+        11007
+      ],
+      "blocked_quest_ids": [],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_four_winged_mural_stage1_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 9,
+            "count": 1,
+            "desc_id": "quest_four_winged_mural_obj_kill_golem"
+          },
+          {
+            "type": "collect",
+            "target_id": 105,
+            "count": 1,
+            "desc_id": "quest_four_winged_mural_obj_collect_rubbing"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_four_winged_mural_stage2_desc",
+        "objectives": [
+          {
+            "type": "talk",
+            "target_id": 2006,
+            "count": 1,
+            "desc_id": "quest_four_winged_mural_obj_show_aisha"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 3000,
+      "gold": 1200,
+      "items": [
+        {
+          "item_id": 3,
+          "count": 5
+        }
+      ],
+      "choice_items": [
+        {
+          "item_id": 4,
+          "count": 1
+        },
+        {
+          "item_id": 5,
+          "count": 1
+        }
+      ],
+      "skill_ids": []
+    },
+    "disabled": true
   }
 ]

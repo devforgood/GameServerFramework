@@ -45,5 +45,47 @@
     "escort_dest_id": 1001,
     "respawn_seconds": 30,
     "dialog_id": 0
+  },
+  {
+    "id": 2004,
+    "name": "Rinne",
+    "name_id": "npc_rinne_name",
+    "type": "quest_giver",
+    "map_id": 14,
+    "position": {
+      "x": -20.0,
+      "y": 0.0,
+      "z": 2.0
+    },
+    "interact_range": 3.0,
+    "dialog_id": 3201
+  },
+  {
+    "id": 2005,
+    "name": "Kyle Verdant",
+    "name_id": "npc_kyle_name",
+    "type": "quest_giver",
+    "map_id": 2,
+    "position": {
+      "x": -20.0,
+      "y": 0.0,
+      "z": -2.0
+    },
+    "interact_range": 3.0,
+    "dialog_id": 3301
+  },
+  {
+    "id": 2006,
+    "name": "Aisha",
+    "name_id": "npc_aisha_name",
+    "type": "quest_giver",
+    "map_id": 2,
+    "position": {
+      "x": -17.0,
+      "y": 0.0,
+      "z": 5.0
+    },
+    "interact_range": 3.0,
+    "dialog_id": 3401
   }
 ]

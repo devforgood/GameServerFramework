@@ -19,8 +19,7 @@
         "value": 2.5
       }
     ]
-  }
-  ,
+  },
   {
     "id": 2,
     "type": "consumable",
@@ -73,5 +72,32 @@
     "no_trade": true,
     "no_sell": true,
     "quest_id": 3001
+  },
+  {
+    "id": 103,
+    "type": "quest",
+    "name_id": "item_smuggler_tally_name",
+    "desc_id": "item_smuggler_tally_desc",
+    "no_trade": true,
+    "no_sell": true,
+    "quest_id": 11003
+  },
+  {
+    "id": 104,
+    "type": "quest",
+    "name_id": "item_torn_logbook_name",
+    "desc_id": "item_torn_logbook_desc",
+    "no_trade": true,
+    "no_sell": true,
+    "quest_id": 11005
+  },
+  {
+    "id": 105,
+    "type": "quest",
+    "name_id": "item_mural_rubbing_name",
+    "desc_id": "item_mural_rubbing_desc",
+    "no_trade": true,
+    "no_sell": true,
+    "quest_id": 11008
   }
 ]
