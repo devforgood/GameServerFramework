@@ -162,5 +162,11 @@
   "dlg_aisha_ruins": "이 숲의 돌은 전부 같은 방향을 보고 있어요. 우연이라기엔 너무 성실하죠.",
   "dlg_aisha_accept_ruins": "안쪽까지 들어가 보자.",
   "dlg_aisha_report_ruins": "안쪽을 정리했어.",
-  "dlg_aisha_accept_vanished": "사람들을 찾으러 가자."
+  "dlg_aisha_accept_vanished": "사람들을 찾으러 가자.",
+  "quest_escort_merchant_name": "상인 호위",
+  "quest_escort_merchant_desc": "길을 잃은 상인이 마을까지 데려다줄 사람을 찾고 있습니다.",
+  "quest_escort_merchant_stage1_desc": "상인 곁을 지키기",
+  "quest_escort_merchant_stage2_desc": "상인을 목적지까지 호위",
+  "quest_escort_merchant_obj_protect": "상인 보호(초)",
+  "quest_escort_merchant_obj_escort": "상인 호위 완료"
 }

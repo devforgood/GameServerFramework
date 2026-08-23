@@ -162,5 +162,11 @@
   "dlg_aisha_ruins": "Every stone in this wood faces the same way. Too diligent for coincidence.",
   "dlg_aisha_accept_ruins": "Let's go all the way in.",
   "dlg_aisha_report_ruins": "The inner ruins are clear.",
-  "dlg_aisha_accept_vanished": "Let's go find them."
+  "dlg_aisha_accept_vanished": "Let's go find them.",
+  "quest_escort_merchant_name": "Escort the Merchant",
+  "quest_escort_merchant_desc": "A lost merchant is looking for someone to see him back to the village.",
+  "quest_escort_merchant_stage1_desc": "Stay by the merchant",
+  "quest_escort_merchant_stage2_desc": "Escort the merchant to his destination",
+  "quest_escort_merchant_obj_protect": "Merchant protected (sec)",
+  "quest_escort_merchant_obj_escort": "Merchant escorted"
 }
