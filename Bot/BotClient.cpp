@@ -587,6 +587,15 @@ namespace bot
 			return;
 		}
 
+		// 서버가 방금 누른 선택지를 거절하면(레벨 미달 등) 같은 노드를 그대로 다시 보낸다.
+		// 다시 눌러도 답은 같으니 창을 닫고 물러선다 — 그러지 않으면 한 대화 안에서
+		// 같은 선택지만 두드리다 상호작용 횟수만 늘어난다.
+		if (message->result() != syncnet::StatusCode::StatusCode_Success)
+		{
+			blackboard_.quest.OnDialogActionFailed();
+			return;
+		}
+
 		// 서버는 조건(show_if)에 걸러진 목록만 보낸다. 그 순서 그대로 들고 있다가
 		// 데이터의 어느 선택지인지 text_id 로 되짚는다.
 		std::vector<std::string> choice_text_ids;

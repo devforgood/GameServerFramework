@@ -107,6 +107,11 @@ namespace bot
 		// 물러설지 건너뛸지 정한다.
 		int ChooseDialogChoice();
 
+		// 서버가 방금 누른 선택지를 거절했다(레벨 미달 등). 대화는 그 자리에 남지만 다시
+		// 눌러 봐야 같은 답이 온다 — 창을 닫고 물러선다. 그러지 않으면 봇이 한 번 열린
+		// 대화 안에서 같은 선택지를 계속 두드린다.
+		void OnDialogActionFailed();
+
 		// ---- 목표
 		void Update(double now);
 		const QuestGoal& Goal() const { return goal_; }
@@ -142,12 +147,16 @@ namespace bot
 
 		// 수락 선택지가 없을 때: 이만큼 시도하면 잠시 물러나 레벨을 올리고,
 		// 이만큼 되면 이 퀘스트를 포기하고 계획의 다음 칸으로 넘어간다.
+		// 받지 못하는 이유는 대개 레벨이라, 물러나 잡다 보면 저절로 풀린다. 그래서 포기는
+		// 넉넉히 미룬다 — 이 값이 실제로 쓰이는 것은 --reuse-accounts 로 이미 끝낸 퀘스트를
+		// 다시 받으려 할 때뿐이고, 그때는 아무리 기다려도 열리지 않는다.
 		static constexpr int kAcceptBackoffAttempts = 2;
-		static constexpr int kAcceptGiveUpAttempts = 8;
-		static constexpr double kAcceptRetryDelaySeconds = 15.0;
+		static constexpr int kAcceptGiveUpAttempts = 12;
+		static constexpr double kAcceptRetryDelaySeconds = 20.0;
 
-		// 목표가 원하는 대화 선택지가 지금 없다는 것을 기록한다(물러서기/건너뛰기 판단).
-		void NoteDialogActionMissing();
+		// 목표가 원하는 수락이 지금 되지 않는다는 것을 기록한다(물러서기/건너뛰기 판단).
+		// 선택지가 아예 없었든, 눌렀는데 거절당했든 결과는 같다.
+		void NoteAcceptBlocked();
 
 		void BuildGoal(double now);
 		bool BuildObjectiveGoal(const ScenarioQuest& quest, const QuestProgress& progress,

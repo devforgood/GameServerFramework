@@ -114,7 +114,7 @@ namespace bot
 		if (data_index < 0 || node == nullptr
 			|| data_index >= static_cast<int>(node->choices.size()))
 		{
-			NoteDialogActionMissing();
+			NoteAcceptBlocked();
 			return -1;
 		}
 
@@ -137,11 +137,11 @@ namespace bot
 		}
 
 		// 데이터에는 있는데 서버가 내보내지 않았다 = 지금은 그 선택지의 조건이 맞지 않는다.
-		NoteDialogActionMissing();
+		NoteAcceptBlocked();
 		return -1;
 	}
 
-	void BotQuestBrain::NoteDialogActionMissing()
+	void BotQuestBrain::NoteAcceptBlocked()
 	{
 		// 완료 선택지가 없는 것은 곧 상태가 바뀔 일이라(보고 대화 한 번으로 자동 완료된다)
 		// 세지 않는다. 진행을 막는 것은 언제나 '받지 못하는' 쪽이다.
@@ -162,6 +162,12 @@ namespace bot
 		}
 
 		goal_dirty_ = true;
+	}
+
+	void BotQuestBrain::OnDialogActionFailed()
+	{
+		NoteAcceptBlocked();
+		OnDialogClosed();
 	}
 
 	void BotQuestBrain::Update(double now)
