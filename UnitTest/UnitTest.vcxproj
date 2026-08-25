@@ -158,6 +158,8 @@
     <ClCompile Include="BotLogicTest.cpp" />
     <ClCompile Include="..\Bot\WorldView.cpp" />
     <ClCompile Include="..\Bot\BotPacket.cpp" />
+    <ClCompile Include="..\Bot\BotQuestBrain.cpp" />
+    <ClCompile Include="..\Bot\BotScenario.cpp" />
     <ClCompile Include="..\Bot\BotMetrics.cpp" />
     <ClCompile Include="..\Bot\BotBehaviorTree.cpp" />
     <ClCompile Include="pch.cpp">

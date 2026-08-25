@@ -2,6 +2,7 @@
 
 #include <random>
 
+#include "BotQuestBrain.h"
 #include "WorldView.h"
 
 namespace bot
@@ -17,6 +18,21 @@ namespace bot
 
 		virtual void MoveTo(const Vec3& pos) = 0;
 		virtual void Attack(int target_actor_id, const Vec3& target_pos) = 0;
+
+		// NPC/오브젝트 상호작용. 서버가 거리와 맵을 검증하고, 통과하면 퀘스트의 talk 목표가
+		// 오르며 대화가 걸린 NPC 면 첫 대화 노드가 이어서 온다.
+		virtual void Interact(int target_id) = 0;
+
+		// 대화 선택지. node_id 는 지금 보고 있는 노드이고(서버가 아는 것과 다르면 거절한다),
+		// choice_index 는 '서버가 보낸 목록'에서의 번호다. 음수면 창을 닫는다.
+		virtual void SelectDialog(int node_id, int choice_index) = 0;
+
+		// 선택 보상이 있는 퀘스트의 완료. 대화로는 무엇을 고를지 전할 수 없어 서버가
+		// 거절하므로, 클라이언트와 같이 번호를 실어 직접 보낸다.
+		virtual void CompleteQuest(int quest_id, int reward_choice) = 0;
+
+		// 게이트 진입. 목적지는 게이트가 정한다(요청에 담지 않는다).
+		virtual void EnterGate(int gate_id) = 0;
 	};
 
 	struct AiSettings
@@ -50,6 +66,10 @@ namespace bot
 		bool self_dead = false;
 
 		WorldView view;
+
+		// 시나리오(메인 퀘스트) 진행 상태와 지금의 목표. 설정에서 꺼 두면 비활성이고,
+		// 그때 봇은 예전처럼 자유 사냥만 한다.
+		BotQuestBrain quest;
 
 		int target_actor_id = 0;
 

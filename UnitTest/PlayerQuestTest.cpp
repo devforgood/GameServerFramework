@@ -52,6 +52,13 @@ constexpr int kDailyWolf = 2001;       // RepeatedQuest
 constexpr int kAncientLetter = 3001;   // LimitedTimeQuest
 constexpr int kDisabledEvent = 9001;   // 운영이 내려둔(disabled) 퀘스트
 
+// 메인 체인 101 의 분기 한 쌍. 같은 자리(chain_step 2)에 놓여 서로를 막는다 —
+// 플레이어(그리고 봇)는 둘 중 하나만 진행할 수 있고, 그 뒤 이야기는 어느 쪽을 탔든 이어진다.
+constexpr int kRinneShortcut = 11002;   // 가지 A
+constexpr int kGoblinPorters = 11009;   // 가지 B
+constexpr int kMissingShips = 11001;    // 두 가지의 공통 선행
+constexpr int kSmugglerTally = 11003;   // 두 가지가 합류하는 다음 칸
+
 constexpr int kMerchantNpcId = 2003;   // 호위/보호 대상 NPC
 
 constexpr int kGoblinMonsterId = 3;
@@ -345,6 +352,31 @@ TEST_F(PlayerQuestTest, Accept_CompletedNonRepeatableIsRejected)
 		1001, std::vector<VOQuestActive>{}, FlagsWithCompleted({ kGoblinHunt })));
 
 	EXPECT_EQ(quest.AcceptQuest(kGoblinHunt), QuestAcceptResult::AlreadyCompleted);
+}
+
+TEST_F(PlayerQuestTest, Accept_BranchQuestBlocksItsOppositeSide)
+{
+	// 가지 A 를 끝내면 가지 B 는 받을 수 없다. 갈림길이 갈림길이려면 둘 다 할 수는 없다.
+	PlayerQuest quest;
+	quest.Load(MakeExistingPlayerData(1005, std::vector<VOQuestActive>{},
+		FlagsWithCompleted({ kMissingShips, kRinneShortcut })));
+
+	EXPECT_EQ(quest.AcceptQuest(kGoblinPorters), QuestAcceptResult::BlockedQuest);
+}
+
+TEST_F(PlayerQuestTest, Accept_EitherBranchLeadsToTheNextChainStep)
+{
+	// 합류: 다음 칸의 선행은 두 가지의 공통 조상(11001)이다. 그러지 않으면 한쪽 가지를
+	// 고른 플레이어는 메인 스토리가 거기서 끊긴다.
+	PlayerQuest through_a;
+	through_a.Load(MakeExistingPlayerData(1005, std::vector<VOQuestActive>{},
+		FlagsWithCompleted({ kMissingShips, kRinneShortcut })));
+	EXPECT_EQ(through_a.AcceptQuest(kSmugglerTally), QuestAcceptResult::Ok);
+
+	PlayerQuest through_b;
+	through_b.Load(MakeExistingPlayerData(1005, std::vector<VOQuestActive>{},
+		FlagsWithCompleted({ kMissingShips, kGoblinPorters })));
+	EXPECT_EQ(through_b.AcceptQuest(kSmugglerTally), QuestAcceptResult::Ok);
 }
 
 TEST_F(PlayerQuestTest, Accept_StartsAtStageOne)

@@ -7,6 +7,7 @@
 
 #include "BotConfig.h"
 #include "BotMetrics.h"
+#include "BotScenario.h"
 #include "BotWorker.h"
 
 namespace bot
@@ -38,7 +39,20 @@ namespace bot
 		void BuildWorkers();
 		void WriteCsvLine(const std::string& line);
 
+		// 시나리오 데이터를 한 번 읽는다. 실패하면 경고만 남기고 시나리오 없이 돌린다 —
+		// 데이터가 없다고 부하 테스트 자체를 못 하게 만들 이유는 없다.
+		void LoadScenario();
+		std::string MakeUserId(int index) const;
+
 		const BotConfig& config_;
+
+		// 봇 전원이 const 참조로 공유한다(실행 중에는 바뀌지 않는다).
+		BotScenario scenario_;
+		bool scenario_ready_ = false;
+
+		// 이번 실행을 가리키는 짧은 꼬리표. 계정 id 에 붙여 매 실행 새 캐릭터로 시작한다.
+		std::string run_tag_;
+
 		std::vector<std::unique_ptr<BotWorker>> workers_;
 		std::atomic<bool> stop_requested_{ false };
 		std::string csv_path_;

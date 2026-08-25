@@ -55,8 +55,12 @@
     "text_id": "dlg_rinne_greet",
     "choices": [
       { "text_id": "dlg_rinne_report_ships", "action": "complete_quest", "param": 11001, "next_id": 0, "show_if": { "quest_id": 11001, "state": "ready_to_complete" } },
-      { "text_id": "dlg_rinne_ask_shortcut", "action": "goto", "param": 0, "next_id": 3202, "show_if": { "quest_id": 11001, "state": "completed" } },
+      { "text_id": "dlg_rinne_ask_shortcut", "action": "goto", "param": 0, "next_id": 3202, "show_if": { "quest_id": 11002, "state": "acceptable" } },
+      { "text_id": "dlg_rinne_ask_porters", "action": "goto", "param": 0, "next_id": 3204, "show_if": { "quest_id": 11009, "state": "acceptable" } },
+      { "text_id": "dlg_rinne_report_shortcut", "action": "goto", "param": 0, "next_id": 3202, "show_if": { "quest_id": 11002, "state": "ready_to_complete" } },
+      { "text_id": "dlg_rinne_report_porters", "action": "goto", "param": 0, "next_id": 3204, "show_if": { "quest_id": 11009, "state": "ready_to_complete" } },
       { "text_id": "dlg_rinne_ask_tally", "action": "goto", "param": 0, "next_id": 3203, "show_if": { "quest_id": 11002, "state": "completed" } },
+      { "text_id": "dlg_rinne_ask_tally_after_porters", "action": "goto", "param": 0, "next_id": 3203, "show_if": { "quest_id": 11009, "state": "completed" } },
       { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
     ]
   },
@@ -67,6 +71,16 @@
     "choices": [
       { "text_id": "dlg_rinne_accept_shortcut", "action": "accept_quest", "param": 11002, "next_id": 0, "show_if": { "quest_id": 11002, "state": "acceptable" } },
       { "text_id": "dlg_rinne_report_shortcut", "action": "complete_quest", "param": 11002, "next_id": 0, "show_if": { "quest_id": 11002, "state": "ready_to_complete" } },
+      { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3201 }
+    ]
+  },
+  {
+    "id": 3204,
+    "npc_id": 2004,
+    "text_id": "dlg_rinne_porters",
+    "choices": [
+      { "text_id": "dlg_rinne_accept_porters", "action": "accept_quest", "param": 11009, "next_id": 0, "show_if": { "quest_id": 11009, "state": "acceptable" } },
+      { "text_id": "dlg_rinne_report_porters", "action": "complete_quest", "param": 11009, "next_id": 0, "show_if": { "quest_id": 11009, "state": "ready_to_complete" } },
       { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3201 }
     ]
   },

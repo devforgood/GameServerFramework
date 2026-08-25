@@ -475,6 +475,15 @@ def _validate_quest_time(quest, label, errors):
             f"{label} — LimitedTimeQuest 는 time.limit_seconds 가 1 이상이어야 합니다")
 
 
+def _blocked_ids(entry):
+    """퀘스트의 prerequisites.blocked_quest_ids 를 정수 목록으로 돌려준다."""
+    prerequisites = entry.get('prerequisites')
+    if not isinstance(prerequisites, dict):
+        return []
+    blocked = prerequisites.get('blocked_quest_ids')
+    return [b for b in blocked if isinstance(b, int)] if isinstance(blocked, list) else []
+
+
 def _validate_quests(table_name, entries, tables):
     """Quest 테이블 전용: 스테이지/목표/선행조건/보상/시간 정책 검증."""
     errors = []
@@ -530,13 +539,32 @@ def _validate_quests(table_name, entries, tables):
         _validate_quest_time(entry, label, errors)
 
     # 같은 체인 안에서 순서 번호가 겹치면 다음 퀘스트를 하나로 정할 수 없다.
+    # 단 하나의 예외가 분기다: 같은 자리에 놓인 퀘스트들이 서로를 blocked_quest_ids 로
+    # 막고 있으면 플레이어는 그중 하나만 할 수 있으므로 "다음 퀘스트"는 여전히 하나다.
+    blocked_by = {
+        entry['id']: set(_blocked_ids(entry))
+        for entry in entries
+        if isinstance(entry, dict) and isinstance(entry.get('id'), int)
+    }
+
     for chain_id, steps in chains.items():
-        counts = Counter(step for step, _ in steps)
-        duplicated = sorted(s for s, c in counts.items() if c > 1)
-        if duplicated:
-            errors.append(
-                f"{table_name}: 체인 {chain_id} 의 chain_step 이 중복됩니다 {duplicated} "
-                f"(퀘스트 {sorted(qid for _, qid in steps)})")
+        by_step = defaultdict(list)
+        for step, qid in steps:
+            by_step[step].append(qid)
+
+        for step, qids in sorted(by_step.items()):
+            if len(qids) < 2:
+                continue
+
+            # 서로를 전부 막고 있어야 분기다. 한쪽만 막으면 순서에 따라 둘 다 완료할 수
+            # 있어서, 갈림길이 아니라 그냥 겹친 번호가 된다.
+            mutually_exclusive = all(
+                set(qids) - {qid} <= blocked_by.get(qid, set()) for qid in qids)
+            if not mutually_exclusive:
+                errors.append(
+                    f"{table_name}: 체인 {chain_id} 의 chain_step {step} 이 중복됩니다 "
+                    f"(퀘스트 {sorted(qids)}). 분기라면 서로를 blocked_quest_ids 로 막아 "
+                    f"하나만 진행할 수 있게 해야 합니다")
         for step, qid in steps:
             if step < 1:
                 errors.append(
@@ -645,6 +673,7 @@ def _validate_dialogs(table_name, entries, tables):
                 f"{MAX_DIALOG_CHOICES}개까지만 보낼 수 있습니다")
 
         has_unconditional = False
+        seen_text_ids = set()
 
         for i, choice in enumerate(choices):
             clabel = f"{label} choices[{i}]"
@@ -652,8 +681,17 @@ def _validate_dialogs(table_name, entries, tables):
                 errors.append(f"{clabel} — 선택지가 객체가 아닙니다")
                 continue
 
-            if not choice.get('text_id'):
+            text_id = choice.get('text_id')
+            if not text_id:
                 errors.append(f"{clabel} — text_id 가 비어 있습니다")
+            elif text_id in seen_text_ids:
+                # 같은 대사가 한 화면에 두 번 뜨는 데이터 실수이기도 하고, 받은 선택지가
+                # 데이터의 어느 선택지인지 되짚을 단서가 text_id 뿐이라(프로토콜은 걸러진
+                # 목록에서의 번호만 보낸다) 겹치면 짝을 지을 수 없다.
+                errors.append(
+                    f"{clabel} — text_id {text_id!r} 가 이 노드 안에서 중복됩니다")
+            else:
+                seen_text_ids.add(text_id)
 
             if _validate_dialog_condition(clabel, choice, quest_ids, errors):
                 has_unconditional = True

@@ -16,13 +16,21 @@ namespace bot
 	//
 	//  ActiveSelector
 	//  ├─ Sequence [IsSelfDead, WaitRespawn]
+	//  ├─ Sequence [IsDialogOpen, AdvanceDialog]
+	//  ├─ Sequence [IsQuestTravelGoal, TravelToGate]
+	//  ├─ Sequence [IsQuestNpcGoal, ApproachQuestNpc, InteractQuestNpc]
+	//  ├─ Sequence [IsQuestHuntGoal, ReachHuntArea]
 	//  ├─ Sequence
+	//  │   ├─ IsCombatAllowed
 	//  │   ├─ HasTarget
 	//  │   └─ ActiveSelector
 	//  │       ├─ Sequence [IsTargetInAttackRange, AttackTarget]
 	//  │       └─ MoveToTarget
-	//  ├─ AcquireTarget
+	//  ├─ Sequence [IsCombatAllowed, AcquireTarget]
 	//  └─ Wander
+	//
+	// 시나리오(퀘스트) 노드는 목표가 없으면 전부 실패로 떨어지므로, 설정에서 시나리오를
+	// 끄면 예전과 똑같은 사냥 트리가 된다.
 	//-----------------------------------------------------------------------------------
 	BT::BehaviorTree* CreateBotTree(BotBlackboard* blackboard);
 

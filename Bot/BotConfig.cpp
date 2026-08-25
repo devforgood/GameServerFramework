@@ -111,6 +111,12 @@ namespace bot
 		ReadField(aiJson, "arrive_epsilon", ai.arrive_epsilon);
 		ReadField(aiJson, "ping_interval_ms", ai.ping_interval_ms);
 
+		const json& questJson = Section(root, "quest", empty);
+		ReadField(questJson, "enabled", quest.enabled);
+		ReadField(questJson, "gamedata_dir", quest.gamedata_dir);
+		ReadField(questJson, "branch_offset", quest.branch_offset);
+		ReadField(questJson, "fresh_accounts", quest.fresh_accounts);
+
 		const json& limitsJson = Section(root, "limits", empty);
 		ReadField(limitsJson, "max_packets_per_second", limits.max_packets_per_second);
 		ReadField(limitsJson, "packet_burst", limits.packet_burst);
@@ -183,6 +189,27 @@ namespace bot
 				if (!hasValue) { std::cerr << "[bot] --token requires a value\n"; return false; }
 				bots.auth_token = argv[++i];
 			}
+			else if (std::strcmp(arg, "--quest") == 0)
+			{
+				if (!hasValue) { std::cerr << "[bot] --quest requires on|off\n"; return false; }
+				const char* value = argv[++i];
+				if (std::strcmp(value, "on") == 0) quest.enabled = true;
+				else if (std::strcmp(value, "off") == 0) quest.enabled = false;
+				else { std::cerr << "[bot] --quest expects on|off\n"; return false; }
+			}
+			else if (std::strcmp(arg, "--branch") == 0)
+			{
+				if (!takeInt(quest.branch_offset)) return false;
+			}
+			else if (std::strcmp(arg, "--gamedata") == 0)
+			{
+				if (!hasValue) { std::cerr << "[bot] --gamedata requires a path\n"; return false; }
+				quest.gamedata_dir = argv[++i];
+			}
+			else if (std::strcmp(arg, "--reuse-accounts") == 0)
+			{
+				quest.fresh_accounts = false;
+			}
 			else if (std::strcmp(arg, "--log") == 0)
 			{
 				if (!hasValue) { std::cerr << "[bot] --log requires a value\n"; return false; }
@@ -219,6 +246,7 @@ namespace bot
 		if (limits.packet_burst < 1) { error = "limits.packet_burst must be >= 1"; return false; }
 		if (ai.attack_range <= 0.0f) { error = "ai.attack_range must be > 0"; return false; }
 		if (ai.search_radius <= 0.0f) { error = "ai.search_radius must be > 0"; return false; }
+		if (quest.branch_offset < 0) { error = "quest.branch_offset must be >= 0"; return false; }
 		return true;
 	}
 
@@ -234,6 +262,10 @@ namespace bot
 			"  --rampup <n>       초당 접속 시도 수\n"
 			"  --prefix <str>     계정 id 접두어\n"
 			"  --token <str>      인증 토큰(auth.mode=db_token 일 때)\n"
+			"  --quest on|off     메인 퀘스트 시나리오 진행(기본 on)\n"
+			"  --branch <n>       가지 번호 시작값(봇마다 다른 체인/분기를 탄다)\n"
+			"  --gamedata <path>  게임 데이터 폴더(기본: 리포의 통합 폴더를 자동 탐색)\n"
+			"  --reuse-accounts   실행마다 새 계정을 만들지 않는다(이어서 진행)\n"
 			"  --log <level>      trace|debug|info|warn|error\n"
 			"  --csv <path>       주기 리포트를 CSV 로 기록\n";
 	}

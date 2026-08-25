@@ -75,6 +75,12 @@ namespace bot
 		skill_rejected += other.skill_rejected;
 		kills += other.kills;
 		deaths += other.deaths;
+		quests_accepted += other.quests_accepted;
+		quests_completed += other.quests_completed;
+		interacts_sent += other.interacts_sent;
+		interacts_rejected += other.interacts_rejected;
+		dialogs_sent += other.dialogs_sent;
+		map_changes += other.map_changes;
 		connect_attempts += other.connect_attempts;
 		connect_failures += other.connect_failures;
 		disconnects += other.disconnects;
@@ -132,7 +138,7 @@ namespace bot
 		std::snprintf(line, sizeof(line),
 			"t=%6.1fs play=%4d conn=%4d dead=%3d down=%4d | tx %7.1f/s rx %8.1f/s "
 			"| in %8.1fKB/s out %6.1fKB/s | ping p50 %u p95 %u p99 %u max %u ms "
-			"| mdeath %llu skill %llu rej %llu | view %.1f",
+			"| mdeath %llu skill %llu rej %llu | quest %llu/%llu map %llu | view %.1f",
 			elapsed_seconds,
 			current.phases.playing,
 			current.phases.connecting + current.phases.logging_in + current.phases.spawning,
@@ -146,6 +152,9 @@ namespace bot
 			static_cast<unsigned long long>(c.kills),
 			static_cast<unsigned long long>(c.skill_sent),
 			static_cast<unsigned long long>(c.skill_rejected),
+			static_cast<unsigned long long>(c.quests_accepted),
+			static_cast<unsigned long long>(c.quests_completed),
+			static_cast<unsigned long long>(c.map_changes),
 			avgVisible);
 		return line;
 	}
@@ -153,7 +162,8 @@ namespace bot
 	std::string FormatCsvHeader()
 	{
 		return "elapsed_s,playing,connecting,dead,down,tx_pps,rx_pps,rx_kbps,tx_kbps,"
-			"ping_p50,ping_p95,ping_p99,ping_max,kills,skills,skill_rejected,avg_visible";
+			"ping_p50,ping_p95,ping_p99,ping_max,kills,skills,skill_rejected,"
+			"quests_accepted,quests_completed,map_changes,avg_visible";
 	}
 
 	std::string FormatCsvLine(double elapsed_seconds,
@@ -170,7 +180,8 @@ namespace bot
 
 		char line[512];
 		std::snprintf(line, sizeof(line),
-			"%.1f,%d,%d,%d,%d,%.1f,%.1f,%.1f,%.1f,%u,%u,%u,%u,%llu,%llu,%llu,%.2f",
+			"%.1f,%d,%d,%d,%d,%.1f,%.1f,%.1f,%.1f,%u,%u,%u,%u,%llu,%llu,%llu,"
+			"%llu,%llu,%llu,%.2f",
 			elapsed_seconds,
 			current.phases.playing,
 			current.phases.connecting + current.phases.logging_in + current.phases.spawning,
@@ -184,6 +195,9 @@ namespace bot
 			static_cast<unsigned long long>(c.kills),
 			static_cast<unsigned long long>(c.skill_sent),
 			static_cast<unsigned long long>(c.skill_rejected),
+			static_cast<unsigned long long>(c.quests_accepted),
+			static_cast<unsigned long long>(c.quests_completed),
+			static_cast<unsigned long long>(c.map_changes),
 			avgVisible);
 		return line;
 	}
@@ -207,6 +221,9 @@ namespace bot
 			"스킬 사용/거부     : %llu / %llu\n"
 			"몬스터 사망 관측    : %llu (봇별 관측이라 한 몬스터를 여러 봇이 센다)\n"
 			"봇 사망            : %llu\n"
+			"퀘스트 수락/완료   : %llu / %llu\n"
+			"상호작용 시도/거절 : %llu / %llu   (대화 선택 %llu)\n"
+			"맵 이동            : %llu\n"
 			"Ping RTT           : avg %.1f ms, p50 %u, p95 %u, p99 %u, max %u (표본 %llu)\n"
 			"==================================================\n",
 			elapsed_seconds,
@@ -228,6 +245,12 @@ namespace bot
 			static_cast<unsigned long long>(s.skill_rejected),
 			static_cast<unsigned long long>(s.kills),
 			static_cast<unsigned long long>(s.deaths),
+			static_cast<unsigned long long>(s.quests_accepted),
+			static_cast<unsigned long long>(s.quests_completed),
+			static_cast<unsigned long long>(s.interacts_sent),
+			static_cast<unsigned long long>(s.interacts_rejected),
+			static_cast<unsigned long long>(s.dialogs_sent),
+			static_cast<unsigned long long>(s.map_changes),
 			s.ping.Average(), s.ping.Percentile(0.50), s.ping.Percentile(0.95),
 			s.ping.Percentile(0.99), s.ping.max_ms,
 			static_cast<unsigned long long>(s.ping.count));

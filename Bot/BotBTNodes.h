@@ -196,17 +196,262 @@ namespace botbt
 			if (!arrived && bb.now < bb.next_wander_at)
 				return Status::Running;
 
-			const float radius = bb.ai.wander_radius;
+			// 사냥 목표가 있으면 그 사냥터를 중심으로 돈다. 스폰 지점 주변을 돌면
+			// 목표 몬스터가 없는 곳에서 배회하다 진행이 멈춘다.
+			bot::Vec3 center = bb.spawn_pos;
+			float radius = bb.ai.wander_radius;
+			bot::Vec3 hunt_center;
+			float hunt_radius = 0.0f;
+			if (bb.quest.HuntAnchor(hunt_center, hunt_radius))
+			{
+				center = hunt_center;
+				radius = hunt_radius;
+			}
+
 			bb.wander_target = bot::Vec3(
-				bb.spawn_pos.x + bb.RandomFloat(-radius, radius),
-				bb.spawn_pos.y,
-				bb.spawn_pos.z + bb.RandomFloat(-radius, radius));
+				center.x + bb.RandomFloat(-radius, radius),
+				center.y,
+				center.z + bb.RandomFloat(-radius, radius));
 
 			bb.next_wander_at = bb.now + bb.ai.wander_interval_ms / 1000.0;
 			if (bb.actions != nullptr)
 				bb.actions->MoveTo(bb.wander_target);
 
 			return Status::Running;
+		}
+	};
+	//-----------------------------------------------------------------------------------
+	// 시나리오(메인 퀘스트) 노드.
+	//
+	// 무엇을 할지는 BotQuestBrain 이 목표 하나로 정해 두고, 여기서는 그 목표를 실제 명령으로
+	// 옮기기만 한다. 판단과 실행을 나눠 두면 목표 계산을 소켓 없이 테스트할 수 있고,
+	// 노드는 "가까이 가서 보낸다" 만 하므로 짧게 유지된다.
+	//
+	// 주의: 여기 Running 을 돌려주는 노드도 전제조건이 깨지면 반드시 Failure 로 끝낸다
+	// (이 BT 는 Running 인 Sequence 를 다음 틱에 재초기화하지 않는다).
+	//-----------------------------------------------------------------------------------
+
+	// 대화 창이 열려 있는가. 열려 있으면 다른 무엇보다 먼저 끝낸다 — 서버가 대화 상태를
+	// 들고 있어서, 열어 둔 채 돌아다니면 다음 상호작용이 지난 노드로 돌아온다.
+	struct IsDialogOpen
+	{
+		static constexpr NodeKind kKind = NodeKind::Condition;
+		static constexpr const char* kName = "IsDialogOpen";
+
+		Status Tick(Blackboard& bb) const
+		{
+			return bb.quest.DialogOpen() ? Status::Success : Status::Failure;
+		}
+	};
+
+	// 목표가 시키는 선택지를 누른다. 지금 목표로 할 일이 없으면 창을 닫는다.
+	struct AdvanceDialog
+	{
+		static constexpr NodeKind kKind = NodeKind::Action;
+		static constexpr const char* kName = "AdvanceDialog";
+
+		Status Tick(Blackboard& bb) const
+		{
+			if (!bb.quest.DialogOpen())
+				return Status::Failure;
+
+			if (!bb.quest.CanSendDialog(bb.now))
+				return Status::Running;
+
+			const int node_id = bb.quest.DialogNodeId();
+			const int choice = bb.quest.ChooseDialogChoice();
+
+			bb.quest.NoteDialogSent(bb.now);
+			if (bb.actions != nullptr)
+				bb.actions->SelectDialog(node_id, choice);
+
+			// 닫기를 보냈으면 응답을 기다리지 않고 이쪽도 닫는다. 서버도 곧 빈 노드를
+			// 보내지만, 그때까지 이 분기에 머물면 목표를 향해 움직이지 못한다.
+			if (choice < 0)
+				bb.quest.OnDialogClosed();
+
+			return Status::Running;
+		}
+	};
+
+	struct IsQuestTravelGoal
+	{
+		static constexpr NodeKind kKind = NodeKind::Condition;
+		static constexpr const char* kName = "IsQuestTravelGoal";
+
+		Status Tick(Blackboard& bb) const
+		{
+			return bb.quest.Goal().kind == bot::QuestGoalKind::Travel
+				? Status::Success : Status::Failure;
+		}
+	};
+
+	// 게이트까지 걸어가 밟는다. 도착 맵은 게이트가 정하므로 봇이 고를 수 없다.
+	struct TravelToGate
+	{
+		static constexpr NodeKind kKind = NodeKind::Action;
+		static constexpr const char* kName = "TravelToGate";
+
+		Status Tick(Blackboard& bb) const
+		{
+			const bot::QuestGoal& goal = bb.quest.Goal();
+			if (goal.kind != bot::QuestGoalKind::Travel)
+				return Status::Failure;
+
+			if (bot::DistanceSqXZ(bb.self_pos, goal.pos) > goal.reach * goal.reach)
+			{
+				if (bb.now >= bb.next_move_at)
+				{
+					bb.next_move_at = bb.now + bb.ai.move_repath_ms / 1000.0;
+					if (bb.actions != nullptr)
+						bb.actions->MoveTo(goal.pos);
+				}
+				return Status::Running;
+			}
+
+			if (!bb.quest.CanSendGate(bb.now))
+				return Status::Running;
+
+			bb.quest.NoteGateSent(bb.now);
+			if (bb.actions != nullptr)
+				bb.actions->EnterGate(goal.gate_id);
+
+			return Status::Running;
+		}
+	};
+
+	struct IsQuestNpcGoal
+	{
+		static constexpr NodeKind kKind = NodeKind::Condition;
+		static constexpr const char* kName = "IsQuestNpcGoal";
+
+		Status Tick(Blackboard& bb) const
+		{
+			return bb.quest.Goal().kind == bot::QuestGoalKind::Interact
+				? Status::Success : Status::Failure;
+		}
+	};
+
+	// NPC 에게 다가간다. 서버가 상호작용 거리를 다시 재므로 여유를 두고 붙는다.
+	struct ApproachQuestNpc
+	{
+		static constexpr NodeKind kKind = NodeKind::Action;
+		static constexpr const char* kName = "ApproachQuestNpc";
+
+		Status Tick(Blackboard& bb) const
+		{
+			const bot::QuestGoal& goal = bb.quest.Goal();
+			if (goal.kind != bot::QuestGoalKind::Interact)
+				return Status::Failure;
+
+			if (bot::DistanceSqXZ(bb.self_pos, goal.pos) <= goal.reach * goal.reach)
+				return Status::Success;
+
+			if (bb.now >= bb.next_move_at)
+			{
+				bb.next_move_at = bb.now + bb.ai.move_repath_ms / 1000.0;
+				if (bb.actions != nullptr)
+					bb.actions->MoveTo(goal.pos);
+			}
+			return Status::Running;
+		}
+	};
+
+	// 도착했으면 말을 건다. 상호작용 하나로 대화 목표가 오르고, 완료 대기 중이던 퀘스트는
+	// 그 자리에서 접수된다(선택 보상이 있는 것만 예외다 — 아래 참고).
+	struct InteractQuestNpc
+	{
+		static constexpr NodeKind kKind = NodeKind::Action;
+		static constexpr const char* kName = "InteractQuestNpc";
+
+		Status Tick(Blackboard& bb) const
+		{
+			const bot::QuestGoal& goal = bb.quest.Goal();
+			if (goal.kind != bot::QuestGoalKind::Interact)
+				return Status::Failure;
+
+			// 걸어오는 사이에 밀려났으면 다시 접근부터 한다.
+			if (bot::DistanceSqXZ(bb.self_pos, goal.pos) > goal.reach * goal.reach)
+				return Status::Failure;
+
+			// 선택 보상이 있는 퀘스트는 무엇을 고를지 전할 방법이 대화에 없어 서버가
+			// 거절한다. 클라이언트와 같이 번호를 실어 완료를 직접 보낸다.
+			if (goal.dialog_complete && goal.reward_choice >= 0)
+			{
+				if (!bb.quest.CanSendComplete(bb.now))
+					return Status::Running;
+
+				bb.quest.NoteCompleteSent(bb.now);
+				if (bb.actions != nullptr)
+					bb.actions->CompleteQuest(goal.quest_id, goal.reward_choice);
+				return Status::Running;
+			}
+
+			if (!bb.quest.CanSendInteract(bb.now))
+				return Status::Running;
+
+			bb.quest.NoteInteractSent(bb.now);
+			if (bb.actions != nullptr)
+				bb.actions->Interact(goal.npc_id);
+
+			return Status::Running;
+		}
+	};
+
+	struct IsQuestHuntGoal
+	{
+		static constexpr NodeKind kKind = NodeKind::Condition;
+		static constexpr const char* kName = "IsQuestHuntGoal";
+
+		Status Tick(Blackboard& bb) const
+		{
+			return bb.quest.Goal().kind == bot::QuestGoalKind::Hunt
+				? Status::Success : Status::Failure;
+		}
+	};
+
+	// 사냥터로 이동한다. 도착하면 Failure 로 끝내 전투 분기에 자리를 넘긴다
+	// (여기서 Running 을 유지하면 사냥터 한가운데서 아무것도 잡지 않는다).
+	struct ReachHuntArea
+	{
+		static constexpr NodeKind kKind = NodeKind::Action;
+		static constexpr const char* kName = "ReachHuntArea";
+
+		Status Tick(Blackboard& bb) const
+		{
+			const bot::QuestGoal& goal = bb.quest.Goal();
+			if (goal.kind != bot::QuestGoalKind::Hunt)
+				return Status::Failure;
+
+			if (bot::DistanceSqXZ(bb.self_pos, goal.pos) <= goal.radius * goal.radius)
+				return Status::Failure;
+
+			if (bb.now >= bb.next_move_at)
+			{
+				bb.next_move_at = bb.now + bb.ai.move_repath_ms / 1000.0;
+				if (bb.actions != nullptr)
+					bb.actions->MoveTo(goal.pos);
+			}
+			return Status::Running;
+		}
+	};
+
+	// 지금 싸워도 되는가. 시나리오를 끄면 언제나 되고(예전 동작), 켜면 사냥 목표일 때만
+	// 싸운다 — NPC 에게 가는 길이나 게이트로 가는 길에 눈에 띈 것을 쫓아가면 목적지에
+	// 영영 닿지 못한다.
+	struct IsCombatAllowed
+	{
+		static constexpr NodeKind kKind = NodeKind::Condition;
+		static constexpr const char* kName = "IsCombatAllowed";
+
+		Status Tick(Blackboard& bb) const
+		{
+			if (!bb.quest.Enabled())
+				return Status::Success;
+
+			const bot::QuestGoalKind kind = bb.quest.Goal().kind;
+			return (kind == bot::QuestGoalKind::Hunt || kind == bot::QuestGoalKind::None)
+				? Status::Success : Status::Failure;
 		}
 	};
 }

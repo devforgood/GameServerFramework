@@ -58,8 +58,9 @@ namespace bot
 	}
 
 	BotClient::BotClient(boost::asio::io_context& io_context, const BotConfig& config,
-		int index, std::string user_id, bool verbose)
+		const BotScenario* scenario, int index, std::string user_id, bool verbose)
 		: config_(config)
+		, scenario_(scenario)
 		, index_(index)
 		, user_id_(std::move(user_id))
 		, verbose_(verbose)
@@ -80,6 +81,10 @@ namespace bot
 		blackboard_.rng.seed(static_cast<uint32_t>(0x9E3779B9u * (index + 1) + 0x1234567u));
 
 		bucket_.Configure(config.limits.max_packets_per_second, config.limits.packet_burst);
+
+		// 봇 번호가 곧 가지 번호다. 번호로 가르면 실행마다 같은 봇이 같은 가지를 타므로
+		// 재현할 수 있고, 봇을 늘리면 가지에 골고루 퍼진다(무작위로 고르면 한쪽으로 쏠린다).
+		blackboard_.quest.Configure(scenario_, index + config.quest.branch_offset);
 
 		tree_ = CreateBotTree(&blackboard_);
 
@@ -148,6 +153,7 @@ namespace bot
 		blackboard_.next_attack_at = 0.0;
 		blackboard_.next_move_at = 0.0;
 		blackboard_.next_wander_at = 0.0;
+		blackboard_.quest.ResetForReconnect();
 	}
 
 	void BotClient::SendLogin()
@@ -219,6 +225,41 @@ namespace bot
 			blackboard_.ai.attack_skill_id, target_actor_id, target_pos.ToNet(), UnixNowMs()));
 	}
 
+	void BotClient::Interact(int target_id)
+	{
+		if (!blackboard_.has_character)
+			return;
+
+		++stats_.interacts_sent;
+		SendThrottled(packet::Interact(NextMessageId(), target_id));
+	}
+
+	void BotClient::SelectDialog(int node_id, int choice_index)
+	{
+		if (!blackboard_.has_character)
+			return;
+
+		++stats_.dialogs_sent;
+		SendThrottled(packet::DialogSelect(NextMessageId(), node_id, choice_index));
+	}
+
+	void BotClient::CompleteQuest(int quest_id, int reward_choice)
+	{
+		if (!blackboard_.has_character)
+			return;
+
+		SendThrottled(packet::QuestComplete(NextMessageId(), quest_id, reward_choice));
+	}
+
+	void BotClient::EnterGate(int gate_id)
+	{
+		if (!blackboard_.has_character)
+			return;
+
+		gate_message_id_ = NextMessageId();
+		SendThrottled(packet::EnterGate(gate_message_id_, gate_id));
+	}
+
 	void BotClient::Tick(double now)
 	{
 		now_ = now;
@@ -241,6 +282,9 @@ namespace bot
 			next_ping_at_ = now_ + config_.ai.ping_interval_ms / 1000.0;
 			SendPing();
 		}
+
+		// 무엇을 할지 먼저 정하고(목표 하나) 트리는 그것을 실행한다.
+		blackboard_.quest.Update(now_);
 
 		if (tree_ != nullptr)
 		{
@@ -278,6 +322,15 @@ namespace bot
 		case syncnet::GameMessages::GameMessages_EnterGate:
 			HandleEnterGate(message);
 			break;
+		case syncnet::GameMessages::GameMessages_QuestSync:
+			HandleQuestSync(message);
+			break;
+		case syncnet::GameMessages::GameMessages_DialogNode:
+			HandleDialogNode(message);
+			break;
+		case syncnet::GameMessages::GameMessages_Interact:
+			HandleInteract(message);
+			break;
 		default:
 			break;
 		}
@@ -304,6 +357,7 @@ namespace bot
 
 		++stats_.login_success;
 		map_id_ = login->mapId();
+		blackboard_.quest.SetMapId(map_id_);
 
 		if (const syncnet::Vec3* pos = login->pos())
 		{
@@ -426,10 +480,20 @@ namespace bot
 
 	void BotClient::HandleEnterGate(const syncnet::GameMessage* message)
 	{
-		// 서버가 먼저 보내는 강제 이동(레이드 종료 등). 캐릭터가 새로 만들어지므로
+		// 두 갈래로 온다: 내가 밟은 게이트의 응답(id = 내 요청 번호)과, 서버가 먼저 보내는
+		// 강제 이동(id 0, 레이드 종료 등). 어느 쪽이든 캐릭터가 새로 만들어지므로
 		// actorId 를 갈아끼우고 시야를 비운다.
-		if (message->id() != 0 || message->result() != syncnet::StatusCode::StatusCode_Success)
+		const bool mine = gate_message_id_ != 0 && message->id() == gate_message_id_;
+		if (!mine && message->id() != 0)
 			return;
+
+		if (message->result() != syncnet::StatusCode::StatusCode_Success)
+		{
+			// 거절(거리/쿨타임/레벨). 다음 시도는 게이트 송신 간격이 알아서 늦춰 준다.
+			if (verbose_)
+				log::Printf(LogLevel::Debug, "[%s] 게이트 이동 거절", user_id_.c_str());
+			return;
+		}
 
 		const syncnet::EnterGate* gate = message->msg_as_EnterGate();
 		if (gate == nullptr)
@@ -441,11 +505,112 @@ namespace bot
 		blackboard_.has_character = true;
 		map_id_ = gate->mapId();
 
+		++stats_.map_changes;
+		blackboard_.quest.SetMapId(map_id_);
+
+		// 맵이 바뀌면 열려 있던 대화는 서버에서도 의미가 없다.
+		blackboard_.quest.OnDialogClosed();
+
 		if (const syncnet::Vec3* pos = gate->pos())
 		{
 			blackboard_.self_pos = Vec3(*pos);
 			blackboard_.spawn_pos = blackboard_.self_pos;
 			blackboard_.wander_target = blackboard_.self_pos;
 		}
+	}
+	void BotClient::HandleQuestSync(const syncnet::GameMessage* message)
+	{
+		const syncnet::QuestSync* sync = message->msg_as_QuestSync();
+		if (sync == nullptr)
+			return;
+
+		if (const auto* quests = sync->quests())
+		{
+			for (const syncnet::QuestInfo* info : *quests)
+			{
+				if (info == nullptr)
+					continue;
+
+				const bool was_active = blackboard_.quest.IsActive(info->questId());
+
+				int progress[3] = { 0, 0, 0 };
+				int progress_count = 0;
+				if (const auto* values = info->progress())
+				{
+					progress_count = static_cast<int>(values->size());
+					for (int i = 0; i < progress_count && i < 3; ++i)
+						progress[i] = values->Get(i);
+				}
+
+				blackboard_.quest.ApplyQuestInfo(info->questId(), info->state(), info->stage(),
+					progress, progress_count);
+
+				if (!was_active)
+				{
+					++stats_.quests_accepted;
+					if (verbose_)
+						log::Printf(LogLevel::Info, "[%s] 퀘스트 %d 수락", user_id_.c_str(),
+							info->questId());
+				}
+			}
+		}
+
+		if (const auto* removed = sync->removed())
+		{
+			for (int quest_id : *removed)
+				blackboard_.quest.ApplyQuestRemoved(quest_id);
+		}
+
+		if (const auto* completed = sync->completed())
+		{
+			for (int quest_id : *completed)
+			{
+				blackboard_.quest.ApplyQuestCompleted(quest_id);
+				++stats_.quests_completed;
+
+				if (verbose_)
+					log::Printf(LogLevel::Info, "[%s] 퀘스트 %d 완료", user_id_.c_str(), quest_id);
+			}
+		}
+	}
+
+	void BotClient::HandleDialogNode(const syncnet::GameMessage* message)
+	{
+		const syncnet::DialogNode* node = message->msg_as_DialogNode();
+		if (node == nullptr)
+			return;
+
+		// nodeId 0 은 "대화가 끝났다"는 뜻이다.
+		if (node->nodeId() == 0)
+		{
+			blackboard_.quest.OnDialogClosed();
+			return;
+		}
+
+		// 서버는 조건(show_if)에 걸러진 목록만 보낸다. 그 순서 그대로 들고 있다가
+		// 데이터의 어느 선택지인지 text_id 로 되짚는다.
+		std::vector<std::string> choice_text_ids;
+		if (const auto* choices = node->choices())
+		{
+			choice_text_ids.reserve(choices->size());
+			for (const syncnet::DialogChoiceInfo* choice : *choices)
+			{
+				choice_text_ids.push_back(choice != nullptr && choice->textId() != nullptr
+					? choice->textId()->str() : std::string());
+			}
+		}
+
+		blackboard_.quest.OnDialogOpened(node->npcId(), node->nodeId(), std::move(choice_text_ids));
+	}
+
+	void BotClient::HandleInteract(const syncnet::GameMessage* message)
+	{
+		if (message->result() == syncnet::StatusCode::StatusCode_Success)
+			return;
+
+		// 거절이면 대화도 열리지 않는다(거리/맵이 어긋났다). 목표를 다시 세워
+		// 같은 자리에서 두드리기만 하지 않게 한다.
+		++stats_.interacts_rejected;
+		blackboard_.quest.MarkGoalStale();
 	}
 }

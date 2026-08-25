@@ -9,6 +9,7 @@
 #include "BotBlackboard.h"
 #include "BotConfig.h"
 #include "BotMetrics.h"
+#include "BotScenario.h"
 #include "BotSession.h"
 
 namespace BT
@@ -56,8 +57,10 @@ namespace bot
 	class BotClient : public BotActions
 	{
 	public:
+		// scenario 는 러너가 하나만 만들어 모든 봇이 공유한다(읽기 전용). nullptr 이면
+		// 시나리오 없이 예전처럼 사냥만 한다.
 		BotClient(boost::asio::io_context& io_context, const BotConfig& config,
-			int index, std::string user_id, bool verbose);
+			const BotScenario* scenario, int index, std::string user_id, bool verbose);
 		~BotClient() override;
 
 		BotClient(const BotClient&) = delete;
@@ -80,6 +83,10 @@ namespace bot
 		// BotActions
 		void MoveTo(const Vec3& pos) override;
 		void Attack(int target_actor_id, const Vec3& target_pos) override;
+		void Interact(int target_id) override;
+		void SelectDialog(int node_id, int choice_index) override;
+		void CompleteQuest(int quest_id, int reward_choice) override;
+		void EnterGate(int gate_id) override;
 
 	private:
 		void OnConnected(bool success, const std::string& error);
@@ -92,6 +99,9 @@ namespace bot
 		void HandleUseSkill(const syncnet::GameMessage* message);
 		void HandlePing(const syncnet::GameMessage* message);
 		void HandleEnterGate(const syncnet::GameMessage* message);
+		void HandleQuestSync(const syncnet::GameMessage* message);
+		void HandleDialogNode(const syncnet::GameMessage* message);
+		void HandleInteract(const syncnet::GameMessage* message);
 
 		void SendLogin();
 		void SendSpawn();
@@ -112,6 +122,7 @@ namespace bot
 		double NowSeconds() const { return now_; }
 
 		const BotConfig& config_;
+		const BotScenario* scenario_;
 		const int index_;
 		const std::string user_id_;
 		const bool verbose_;
@@ -146,5 +157,9 @@ namespace bot
 
 		int map_id_ = 0;
 		bool shutting_down_ = false;
+
+		// 게이트 요청은 응답의 id 로 내 요청인지 가린다(다른 플레이어의 강제 이동 알림은
+		// id 0 으로 온다).
+		int gate_message_id_ = 0;
 	};
 }

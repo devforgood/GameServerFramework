@@ -75,6 +75,25 @@ namespace bot
 			int ping_interval_ms = 1000;
 		} ai;
 
+		struct Quest
+		{
+			// 메인 퀘스트 시나리오를 진행할지. 끄면 예전처럼 사냥/배회만 한다.
+			bool enabled = true;
+
+			// 게임 데이터 폴더. 비우면 서버와 같은 통합 폴더를 스스로 찾는다
+			// (GameDataPath::Resolve — Client/Assets/Resources/GameData/).
+			std::string gamedata_dir;
+
+			// 가지 번호의 시작값. 봇 번호에 이 값을 더해 어느 체인/어느 분기를 탈지
+			// 정한다. 실행을 나눠 돌리면서 다른 가지를 보고 싶을 때 옮긴다.
+			int branch_offset = 0;
+
+			// 실행마다 계정 id 에 접미사를 붙여 새 캐릭터로 시작한다.
+			// 메인 퀘스트는 반복할 수 없어서, 같은 계정으로 다시 돌리면 이미 끝낸
+			// 퀘스트를 받지 못한다 — "처음부터" 진행하려면 이것이 켜져 있어야 한다.
+			bool fresh_accounts = true;
+		} quest;
+
 		struct Limits
 		{
 			// 봇 한 명이 초당 보낼 수 있는 패킷 수. 서버 설정(network.max_packets_per_second)

@@ -52,4 +52,15 @@ namespace bot::packet
 	Frame Ping(int message_id, int seq);
 
 	Frame EnterGate(int message_id, int gate_id);
+
+	// NPC/오브젝트 상호작용. 서버가 같은 맵인지와 거리를 검증하고, 통과하면 퀘스트의
+	// talk/interact 목표가 오르며 대화가 걸린 NPC 면 DialogNode 가 이어서 온다.
+	Frame Interact(int message_id, int target_id);
+
+	// 대화 선택지. node_id 는 지금 보고 있는 노드다 — 서버가 아는 것과 다르면 거절한다.
+	// choice_index 는 서버가 보낸(조건에 걸러진) 목록에서의 번호이고, 음수면 창을 닫는다.
+	Frame DialogSelect(int message_id, int node_id, int choice_index);
+
+	// 완료 접수. reward_choice 는 선택 보상의 0-based 번호이며, 선택 보상이 없으면 -1.
+	Frame QuestComplete(int message_id, int quest_id, int reward_choice);
 }

@@ -34,6 +34,12 @@
     <ClCompile Include="BotSession.cpp">
       <Filter>Net</Filter>
     </ClCompile>
+    <ClCompile Include="BotQuestBrain.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
+    <ClCompile Include="BotScenario.cpp">
+      <Filter>Net</Filter>
+    </ClCompile>
     <ClCompile Include="BotPacket.cpp">
       <Filter>Net</Filter>
     </ClCompile>
@@ -64,6 +70,12 @@
       <Filter>Net</Filter>
     </ClInclude>
     <ClInclude Include="BotSession.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="BotQuestBrain.h">
+      <Filter>Net</Filter>
+    </ClInclude>
+    <ClInclude Include="BotScenario.h">
       <Filter>Net</Filter>
     </ClInclude>
     <ClInclude Include="BotPacket.h">

@@ -58,7 +58,25 @@ namespace bot
 					->Condition(BotNode<IsSelfDead>::Create(blackboard))->Back()
 					->Action(BotNode<WaitRespawn>::Create(blackboard))->Back()
 				->Back()
+				->Sequence()                                                            // 대화 마무리
+					->Condition(BotNode<IsDialogOpen>::Create(blackboard))->Back()
+					->Action(BotNode<AdvanceDialog>::Create(blackboard))->Back()
+				->Back()
+				->Sequence()                                                            // 맵 이동
+					->Condition(BotNode<IsQuestTravelGoal>::Create(blackboard))->Back()
+					->Action(BotNode<TravelToGate>::Create(blackboard))->Back()
+				->Back()
+				->Sequence()                                                            // NPC 상호작용
+					->Condition(BotNode<IsQuestNpcGoal>::Create(blackboard))->Back()
+					->Action(BotNode<ApproachQuestNpc>::Create(blackboard))->Back()
+					->Action(BotNode<InteractQuestNpc>::Create(blackboard))->Back()
+				->Back()
+				->Sequence()                                                            // 사냥터 이동
+					->Condition(BotNode<IsQuestHuntGoal>::Create(blackboard))->Back()
+					->Action(BotNode<ReachHuntArea>::Create(blackboard))->Back()
+				->Back()
 				->Sequence()                                                            // 교전
+					->Condition(BotNode<IsCombatAllowed>::Create(blackboard))->Back()
 					->Condition(BotNode<HasTarget>::Create(blackboard))->Back()
 					->ActiveSelector()
 						->Sequence()
@@ -68,7 +86,10 @@ namespace bot
 						->Action(BotNode<MoveToTarget>::Create(blackboard))->Back()
 					->Back()
 				->Back()
-				->Action(BotNode<AcquireTarget>::Create(blackboard))->Back()            // 대상 탐색
+				->Sequence()                                                            // 대상 탐색
+					->Condition(BotNode<IsCombatAllowed>::Create(blackboard))->Back()
+					->Action(BotNode<AcquireTarget>::Create(blackboard))->Back()
+				->Back()
 				->Action(BotNode<Wander>::Create(blackboard))->Back()                   // 배회
 			->End();
 	}

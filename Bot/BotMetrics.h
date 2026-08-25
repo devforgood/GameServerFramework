@@ -51,6 +51,15 @@ namespace bot
 		uint64_t kills = 0;
 		uint64_t deaths = 0;         // 내 캐릭터가 죽은 횟수
 
+		// 시나리오(메인 퀘스트) 진행. 수치가 늘지 않으면 봇이 부하는 만들지만 시나리오는
+		// 한 발짝도 못 나가고 있다는 뜻이다 — 그 상태는 패킷 수치만 봐서는 알 수 없다.
+		uint64_t quests_accepted = 0;
+		uint64_t quests_completed = 0;
+		uint64_t interacts_sent = 0;
+		uint64_t interacts_rejected = 0;   // 거리/맵이 어긋나 서버가 거절
+		uint64_t dialogs_sent = 0;
+		uint64_t map_changes = 0;          // 게이트로 맵을 옮긴 횟수
+
 		uint32_t connect_attempts = 0;
 		uint32_t connect_failures = 0;
 		uint32_t disconnects = 0;

@@ -6,8 +6,9 @@
 
 namespace bot
 {
-	BotWorker::BotWorker(const BotConfig& config, int worker_index)
+	BotWorker::BotWorker(const BotConfig& config, const BotScenario* scenario, int worker_index)
 		: config_(config)
+		, scenario_(scenario)
 		, worker_index_(worker_index)
 		, io_context_(1)   // 힌트: 이 io_context 는 스레드 하나만 돌린다(내부 락을 줄인다)
 		, work_guard_(boost::asio::make_work_guard(io_context_))
@@ -22,8 +23,8 @@ namespace bot
 
 	void BotWorker::AddBot(int global_index, std::string user_id, bool verbose)
 	{
-		bots_.push_back(std::make_unique<BotClient>(io_context_, config_, global_index,
-			std::move(user_id), verbose));
+		bots_.push_back(std::make_unique<BotClient>(io_context_, config_, scenario_,
+			global_index, std::move(user_id), verbose));
 	}
 
 	void BotWorker::Start(std::chrono::steady_clock::time_point run_start)

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -7,6 +8,8 @@
 #include "BotBehaviorTree.h"
 #include "BotMetrics.h"
 #include "BotPacket.h"
+#include "BotQuestBrain.h"
+#include "BotScenario.h"
 #include "WorldView.h"
 
 #include "../BehaviorTree/BehaviorTree.h"
@@ -89,15 +92,31 @@ namespace
 	{
 		struct MoveCommand { Vec3 pos; };
 		struct AttackCommand { int target_id; Vec3 pos; };
+		struct DialogCommand { int node_id; int choice_index; };
+		struct CompleteCommand { int quest_id; int reward_choice; };
 
 		std::vector<MoveCommand> moves;
 		std::vector<AttackCommand> attacks;
+		std::vector<int> interacts;
+		std::vector<DialogCommand> dialogs;
+		std::vector<CompleteCommand> completes;
+		std::vector<int> gates;
 
 		void MoveTo(const Vec3& pos) override { moves.push_back({ pos }); }
 		void Attack(int target_actor_id, const Vec3& target_pos) override
 		{
 			attacks.push_back({ target_actor_id, target_pos });
 		}
+		void Interact(int target_id) override { interacts.push_back(target_id); }
+		void SelectDialog(int node_id, int choice_index) override
+		{
+			dialogs.push_back({ node_id, choice_index });
+		}
+		void CompleteQuest(int quest_id, int reward_choice) override
+		{
+			completes.push_back({ quest_id, reward_choice });
+		}
+		void EnterGate(int gate_id) override { gates.push_back(gate_id); }
 	};
 
 	ActorUpdate MakeMonster(int actor_id, float x, float z, int health = 100)
@@ -522,4 +541,444 @@ TEST(BotBehaviorTreeTest, SendsNothingWhileDead)
 	fixture.blackboard.self_dead = false;
 	fixture.Tick(3.0);
 	EXPECT_EQ(fixture.blackboard.target_actor_id, 10);
+}
+
+//--- 시나리오 데이터 -----------------------------------------------------------------
+//
+// 서버가 읽는 것과 같은 게임 데이터(Client/Assets/Resources/GameData/)를 그대로 읽는다.
+// 여기서 깨지면 봇은 접속은 하되 아무 데도 가지 않는데, 패킷 수치만 봐서는 정상으로 보인다.
+
+namespace
+{
+	// 파싱은 한 번만 한다(테스트마다 다시 읽을 이유가 없다).
+	const BotScenario* SharedScenario()
+	{
+		static BotScenario scenario;
+		static const bool loaded = []() {
+			std::string error;
+			const bool ok = scenario.Load("", error);
+			if (!ok)
+				ADD_FAILURE() << "시나리오 데이터를 읽지 못했다: " << error;
+			return ok;
+		}();
+		return loaded ? &scenario : nullptr;
+	}
+
+	// 대화 노드에서 서버가 보낼 법한 목록을 만든다. 서버는 조건(show_if)에 걸러진 것만
+	// 보내므로, 데이터의 번호와 보이는 번호가 다른 상황을 여기서 재현한다.
+	std::vector<std::string> VisibleTextIds(const BotScenario& scenario, int node_id,
+		const std::vector<std::string>& drop)
+	{
+		std::vector<std::string> visible;
+		const ScenarioDialogNode* node = scenario.FindDialog(node_id);
+		if (node == nullptr)
+			return visible;
+
+		for (const ScenarioChoice& choice : node->choices)
+		{
+			if (std::find(drop.begin(), drop.end(), choice.text_id) != drop.end())
+				continue;
+			visible.push_back(choice.text_id);
+		}
+		return visible;
+	}
+}
+
+TEST(BotScenarioTest, LoadsMainChainsAndSplitsBranchesByBotIndex)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const std::vector<int>& chains = scenario->MainChains();
+	ASSERT_GE(chains.size(), 2u) << "메인 체인이 둘 이상이어야 봇마다 다른 체인을 탄다";
+
+	// 체인은 봇 번호로 갈린다 — 이웃한 두 봇은 서로 다른 체인을 탄다.
+	const std::vector<int> first = scenario->BuildMainQuestPlan(0);
+	const std::vector<int> second = scenario->BuildMainQuestPlan(1);
+	ASSERT_FALSE(first.empty());
+	ASSERT_FALSE(second.empty());
+	EXPECT_NE(first.front(), second.front());
+
+	// 계획은 언제나 체인의 첫 칸(chain_step 1)부터다 — "처음부터" 진행한다.
+	const ScenarioQuest* head = scenario->FindQuest(first.front());
+	ASSERT_NE(head, nullptr);
+	EXPECT_EQ(head->chain_step, 1);
+}
+
+TEST(BotScenarioTest, PicksOneSideOfAMutuallyExclusiveBranch)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	// 분기 한 쌍(같은 자리에 놓이고 서로를 막는 퀘스트)을 데이터에서 찾는다.
+	const ScenarioQuest* branch = scenario->FindQuest(11002);
+	ASSERT_NE(branch, nullptr);
+	ASSERT_FALSE(branch->blocked_by.empty()) << "11002 에 분기 상대가 없다";
+
+	const int other_id = branch->blocked_by.front();
+	const ScenarioQuest* other = scenario->FindQuest(other_id);
+	ASSERT_NE(other, nullptr);
+	EXPECT_EQ(other->chain_id, branch->chain_id);
+	EXPECT_EQ(other->chain_step, branch->chain_step);
+
+	// 서로를 막고 있어야 진짜 분기다(한쪽만 막으면 순서에 따라 둘 다 할 수 있다).
+	EXPECT_NE(std::find(other->blocked_by.begin(), other->blocked_by.end(), branch->id),
+		other->blocked_by.end());
+
+	// 한 봇의 계획에는 한쪽만 들어가고, 가지 번호를 옮기면 반대쪽이 들어간다.
+	const int chain_count = static_cast<int>(scenario->MainChains().size());
+	bool saw_branch = false;
+	bool saw_other = false;
+
+	for (int branch_index = 0; branch_index < chain_count * 4; ++branch_index)
+	{
+		const std::vector<int> plan = scenario->BuildMainQuestPlan(branch_index);
+		const bool has_branch = std::find(plan.begin(), plan.end(), branch->id) != plan.end();
+		const bool has_other = std::find(plan.begin(), plan.end(), other_id) != plan.end();
+
+		EXPECT_FALSE(has_branch && has_other) << "한 봇이 배타적인 두 가지를 모두 계획했다";
+		saw_branch = saw_branch || has_branch;
+		saw_other = saw_other || has_other;
+	}
+
+	EXPECT_TRUE(saw_branch);
+	EXPECT_TRUE(saw_other) << "봇을 늘려도 한쪽 가지는 아무도 진행하지 않는다";
+}
+
+TEST(BotScenarioTest, RoutesBetweenMapsThroughGates)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	// 시작 마을(1)에서 어둠의 숲(2)까지는 게이트를 여러 번 갈아탄다.
+	// 봇은 매번 "지금 맵에서 밟을 게이트" 하나만 알면 된다.
+	int map_id = 1;
+	int hops = 0;
+	while (map_id != 2 && hops < 8)
+	{
+		const ScenarioGate* gate = scenario->NextGate(map_id, 2);
+		ASSERT_NE(gate, nullptr) << "맵 " << map_id << " 에서 2 로 가는 길이 없다";
+		EXPECT_EQ(gate->map_id, map_id);
+
+		// 도착 맵은 게이트가 정한다. 다음 걸음을 위해 그 맵으로 옮겨 간다.
+		const ScenarioGate* landing = scenario->FindGate(gate->target_id);
+		map_id = landing != nullptr ? landing->map_id : 0;
+		++hops;
+	}
+
+	EXPECT_EQ(map_id, 2);
+	EXPECT_EQ(scenario->NextGate(1, 1), nullptr);   // 같은 맵이면 이동할 필요가 없다
+}
+
+TEST(BotScenarioTest, FindsDialogRouteToAQuestAction)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	// 리네의 첫 노드(3201)에는 수락 선택지가 없다 — 가지별 창구로 한 번 건너가야 한다.
+	const int hop = scenario->NextDialogChoice(3201, "accept_quest", 11009);
+	ASSERT_GE(hop, 0);
+
+	const ScenarioDialogNode* greet = scenario->FindDialog(3201);
+	ASSERT_NE(greet, nullptr);
+	ASSERT_LT(hop, static_cast<int>(greet->choices.size()));
+	EXPECT_EQ(greet->choices[hop].action, "goto");
+	EXPECT_EQ(greet->choices[hop].next_id, 3204);
+
+	// 그 창구에서는 수락 선택지가 바로 나온다.
+	const int direct = scenario->NextDialogChoice(3204, "accept_quest", 11009);
+	ASSERT_GE(direct, 0);
+	const ScenarioDialogNode* node = scenario->FindDialog(3204);
+	ASSERT_NE(node, nullptr);
+	EXPECT_EQ(node->choices[direct].action, "accept_quest");
+	EXPECT_EQ(node->choices[direct].param, 11009);
+
+	// 없는 퀘스트로는 길이 없다.
+	EXPECT_LT(scenario->NextDialogChoice(3201, "accept_quest", 999999), 0);
+}
+
+//--- 시나리오 판단(BotQuestBrain) ----------------------------------------------------
+
+namespace
+{
+	// 계획의 첫 퀘스트가 quest_id 인 가지 번호를 찾는다. 봇 번호로 가지가 갈리므로
+	// 테스트는 "그 가지를 탄 봇"을 골라 써야 한다.
+	int BranchIndexStartingWith(const BotScenario& scenario, int quest_id)
+	{
+		for (int branch_index = 0; branch_index < 16; ++branch_index)
+		{
+			const std::vector<int> plan = scenario.BuildMainQuestPlan(branch_index);
+			if (!plan.empty() && plan.front() == quest_id)
+				return branch_index;
+		}
+		return -1;
+	}
+}
+
+TEST(BotQuestBrainTest, StartsAtTheFirstQuestGiverOfItsChain)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const int branch_index = BranchIndexStartingWith(*scenario, 11001);
+	ASSERT_GE(branch_index, 0);
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, branch_index);
+	ASSERT_TRUE(brain.Enabled());
+
+	brain.SetMapId(1);          // 시작 마을에서 접속했다
+	brain.Update(1.0);
+
+	const QuestGoal& goal = brain.Goal();
+	EXPECT_EQ(goal.kind, QuestGoalKind::Interact);
+	EXPECT_EQ(goal.quest_id, 11001);
+	EXPECT_EQ(goal.npc_id, 2001);       // 11001 의 시작 NPC
+	EXPECT_EQ(goal.dialog_quest_id, 11001);
+	EXPECT_FALSE(goal.dialog_complete);
+}
+
+TEST(BotQuestBrainTest, TravelsWhenTheQuestGiverIsInAnotherMap)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const int branch_index = BranchIndexStartingWith(*scenario, 11001);
+	ASSERT_GE(branch_index, 0);
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, branch_index);
+	brain.SetMapId(2);          // 어둠의 숲에 있는데 첫 NPC 는 시작 마을에 있다
+	brain.Update(1.0);
+
+	const QuestGoal& goal = brain.Goal();
+	EXPECT_EQ(goal.kind, QuestGoalKind::Travel);
+	EXPECT_NE(goal.gate_id, 0);
+
+	const ScenarioGate* gate = scenario->FindGate(goal.gate_id);
+	ASSERT_NE(gate, nullptr);
+	EXPECT_EQ(gate->map_id, 2) << "지금 맵에 없는 게이트를 밟으러 간다";
+}
+
+TEST(BotQuestBrainTest, TurnsKillObjectivesIntoAHuntGoalAndReportsWhenDone)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const int branch_index = BranchIndexStartingWith(*scenario, 11001);
+	ASSERT_GE(branch_index, 0);
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, branch_index);
+	brain.SetMapId(1);
+
+	// 11001 2단계: 슬라임 5마리. 시작 마을에 슬라임 스폰이 있으므로 그 자리로 간다.
+	const int progress[3] = { 0, 0, 0 };
+	brain.ApplyQuestInfo(11001, BotQuestBrain::kStateInProgress, 2, progress, 3);
+	brain.Update(1.0);
+
+	EXPECT_EQ(brain.Goal().kind, QuestGoalKind::Hunt);
+	EXPECT_EQ(brain.Goal().quest_id, 11001);
+	EXPECT_EQ(brain.Goal().map_id, 1);
+
+	// 사냥터가 정해지면 배회도 그 주변에서 한다.
+	Vec3 anchor;
+	float radius = 0.0f;
+	EXPECT_TRUE(brain.HuntAnchor(anchor, radius));
+	EXPECT_GT(radius, 0.0f);
+
+	// 목표를 다 채우면 서버가 완료 대기로 바꾼다 — 그때는 완료 NPC 를 찾아간다.
+	brain.ApplyQuestInfo(11001, BotQuestBrain::kStateReadyToComplete, 3, progress, 3);
+	brain.Update(2.0);
+
+	EXPECT_EQ(brain.Goal().kind, QuestGoalKind::Travel);   // 완료 NPC(리네)는 다른 맵에 있다
+	EXPECT_EQ(brain.Goal().quest_id, 11001);
+}
+
+TEST(BotQuestBrainTest, MapsFilteredDialogChoicesBackToTheDataChoice)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const int branch_index = BranchIndexStartingWith(*scenario, 11001);
+	ASSERT_GE(branch_index, 0);
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, branch_index);
+	brain.SetMapId(1);
+	brain.Update(1.0);
+	ASSERT_EQ(brain.Goal().npc_id, 2001);
+
+	// 서버는 조건에 걸러진 목록만 보낸다. 앞쪽 선택지가 빠지면 데이터의 번호와
+	// 보이는 번호가 어긋나는데, 봇은 text_id 로 되짚어 제 선택지를 찾아야 한다.
+	const ScenarioDialogNode* node = scenario->FindDialog(3001);
+	ASSERT_NE(node, nullptr);
+
+	const std::vector<std::string> visible =
+		VisibleTextIds(*scenario, 3001, { node->choices.front().text_id });
+	ASSERT_FALSE(visible.empty());
+
+	brain.OnDialogOpened(2001, 3001, visible);
+	const int choice = brain.ChooseDialogChoice();
+	ASSERT_GE(choice, 0);
+	ASSERT_LT(choice, static_cast<int>(visible.size()));
+
+	// 고른 번호가 가리키는 것이 실제로 11001 로 가는 길이어야 한다.
+	const int data_index = scenario->NextDialogChoice(3001, "accept_quest", 11001);
+	ASSERT_GE(data_index, 0);
+	EXPECT_EQ(visible[choice], node->choices[data_index].text_id);
+}
+
+TEST(BotQuestBrainTest, ClosesDialogThatHasNothingToDoForTheCurrentGoal)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const int branch_index = BranchIndexStartingWith(*scenario, 11001);
+	ASSERT_GE(branch_index, 0);
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, branch_index);
+	brain.SetMapId(1);
+	brain.Update(1.0);
+
+	// 계획에 없는 NPC 의 대화가 열렸다(대장장이). 여기서 할 일은 없으니 닫는다.
+	brain.OnDialogOpened(2002, 3101, VisibleTextIds(*scenario, 3101, {}));
+	EXPECT_LT(brain.ChooseDialogChoice(), 0);
+}
+
+TEST(BotQuestBrainTest, BacksOffToLevelUpWhenTheAcceptChoiceIsNotOffered)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const int branch_index = BranchIndexStartingWith(*scenario, 11001);
+	ASSERT_GE(branch_index, 0);
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, branch_index);
+	brain.SetMapId(1);
+	brain.Update(1.0);
+	ASSERT_EQ(brain.Goal().kind, QuestGoalKind::Interact);
+
+	// 레벨이 모자라면 서버가 수락 선택지를 아예 내보내지 않는다. 그 자리에서 NPC 를
+	// 계속 두드리는 대신 잡으러 가야 한다 — 그러지 않으면 봇이 영원히 멈춰 선다.
+	const ScenarioDialogNode* node = scenario->FindDialog(3001);
+	ASSERT_NE(node, nullptr);
+	const int data_index = scenario->NextDialogChoice(3001, "accept_quest", 11001);
+	ASSERT_GE(data_index, 0);
+
+	const std::vector<std::string> without_route =
+		VisibleTextIds(*scenario, 3001, { node->choices[data_index].text_id });
+
+	for (int attempt = 0; attempt < 3; ++attempt)
+	{
+		brain.OnDialogOpened(2001, 3001, without_route);
+		EXPECT_LT(brain.ChooseDialogChoice(), 0);
+		brain.OnDialogClosed();
+		brain.Update(2.0 + attempt);
+	}
+
+	EXPECT_EQ(brain.Goal().kind, QuestGoalKind::Hunt);
+}
+
+//--- 시나리오(BT) 실행 ---------------------------------------------------------------
+
+TEST(BotBehaviorTreeTest, WalksToTheQuestGiverAndTalksInsteadOfHunting)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const int branch_index = BranchIndexStartingWith(*scenario, 11001);
+	ASSERT_GE(branch_index, 0);
+
+	TreeFixture fixture;
+	fixture.blackboard.quest.Configure(scenario, branch_index);
+	fixture.blackboard.quest.SetMapId(1);
+	fixture.blackboard.self_pos = Vec3(0.0f, 0.0f, 0.0f);
+
+	// 가는 길에 몬스터가 보여도 쫓아가지 않는다. 쫓아가기 시작하면 NPC 에 닿지 못한다.
+	NotifyBuilder notify;
+	notify.Add(MakeMonster(10, 1.0f, 0.0f));
+	fixture.blackboard.view.Apply(notify.Build(), 1.0, 99);
+
+	fixture.blackboard.quest.Update(1.0);
+	const QuestGoal& goal = fixture.blackboard.quest.Goal();
+	ASSERT_EQ(goal.kind, QuestGoalKind::Interact);
+
+	fixture.Tick(1.0);
+	ASSERT_FALSE(fixture.actions.moves.empty());
+	EXPECT_TRUE(fixture.actions.attacks.empty());
+	EXPECT_FLOAT_EQ(fixture.actions.moves.back().pos.x, goal.pos.x);
+
+	// 서버가 이동을 처리해 NPC 앞에 도착했다.
+	fixture.blackboard.self_pos = goal.pos;
+	fixture.Tick(1.5);
+
+	ASSERT_EQ(fixture.actions.interacts.size(), 1u);
+	EXPECT_EQ(fixture.actions.interacts[0], goal.npc_id);
+}
+
+TEST(BotBehaviorTreeTest, StepsOnTheGateWhenTheGoalIsInAnotherMap)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const int branch_index = BranchIndexStartingWith(*scenario, 11001);
+	ASSERT_GE(branch_index, 0);
+
+	TreeFixture fixture;
+	fixture.blackboard.quest.Configure(scenario, branch_index);
+	fixture.blackboard.quest.SetMapId(2);        // 첫 NPC 는 다른 맵에 있다
+	fixture.blackboard.quest.Update(1.0);
+
+	const QuestGoal& goal = fixture.blackboard.quest.Goal();
+	ASSERT_EQ(goal.kind, QuestGoalKind::Travel);
+
+	fixture.blackboard.self_pos = Vec3(0.0f, 0.0f, 0.0f);
+	fixture.Tick(1.0);
+	ASSERT_FALSE(fixture.actions.moves.empty());
+	EXPECT_TRUE(fixture.actions.gates.empty()) << "게이트에 닿기도 전에 진입을 보냈다";
+
+	fixture.blackboard.self_pos = goal.pos;
+	fixture.Tick(1.5);
+
+	ASSERT_EQ(fixture.actions.gates.size(), 1u);
+	EXPECT_EQ(fixture.actions.gates[0], goal.gate_id);
+
+	// 게이트 요청은 간격을 두고 보낸다(서버 쿨타임이 1초다).
+	fixture.Tick(1.6);
+	EXPECT_EQ(fixture.actions.gates.size(), 1u);
+}
+
+TEST(BotBehaviorTreeTest, KeepsHuntingWhenTheGoalIsAHuntingGround)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const int branch_index = BranchIndexStartingWith(*scenario, 11001);
+	ASSERT_GE(branch_index, 0);
+
+	TreeFixture fixture;
+	fixture.blackboard.quest.Configure(scenario, branch_index);
+	fixture.blackboard.quest.SetMapId(1);
+
+	const int progress[3] = { 0, 0, 0 };
+	fixture.blackboard.quest.ApplyQuestInfo(11001, BotQuestBrain::kStateInProgress, 2, progress, 3);
+	fixture.blackboard.quest.Update(1.0);
+	ASSERT_EQ(fixture.blackboard.quest.Goal().kind, QuestGoalKind::Hunt);
+
+	// 사냥터 안에 있고 몬스터가 보이면 평소처럼 싸운다.
+	fixture.blackboard.self_pos = fixture.blackboard.quest.Goal().pos;
+
+	NotifyBuilder notify;
+	notify.Add(MakeMonster(10, fixture.blackboard.self_pos.x + 1.0f,
+		fixture.blackboard.self_pos.z));
+	fixture.blackboard.view.Apply(notify.Build(), 1.0, 99);
+
+	fixture.Tick(1.0);
+	EXPECT_EQ(fixture.blackboard.target_actor_id, 10);
+
+	fixture.Tick(1.1);
+	EXPECT_FALSE(fixture.actions.attacks.empty());
 }

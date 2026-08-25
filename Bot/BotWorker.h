@@ -12,6 +12,7 @@
 #include "BotClient.h"
 #include "BotConfig.h"
 #include "BotMetrics.h"
+#include "BotScenario.h"
 
 namespace bot
 {
@@ -30,7 +31,8 @@ namespace bot
 	class BotWorker
 	{
 	public:
-		BotWorker(const BotConfig& config, int worker_index);
+		// scenario 는 러너가 소유하는 읽기 전용 데이터다(모든 워커/봇이 공유한다).
+		BotWorker(const BotConfig& config, const BotScenario* scenario, int worker_index);
 		~BotWorker();
 
 		BotWorker(const BotWorker&) = delete;
@@ -59,6 +61,7 @@ namespace bot
 		MetricsSnapshot BuildSnapshot() const;
 
 		const BotConfig& config_;
+		const BotScenario* scenario_;
 		const int worker_index_;
 
 		boost::asio::io_context io_context_;

@@ -712,7 +712,9 @@
       "completed_quest_ids": [
         11001
       ],
-      "blocked_quest_ids": [],
+      "blocked_quest_ids": [
+        11009
+      ],
       "item_ids": [],
       "skill_ids": []
     },
@@ -777,6 +779,81 @@
     }
   },
   {
+    "id": 11009,
+    "code_name": "MainQuest",
+    "category": "kill",
+    "name_id": "quest_goblin_porters_name",
+    "desc_id": "quest_goblin_porters_desc",
+    "level": 2,
+    "min_level": 2,
+    "max_level": 0,
+    "priority": 200,
+    "map_id": 14,
+    "start_npc_id": 2004,
+    "end_npc_id": 2004,
+    "shareable": true,
+    "recommended_party_size": 1,
+    "auto_complete": false,
+    "chain_id": 101,
+    "chain_step": 2,
+    "prerequisites": {
+      "completed_quest_ids": [
+        11001
+      ],
+      "blocked_quest_ids": [
+        11002
+      ],
+      "item_ids": [],
+      "skill_ids": []
+    },
+    "stages": [
+      {
+        "step": 1,
+        "logic": "and",
+        "desc_id": "quest_goblin_porters_stage1_desc",
+        "objectives": [
+          {
+            "type": "kill",
+            "target_id": 3,
+            "count": 8,
+            "desc_id": "quest_goblin_porters_obj_kill_goblin"
+          }
+        ]
+      },
+      {
+        "step": 2,
+        "logic": "and",
+        "desc_id": "quest_goblin_porters_stage2_desc",
+        "objectives": [
+          {
+            "type": "talk",
+            "target_id": 2004,
+            "count": 1,
+            "desc_id": "quest_goblin_porters_obj_report"
+          }
+        ]
+      }
+    ],
+    "time": {
+      "reset_type": "none",
+      "limit_seconds": 0,
+      "cooldown_seconds": 0,
+      "repeatable": false
+    },
+    "rewards": {
+      "exp": 250,
+      "gold": 120,
+      "items": [
+        {
+          "item_id": 2,
+          "count": 2
+        }
+      ],
+      "choice_items": [],
+      "skill_ids": []
+    }
+  },
+  {
     "id": 11003,
     "code_name": "MainQuest",
     "category": "collect",
@@ -796,7 +873,7 @@
     "chain_step": 3,
     "prerequisites": {
       "completed_quest_ids": [
-        11002
+        11001
       ],
       "blocked_quest_ids": [],
       "item_ids": [],

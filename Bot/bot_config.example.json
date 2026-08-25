@@ -44,6 +44,21 @@
     "ping_interval_ms": 1000
   },
 
+  "quest": {
+    "_comment": [
+      "메인 퀘스트 시나리오. 봇은 게임 데이터를 읽어 시작 NPC 를 찾아가고, 대화로 퀘스트를",
+      "받고, 목표(처치/수집/도달/보고)를 스스로 수행한다.",
+      "분기(같은 자리에 놓인 서로 배타적인 퀘스트)와 메인 체인은 봇 번호로 갈린다 —",
+      "봇을 늘리면 모든 가지가 골고루 진행된다.",
+      "fresh_accounts 를 끄면 이전 실행의 캐릭터를 이어받는데, 메인 퀘스트는 반복할 수",
+      "없으므로 그때는 '처음부터' 가 아니라 '이어서' 가 된다."
+    ],
+    "enabled": true,
+    "gamedata_dir": "",
+    "branch_offset": 0,
+    "fresh_accounts": true
+  },
+
   "limits": {
     "_comment": "서버 server_config.json 의 network.max_packets_per_second 보다 낮게 유지할 것.",
     "max_packets_per_second": 20,

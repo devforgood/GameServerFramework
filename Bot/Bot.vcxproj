@@ -103,11 +103,15 @@
     <ClCompile Include="BotLog.cpp" />
     <ClCompile Include="BotMetrics.cpp" />
     <ClCompile Include="BotPacket.cpp" />
+    <ClCompile Include="BotQuestBrain.cpp" />
+    <ClCompile Include="BotScenario.cpp" />
     <ClCompile Include="BotRunner.cpp" />
     <ClCompile Include="BotSession.cpp" />
     <ClCompile Include="BotWorker.cpp" />
     <ClCompile Include="WorldView.cpp" />
     <ClCompile Include="main.cpp" />
+    <!-- 게임 데이터 폴더를 서버와 같은 방식으로 찾는다(사본을 두지 않기 위해). -->
+    <ClCompile Include="..\Engine\GameData\GameDataPath.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BotBehaviorTree.h" />
@@ -118,6 +122,8 @@
     <ClInclude Include="BotLog.h" />
     <ClInclude Include="BotMetrics.h" />
     <ClInclude Include="BotPacket.h" />
+    <ClInclude Include="BotQuestBrain.h" />
+    <ClInclude Include="BotScenario.h" />
     <ClInclude Include="BotRunner.h" />
     <ClInclude Include="BotSession.h" />
     <ClInclude Include="BotWorker.h" />

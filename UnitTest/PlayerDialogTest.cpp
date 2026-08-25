@@ -29,8 +29,14 @@
 // 세는 번호와 데이터의 번호가 다르다:
 //   3004 마렌 스토리    → [0] 11001 수락(acceptable), [1] 11007 완료(ready_to_complete),
 //                         [2] 11008 수락(acceptable), [3] 3001 로 되돌아가기(조건 없음)
-//   3201 리네 인사      → [0] 11001 완료(ready_to_complete), [1] 3202 로(11001 completed),
-//                         [2] 3203 으로(11002 completed), [3] 닫기(조건 없음)
+//   3201 리네 인사      → [0] 11001 완료(ready_to_complete),
+//                         [1] 3202 로(11002 acceptable),   [2] 3204 로(11009 acceptable),
+//                         [3] 3202 로(11002 ready),        [4] 3204 로(11009 ready),
+//                         [5] 3203 으로(11002 completed),  [6] 3203 으로(11009 completed),
+//                         [7] 닫기(조건 없음)
+//                         11002 와 11009 는 같은 자리의 분기다(서로를 막는다). 그래서 두
+//                         가지의 창구가 나란히 걸려 있고, 한쪽을 고르면 반대쪽 선택지는
+//                         acceptable 이 깨져 저절로 사라진다.
 
 namespace
 {
@@ -51,6 +57,7 @@ constexpr int kGoblinHunt = 1001;
 constexpr int kEscortMerchant = 1006;
 
 constexpr int kMissingShips = 11001;   // 1막 1번. min_level 1, 선행 없음
+constexpr int kRinneShortcut = 11002;  // 1막 2번 가지 A(11009 와 서로 막는다)
 constexpr int kFourWingedMural = 11008; // 1막 8번. 운영이 내려둔(disabled) 퀘스트
 
 // 3001 에서 마렌의 메인 스토리 노드(3004)로 들어가는 선택지 번호.
@@ -307,13 +314,16 @@ TEST_F(PlayerDialogTest, HidesChoicesWhoseConditionIsNotMet)
 	ASSERT_TRUE(player.dialog->Open(kRinneNpc));
 	ASSERT_EQ(kRinneRoot, player.dialog->GetCurrentNodeId());
 
-	EXPECT_FALSE(player.dialog->IsChoiceVisible(0)); // 11001 완료
-	EXPECT_FALSE(player.dialog->IsChoiceVisible(1)); // 3202 로
-	EXPECT_FALSE(player.dialog->IsChoiceVisible(2)); // 3203 으로
-	EXPECT_TRUE(player.dialog->IsChoiceVisible(3));  // 닫기
+	const gamedata::Dialog* node = player.dialog->GetCurrentNode();
+	ASSERT_NE(nullptr, node);
+
+	const int close_index = static_cast<int>(node->choices.size()) - 1;
+	for (int i = 0; i < close_index; ++i)
+		EXPECT_FALSE(player.dialog->IsChoiceVisible(i)) << "choices[" << i << "]";
+	EXPECT_TRUE(player.dialog->IsChoiceVisible(close_index));  // 닫기(조건 없음)
 
 	// 클라가 받은 목록에서 0번은 닫기다. 데이터의 0번(완료)이 아니다.
-	EXPECT_EQ(3, player.dialog->ResolveVisibleChoice(0));
+	EXPECT_EQ(close_index, player.dialog->ResolveVisibleChoice(0));
 	EXPECT_EQ(-1, player.dialog->ResolveVisibleChoice(1));
 	EXPECT_EQ(DialogResult::Closed, player.dialog->Select(kRinneRoot, 0));
 	EXPECT_FALSE(player.quests->IsCompleted(kMissingShips));
@@ -330,10 +340,38 @@ TEST_F(PlayerDialogTest, ShowsChoiceOnceConditionIsMet)
 
 	ASSERT_TRUE(player.dialog->Open(kRinneNpc));
 	EXPECT_TRUE(player.dialog->IsChoiceVisible(0));  // 이제 완료 선택지가 보인다
-	EXPECT_FALSE(player.dialog->IsChoiceVisible(1)); // 아직 완료는 아니라 다음 이야기는 잠겨 있다
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(1)); // 아직 완료는 아니라 다음 가지는 잠겨 있다
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(2)); // 반대쪽 가지도 마찬가지다
 
 	EXPECT_EQ(DialogResult::Closed, player.dialog->Select(kRinneRoot, 0));
 	EXPECT_TRUE(player.quests->IsCompleted(kMissingShips));
+}
+
+TEST_F(PlayerDialogTest, OffersBothBranchesAndHidesTheOneNotTaken)
+{
+	// 11001 을 끝내면 리네가 두 갈래를 함께 제안한다(11002 지름길 / 11009 짐꾼).
+	TalkingPlayer player;
+	ASSERT_TRUE(player.dialog->Open(kRinneNpc));
+	ASSERT_EQ(kRinneRoot, player.dialog->GetCurrentNodeId());
+	player.dialog->Close();
+
+	player.quests->GmForceComplete(kMissingShips);
+	ASSERT_TRUE(player.quests->IsCompleted(kMissingShips));
+
+	ASSERT_TRUE(player.dialog->Open(kRinneNpc));
+	EXPECT_TRUE(player.dialog->IsChoiceVisible(1));  // 3202 로(가지 A 수락 창구)
+	EXPECT_TRUE(player.dialog->IsChoiceVisible(2));  // 3204 로(가지 B 수락 창구)
+	player.dialog->Close();
+
+	// 한쪽을 끝내면 반대쪽은 CanAccept 가 BlockedQuest 로 막으므로 선택지가 사라진다.
+	// acceptable 조건이 CanAccept 를 그대로 쓰기 때문에 데이터를 더 고치지 않아도 된다.
+	player.quests->GmForceComplete(kRinneShortcut);
+	ASSERT_TRUE(player.quests->IsCompleted(kRinneShortcut));
+
+	ASSERT_TRUE(player.dialog->Open(kRinneNpc));
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(1)); // 이미 완료한 가지
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(2)); // 막힌 반대쪽 가지
+	EXPECT_TRUE(player.dialog->IsChoiceVisible(5));  // 3203 으로(다음 이야기)
 }
 
 TEST_F(PlayerDialogTest, DisabledQuestIsNotOfferedAsAcceptable)

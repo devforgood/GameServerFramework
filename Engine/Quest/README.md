@@ -46,7 +46,7 @@ QuestDefinition (데이터)          PlayerQuestState (플레이어별)
   "shareable": true,
   "recommended_party_size": 1,
   "auto_complete": false,          // true = 목표 달성 즉시 완료(완료 NPC 불필요)
-  "chain_id": 10, "chain_step": 1, // 같은 체인 안에서 chain_step 은 유일해야 한다
+  "chain_id": 10, "chain_step": 1, // 체인 안의 순서. 같은 번호는 분기일 때만 허용된다
 
   "prerequisites": {
     "completed_quest_ids": [],     // 전부 완료해야 수락 가능
@@ -80,6 +80,32 @@ QuestDefinition (데이터)          PlayerQuestState (플레이어별)
   }
 }
 ```
+
+### 분기 — 같은 자리에 놓인 배타적인 퀘스트
+
+체인은 대체로 한 줄이지만, 갈림길을 둘 수 있다. **같은 `chain_step` 에 퀘스트를 여럿 놓고
+서로를 `blocked_quest_ids` 로 막으면** 플레이어는 그중 하나만 할 수 있다.
+
+```jsonc
+// 11002 (가지 A)                      // 11009 (가지 B)
+"chain_id": 101, "chain_step": 2,      "chain_id": 101, "chain_step": 2,
+"prerequisites": {                     "prerequisites": {
+  "completed_quest_ids": [11001],        "completed_quest_ids": [11001],
+  "blocked_quest_ids":   [11009]         "blocked_quest_ids":   [11002]
+}                                      }
+```
+
+한쪽을 완료하면 반대쪽은 `CanAccept` 가 `BlockedQuest` 로 거절한다. 대화의
+`show_if: acceptable` 이 `CanAccept` 를 그대로 쓰기 때문에, **반대쪽 수락 선택지는
+데이터를 더 손대지 않아도 저절로 사라진다**.
+
+**합류하는 다음 칸의 선행은 두 가지의 공통 조상이어야 한다.** `completed_quest_ids` 는
+"전부 완료" 조건이라 "둘 중 하나"를 표현할 수 없다 — 다음 칸이 가지 하나를 지목하면
+반대쪽을 고른 플레이어는 거기서 이야기가 끊긴다.
+
+데이터 검증(`validate_data.py`)은 `chain_step` 중복을 막되, **서로를 전부 막고 있는**
+퀘스트들만 예외로 통과시킨다. 한쪽만 막으면 순서에 따라 둘 다 완료할 수 있어서
+갈림길이 아니라 그냥 겹친 번호이기 때문이다.
 
 ### 목표 종류
 
