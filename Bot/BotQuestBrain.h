@@ -83,7 +83,10 @@ namespace bot
 		int MapId() const { return map_id_; }
 
 		// ---- 서버 동기화
-		void ApplyQuestInfo(int quest_id, int state, int stage, const int* progress, int progress_count);
+		// 이번 실행에서 처음 보는 퀘스트면 true(= 방금 받아 냈다). 재접속하면 서버가
+		// 진행 중인 퀘스트를 전부 다시 보내 주는데, 그것을 새로 받은 것으로 세면
+		// 시나리오가 나아가지 않아도 수락 수가 늘어난다.
+		bool ApplyQuestInfo(int quest_id, int state, int stage, const int* progress, int progress_count);
 		void ApplyQuestRemoved(int quest_id);
 		void ApplyQuestCompleted(int quest_id);
 
@@ -179,6 +182,9 @@ namespace bot
 
 		std::unordered_map<int, QuestProgress> active_;
 		std::unordered_set<int> completed_;
+
+		// 이번 실행에서 한 번이라도 진행 중으로 본 퀘스트. 재접속해도 지우지 않는다.
+		std::unordered_set<int> seen_;
 
 		// 계획에서 빼기로 한 퀘스트(이미 끝냈거나, 봇이 스스로 진행할 수 없는 목표다).
 		std::unordered_set<int> skipped_;

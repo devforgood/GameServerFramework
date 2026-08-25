@@ -531,8 +531,6 @@ namespace bot
 				if (info == nullptr)
 					continue;
 
-				const bool was_active = blackboard_.quest.IsActive(info->questId());
-
 				int progress[3] = { 0, 0, 0 };
 				int progress_count = 0;
 				if (const auto* values = info->progress())
@@ -542,10 +540,10 @@ namespace bot
 						progress[i] = values->Get(i);
 				}
 
-				blackboard_.quest.ApplyQuestInfo(info->questId(), info->state(), info->stage(),
-					progress, progress_count);
+				const bool accepted = blackboard_.quest.ApplyQuestInfo(info->questId(),
+					info->state(), info->stage(), progress, progress_count);
 
-				if (!was_active)
+				if (accepted)
 				{
 					++stats_.quests_accepted;
 					if (verbose_)

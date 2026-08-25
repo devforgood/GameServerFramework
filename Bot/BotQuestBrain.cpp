@@ -39,9 +39,11 @@ namespace bot
 		next_complete_at_ = 0.0;
 	}
 
-	void BotQuestBrain::ApplyQuestInfo(int quest_id, int state, int stage,
+	bool BotQuestBrain::ApplyQuestInfo(int quest_id, int state, int stage,
 		const int* progress, int progress_count)
 	{
+		const bool first_time = seen_.insert(quest_id).second;
+
 		QuestProgress& entry = active_[quest_id];
 		entry.state = state;
 		entry.stage = stage > 0 ? stage : 1;
@@ -52,6 +54,7 @@ namespace bot
 		accept_attempts_.erase(quest_id);
 		accept_retry_at_.erase(quest_id);
 		goal_dirty_ = true;
+		return first_time;
 	}
 
 	void BotQuestBrain::ApplyQuestRemoved(int quest_id)
