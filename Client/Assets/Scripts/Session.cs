@@ -3,6 +3,7 @@ using syncnet;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 // 클라이언트 세션의 '조립과 창구' 역할만 한다. 실제 일은 역할별 객체가 나눠 맡는다:
 //
@@ -11,6 +12,7 @@ using UnityEngine;
 //   SkillController   스킬 시전·거부 처리·연출·점프 애니메이션
 //   MapTransition     게이트 이동과 씬 전환
 //   LoginController   로그인/재접속 핸드오버/자동 스폰
+//   DialogController  NPC 대화(상호작용 → 노드 표시 → 고른 번호 회신)
 //
 // Session 이 MonoBehaviour 로 남는 이유는 두 가지다. 씬에 배치된 컴포넌트 참조를 유지해야 하고,
 // TcpConnection 이 Receiver 를 Session 타입으로 캐스팅하기 때문이다. 그래서 프레임 진행(Update)과
@@ -26,6 +28,10 @@ public class Session : MonoBehaviour
     private SkillController skills;
     private MapTransition mapTransition;
     private LoginController login;
+    private DialogController dialogs;
+
+    /// <summary>NPC 에게 말을 거는 키. 근처에 NPC 가 없으면 아무 일도 하지 않는다.</summary>
+    public KeyCode interactKey = KeyCode.F;
 
     /// <summary>내 캐릭터의 actor id. 로그인/스폰/게이트 이동 응답으로 갱신된다.</summary>
     public int player_actor_id = 0;
@@ -74,6 +80,7 @@ public class Session : MonoBehaviour
         actors = new ActorSync();
         skills = new SkillController(this, connection, actors, () => player_actor_id);
         mapTransition = new MapTransition(connection, actors);
+        dialogs = new DialogController(connection);
         login = new LoginController(connection, mapTransition,
             actorId => player_actor_id = actorId,
             pos => AddAgent(0, pos, GameObjectType.Character));
@@ -86,6 +93,9 @@ public class Session : MonoBehaviour
         {
             player_actor_id = actorId;
             skills.Reset();
+
+            // 맵이 바뀌면 열려 있던 대화는 서버 쪽에서도 의미가 없다.
+            dialogs.Close();
         };
 
         // 씬이 준비되면 신규 로그인 대기 중이던 캐릭터를 스폰한다.
@@ -139,6 +149,10 @@ public class Session : MonoBehaviour
         }
 
         actors.Tick();
+
+        // 대화 중에는 말 걸기 키를 받지 않는다(창 안의 선택지로 진행한다).
+        if (Input.GetKeyDown(interactKey) && !dialogs.IsOpen)
+            TryInteractNearestNpc();
     }
 
     // 수신 메시지를 종류별 담당자에게 넘긴다. 요청-응답 콜백은 그 뒤에 실행한다(기존 순서 유지).
@@ -161,6 +175,9 @@ public class Session : MonoBehaviour
                 break;
             case GameMessages.EnterGate:
                 OnEnterGatePush(recv_msg);
+                break;
+            case GameMessages.DialogNode:
+                dialogs.Apply(recv_msg, recv_msg.Msg<DialogNode>().Value);
                 break;
         }
 
@@ -192,6 +209,63 @@ public class Session : MonoBehaviour
 
         string destScene = !string.IsNullOrEmpty(destMap.scene) ? destMap.scene : destMap.name;
         mapTransition.ForcedMove(enterGate.MapId, enterGate.GateId, enterGate.ActorId, destScene);
+    }
+
+    // ── 상호작용 / 대화 ──
+
+    /// <summary>NPC 나 맵 오브젝트에 말을 건다. 서버가 맵과 거리를 다시 검증한다.</summary>
+    public void Interact(int targetId) { dialogs.Interact(targetId); }
+
+    /// <summary>
+    /// 지금 맵에서 상호작용 거리 안에 있는 가장 가까운 NPC 에게 말을 건다.
+    ///
+    /// NPC 는 아직 씬에 오브젝트로 놓여 있지 않아 눌러서 고를 대상이 없다. 위치는
+    /// npc.json 에 있으므로 그 좌표로 가장 가까운 NPC 를 찾아 같은 요청을 보낸다
+    /// (서버도 데이터 좌표로 거리를 재므로 판정은 같다).
+    /// </summary>
+    public bool TryInteractNearestNpc()
+    {
+        var resource = GameManager.Instance != null ? GameManager.Instance.resource : null;
+        if (resource == null)
+            return false;
+
+        GameObject playerObject;
+        if (!game_objects.TryGetValue(player_actor_id, out playerObject) || playerObject == null)
+            return false;
+
+        // 지금 맵은 로드된 씬으로 안다(맵 이동이 씬 교체로 이뤄진다).
+        var currentMap = resource.GetMapByName(SceneManager.GetActiveScene().name);
+        if (currentMap == null)
+            return false;
+
+        Vector3 playerPos = playerObject.transform.position;
+
+        int bestId = 0;
+        float bestDistanceSq = float.MaxValue;
+
+        foreach (var npc in resource.Npcs.Values)
+        {
+            if (npc == null || npc.map_id != currentMap.id || npc.position == null)
+                continue;
+
+            // 거리는 수평으로만 잰다(서버와 같은 규칙 — 높이는 지형이 정한다).
+            float dx = playerPos.x - (float)npc.position.x;
+            float dz = playerPos.z - (float)npc.position.z;
+            float distanceSq = dx * dx + dz * dz;
+
+            float range = npc.interact_range > 0.0 ? (float)npc.interact_range : 3.0f;
+            if (distanceSq > range * range || distanceSq >= bestDistanceSq)
+                continue;
+
+            bestDistanceSq = distanceSq;
+            bestId = npc.id;
+        }
+
+        if (bestId == 0)
+            return false;
+
+        Interact(bestId);
+        return true;
     }
 
     // ── 접속 ──

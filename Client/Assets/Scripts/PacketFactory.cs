@@ -102,6 +102,35 @@ public static class PacketFactory
         return builder.SizedByteArray();
     }
 
+    // NPC/오브젝트 상호작용. 서버가 같은 맵인지와 거리를 검증하고, 통과하면 퀘스트의
+    // talk/interact 목표가 오른다. 대화가 걸린 NPC 면 응답에 이어 DialogNode 가 온다
+    // (대화를 여는 메시지가 따로 없다 — 누르는 동작 하나로 족하다).
+    public static byte[] CreateInteractMessage(int messageId, int targetId)
+    {
+        var builder = new FlatBufferBuilder(64);
+        syncnet.Interact.StartInteract(builder);
+        syncnet.Interact.AddTargetId(builder, targetId);
+        var offset = syncnet.Interact.EndInteract(builder);
+        var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.Interact, offset.Value, messageId);
+        builder.Finish(msg.Value);
+        return builder.SizedByteArray();
+    }
+
+    // 대화 선택지. nodeId 는 지금 보고 있는 노드다 — 서버가 아는 것과 다르면 거절한다
+    // (창을 두 번 누르면 지난 화면의 번호로 지금 노드의 동작이 실행되는 것을 막는다).
+    // choiceIndex 는 '받은 목록에서의 번호'이고, 음수면 창을 닫는다.
+    public static byte[] CreateDialogSelectMessage(int messageId, int nodeId, int choiceIndex)
+    {
+        var builder = new FlatBufferBuilder(64);
+        syncnet.DialogSelect.StartDialogSelect(builder);
+        syncnet.DialogSelect.AddNodeId(builder, nodeId);
+        syncnet.DialogSelect.AddChoiceIndex(builder, choiceIndex);
+        var offset = syncnet.DialogSelect.EndDialogSelect(builder);
+        var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.DialogSelect, offset.Value, messageId);
+        builder.Finish(msg.Value);
+        return builder.SizedByteArray();
+    }
+
     public static byte[] CreateTreeDebugRequestMessage(long monsterId)
     {
         var builder = new FlatBufferBuilder(64);

@@ -697,6 +697,136 @@ TEST(BotScenarioTest, FindsDialogRouteToAQuestAction)
 	EXPECT_LT(scenario->NextDialogChoice(3201, "accept_quest", 999999), 0);
 }
 
+// 메인 체인 전 구간의 목표가 실제로 도달 가능한가.
+//
+// 봇은 목표를 풀 수 없으면 그 퀘스트를 조용히 건너뛰고 다음 칸으로 간다 — 부하는 그대로
+// 나오므로 수치만 봐서는 시나리오가 끊긴 것을 알 수 없다. 데이터에서 몬스터 스폰이나
+// NPC 가 빠지는 일은 실제로 있었다(오크가 잿빛 숲에 없어 1002 를 끝낼 수 없던 적이 있다).
+// 그것을 45분짜리 실플레이가 아니라 여기서 잡는다.
+TEST(BotScenarioTest, EveryMainQuestObjectiveResolvesToSomewhereReachable)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	// 시작 맵. 로그인 스폰이 여기이므로 모든 목적지는 여기서 갈 수 있어야 한다.
+	constexpr int kStartMap = 1;
+
+	auto reachable = [&](int map_id) {
+		return map_id == 0 || map_id == kStartMap || scenario->NextGate(kStartMap, map_id) != nullptr;
+	};
+
+	int checked = 0;
+	const int chain_count = static_cast<int>(scenario->MainChains().size());
+
+	// 가지를 모두 훑어야 한 봇이 못 가는 쪽이 남지 않는다.
+	for (int branch_index = 0; branch_index < chain_count * 2; ++branch_index)
+	{
+		for (int quest_id : scenario->BuildMainQuestPlan(branch_index))
+		{
+			const ScenarioQuest* quest = scenario->FindQuest(quest_id);
+			ASSERT_NE(quest, nullptr) << "quest " << quest_id;
+
+			const ScenarioNpc* start_npc = scenario->FindNpc(quest->start_npc_id);
+			ASSERT_NE(start_npc, nullptr) << "quest " << quest_id << " 의 시작 NPC 가 없다";
+			EXPECT_TRUE(reachable(start_npc->map_id))
+				<< "quest " << quest_id << " 의 시작 NPC 가 있는 맵 " << start_npc->map_id
+				<< " 에 시작 맵에서 갈 수 없다";
+
+			if (!quest->auto_complete)
+			{
+				const ScenarioNpc* end_npc = scenario->FindNpc(quest->end_npc_id);
+				ASSERT_NE(end_npc, nullptr) << "quest " << quest_id << " 의 완료 NPC 가 없다";
+				EXPECT_TRUE(reachable(end_npc->map_id))
+					<< "quest " << quest_id << " 의 완료 NPC 가 있는 맵 " << end_npc->map_id
+					<< " 에 시작 맵에서 갈 수 없다";
+			}
+
+			for (size_t step = 0; step < quest->stages.size(); ++step)
+			{
+				for (const ScenarioObjective& objective : quest->stages[step].objectives)
+				{
+					const std::string where = "quest " + std::to_string(quest_id)
+						+ " stage " + std::to_string(step + 1)
+						+ " target " + std::to_string(objective.target_id);
+					++checked;
+
+					switch (objective.kind)
+					{
+					case ObjectiveKind::Kill:
+					{
+						const ScenarioSpawn* spawn = scenario->FindHuntSpot(objective.target_id, quest->map_id);
+						ASSERT_NE(spawn, nullptr) << where << " — 이 몬스터를 어느 맵에도 스폰하지 않는다";
+						EXPECT_TRUE(reachable(spawn->map_id)) << where << " — 스폰 맵 "
+							<< spawn->map_id << " 에 갈 수 없다";
+						break;
+					}
+
+					case ObjectiveKind::Collect:
+					{
+						// 수집 아이템은 몬스터가 떨구는 것으로만 얻을 수 있다.
+						const ScenarioSpawn* spawn = scenario->FindItemSource(objective.target_id, quest->map_id);
+						ASSERT_NE(spawn, nullptr) << where << " — 이 아이템을 떨구는 몬스터가 없거나 스폰되지 않는다";
+						EXPECT_TRUE(reachable(spawn->map_id)) << where << " — 스폰 맵 "
+							<< spawn->map_id << " 에 갈 수 없다";
+						break;
+					}
+
+					case ObjectiveKind::Talk:
+					case ObjectiveKind::Escort:
+					case ObjectiveKind::Protect:
+					{
+						const ScenarioNpc* npc = scenario->FindNpc(objective.target_id);
+						ASSERT_NE(npc, nullptr) << where << " — 이 NPC 가 npc.json 에 없다";
+						EXPECT_TRUE(reachable(npc->map_id)) << where << " — NPC 가 있는 맵 "
+							<< npc->map_id << " 에 갈 수 없다";
+						break;
+					}
+
+					case ObjectiveKind::Reach:
+						EXPECT_TRUE(reachable(objective.target_id))
+							<< where << " — 도달 목표 맵에 갈 수 없다";
+						break;
+
+					default:
+						// level 은 어디서든 오르고, use_item/use_skill/interact 는 아직 메인 체인에 없다.
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	EXPECT_GT(checked, 0) << "메인 체인에 목표가 하나도 없다";
+}
+
+// 같은 노드로 가는 길이 여럿이고 각각 다른 조건이 걸려 있을 때, 길을 하나만 골라 두면
+// 그 길이 닫힌 플레이어는 막힌다. 분기 다음 칸이 정확히 그 모양이다 —
+// "가지 A 를 끝냈으면"과 "가지 B 를 끝냈으면"이 같은 노드(3203)로 이어진다.
+TEST(BotScenarioTest, FindsEveryRouteToAQuestActionNotJustTheFirst)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	std::vector<int> candidates;
+	scenario->DialogChoicesToward(3201, "accept_quest", 11003, candidates);
+	ASSERT_GE(candidates.size(), 2u) << "3203 으로 가는 길이 하나뿐이라고 본다";
+
+	const ScenarioDialogNode* greet = scenario->FindDialog(3201);
+	ASSERT_NE(greet, nullptr);
+
+	// 후보는 전부 3203(11003 을 주는 노드)으로 가는 길이어야 한다.
+	for (int index : candidates)
+	{
+		ASSERT_GE(index, 0);
+		ASSERT_LT(index, static_cast<int>(greet->choices.size()));
+		EXPECT_EQ(greet->choices[index].action, "goto");
+		EXPECT_EQ(greet->choices[index].next_id, 3203);
+	}
+
+	// 그리고 그 길들의 조건이 서로 달라야 이 테스트가 의미가 있다(가지 A / 가지 B).
+	EXPECT_NE(greet->choices[candidates[0]].text_id, greet->choices[candidates[1]].text_id);
+}
+
 //--- 시나리오 판단(BotQuestBrain) ----------------------------------------------------
 
 namespace
@@ -829,6 +959,61 @@ TEST(BotQuestBrainTest, MapsFilteredDialogChoicesBackToTheDataChoice)
 	EXPECT_EQ(visible[choice], node->choices[data_index].text_id);
 }
 
+// 회귀 테스트: 가지 B 를 탄 봇도 합류 지점 다음 칸을 받을 수 있어야 한다.
+//
+// 리네의 첫 노드에는 3203(11003 을 주는 곳)으로 가는 길이 둘 있고, 각각 "11002 완료"와
+// "11009 완료"에 걸려 있다. 가지 B 봇에게는 앞의 길이 닫혀 있으므로, 길을 하나만 보고
+// 포기하면 그 봇은 1막이 여기서 끊긴다(45분 실플레이에서 실제로 그렇게 멈췄다).
+TEST(BotQuestBrainTest, TakesTheOpenRouteWhenTheOtherBranchesRouteIsClosed)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	// 가지 B(11009)를 계획에 담은 봇을 고른다.
+	int branch_index = -1;
+	for (int candidate = 0; candidate < 16 && branch_index < 0; ++candidate)
+	{
+		const std::vector<int> plan = scenario->BuildMainQuestPlan(candidate);
+		if (std::find(plan.begin(), plan.end(), 11009) != plan.end())
+			branch_index = candidate;
+	}
+	ASSERT_GE(branch_index, 0) << "가지 B 를 타는 봇이 없다";
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, branch_index);
+	brain.SetMapId(14);   // 리네가 있는 맵
+
+	// 11001 과 가지 B(11009)를 끝낸 상태. 다음 칸은 11003 이다.
+	brain.ApplyQuestCompleted(11001);
+	brain.ApplyQuestCompleted(11009);
+	brain.Update(1.0);
+	ASSERT_EQ(brain.Goal().quest_id, 11003);
+	ASSERT_EQ(brain.Goal().kind, QuestGoalKind::Interact);
+
+	// 서버가 보낸 목록: 가지 A 쪽 길("11002 완료" 조건)은 빠지고 가지 B 쪽 길만 있다.
+	const std::vector<std::string> visible =
+		VisibleTextIds(*scenario, 3201, { "dlg_rinne_ask_tally" });
+	ASSERT_FALSE(visible.empty());
+
+	brain.OnDialogOpened(2004, 3201, visible);
+	const int choice = brain.ChooseDialogChoice();
+	ASSERT_GE(choice, 0) << "열려 있는 길을 찾지 못했다";
+
+	// 고른 것이 3203 으로 가는 길이어야 한다.
+	const ScenarioDialogNode* greet = scenario->FindDialog(3201);
+	ASSERT_NE(greet, nullptr);
+
+	int picked = -1;
+	for (int i = 0; i < static_cast<int>(greet->choices.size()); ++i)
+	{
+		if (greet->choices[i].text_id == visible[choice])
+			picked = i;
+	}
+
+	ASSERT_GE(picked, 0);
+	EXPECT_EQ(greet->choices[picked].next_id, 3203);
+}
+
 TEST(BotQuestBrainTest, ClosesDialogThatHasNothingToDoForTheCurrentGoal)
 {
 	const BotScenario* scenario = SharedScenario();
@@ -880,6 +1065,69 @@ TEST(BotQuestBrainTest, BacksOffToLevelUpWhenTheAcceptChoiceIsNotOffered)
 	}
 
 	EXPECT_EQ(brain.Goal().kind, QuestGoalKind::Hunt);
+}
+
+// 회귀 테스트: 받지 못하는 퀘스트를 너무 일찍 포기하면 안 된다.
+//
+// 수락 선택지가 안 보이는 이유는 대개 레벨이 모자란 것이고, 그것은 잡다 보면 풀린다.
+// 시도 횟수로 포기하면 레벨을 올리는 데 오래 걸리는 봇이 아직 될 일을 포기해 버리고,
+// 그 뒤 체인 전체가 선행 조건 미달로 줄줄이 막혀 그 봇은 실행 내내 아무것도 하지 않는다
+// (45분 실플레이에서 실제로 한 봇이 이렇게 멈춰 있었다).
+TEST(BotQuestBrainTest, DoesNotGiveUpOnAQuestThatMayOpenLater)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const int branch_index = BranchIndexStartingWith(*scenario, 11001);
+	ASSERT_GE(branch_index, 0);
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, branch_index);
+	brain.SetMapId(1);
+	brain.Update(1.0);
+	ASSERT_EQ(brain.Goal().kind, QuestGoalKind::Interact);
+
+	const ScenarioDialogNode* node = scenario->FindDialog(3001);
+	ASSERT_NE(node, nullptr);
+	const int data_index = scenario->NextDialogChoice(3001, "accept_quest", 11001);
+	ASSERT_GE(data_index, 0);
+
+	// 수락 선택지가 빠진 목록(레벨 미달일 때 서버가 보내는 모습).
+	const std::vector<std::string> without_route =
+		VisibleTextIds(*scenario, 3001, { node->choices[data_index].text_id });
+
+	// 5분 동안 서른 번 두드려도 계획을 버리지 않는다 — 목표는 여전히 이 퀘스트 것이다
+	// (NPC 로 가거나, 물러나 레벨을 올리거나).
+	double now = 2.0;
+	for (int attempt = 0; attempt < 30; ++attempt)
+	{
+		brain.OnDialogOpened(2001, 3001, without_route);
+		EXPECT_LT(brain.ChooseDialogChoice(), 0);
+		brain.OnDialogClosed();
+
+		now += 10.0;
+		brain.MarkGoalStale();
+		brain.Update(now);
+		ASSERT_EQ(brain.Goal().quest_id, 11001) << "attempt " << attempt << " (t=" << now << ")";
+	}
+
+	BotQuestBrain::SkippedQuest skipped;
+	EXPECT_FALSE(brain.TakeSkippedQuest(skipped))
+		<< "아직 포기할 때가 아니다 (quest " << skipped.quest_id << ": " << skipped.reason << ")";
+
+	// 그래도 열리지 않은 채로 오래 지나면 포기하고 다음 칸으로 넘어간다
+	// (이미 끝낸 계정으로 다시 붙었을 때가 이 경우다 — 기다려도 열리지 않는다).
+	now += 700.0;
+	brain.Update(now);   // 봇은 매 틱 목표를 먼저 세우고 행동한다(지금 시각이 갱신된다)
+
+	brain.OnDialogOpened(2001, 3001, without_route);
+	EXPECT_LT(brain.ChooseDialogChoice(), 0);
+	brain.OnDialogClosed();
+	brain.Update(now);
+
+	ASSERT_TRUE(brain.TakeSkippedQuest(skipped));
+	EXPECT_EQ(skipped.quest_id, 11001);
+	EXPECT_NE(brain.Goal().quest_id, 11001);
 }
 
 //--- 시나리오(BT) 실행 ---------------------------------------------------------------

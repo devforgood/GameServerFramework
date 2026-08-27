@@ -594,21 +594,27 @@ namespace bot
 		return found;
 	}
 
-	int BotScenario::NextDialogChoice(int node_id, const std::string& action, int quest_id) const
+	void BotScenario::DialogChoicesToward(int node_id, const std::string& action, int quest_id,
+		std::vector<int>& out) const
 	{
+		out.clear();
+
 		const ScenarioDialogNode* start = FindDialog(node_id);
 		if (start == nullptr)
-			return -1;
+			return;
 
 		// 지금 노드에 있으면 그것을 누른다.
 		for (int i = 0; i < static_cast<int>(start->choices.size()); ++i)
 		{
 			const ScenarioChoice& choice = start->choices[i];
 			if (choice.action == action && choice.param == quest_id)
-				return i;
+				out.push_back(i);
 		}
 
-		// 없으면 goto 를 따라가며 찾는다. 찾은 곳으로 가는 첫 걸음을 돌려준다.
+		if (!out.empty())
+			return;
+
+		// 없으면 goto 를 따라가며 찾는다. 목적지에 닿는 '첫 걸음'을 전부 모은다.
 		// (대화는 노드 몇 개짜리 작은 그래프라 매번 탐색해도 값이 싸다.)
 		std::deque<std::pair<int, int>> queue;   // (노드 id, 첫 걸음의 선택지 번호)
 		std::unordered_map<int, bool> visited{ { node_id, true } };
@@ -625,19 +631,33 @@ namespace bot
 			const auto [current_id, first_step] = queue.front();
 			queue.pop_front();
 
-			if (visited.find(current_id) != visited.end())
-				continue;
-			visited[current_id] = true;
-
 			const ScenarioDialogNode* node = FindDialog(current_id);
 			if (node == nullptr)
 				continue;
 
+			bool reaches = false;
 			for (const ScenarioChoice& choice : node->choices)
 			{
 				if (choice.action == action && choice.param == quest_id)
-					return first_step;
+				{
+					reaches = true;
+					break;
+				}
 			}
+
+			if (reaches)
+			{
+				// 같은 첫 걸음을 두 번 담지 않는다(길이 여러 갈래로 합쳐질 수 있다).
+				if (std::find(out.begin(), out.end(), first_step) == out.end())
+					out.push_back(first_step);
+				continue;
+			}
+
+			// 목적지가 아니면 더 들어간다. 노드는 첫 걸음이 다르면 다시 봐야 하므로
+			// (같은 노드로 가는 길이 여럿이다) 방문 표시는 첫 걸음까지 함께 본다.
+			if (visited.find(current_id) != visited.end())
+				continue;
+			visited[current_id] = true;
 
 			for (const ScenarioChoice& choice : node->choices)
 			{
@@ -645,7 +665,12 @@ namespace bot
 					queue.emplace_back(choice.next_id, first_step);
 			}
 		}
+	}
 
-		return -1;
+	int BotScenario::NextDialogChoice(int node_id, const std::string& action, int quest_id) const
+	{
+		std::vector<int> candidates;
+		DialogChoicesToward(node_id, action, quest_id, candidates);
+		return candidates.empty() ? -1 : candidates.front();
 	}
 }

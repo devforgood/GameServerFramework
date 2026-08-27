@@ -73,5 +73,10 @@ namespace bot::log
 		std::lock_guard<std::mutex> guard(g_writeMutex);
 		std::fprintf(stdout, "[%s][%s] %.*s\n", stamp, LevelTag(level),
 			static_cast<int>(line.size()), line.data());
+
+		// 파일로 리다이렉트하면 stdout 이 통째로 버퍼링된다(콘솔일 때와 다르다).
+		// 부하 테스트는 몇십 분씩 돌리며 진행을 지켜보는 것이라, 흘려보내지 않으면
+		// 로그가 몇 킬로바이트씩 뭉쳐 나오고 중간에 끊으면 끝부분이 통째로 사라진다.
+		std::fflush(stdout);
 	}
 }

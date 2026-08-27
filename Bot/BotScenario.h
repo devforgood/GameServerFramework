@@ -154,10 +154,20 @@ namespace bot
 		// 걸렸을 때(서버는 맵에 들어오는 순간에만 세어 준다) 한 번 나갔다 오는 데 쓴다.
 		const ScenarioGate* FindAnyGate(int map_id) const;
 
-		// 지금 노드에서 (action, quest_id) 를 실행하려면 몇 번 선택지를 눌러야 하는가.
-		// 그 자리에 있으면 그 선택지를, 없으면 그쪽으로 가는 goto 선택지의 번호를 돌려준다.
+		// 지금 노드에서 (action, quest_id) 로 갈 수 있는 선택지들을 가까운 순서로 돌려준다.
+		// 그 자리에 있으면 그 선택지가, 없으면 그쪽으로 가는 goto 선택지들이 담긴다.
+		//
+		// 하나가 아니라 전부 돌려주는 이유가 있다. 같은 곳으로 가는 길이 여럿이고 각각 다른
+		// 조건이 걸려 있을 수 있다(분기가 그렇다 — "가지 A 를 끝냈으면"과 "가지 B 를 끝냈으면"이
+		// 같은 노드로 간다). 하나만 골라 주면 그 길이 지금 이 플레이어에게 닫혀 있을 때
+		// 갈 수 있는 다른 길을 못 보고 막힌다.
+		//
 		// 돌려주는 값은 '데이터의 번호'다 — 서버는 조건에 걸러진 목록만 보내므로,
-		// 부르는 쪽이 text_id 로 짝을 지어 보이는 번호로 바꿔야 한다.
+		// 부르는 쪽이 text_id 로 짝을 지어 보이는 번호로 바꾸고 그중 실제로 온 것을 고른다.
+		void DialogChoicesToward(int node_id, const std::string& action, int quest_id,
+			std::vector<int>& out) const;
+
+		// 위와 같지만 첫 번째 후보만 돌려준다(없으면 -1). 조건을 따지지 않아도 되는 곳에서 쓴다.
 		int NextDialogChoice(int node_id, const std::string& action, int quest_id) const;
 
 	private:

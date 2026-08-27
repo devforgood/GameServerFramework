@@ -75,6 +75,7 @@ namespace Assets.Scripts.GameData
             Debug.Log("ResourceLoader initialized.");
 
             yield return LoadAllTables();
+            yield return LoadLocalization();
 
             BuildMapIndexes();
 

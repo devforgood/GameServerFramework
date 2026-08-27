@@ -53,6 +53,7 @@ namespace bot
 		// 받아 냈으니 수락 시도 기록은 의미가 없다.
 		accept_attempts_.erase(quest_id);
 		accept_retry_at_.erase(quest_id);
+		accept_blocked_since_.erase(quest_id);
 		goal_dirty_ = true;
 		return first_time;
 	}
@@ -111,11 +112,12 @@ namespace bot
 			return -1;
 
 		const std::string action = goal_.dialog_complete ? "complete_quest" : "accept_quest";
-		const int data_index = scenario_->NextDialogChoice(dialog_node_id_, action, goal_.dialog_quest_id);
+
+		std::vector<int> candidates;
+		scenario_->DialogChoicesToward(dialog_node_id_, action, goal_.dialog_quest_id, candidates);
 
 		const ScenarioDialogNode* node = scenario_->FindDialog(dialog_node_id_);
-		if (data_index < 0 || node == nullptr
-			|| data_index >= static_cast<int>(node->choices.size()))
+		if (node == nullptr)
 		{
 			NoteAcceptBlocked();
 			return -1;
@@ -123,23 +125,33 @@ namespace bot
 
 		// 서버는 조건(show_if)에 걸러진 목록만 보내므로 번호가 데이터와 다르다.
 		// text_id 로 짝을 지어 되짚는다(한 노드 안에서 text_id 는 유일하다 — 데이터 검증이 막는다).
-		const std::string& text_id = node->choices[data_index].text_id;
-		for (int i = 0; i < static_cast<int>(dialog_choice_text_ids_.size()); ++i)
+		//
+		// 후보를 순서대로 보는 이유: 같은 곳으로 가는 길이 여럿이고 각각 다른 조건이 걸려 있다.
+		// 앞의 길이 닫혀 있어도 뒤의 길이 열려 있을 수 있다(분기를 지나온 뒤가 그렇다 —
+		// "가지 A 를 끝냈으면"과 "가지 B 를 끝냈으면"이 같은 노드로 이어진다).
+		for (int data_index : candidates)
 		{
-			if (dialog_choice_text_ids_[i] != text_id)
+			if (data_index < 0 || data_index >= static_cast<int>(node->choices.size()))
 				continue;
 
-			++dialog_steps_;
-			if (!goal_.dialog_complete)
+			const std::string& text_id = node->choices[data_index].text_id;
+			for (int i = 0; i < static_cast<int>(dialog_choice_text_ids_.size()); ++i)
 			{
-				// 수락은 눌렀다고 되는 것이 아니다(레벨/선행 조건은 서버가 다시 본다).
-				// 성공하면 QuestSync 가 와서 이 기록을 지운다.
-				++accept_attempts_[goal_.quest_id];
+				if (dialog_choice_text_ids_[i] != text_id)
+					continue;
+
+				++dialog_steps_;
+				if (!goal_.dialog_complete)
+				{
+					// 수락은 눌렀다고 되는 것이 아니다(레벨/선행 조건은 서버가 다시 본다).
+					// 성공하면 QuestSync 가 와서 이 기록을 지운다.
+					++accept_attempts_[goal_.quest_id];
+				}
+				return i;
 			}
-			return i;
 		}
 
-		// 데이터에는 있는데 서버가 내보내지 않았다 = 지금은 그 선택지의 조건이 맞지 않는다.
+		// 어느 길도 서버가 내보내지 않았다 = 지금은 조건이 하나도 맞지 않는다.
 		NoteAcceptBlocked();
 		return -1;
 	}
@@ -151,20 +163,47 @@ namespace bot
 		if (goal_.dialog_complete || goal_.quest_id == 0)
 			return;
 
-		const int attempts = ++accept_attempts_[goal_.quest_id];
-		if (attempts >= kAcceptGiveUpAttempts)
+		const int quest_id = goal_.quest_id;
+		const int attempts = ++accept_attempts_[quest_id];
+
+		auto blocked_since = accept_blocked_since_.find(quest_id);
+		if (blocked_since == accept_blocked_since_.end())
+			blocked_since = accept_blocked_since_.emplace(quest_id, now_).first;
+
+		if (now_ - blocked_since->second >= kAcceptGiveUpSeconds)
 		{
-			// 이번 실행에서는 이 퀘스트를 받을 수 없다고 본다(이전 실행에서 이미 끝냈거나,
-			// 데이터가 요구하는 조건을 봇이 채울 수 없다). 계획의 다음 칸으로 넘어간다.
-			skipped_.insert(goal_.quest_id);
+			// 오래 기다려도 열리지 않는다. 이번 실행에서는 받을 수 없다고 보고(이전 실행에서
+			// 이미 끝냈거나, 데이터가 요구하는 조건을 봇이 채울 수 없다) 다음 칸으로 넘어간다.
+			MarkSkipped(quest_id, "수락 조건이 오래 열리지 않는다");
 		}
 		else if (attempts >= kAcceptBackoffAttempts)
 		{
 			// 대개는 레벨이 모자란 것이다. NPC 를 계속 두드리는 대신 잡으러 간다.
-			accept_retry_at_[goal_.quest_id] = now_ + kAcceptRetryDelaySeconds;
+			accept_retry_at_[quest_id] = now_ + kAcceptRetryDelaySeconds;
 		}
 
 		goal_dirty_ = true;
+	}
+
+	void BotQuestBrain::MarkSkipped(int quest_id, const char* reason)
+	{
+		if (!skipped_.insert(quest_id).second)
+			return;
+
+		SkippedQuest entry;
+		entry.quest_id = quest_id;
+		entry.reason = reason;
+		skipped_pending_.push_back(entry);
+	}
+
+	bool BotQuestBrain::TakeSkippedQuest(SkippedQuest& out)
+	{
+		if (skipped_pending_.empty())
+			return false;
+
+		out = skipped_pending_.back();
+		skipped_pending_.pop_back();
+		return true;
 	}
 
 	void BotQuestBrain::OnDialogActionFailed()
@@ -412,7 +451,7 @@ namespace bot
 			const ScenarioQuest* quest = scenario_->FindQuest(quest_id);
 			if (quest == nullptr || quest->disabled)
 			{
-				skipped_.insert(quest_id);
+				MarkSkipped(quest_id, "데이터에 없거나 운영이 내려 두었다");
 				continue;
 			}
 
@@ -426,7 +465,7 @@ namespace bot
 					const ScenarioNpc* npc = scenario_->FindNpc(quest->end_npc_id);
 					if (npc == nullptr)
 					{
-						skipped_.insert(quest_id);
+						MarkSkipped(quest_id, "완료 NPC 가 없다");
 						continue;
 					}
 
@@ -439,7 +478,7 @@ namespace bot
 
 					if (!RouteTo(npc->map_id, goal))
 					{
-						skipped_.insert(quest_id);
+						MarkSkipped(quest_id, "완료 NPC 가 있는 맵으로 가는 길이 없다");
 						continue;
 					}
 
@@ -458,12 +497,12 @@ namespace bot
 
 					// 남은 목표를 봇이 진행할 수 없다. 여기서 붙잡고 있어 봐야 계획 전체가
 					// 멈추므로 다음 칸으로 넘어간다.
-					skipped_.insert(quest_id);
+					MarkSkipped(quest_id, "봇이 스스로 진행할 수 없는 목표가 남았다");
 					continue;
 				}
 
 				// 실패했거나(제한 시간) 쿨타임이면 이번 실행에서는 더 볼 것이 없다.
-				skipped_.insert(quest_id);
+				MarkSkipped(quest_id, "실패했거나 쿨타임이다");
 				continue;
 			}
 
@@ -485,7 +524,7 @@ namespace bot
 			const ScenarioNpc* npc = scenario_->FindNpc(quest->start_npc_id);
 			if (npc == nullptr)
 			{
-				skipped_.insert(quest_id);
+				MarkSkipped(quest_id, "시작 NPC 가 없다");
 				continue;
 			}
 
@@ -496,7 +535,7 @@ namespace bot
 
 			if (!RouteTo(npc->map_id, goal))
 			{
-				skipped_.insert(quest_id);
+				MarkSkipped(quest_id, "시작 NPC 가 있는 맵으로 가는 길이 없다");
 				continue;
 			}
 

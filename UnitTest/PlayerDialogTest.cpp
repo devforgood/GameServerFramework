@@ -21,12 +21,13 @@
 //
 // 데이터에서 쓰는 노드(dialog.json):
 //   3001 촌장 인사      → [0] 3002 로, [1] 3003 으로, [2] 닫기, [3] 3004 로
-//   3002 고블린 이야기  → [0] 퀘스트 1001 수락, [1] 3001 로 되돌아가기, [2] 닫기
-//   3003 상인 이야기    → [0] 퀘스트 1006 수락, [1] 퀘스트 1006 완료, [2] 3001 로
 //   3101 대장장이       → [0] 닫기
 //
 // 조건(show_if)이 걸린 노드. 조건이 어긋난 선택지는 아예 내보내지 않으므로 클라가
 // 세는 번호와 데이터의 번호가 다르다:
+//   3002 고블린 이야기  → [0] 1001 수락(acceptable), [1] 3001 로 되돌아가기(조건 없음), [2] 닫기
+//   3003 상인 이야기    → [0] 1006 수락(acceptable), [1] 1006 완료(ready_to_complete),
+//                         [2] 3001 로 되돌아가기(조건 없음)
 //   3004 마렌 스토리    → [0] 11001 수락(acceptable), [1] 11007 완료(ready_to_complete),
 //                         [2] 11008 수락(acceptable), [3] 3001 로 되돌아가기(조건 없음)
 //   3201 리네 인사      → [0] 11001 완료(ready_to_complete),
@@ -239,22 +240,38 @@ TEST_F(PlayerDialogTest, AcceptQuestChoiceAcceptsAndCloses)
 	EXPECT_FALSE(player.dialog->IsOpen());
 }
 
-TEST_F(PlayerDialogTest, AcceptQuestKeepsDialogOpenWhenConditionsFail)
+TEST_F(PlayerDialogTest, LevelTooLowHidesTheAcceptChoice)
 {
-	// 1001 은 min_level 3 이다. 레벨이 모자라면 대화로 받는다고 면제되지 않는다.
+	// 1001 은 min_level 3 이다. acceptable 은 CanAccept 를 그대로 쓰므로 레벨이 모자라면
+	// 선택지 자체가 나가지 않는다 — 눌러도 반드시 실패할 것을 보여주지 않는다.
 	TalkingPlayer player(1);
 	ASSERT_TRUE(player.dialog->Open(kElderNpc));
-	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, 0));
+	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, 0)); // 3002
+
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(0));
+	EXPECT_EQ(-1, player.dialog->ResolveVisibleChoice(2)); // 남은 것은 되돌아가기와 닫기뿐
+	EXPECT_FALSE(player.quests->IsActive(kGoblinHunt));
+}
+
+TEST_F(PlayerDialogTest, AcceptQuestKeepsDialogOpenWhenConditionsFail)
+{
+	// 보여 줄 때는 받을 수 있었는데 누르는 사이에 조건이 깨진 경우. 대화로 받는다고
+	// 조건이 면제되지는 않으므로 서버가 거절하고, 대화는 그 자리에 남는다 —
+	// 창을 닫아 버리면 왜 안 됐는지 보여줄 자리가 사라진다.
+	TalkingPlayer player(3);
+	ASSERT_TRUE(player.dialog->Open(kElderNpc));
+	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, 0)); // 3002
+	ASSERT_TRUE(player.dialog->IsChoiceVisible(0));
+
+	// 창이 열려 있는 사이에 다른 경로로 받아 버렸다(파티 공유, GM 조작 등).
+	ASSERT_TRUE(player.quests->GmForceAccept(kGoblinHunt));
 
 	EXPECT_EQ(DialogResult::ActionFailed, player.dialog->Select(kGoblinTalk, 0));
-	EXPECT_FALSE(player.quests->IsActive(kGoblinHunt));
-
-	// 실패했다고 창을 닫아 버리면 왜 안 됐는지 보여줄 자리가 사라진다.
 	EXPECT_TRUE(player.dialog->IsOpen());
 	EXPECT_EQ(kGoblinTalk, player.dialog->GetCurrentNodeId());
 }
 
-TEST_F(PlayerDialogTest, AcceptingTwiceFailsTheSecondTime)
+TEST_F(PlayerDialogTest, AlreadyAcceptedQuestIsNotOfferedAgain)
 {
 	TalkingPlayer player;
 	ASSERT_TRUE(player.dialog->Open(kElderNpc));
@@ -262,22 +279,31 @@ TEST_F(PlayerDialogTest, AcceptingTwiceFailsTheSecondTime)
 	ASSERT_EQ(DialogResult::Closed, player.dialog->Select(kGoblinTalk, 0));
 	ASSERT_TRUE(player.quests->IsActive(kGoblinHunt));
 
-	// 같은 대화를 다시 열어 또 수락하면 이미 진행 중이라 거절된다.
+	// 같은 대화를 다시 열면 진행 중인 퀘스트의 수락 선택지는 빠진다.
+	// 클라가 세는 0번은 이제 "되돌아가기"다.
 	ASSERT_TRUE(player.dialog->Open(kElderNpc));
 	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, 0));
-	EXPECT_EQ(DialogResult::ActionFailed, player.dialog->Select(kGoblinTalk, 0));
+
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(0));
+	EXPECT_EQ(1, player.dialog->ResolveVisibleChoice(0));
+
+	const gamedata::Dialog* next = nullptr;
+	EXPECT_EQ(DialogResult::Ok, player.dialog->Select(kGoblinTalk, 0, &next));
+	ASSERT_NE(nullptr, next);
+	EXPECT_EQ(kElderRoot, next->id);
 }
 
 TEST_F(PlayerDialogTest, CompleteQuestChoiceRequiresReadyQuest)
 {
 	TalkingPlayer player;
 
-	// 아직 받지도 않은 퀘스트는 완료할 수 없다.
+	// 아직 받지도 않은 퀘스트의 완료 선택지는 나가지 않는다. 나가는 것은 수락뿐이다.
 	ASSERT_TRUE(player.dialog->Open(kElderNpc));
 	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, 1)); // 3003
-	EXPECT_EQ(DialogResult::ActionFailed, player.dialog->Select(kMerchantTalk, 1));
+	EXPECT_TRUE(player.dialog->IsChoiceVisible(0));   // 1006 수락
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(1));  // 1006 완료
 
-	// 받아서 끝까지 진행하면 같은 선택지가 통한다.
+	// 받아서 끝까지 진행하면 이번에는 완료 선택지가 나온다.
 	ASSERT_EQ(DialogResult::Closed, player.dialog->Select(kMerchantTalk, 0));
 	ASSERT_TRUE(player.quests->IsActive(kEscortMerchant));
 	ASSERT_TRUE(player.quests->GmSetProgress(kEscortMerchant, 2, 0, 0, 0));
@@ -286,7 +312,12 @@ TEST_F(PlayerDialogTest, CompleteQuestChoiceRequiresReadyQuest)
 
 	ASSERT_TRUE(player.dialog->Open(kElderNpc));
 	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, 1));
-	EXPECT_EQ(DialogResult::Closed, player.dialog->Select(kMerchantTalk, 1));
+	EXPECT_FALSE(player.dialog->IsChoiceVisible(0));  // 진행 중이라 수락은 빠졌다
+	EXPECT_TRUE(player.dialog->IsChoiceVisible(1));
+
+	// 걸러진 목록에서 0번이 곧 데이터의 1번(완료)이다.
+	EXPECT_EQ(1, player.dialog->ResolveVisibleChoice(0));
+	EXPECT_EQ(DialogResult::Closed, player.dialog->Select(kMerchantTalk, 0));
 	EXPECT_TRUE(player.quests->IsCompleted(kEscortMerchant));
 }
 

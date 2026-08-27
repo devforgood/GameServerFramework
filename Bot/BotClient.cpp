@@ -286,6 +286,15 @@ namespace bot
 		// 무엇을 할지 먼저 정하고(목표 하나) 트리는 그것을 실행한다.
 		blackboard_.quest.Update(now_);
 
+		// 계획에서 빠진 퀘스트는 남긴다. 조용히 건너뛰면 시나리오가 어디서 멈췄는지
+		// 알 방법이 없다 — 패킷 수치는 그대로 나오기 때문이다.
+		BotQuestBrain::SkippedQuest skipped;
+		while (blackboard_.quest.TakeSkippedQuest(skipped))
+		{
+			log::Printf(LogLevel::Warn, "[%s] 퀘스트 %d 건너뜀: %s",
+				user_id_.c_str(), skipped.quest_id, skipped.reason);
+		}
+
 		if (tree_ != nullptr)
 		{
 			++blackboard_.bt_ticks;

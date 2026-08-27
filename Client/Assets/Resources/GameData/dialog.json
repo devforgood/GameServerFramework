@@ -15,7 +15,7 @@
     "npc_id": 2001,
     "text_id": "dlg_elder_goblin_intro",
     "choices": [
-      { "text_id": "dlg_elder_accept_goblin", "action": "accept_quest", "param": 1001, "next_id": 0 },
+      { "text_id": "dlg_elder_accept_goblin", "action": "accept_quest", "param": 1001, "next_id": 0, "show_if": { "quest_id": 1001, "state": "acceptable" } },
       { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3001 },
       { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
     ]
@@ -25,8 +25,8 @@
     "npc_id": 2001,
     "text_id": "dlg_elder_merchant_intro",
     "choices": [
-      { "text_id": "dlg_elder_accept_escort", "action": "accept_quest", "param": 1006, "next_id": 0 },
-      { "text_id": "dlg_elder_report_escort", "action": "complete_quest", "param": 1006, "next_id": 0 },
+      { "text_id": "dlg_elder_accept_escort", "action": "accept_quest", "param": 1006, "next_id": 0, "show_if": { "quest_id": 1006, "state": "acceptable" } },
+      { "text_id": "dlg_elder_report_escort", "action": "complete_quest", "param": 1006, "next_id": 0, "show_if": { "quest_id": 1006, "state": "ready_to_complete" } },
       { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3001 }
     ]
   },

@@ -61,6 +61,14 @@ namespace bot
 	class BotQuestBrain
 	{
 	public:
+		// 계획에서 빠진 퀘스트 한 건. 봇이 조용히 건너뛰면 시나리오가 어디서 멈췄는지
+		// 로그에 아무 자국도 남지 않는다 — 꺼내서 남기라고 모아 둔다.
+		struct SkippedQuest
+		{
+			int quest_id = 0;
+			const char* reason = "";
+		};
+
 		// QuestState(서버 quest_active.state)와 같은 값.
 		static constexpr int kStateInProgress = 0;
 		static constexpr int kStateReadyToComplete = 1;
@@ -120,6 +128,9 @@ namespace bot
 		const QuestGoal& Goal() const { return goal_; }
 		void MarkGoalStale() { goal_dirty_ = true; }
 
+		// 계획에서 빠진 퀘스트를 하나 꺼낸다(없으면 false). 부르는 쪽이 로그로 남긴다.
+		bool TakeSkippedQuest(SkippedQuest& out);
+
 		// 배회할 때 중심으로 삼을 지점(사냥 목표가 있으면 사냥터, 없으면 false).
 		bool HuntAnchor(Vec3& out_pos, float& out_radius) const;
 
@@ -150,16 +161,23 @@ namespace bot
 
 		// 수락 선택지가 없을 때: 이만큼 시도하면 잠시 물러나 레벨을 올리고,
 		// 이만큼 되면 이 퀘스트를 포기하고 계획의 다음 칸으로 넘어간다.
-		// 받지 못하는 이유는 대개 레벨이라, 물러나 잡다 보면 저절로 풀린다. 그래서 포기는
-		// 넉넉히 미룬다 — 이 값이 실제로 쓰이는 것은 --reuse-accounts 로 이미 끝낸 퀘스트를
-		// 다시 받으려 할 때뿐이고, 그때는 아무리 기다려도 열리지 않는다.
+		// 받지 못하는 이유는 대개 레벨이고, 물러나 잡다 보면 저절로 풀린다. 그래서 포기는
+		// '시도 횟수'가 아니라 '얼마나 오래 안 열렸는가'로 정한다 — 횟수로 세면 레벨을 올리는
+		// 데 오래 걸리는 봇이 아직 될 일을 포기해 버리고, 그러면 그 뒤 체인 전체가 선행 조건
+		// 미달로 줄줄이 막힌다(45분 실플레이에서 실제로 한 봇이 이렇게 아무것도 못 했다).
+		//
+		// 이 시간이 실제로 쓰이는 것은 --reuse-accounts 로 이미 끝낸 퀘스트를 다시 받으려 할
+		// 때뿐이다. 그때는 아무리 기다려도 열리지 않는다.
 		static constexpr int kAcceptBackoffAttempts = 2;
-		static constexpr int kAcceptGiveUpAttempts = 12;
 		static constexpr double kAcceptRetryDelaySeconds = 20.0;
+		static constexpr double kAcceptGiveUpSeconds = 600.0;
 
 		// 목표가 원하는 수락이 지금 되지 않는다는 것을 기록한다(물러서기/건너뛰기 판단).
 		// 선택지가 아예 없었든, 눌렀는데 거절당했든 결과는 같다.
 		void NoteAcceptBlocked();
+
+		// 계획에서 뺀다. 같은 퀘스트를 두 번 남기지 않는다.
+		void MarkSkipped(int quest_id, const char* reason);
 
 		void BuildGoal(double now);
 		bool BuildObjectiveGoal(const ScenarioQuest& quest, const QuestProgress& progress,
@@ -191,6 +209,11 @@ namespace bot
 
 		std::unordered_map<int, int> accept_attempts_;
 		std::unordered_map<int, double> accept_retry_at_;
+
+		// 이 퀘스트를 처음 받지 못한 시각. 포기 판단의 기준이다.
+		std::unordered_map<int, double> accept_blocked_since_;
+
+		std::vector<SkippedQuest> skipped_pending_;
 
 		int dialog_node_id_ = 0;
 		int dialog_npc_id_ = 0;
