@@ -143,12 +143,28 @@ namespace bot
 		// 이 아이템을 떨구는 몬스터의 사냥터. 수집 목표는 처치로만 채울 수 있다.
 		const ScenarioSpawn* FindItemSource(int item_id, int prefer_map_id) const;
 
+		// 같은 몬스터/아이템의 사냥터를 전부 모은다(prefer_map_id 의 자리가 앞에 온다).
+		//
+		// 하나만 돌려주면 그 자리가 못 가는 맵일 때(게이트에 레벨이 걸려 있다) 막힌다.
+		// 같은 몬스터가 여러 맵에 있으면 지금 갈 수 있는 곳에서 잡으면 된다.
+		void CollectHuntSpots(int monster_id, int prefer_map_id,
+			std::vector<const ScenarioSpawn*>& out) const;
+		void CollectItemSources(int item_id, int prefer_map_id,
+			std::vector<const ScenarioSpawn*>& out) const;
+
 		// 아무 사냥터나(레벨 올리기용). 없으면 nullptr.
 		const ScenarioSpawn* FindAnySpot(int map_id) const;
 
 		// from_map 에서 to_map 으로 가려면 지금 맵에서 어떤 게이트를 밟아야 하는가.
 		// 같은 맵이거나 길이 없으면 nullptr.
 		const ScenarioGate* NextGate(int from_map_id, int to_map_id) const;
+
+		// from_map 에서 to_map 까지 가는 동안 지나야 하는 게이트의 required_level 최대값.
+		// 길이 없으면 0.
+		//
+		// 첫 게이트만 보면 안 된다 — 맵을 두세 번 갈아타는 길에서는 중간 게이트에 제한이
+		// 걸려 있을 수 있고, 그러면 절반쯤 가서 막힌다.
+		int RouteRequiredLevel(int from_map_id, int to_map_id) const;
 
 		// 이 맵에서 밖으로 나가는 게이트 아무거나. 이미 도착해 있는 맵에 "도달" 목표가
 		// 걸렸을 때(서버는 맵에 들어오는 순간에만 세어 준다) 한 번 나갔다 오는 데 쓴다.

@@ -102,6 +102,7 @@ namespace bot
 		void HandleQuestSync(const syncnet::GameMessage* message);
 		void HandleDialogNode(const syncnet::GameMessage* message);
 		void HandleInteract(const syncnet::GameMessage* message);
+		void HandlePlayerStatSync(const syncnet::GameMessage* message);
 
 		void SendLogin();
 		void SendSpawn();

@@ -36,6 +36,22 @@ public class Session : MonoBehaviour
     /// <summary>내 캐릭터의 actor id. 로그인/스폰/게이트 이동 응답으로 갱신된다.</summary>
     public int player_actor_id = 0;
 
+    /// <summary>
+    /// 내 레벨과 누적 경험치. 서버가 로그인 직후와 레벨이 오를 때 알려 준다(PlayerStatSync).
+    /// 게이트의 required_level 을 밟기 전에 확인하는 데 쓴다.
+    /// </summary>
+    public int player_level { get; private set; } = 1;
+    public long player_exp { get; private set; } = 0;
+
+    /// <summary>
+    /// 서버에게서 레벨을 받은 적이 있는가. 받기 전의 1 은 "레벨 1" 이 아니라 "모른다" 이므로,
+    /// 그 상태로 게이트를 막으면 서버가 허락할 이동을 클라가 가로막는다.
+    /// </summary>
+    public bool player_level_known { get; private set; } = false;
+
+    /// <summary>레벨이 바뀌었을 때(로그인 직후 첫 통보 포함). HUD 가 붙으면 여기에 건다.</summary>
+    public event Action<int> PlayerLevelChanged;
+
     public long unixTimestampMs => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
     // ── 외부에 열어 둔 접근자(기존 호출부 유지) ──
@@ -179,6 +195,9 @@ public class Session : MonoBehaviour
             case GameMessages.DialogNode:
                 dialogs.Apply(recv_msg, recv_msg.Msg<DialogNode>().Value);
                 break;
+            case GameMessages.PlayerStatSync:
+                OnPlayerStatSync(recv_msg.Msg<PlayerStatSync>().Value);
+                break;
         }
 
         connection.CompleteResponse(recv_msg);
@@ -209,6 +228,25 @@ public class Session : MonoBehaviour
 
         string destScene = !string.IsNullOrEmpty(destMap.scene) ? destMap.scene : destMap.name;
         mapTransition.ForcedMove(enterGate.MapId, enterGate.GateId, enterGate.ActorId, destScene);
+    }
+
+    // ── 성장 상태 ──
+
+    private void OnPlayerStatSync(PlayerStatSync stat)
+    {
+        player_exp = stat.Exp;
+
+        bool first = !player_level_known;
+        player_level_known = true;
+
+        if (player_level == stat.Level && !first)
+            return;
+
+        player_level = stat.Level;
+        Debug.Log($"[Level] now {player_level} (exp {player_exp})");
+
+        if (PlayerLevelChanged != null)
+            PlayerLevelChanged(player_level);
     }
 
     // ── 상호작용 / 대화 ──

@@ -202,6 +202,10 @@ void Player::OnLoadedData(const PlayerLoadData & data)
 	// 로그인 직후에는 진행 중인 퀘스트 전체를 클라에 내려준다(다음 Update 에서 한 통으로).
 	if (auto* quests = GetComponent<PlayerQuest>())
 		quests->MarkAllForSync();
+
+	// 레벨/경험치도 알려 준다. 클라는 이것으로 게이트의 required_level 을 밟기 전에 본다.
+	if (auto* level = GetComponent<PlayerLevel>())
+		level->SendToClient();
 }
 
 void Player::Update(float dt)

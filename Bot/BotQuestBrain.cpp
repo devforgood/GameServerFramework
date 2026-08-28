@@ -58,6 +58,18 @@ namespace bot
 		return first_time;
 	}
 
+	void BotQuestBrain::SetLevel(int level)
+	{
+		if (level <= 0 || level == level_)
+			return;
+
+		level_ = level;
+
+		// 레벨이 올랐으면 막혀 있던 것이 열렸을 수 있다. 물러나 있던 퀘스트를 다시 본다.
+		accept_retry_at_.clear();
+		goal_dirty_ = true;
+	}
+
 	void BotQuestBrain::ApplyQuestRemoved(int quest_id)
 	{
 		active_.erase(quest_id);
@@ -196,6 +208,16 @@ namespace bot
 		skipped_pending_.push_back(entry);
 	}
 
+	bool BotQuestBrain::TakeGoalChange(QuestGoal& out)
+	{
+		if (!goal_changed_)
+			return false;
+
+		goal_changed_ = false;
+		out = goal_;
+		return true;
+	}
+
 	bool BotQuestBrain::TakeSkippedQuest(SkippedQuest& out)
 	{
 		if (skipped_pending_.empty())
@@ -221,7 +243,16 @@ namespace bot
 
 		goal_dirty_ = false;
 		next_plan_at_ = now + kReplanIntervalSeconds;
+
+		const QuestGoal before = goal_;
 		BuildGoal(now);
+
+		goal_changed_ = goal_changed_
+			|| before.kind != goal_.kind
+			|| before.quest_id != goal_.quest_id
+			|| before.map_id != goal_.map_id
+			|| before.npc_id != goal_.npc_id
+			|| before.gate_id != goal_.gate_id;
 	}
 
 	bool BotQuestBrain::HuntAnchor(Vec3& out_pos, float& out_radius) const
@@ -262,17 +293,23 @@ namespace bot
 		return goal;
 	}
 
-	bool BotQuestBrain::RouteTo(int map_id, QuestGoal& goal) const
+	BotQuestBrain::RouteResult BotQuestBrain::RouteTo(int map_id, QuestGoal& goal) const
 	{
 		if (map_id == 0 || map_id == map_id_)
-			return true;
+			return RouteResult::Ok;
 
 		if (map_id_ == 0 || scenario_ == nullptr)
-			return false;   // 아직 어느 맵인지 모른다(로그인 전)
+			return RouteResult::NoRoute;   // 아직 어느 맵인지 모른다(로그인 전)
 
 		const ScenarioGate* gate = scenario_->NextGate(map_id_, map_id);
 		if (gate == nullptr)
-			return false;
+			return RouteResult::NoRoute;
+
+		// 레벨이 모자라면 서버가 게이트에서 거절한다. 밟으러 가 봐야 헛걸음이다.
+		// 첫 게이트만 보지 않고 목적지까지 지나야 하는 모든 게이트를 본다 — 그러지 않으면
+		// 절반쯤 가서 막히고, 그 맵에서 다시 판단하느라 오갈 뿐이다.
+		if (scenario_->RouteRequiredLevel(map_id_, map_id) > level_)
+			return RouteResult::NeedLevel;
 
 		const int quest_id = goal.quest_id;
 		goal = QuestGoal{};
@@ -284,7 +321,7 @@ namespace bot
 
 		// 서버는 게이트에서 5m 안에 있어야 받아 준다. 그보다 가까이 붙어서 보낸다.
 		goal.reach = 2.5f;
-		return true;
+		return RouteResult::Ok;
 	}
 
 	bool BotQuestBrain::BuildLevelUpGoal(int prefer_map_id, QuestGoal& out) const
@@ -303,11 +340,36 @@ namespace bot
 		const int quest_id = out.quest_id;
 		out = MakeHuntGoal(*spawn);
 		out.quest_id = quest_id;
-		return RouteTo(out.map_id, out);
+		return RouteTo(out.map_id, out) == RouteResult::Ok;
+	}
+
+	bool BotQuestBrain::BuildHuntGoalFrom(const std::vector<const ScenarioSpawn*>& spots,
+		int quest_id, QuestGoal& out, bool& out_needs_level) const
+	{
+		bool blocked_by_level = false;
+
+		for (const ScenarioSpawn* spawn : spots)
+		{
+			QuestGoal goal = MakeHuntGoal(*spawn);
+			goal.quest_id = quest_id;
+
+			const RouteResult route = RouteTo(goal.map_id, goal);
+			if (route == RouteResult::Ok)
+			{
+				out = goal;
+				return true;
+			}
+
+			if (route == RouteResult::NeedLevel)
+				blocked_by_level = true;
+		}
+
+		out_needs_level = out_needs_level || blocked_by_level;
+		return false;
 	}
 
 	bool BotQuestBrain::BuildObjectiveGoal(const ScenarioQuest& quest, const QuestProgress& progress,
-		double now, QuestGoal& out) const
+		double now, QuestGoal& out, bool& out_needs_level) const
 	{
 		const int stage_index = progress.stage - 1;
 		if (stage_index < 0 || stage_index >= static_cast<int>(quest.stages.size()))
@@ -341,27 +403,28 @@ namespace bot
 
 			case ObjectiveKind::Kill:
 			{
-				const ScenarioSpawn* spawn = scenario_->FindHuntSpot(objective.target_id, quest.map_id);
-				if (spawn == nullptr)
+				// 같은 몬스터가 여러 맵에 있으면 지금 갈 수 있는 곳에서 잡는다.
+				std::vector<const ScenarioSpawn*> spots;
+				scenario_->CollectHuntSpots(objective.target_id, quest.map_id, spots);
+
+				if (!BuildHuntGoalFrom(spots, quest.id, goal, out_needs_level))
 					continue;
 
-				const int quest_id = goal.quest_id;
-				goal = MakeHuntGoal(*spawn);
-				goal.quest_id = quest_id;
-				break;
+				out = goal;
+				return true;
 			}
 
 			case ObjectiveKind::Collect:
 			{
 				// 수집 아이템은 몬스터가 떨군다. 그것을 떨구는 몬스터의 사냥터로 간다.
-				const ScenarioSpawn* spawn = scenario_->FindItemSource(objective.target_id, quest.map_id);
-				if (spawn == nullptr)
+				std::vector<const ScenarioSpawn*> spots;
+				scenario_->CollectItemSources(objective.target_id, quest.map_id, spots);
+
+				if (!BuildHuntGoalFrom(spots, quest.id, goal, out_needs_level))
 					continue;
 
-				const int quest_id = goal.quest_id;
-				goal = MakeHuntGoal(*spawn);
-				goal.quest_id = quest_id;
-				break;
+				out = goal;
+				return true;
 			}
 
 			case ObjectiveKind::Level:
@@ -394,7 +457,11 @@ namespace bot
 				}
 
 				goal.map_id = destination;
-				if (!RouteTo(destination, goal))
+
+				const RouteResult route = RouteTo(destination, goal);
+				if (route == RouteResult::NeedLevel)
+					out_needs_level = true;
+				if (route != RouteResult::Ok)
 					continue;
 
 				out = goal;
@@ -424,7 +491,10 @@ namespace bot
 				continue;
 			}
 
-			if (!RouteTo(goal.map_id, goal))
+			const RouteResult route = RouteTo(goal.map_id, goal);
+			if (route == RouteResult::NeedLevel)
+				out_needs_level = true;
+			if (route != RouteResult::Ok)
 				continue;
 
 			out = goal;
@@ -476,7 +546,21 @@ namespace bot
 					goal.reward_choice = quest->reward_choice_count > 0
 						? branch_index_ % quest->reward_choice_count : -1;
 
-					if (!RouteTo(npc->map_id, goal))
+					const RouteResult route = RouteTo(npc->map_id, goal);
+					if (route == RouteResult::NeedLevel)
+					{
+						// 게이트가 요구하는 레벨에 못 미친다. 잡으러 갔다가 다시 온다.
+						QuestGoal level_up;
+						level_up.quest_id = quest_id;
+						if (BuildLevelUpGoal(quest->map_id, level_up))
+						{
+							goal_ = level_up;
+							return;
+						}
+						continue;
+					}
+
+					if (route != RouteResult::Ok)
 					{
 						MarkSkipped(quest_id, "완료 NPC 가 있는 맵으로 가는 길이 없다");
 						continue;
@@ -489,10 +573,23 @@ namespace bot
 				if (progress.state == kStateInProgress)
 				{
 					QuestGoal goal;
-					if (BuildObjectiveGoal(*quest, progress, now, goal))
+					bool needs_level = false;
+					if (BuildObjectiveGoal(*quest, progress, now, goal, needs_level))
 					{
 						goal_ = goal;
 						return;
+					}
+
+					if (needs_level)
+					{
+						// 갈 수는 있는데 게이트가 요구하는 레벨에 못 미친다. 잡으러 갔다 온다.
+						QuestGoal level_up;
+						level_up.quest_id = quest_id;
+						if (BuildLevelUpGoal(0, level_up))
+						{
+							goal_ = level_up;
+							return;
+						}
 					}
 
 					// 남은 목표를 봇이 진행할 수 없다. 여기서 붙잡고 있어 봐야 계획 전체가
@@ -506,7 +603,21 @@ namespace bot
 				continue;
 			}
 
-			// 아직 받지 않았다. 수락 창구(시작 NPC)로 간다.
+			// 아직 받지 않았다. 레벨이 모자란 것이 눈에 보이면 걸어가지 않는다 —
+			// 가 봐야 서버가 수락 선택지를 내보내지 않는다(레벨은 서버가 알려 준다).
+			if (quest->min_level > level_)
+			{
+				QuestGoal level_up;
+				level_up.quest_id = quest_id;
+				if (BuildLevelUpGoal(quest->map_id, level_up))
+				{
+					goal_ = level_up;
+					return;
+				}
+				continue;
+			}
+
+			// 수락 창구(시작 NPC)로 간다.
 			auto retry = accept_retry_at_.find(quest_id);
 			if (retry != accept_retry_at_.end() && now < retry->second)
 			{
@@ -533,7 +644,20 @@ namespace bot
 			goal.dialog_quest_id = quest_id;
 			goal.dialog_complete = false;
 
-			if (!RouteTo(npc->map_id, goal))
+			const RouteResult route = RouteTo(npc->map_id, goal);
+			if (route == RouteResult::NeedLevel)
+			{
+				QuestGoal level_up;
+				level_up.quest_id = quest_id;
+				if (BuildLevelUpGoal(quest->map_id, level_up))
+				{
+					goal_ = level_up;
+					return;
+				}
+				continue;
+			}
+
+			if (route != RouteResult::Ok)
 			{
 				MarkSkipped(quest_id, "시작 NPC 가 있는 맵으로 가는 길이 없다");
 				continue;

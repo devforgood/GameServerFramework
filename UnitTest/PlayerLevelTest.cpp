@@ -9,6 +9,9 @@
 #include "GameObject.h"
 #include "PlayerEventBroker.h"
 #include "PlayerLevel.h"
+#include "PlayerSender.h"
+#include "SendMessage.h"
+#include "syncnet_generated.h"
 #include "PlayerLoadData.h"
 #include "PlayerSaveData.h"
 #include "EventMessage.h"
@@ -40,6 +43,39 @@ namespace
         data.player.level = level;
         return data;
     }
+
+    // 클라로 나간 메시지를 붙잡아 두는 하네스.
+    // 레벨/경험치는 클라가 게이트의 required_level 을 미리 보는 데 쓰므로,
+    // "레벨이 올랐는데 알려 주지 않는" 상태가 조용히 생기지 않게 고정한다.
+    struct StatSyncHarness
+    {
+        GameObject go;
+        PlayerLevel* level = nullptr;
+        std::vector<std::shared_ptr<send_message>> sent;
+
+        StatSyncHarness()
+        {
+            go.AddComponent<PlayerEventBroker>();
+            level = go.AddComponent<PlayerLevel>();
+            go.AddComponent<PlayerSender>()->Bind(
+                [this](std::shared_ptr<send_message>& msg) { sent.push_back(msg); });
+        }
+
+        // 마지막으로 나간 PlayerStatSync. 없으면 nullptr.
+        const syncnet::PlayerStatSync* LastStat() const
+        {
+            for (auto it = sent.rbegin(); it != sent.rend(); ++it)
+            {
+                const auto* msg = syncnet::GetGameMessage((*it)->GetBufferPointer());
+                if (msg != nullptr
+                    && msg->msg_type() == syncnet::GameMessages::GameMessages_PlayerStatSync)
+                {
+                    return msg->msg_as_PlayerStatSync();
+                }
+            }
+            return nullptr;
+        }
+    };
 
     // EventLevelUp 발행을 포착하기 위한 리스너
     class LevelUpListener
@@ -255,6 +291,39 @@ TEST_F(PlayerLevelTest, LevelUp_PublishesEventLevelUp)
     EXPECT_EQ(listener.count, 1);
     EXPECT_EQ(listener.lastNewLevel, 2);
     EXPECT_EQ(listener.lastPlayerId, 1001);
+}
+
+TEST_F(PlayerLevelTest, LevelUp_SendsStatToClient)
+{
+    StatSyncHarness harness;
+    harness.level->Load(MakePlayerData(1, 1));
+    harness.sent.clear();
+
+    // 레벨 2 의 문턱을 넘긴다.
+    const auto* table = ResourceLoader::Instance().GetLevel(2);
+    ASSERT_NE(nullptr, table);
+    harness.level->GainExp(static_cast<int>(table->required_exp));
+
+    ASSERT_EQ(2, harness.level->GetLevel());
+
+    const syncnet::PlayerStatSync* stat = harness.LastStat();
+    ASSERT_NE(nullptr, stat) << "레벨이 올랐는데 클라에 알리지 않았다";
+    EXPECT_EQ(2, stat->level());
+    EXPECT_EQ(harness.level->GetExp(), stat->exp());
+}
+
+TEST_F(PlayerLevelTest, GainExpWithoutLevelUp_SendsNothing)
+{
+    // 경험치만 오른 것은 알리지 않는다. 클라가 이 값으로 하는 일(게이트 레벨 확인)은
+    // 레벨이 바뀔 때만 달라지고, 처치마다 보내면 사냥 중 계속 나간다.
+    StatSyncHarness harness;
+    harness.level->Load(MakePlayerData(1, 1));
+    harness.sent.clear();
+
+    harness.level->GainExp(1);
+
+    ASSERT_EQ(1, harness.level->GetLevel());
+    EXPECT_EQ(nullptr, harness.LastStat());
 }
 
 TEST_F(PlayerLevelTest, MultiLevelJump_PublishesOnceWithFinalLevel)

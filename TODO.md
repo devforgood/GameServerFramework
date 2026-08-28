@@ -39,7 +39,13 @@
 ## C. 런타임 / 서버
 
 - [x] **C1. `required_level` 검증 구현(서버)** — `handle(EnterGate)`에서 출발 게이트의 `required_level`을 `PlayerLevel` 컴포넌트 레벨과 비교해 미달 시 거부.
-  - [ ] 클라 `Gate.OnTriggerEnter` 선제 체크는 보류 — 클라에 레벨 동기화가 아직 없음(레벨/경험치를 클라로 내려주는 프로토콜 추가 필요). 서버 거부 시 UX 피드백도 이때 함께.
+  - [x] **클라 선제 체크 + 피드백** — `PlayerStatSync`(S→C, 레벨/누적 경험치)를 추가했다.
+    서버는 로그인 직후와 레벨이 오를 때만 보낸다(경험치만 오른 것은 보내지 않는다 —
+    클라가 이 값으로 하는 일은 레벨이 바뀔 때만 달라지고, 처치마다 보내면 사냥 내내 나간다).
+    `Gate.OnTriggerEnter` 가 밟기 전에 `required_level` 을 보고, 모자라면 `ScreenNotice` 로
+    이유를 띄운다. 판정은 서버가 그대로 다시 하므로 클라를 고쳐도 뚫리지 않는다.
+    부하 테스트 봇도 같은 메시지를 받아 못 지나갈 게이트로는 가지 않는다(경로 중간
+    게이트의 제한까지 본다 — 첫 게이트만 보면 절반쯤 가서 막힌다).
 - [x] **C2. 서버 EnterGate 요청 검증 강화** — 현재 맵 게이트 중 (target_map_id, target_gate_id)가 요청과 일치하는 출발 게이트를 역추적(`FindGateTo`), 없으면 거부. 캐릭터-게이트 xz 거리 5m 초과 시 거부(좌표계 x반전 변환 적용). 임의 맵 순간이동 차단.
 - [x] **C3. 씬-navmesh 정합 검증** — `Map::ValidateMapDataOnNavMesh()` 추가: 맵 로드 시 Map.json 게이트/스폰 좌표(클라 좌표계 → x반전)가 navmesh 위에 있는지 findNearestPoly로 검사(수평 허용 2m), 어긋나면 경고 로그. `MapNavMeshTest` 단위 테스트로도 상시 검증 — 현재 맵 1/2/13/14 모두 정합 확인됨.
   - 씬 지형 전체와 navmesh의 일치까지 보장하지는 않음(마커 지점 표본 검증). 씬 수정 후 navmesh 재생성을 잊으면 테스트/로드 로그에서 잡힌다.

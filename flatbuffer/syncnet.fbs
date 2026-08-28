@@ -30,6 +30,7 @@ union GameMessages
   PartyQuestShareReply,
   DialogNode,
   DialogSelect,
+  PlayerStatSync,
 } // Optionally add more tables.
 
 enum StatusCode:short
@@ -346,6 +347,20 @@ table DialogNode {
 table DialogSelect {
   nodeId:int = 0;
   choiceIndex:int = -1;
+}
+
+// ── 내 캐릭터의 성장 상태 ──
+// 서버 -> 클라. 레벨과 누적 경험치를 알린다. 로그인 직후 한 번, 그리고 레벨이 오를 때마다.
+//
+// 클라가 자기 레벨을 알아야 하는 자리가 있다. 게이트의 required_level 을 밟기 전에 확인해
+// "레벨이 모자랍니다"를 보여 주는 곳이다 — 그전에는 서버가 조용히 거절할 뿐이라 플레이어는
+// 왜 안 가는지 알 수 없었다.
+//
+// 다음 레벨까지 얼마나 남았는지는 보내지 않는다. 클라도 level.json 을 갖고 있어서
+// 레벨과 누적 경험치만 있으면 스스로 계산할 수 있다.
+table PlayerStatSync {
+  level:int = 1;
+  exp:long = 0;
 }
 
 root_type GameMessage;

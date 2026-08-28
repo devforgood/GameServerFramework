@@ -9,6 +9,9 @@
 #include "Character.h"
 #include "LogHelper.h"
 #include "Player.h"
+#include "PlayerSender.h"
+#include "SendMessage.h"
+#include "syncnet_generated.h"
 
 void PlayerLevel::Start()
 {
@@ -50,6 +53,28 @@ void PlayerLevel::GainExp(int amount)
     // 레벨 상승 이벤트 발행 (레벨 달성 퀘스트, 컨텐츠 해금 등에서 구독)
     if (auto* broker = game_object->GetComponent<PlayerEventBroker>())
         broker->publish(EventLevelUp{ static_cast<int>(characterId_), level_ });
+
+    SendToClient();
+}
+
+void PlayerLevel::SendToClient() const
+{
+    auto* sender = game_object != nullptr ? game_object->GetComponent<PlayerSender>() : nullptr;
+    if (sender == nullptr)
+        return;
+
+    auto builder_ptr = SendMessagePool::Acquire();
+
+    auto payload = syncnet::CreatePlayerStatSync(*builder_ptr, level_, exp_);
+    auto send_msg = syncnet::CreateGameMessage(
+        *builder_ptr,
+        syncnet::GameMessages::GameMessages_PlayerStatSync,
+        payload.Union(),
+        0 /* 요청/응답 짝이 아니라 알림이므로 0 */,
+        syncnet::StatusCode::StatusCode_Success);
+    builder_ptr->Finish(send_msg);
+
+    sender->Send(builder_ptr);
 }
 
 void PlayerLevel::ApplyStatsTo(Actor* actor, bool resetHealth) const

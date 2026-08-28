@@ -90,6 +90,11 @@ namespace bot
 		void SetMapId(int map_id) { map_id_ = map_id; goal_dirty_ = true; }
 		int MapId() const { return map_id_; }
 
+		// 서버가 알려 준 내 레벨(PlayerStatSync). 게이트의 required_level 과 퀘스트의
+		// min_level 을 미리 볼 수 있어, 안 될 일을 두드리는 대신 잡으러 간다.
+		void SetLevel(int level);
+		int Level() const { return level_; }
+
 		// ---- 서버 동기화
 		// 이번 실행에서 처음 보는 퀘스트면 true(= 방금 받아 냈다). 재접속하면 서버가
 		// 진행 중인 퀘스트를 전부 다시 보내 주는데, 그것을 새로 받은 것으로 세면
@@ -130,6 +135,12 @@ namespace bot
 
 		// 계획에서 빠진 퀘스트를 하나 꺼낸다(없으면 false). 부르는 쪽이 로그로 남긴다.
 		bool TakeSkippedQuest(SkippedQuest& out);
+
+		// 목표가 방금 바뀌었으면 true(꺼내면 지워진다). 부르는 쪽이 로그로 남긴다.
+		//
+		// 봇이 무엇을 하려는지는 밖에서 보이지 않는다. 맵을 오가거나 제자리에 서 있는 것이
+		// 의도한 행동인지 갇힌 것인지 구분하려면 목표가 어떻게 바뀌는지를 봐야 한다.
+		bool TakeGoalChange(QuestGoal& out);
 
 		// 배회할 때 중심으로 삼을 지점(사냥 목표가 있으면 사냥터, 없으면 false).
 		bool HuntAnchor(Vec3& out_pos, float& out_radius) const;
@@ -180,11 +191,26 @@ namespace bot
 		void MarkSkipped(int quest_id, const char* reason);
 
 		void BuildGoal(double now);
-		bool BuildObjectiveGoal(const ScenarioQuest& quest, const QuestProgress& progress,
-			double now, QuestGoal& out) const;
 
-		// 목적지가 다른 맵이면 Travel 로 바꾼다. 길이 없으면 false.
-		bool RouteTo(int map_id, QuestGoal& goal) const;
+		// 지금 목표를 세운다. 레벨이 모자라 갈 수 없을 뿐이면 out_needs_level 을 세워
+		// 부르는 쪽이 "잡으러 갔다 온다"를 고를 수 있게 한다(포기와 구분해야 한다).
+		bool BuildObjectiveGoal(const ScenarioQuest& quest, const QuestProgress& progress,
+			double now, QuestGoal& out, bool& out_needs_level) const;
+
+		// 사냥터 후보 가운데 지금 갈 수 있는 곳으로 목표를 세운다.
+		// 후보는 있는데 전부 레벨에 막혀 있으면 out_needs_level 을 세우고 false.
+		bool BuildHuntGoalFrom(const std::vector<const ScenarioSpawn*>& spots,
+			int quest_id, QuestGoal& out, bool& out_needs_level) const;
+
+		enum class RouteResult
+		{
+			Ok = 0,      // 같은 맵이거나 Travel 목표로 바꿨다
+			NoRoute,     // 게이트로 이어지지 않는다(데이터 문제)
+			NeedLevel,   // 길은 있는데 게이트가 요구하는 레벨에 못 미친다
+		};
+
+		// 목적지가 다른 맵이면 Travel 로 바꾼다.
+		RouteResult RouteTo(int map_id, QuestGoal& goal) const;
 
 		QuestGoal MakeInteractGoal(const ScenarioNpc& npc) const;
 		QuestGoal MakeHuntGoal(const ScenarioSpawn& spawn) const;
@@ -197,6 +223,7 @@ namespace bot
 		std::vector<int> plan_;
 
 		int map_id_ = 0;
+		int level_ = 1;
 
 		std::unordered_map<int, QuestProgress> active_;
 		std::unordered_set<int> completed_;
@@ -221,6 +248,7 @@ namespace bot
 		std::vector<std::string> dialog_choice_text_ids_;
 
 		QuestGoal goal_;
+		bool goal_changed_ = false;
 		bool goal_dirty_ = true;
 		double now_ = 0.0;
 		double next_plan_at_ = 0.0;

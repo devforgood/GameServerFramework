@@ -983,6 +983,10 @@ TEST(BotQuestBrainTest, TakesTheOpenRouteWhenTheOtherBranchesRouteIsClosed)
 	brain.Configure(scenario, branch_index);
 	brain.SetMapId(14);   // 리네가 있는 맵
 
+	const ScenarioQuest* tally = scenario->FindQuest(11003);
+	ASSERT_NE(tally, nullptr);
+	brain.SetLevel(tally->min_level);   // 레벨이 모자라면 받으러 가지도 않는다
+
 	// 11001 과 가지 B(11009)를 끝낸 상태. 다음 칸은 11003 이다.
 	brain.ApplyQuestCompleted(11001);
 	brain.ApplyQuestCompleted(11009);
@@ -1128,6 +1132,133 @@ TEST(BotQuestBrainTest, DoesNotGiveUpOnAQuestThatMayOpenLater)
 	ASSERT_TRUE(brain.TakeSkippedQuest(skipped));
 	EXPECT_EQ(skipped.quest_id, 11001);
 	EXPECT_NE(brain.Goal().quest_id, 11001);
+}
+
+// 게이트에 required_level 이 걸려 있으면 봇도 그것을 미리 봐야 한다.
+// 레벨은 서버가 알려 준다(PlayerStatSync) — 그전에는 밟아 보고 거절로만 알 수 있었다.
+TEST(BotQuestBrainTest, WaitsForLevelInsteadOfWalkingIntoAGateItCannotUse)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	// 잿빛 숲(2) 입구는 레벨이 걸려 있다. 그 값을 데이터에서 읽어 그대로 쓴다.
+	const ScenarioGate* gate = scenario->NextGate(13, 2);
+	ASSERT_NE(gate, nullptr);
+	ASSERT_GT(gate->required_level, 1) << "이 테스트는 레벨 제한이 걸린 게이트를 전제한다";
+
+	const int branch_index = BranchIndexStartingWith(*scenario, 11001);
+	ASSERT_GE(branch_index, 0);
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, branch_index);
+	brain.SetMapId(13);            // 밭길 — 잿빛 숲 바로 앞
+	brain.SetLevel(gate->required_level - 1);
+
+	// 잿빛 숲에서 오크를 잡아야 하는 퀘스트(11004) 진행 중.
+	const int progress[3] = { 0, 0, 0 };
+	brain.ApplyQuestCompleted(11001);
+	brain.ApplyQuestCompleted(11002);
+	brain.ApplyQuestCompleted(11003);
+	brain.ApplyQuestInfo(11004, BotQuestBrain::kStateInProgress, 2, progress, 3);
+	brain.Update(1.0);
+
+	// 게이트로 걸어가지 않는다. 레벨을 올리러 간다(계획을 버리지도 않는다).
+	EXPECT_EQ(brain.Goal().kind, QuestGoalKind::Hunt);
+	EXPECT_NE(brain.Goal().map_id, 2) << "못 지나가는 게이트 너머를 목표로 삼았다";
+
+	BotQuestBrain::SkippedQuest skipped;
+	EXPECT_FALSE(brain.TakeSkippedQuest(skipped)) << "레벨 때문에 퀘스트를 포기했다";
+
+	// 레벨이 차면 그때 게이트로 간다.
+	brain.SetLevel(gate->required_level);
+	brain.Update(2.0);
+
+	EXPECT_EQ(brain.Goal().kind, QuestGoalKind::Travel);
+	EXPECT_EQ(brain.Goal().gate_id, gate->id);
+}
+
+// 같은 몬스터가 여러 맵에 있으면 지금 갈 수 있는 곳에서 잡는다.
+// 퀘스트가 가리키는 맵이 레벨에 막혀 있어도 사냥 자체는 진행할 수 있다.
+TEST(BotQuestBrainTest, HuntsInAReachableMapWhenTheQuestMapIsLevelLocked)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const ScenarioGate* gate = scenario->NextGate(13, 2);
+	ASSERT_NE(gate, nullptr);
+	ASSERT_GT(gate->required_level, 1);
+
+	// 고블린(3)은 잿빛 숲(2)과 바람고개(14)에 모두 있다.
+	std::vector<const ScenarioSpawn*> spots;
+	scenario->CollectHuntSpots(3, 2, spots);
+	ASSERT_GE(spots.size(), 2u);
+
+	bool has_forest = false;
+	bool has_other = false;
+	for (const ScenarioSpawn* spot : spots)
+	{
+		has_forest = has_forest || spot->map_id == 2;
+		has_other = has_other || spot->map_id != 2;
+	}
+	ASSERT_TRUE(has_forest && has_other) << "이 테스트는 두 맵에 있는 몬스터를 전제한다";
+
+	// 1001(고블린 사냥)은 map_id 가 잿빛 숲이지만, 레벨이 모자라면 갈 수 있는 쪽에서 잡는다.
+	int chain10_branch = -1;
+	for (int candidate = 0; candidate < 16 && chain10_branch < 0; ++candidate)
+	{
+		const std::vector<int> plan = scenario->BuildMainQuestPlan(candidate);
+		if (!plan.empty() && plan.front() == 1001)
+			chain10_branch = candidate;
+	}
+	ASSERT_GE(chain10_branch, 0);
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, chain10_branch);
+	brain.SetMapId(14);   // 바람고개 — 여기에도 고블린이 있다
+	brain.SetLevel(gate->required_level - 1);
+
+	const int progress[3] = { 0, 0, 0 };
+	brain.ApplyQuestInfo(1001, BotQuestBrain::kStateInProgress, 2, progress, 3);
+	brain.Update(1.0);
+
+	EXPECT_EQ(brain.Goal().kind, QuestGoalKind::Hunt);
+	EXPECT_EQ(brain.Goal().quest_id, 1001);
+	EXPECT_NE(brain.Goal().map_id, 2) << "레벨에 막힌 맵의 사냥터를 골랐다";
+}
+
+// 레벨이 모자란 퀘스트는 NPC 까지 걸어갔다 오지 않는다(가 봐야 수락 선택지가 없다).
+TEST(BotQuestBrainTest, LevelsUpBeforeWalkingToAQuestItCannotAcceptYet)
+{
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	int chain10_branch = -1;
+	for (int candidate = 0; candidate < 16 && chain10_branch < 0; ++candidate)
+	{
+		const std::vector<int> plan = scenario->BuildMainQuestPlan(candidate);
+		if (!plan.empty() && plan.front() == 1001)
+			chain10_branch = candidate;
+	}
+	ASSERT_GE(chain10_branch, 0);
+
+	const ScenarioQuest* quest = scenario->FindQuest(1001);
+	ASSERT_NE(quest, nullptr);
+	ASSERT_GT(quest->min_level, 1) << "이 테스트는 레벨 조건이 있는 퀘스트를 전제한다";
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, chain10_branch);
+	brain.SetMapId(1);
+	brain.SetLevel(1);
+	brain.Update(1.0);
+
+	EXPECT_EQ(brain.Goal().kind, QuestGoalKind::Hunt) << "받지도 못할 퀘스트의 NPC 로 걸어갔다";
+
+	// 레벨이 차면 그때 받으러 간다.
+	brain.SetLevel(quest->min_level);
+	brain.Update(2.0);
+
+	EXPECT_EQ(brain.Goal().kind, QuestGoalKind::Interact);
+	EXPECT_EQ(brain.Goal().quest_id, 1001);
 }
 
 //--- 시나리오(BT) 실행 ---------------------------------------------------------------

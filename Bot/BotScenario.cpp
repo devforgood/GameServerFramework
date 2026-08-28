@@ -559,6 +559,42 @@ namespace bot
 		return nullptr;
 	}
 
+	void BotScenario::CollectHuntSpots(int monster_id, int prefer_map_id,
+		std::vector<const ScenarioSpawn*>& out) const
+	{
+		out.clear();
+
+		auto it = spawns_by_monster_.find(monster_id);
+		if (it == spawns_by_monster_.end())
+			return;
+
+		for (int index : it->second)
+		{
+			const ScenarioSpawn& spawn = spawns_[index];
+			if (prefer_map_id != 0 && spawn.map_id == prefer_map_id)
+				out.insert(out.begin(), &spawn);
+			else
+				out.push_back(&spawn);
+		}
+	}
+
+	void BotScenario::CollectItemSources(int item_id, int prefer_map_id,
+		std::vector<const ScenarioSpawn*>& out) const
+	{
+		out.clear();
+
+		auto it = monsters_by_drop_.find(item_id);
+		if (it == monsters_by_drop_.end())
+			return;
+
+		std::vector<const ScenarioSpawn*> spots;
+		for (int monster_id : it->second)
+		{
+			CollectHuntSpots(monster_id, prefer_map_id, spots);
+			out.insert(out.end(), spots.begin(), spots.end());
+		}
+	}
+
 	const ScenarioSpawn* BotScenario::FindAnySpot(int map_id) const
 	{
 		auto it = spawns_by_map_.find(map_id);
@@ -576,6 +612,33 @@ namespace bot
 		if (it == routes_.end())
 			return nullptr;
 		return FindGate(it->second);
+	}
+
+	int BotScenario::RouteRequiredLevel(int from_map_id, int to_map_id) const
+	{
+		if (from_map_id == 0 || to_map_id == 0 || from_map_id == to_map_id)
+			return 0;
+
+		int required = 0;
+		int current = from_map_id;
+
+		// 맵 수보다 많이 돌면 데이터가 이상한 것이다(경로표는 최단 경로라 돌지 않는다).
+		for (int step = 0; step < 16 && current != to_map_id; ++step)
+		{
+			const ScenarioGate* gate = NextGate(current, to_map_id);
+			if (gate == nullptr)
+				break;
+
+			required = std::max(required, gate->required_level);
+
+			auto destination = marker_map_.find(gate->target_id);
+			if (destination == marker_map_.end())
+				break;
+
+			current = destination->second;
+		}
+
+		return required;
 	}
 
 	const ScenarioGate* BotScenario::FindAnyGate(int map_id) const

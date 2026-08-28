@@ -67,6 +67,21 @@ public class Gate : MonoBehaviour
             return;
         }
 
+        // 레벨이 모자라면 서버가 어차피 거절한다. 보내기 전에 한 번 보고 왜 안 되는지
+        // 알려 준다 — 서버 거절은 로그에만 남아서, 플레이어에게는 게이트가 고장 난 것처럼 보인다.
+        //
+        // 판정은 서버가 다시 한다. 이것은 안내일 뿐이라 클라를 고쳐도 뚫리지 않는다.
+        // 아직 레벨을 못 받았으면 막지 않는다. 판정은 어차피 서버가 한다 —
+        // 모르는 채로 막으면 서버가 허락할 이동을 클라가 가로막는 쪽이 된다.
+        if (requiredLevel > 1
+            && Session.Instance.player_level_known
+            && Session.Instance.player_level < requiredLevel)
+        {
+            Debug.Log($"[Gate] '{gateName}'(id {id}): level {Session.Instance.player_level} < required {requiredLevel}.");
+            ScreenNotice.Show($"레벨 {requiredLevel} 이상만 지나갈 수 있습니다. (현재 {Session.Instance.player_level})");
+            return;
+        }
+
         // 서버에는 "내가 밟은 게이트"만 알린다. 목적지는 그 게이트의 target_id 가 정하므로
         // 클라가 목적지를 고를 수 없고, 응답의 mapId 로 씬을 정한다.
         Debug.Log($"[Gate] '{gateName}'(id {id}): requesting EnterGate. target_id:{targetId}");

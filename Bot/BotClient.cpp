@@ -16,6 +16,17 @@ namespace bot
 				std::chrono::system_clock::now().time_since_epoch()).count();
 		}
 
+		const char* GoalKindName(QuestGoalKind kind)
+		{
+			switch (kind)
+			{
+			case QuestGoalKind::Travel:   return "이동";
+			case QuestGoalKind::Interact: return "대화";
+			case QuestGoalKind::Hunt:     return "사냥";
+			default:                      return "없음";
+			}
+		}
+
 		// 보낸 시각부터 지금까지를 ms 로(반올림) 돌려준다.
 		uint32_t ElapsedMs(const std::chrono::steady_clock::time_point& sent_at)
 		{
@@ -286,6 +297,21 @@ namespace bot
 		// 무엇을 할지 먼저 정하고(목표 하나) 트리는 그것을 실행한다.
 		blackboard_.quest.Update(now_);
 
+		// 무엇을 하려는지 남긴다(기본 로그 수준에서는 나오지 않는다). 봇이 맵을 오가거나
+		// 제자리에 서 있을 때, 그것이 의도한 행동인지 갇힌 것인지는 이것으로만 갈린다.
+		if (verbose_ && log::ShouldLog(LogLevel::Debug))
+		{
+			QuestGoal goal;
+			if (blackboard_.quest.TakeGoalChange(goal))
+			{
+				log::Printf(LogLevel::Debug,
+					"[%s] 목표: %s quest=%d map=%d npc=%d gate=%d (내 맵 %d, 레벨 %d)",
+					user_id_.c_str(), GoalKindName(goal.kind), goal.quest_id, goal.map_id,
+					goal.npc_id, goal.gate_id, blackboard_.quest.MapId(),
+					blackboard_.quest.Level());
+			}
+		}
+
 		// 계획에서 빠진 퀘스트는 남긴다. 조용히 건너뛰면 시나리오가 어디서 멈췄는지
 		// 알 방법이 없다 — 패킷 수치는 그대로 나오기 때문이다.
 		BotQuestBrain::SkippedQuest skipped;
@@ -339,6 +365,9 @@ namespace bot
 			break;
 		case syncnet::GameMessages::GameMessages_Interact:
 			HandleInteract(message);
+			break;
+		case syncnet::GameMessages::GameMessages_PlayerStatSync:
+			HandlePlayerStatSync(message);
 			break;
 		default:
 			break;
@@ -617,6 +646,20 @@ namespace bot
 		}
 
 		blackboard_.quest.OnDialogOpened(node->npcId(), node->nodeId(), std::move(choice_text_ids));
+	}
+
+	void BotClient::HandlePlayerStatSync(const syncnet::GameMessage* message)
+	{
+		const syncnet::PlayerStatSync* stat = message->msg_as_PlayerStatSync();
+		if (stat == nullptr)
+			return;
+
+		// 레벨을 알아야 게이트의 required_level 과 퀘스트의 min_level 을 미리 볼 수 있다.
+		// 그전에는 안 될 일을 두드려 보고 거절로만 알았다.
+		blackboard_.quest.SetLevel(stat->level());
+
+		if (verbose_)
+			log::Printf(LogLevel::Info, "[%s] 레벨 %d", user_id_.c_str(), stat->level());
 	}
 
 	void BotClient::HandleInteract(const syncnet::GameMessage* message)

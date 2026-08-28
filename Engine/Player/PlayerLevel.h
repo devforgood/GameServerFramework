@@ -27,6 +27,12 @@ public:
     // 캐릭터 스폰 직후(resetHealth=true)와 레벨업 시(false)에 호출한다.
     void ApplyStatsTo(class Actor* actor, bool resetHealth) const;
 
+    // 레벨과 누적 경험치를 클라이언트에 알린다(로그인 직후, 그리고 레벨이 오를 때).
+    //
+    // 클라가 자기 레벨을 알아야 게이트의 required_level 을 밟기 전에 확인해 줄 수 있다.
+    // 그전에는 서버가 조용히 거절할 뿐이라 플레이어는 왜 안 가는지 알 수 없었다.
+    void SendToClient() const;
+
 private:
     // 주어진 누적 경험치에 해당하는 레벨(required_exp <= exp 중 최고 레벨)을 Level 테이블에서 찾는다.
     int ResolveLevel(long long exp) const;
