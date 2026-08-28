@@ -633,6 +633,85 @@ def _validate_dialog_condition(clabel, choice, quest_ids, errors):
     return False
 
 
+def _validate_quests_are_obtainable(dialogs, tables):
+    """퀘스트를 시작 NPC 에게서 실제로 받을 수 있는가.
+
+    `start_npc_id` 는 "이 NPC 가 준다"는 선언인데, 그 NPC 의 대화에 수락 선택지가 없으면
+    아무도 그 퀘스트를 받을 수 없다. 데이터만 봐서는 멀쩡해 보이고(퀘스트도 있고 NPC 도
+    있다), 게임에서는 "그 NPC 에게 말을 걸어도 아무 일도 안 일어난다"로만 나타난다.
+
+    실제로 활성 퀘스트 여섯 개가 이 상태였다(대장장이는 대화에 '닫기' 하나뿐이라 그가
+    준다는 퀘스트 셋이 통째로 잠겨 있었다).
+    """
+    errors = []
+
+    quests = tables.get('Quest') if tables else None
+    npcs = tables.get('Npc') if tables else None
+    if not quests or not npcs:
+        return errors
+
+    nodes = {node['id']: node for node in dialogs
+             if isinstance(node, dict) and isinstance(node.get('id'), int)}
+
+    def offered_quests_from(root_id):
+        """시작 노드에서 goto 를 따라가며 닿을 수 있는 accept_quest 대상 전부."""
+        offered = set()
+        seen = set()
+        stack = [root_id]
+
+        while stack:
+            node_id = stack.pop()
+            if node_id in seen:
+                continue
+            seen.add(node_id)
+
+            node = nodes.get(node_id)
+            if node is None:
+                continue
+
+            for choice in node.get('choices') or []:
+                if not isinstance(choice, dict):
+                    continue
+                if choice.get('action') == 'accept_quest':
+                    offered.add(choice.get('param'))
+                elif choice.get('action') == 'goto' and choice.get('next_id'):
+                    stack.append(choice['next_id'])
+
+        return offered
+
+    roots = {}
+    offered_by_npc = {}
+    for npc in npcs:
+        if not isinstance(npc, dict):
+            continue
+        roots[npc.get('id')] = npc.get('dialog_id', 0)
+
+    for quest in quests:
+        if not isinstance(quest, dict) or quest.get('disabled'):
+            continue
+
+        start_npc = quest.get('start_npc_id', 0)
+        if not start_npc:
+            continue   # 대화로 주지 않는 퀘스트(자동 부여 등)
+
+        root = roots.get(start_npc)
+        if not root:
+            errors.append(
+                f"Quest: 퀘스트 {quest.get('id')} — 시작 NPC {start_npc} 에게 대화가 없어 "
+                f"받을 방법이 없습니다 (npc.dialog_id 가 0)")
+            continue
+
+        if root not in offered_by_npc:
+            offered_by_npc[root] = offered_quests_from(root)
+
+        if quest.get('id') not in offered_by_npc[root]:
+            errors.append(
+                f"Quest: 퀘스트 {quest.get('id')} — 시작 NPC {start_npc} 의 대화(노드 {root} 에서 "
+                f"닿는 곳)에 accept_quest 선택지가 없어 받을 방법이 없습니다")
+
+    return errors
+
+
 def _validate_dialogs(table_name, entries, tables):
     """대화 노드가 서로 이어져 있고, 각 선택지가 실제로 무언가를 하는지 본다.
 
@@ -728,6 +807,8 @@ def _validate_dialogs(table_name, entries, tables):
             errors.append(
                 f"{label} — 모든 선택지에 show_if 가 걸려 있습니다. 조건이 전부 어긋나면 "
                 f"플레이어가 대화를 닫을 방법이 없으니 조건 없는 선택지가 하나는 필요합니다")
+
+    errors.extend(_validate_quests_are_obtainable(entries, tables))
 
     # 대화가 걸린 NPC 의 시작 노드가 실제로 존재하는지도 함께 본다.
     npcs = tables.get('Npc') if tables else None

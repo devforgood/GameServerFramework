@@ -25,7 +25,8 @@
 //
 // 조건(show_if)이 걸린 노드. 조건이 어긋난 선택지는 아예 내보내지 않으므로 클라가
 // 세는 번호와 데이터의 번호가 다르다:
-//   3002 고블린 이야기  → [0] 1001 수락(acceptable), [1] 3001 로 되돌아가기(조건 없음), [2] 닫기
+//   3002 고블린 이야기  → [0] 1001 수락, [1] 1002 수락, [2] 1002 완료,
+//                         [3] 3001 로 되돌아가기(조건 없음), [4] 닫기
 //   3003 상인 이야기    → [0] 1006 수락(acceptable), [1] 1006 완료(ready_to_complete),
 //                         [2] 3001 로 되돌아가기(조건 없음)
 //   3004 마렌 스토리    → [0] 11001 수락(acceptable), [1] 11007 완료(ready_to_complete),
@@ -285,7 +286,20 @@ TEST_F(PlayerDialogTest, AlreadyAcceptedQuestIsNotOfferedAgain)
 	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, 0));
 
 	EXPECT_FALSE(player.dialog->IsChoiceVisible(0));
-	EXPECT_EQ(1, player.dialog->ResolveVisibleChoice(0));
+
+	// 남는 것은 조건 없는 선택지뿐이다. 번호를 손으로 적으면 노드에 선택지가 하나 늘 때마다
+	// 테스트가 깨지므로, "되돌아가기가 데이터의 몇 번인가"를 데이터에서 찾아 쓴다.
+	const gamedata::Dialog* node = player.dialog->GetCurrentNode();
+	ASSERT_NE(nullptr, node);
+
+	int back_index = -1;
+	for (int i = 0; i < static_cast<int>(node->choices.size()); ++i)
+	{
+		if (node->choices[i].action == "goto" && node->choices[i].next_id == kElderRoot)
+			back_index = i;
+	}
+	ASSERT_GE(back_index, 0);
+	EXPECT_EQ(back_index, player.dialog->ResolveVisibleChoice(0));
 
 	const gamedata::Dialog* next = nullptr;
 	EXPECT_EQ(DialogResult::Ok, player.dialog->Select(kGoblinTalk, 0, &next));

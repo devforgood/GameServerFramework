@@ -87,7 +87,14 @@ namespace bot
 		// 서버 쪽 진행도는 그대로다.
 		void ResetForReconnect();
 
-		void SetMapId(int map_id) { map_id_ = map_id; goal_dirty_ = true; }
+		void SetMapId(int map_id)
+		{
+			if (map_id != map_id_)
+				map_entered_at_ = now_;
+
+			map_id_ = map_id;
+			goal_dirty_ = true;
+		}
 		int MapId() const { return map_id_; }
 
 		// 서버가 알려 준 내 레벨(PlayerStatSync). 게이트의 required_level 과 퀘스트의
@@ -166,6 +173,9 @@ namespace bot
 		static constexpr double kDialogIntervalSeconds = 0.4;
 		static constexpr double kCompleteIntervalSeconds = 2.0;
 
+		// 맵에 들어온 뒤 도달 통지를 기다려 주는 시간. 이 안에서는 다시 나가지 않는다.
+		static constexpr double kAreaCreditGraceSeconds = 3.0;
+
 		// 한 번 연 대화에서 누를 수 있는 횟수. 데이터가 이상해 goto 를 오가더라도
 		// 봇이 대화 안에서 맴돌지 않게 막는다.
 		static constexpr int kMaxDialogSteps = 6;
@@ -224,6 +234,10 @@ namespace bot
 
 		int map_id_ = 0;
 		int level_ = 1;
+
+		// 지금 맵에 들어온 시각. 맵에 들어오면 서버가 도달 목표를 세어 주는데, 그 통지는
+		// 조금 뒤에 온다 — 도착하자마자 "아직 안 세어졌다"고 판단해 다시 나가면 헛왕복이 된다.
+		double map_entered_at_ = 0.0;
 
 		std::unordered_map<int, QuestProgress> active_;
 		std::unordered_set<int> completed_;

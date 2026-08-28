@@ -443,6 +443,11 @@ namespace bot
 				int destination = objective.target_id;
 				if (destination == map_id_)
 				{
+					// 방금 들어왔으면 통지를 기다린다. 기다리지 않고 나가면 도착할 때마다
+					// 다시 나가는 왕복이 된다(서버는 들어오는 순간에만 세어 준다).
+					if (now_ - map_entered_at_ < kAreaCreditGraceSeconds)
+						continue;
+
 					const ScenarioGate* gate = scenario_->FindAnyGate(map_id_);
 					if (gate == nullptr)
 						continue;
