@@ -35,6 +35,9 @@
      - 리셋되는 퀘스트는 repeatable 이어야 하고, LimitedTimeQuest 는 제한 시간이 있어야 한다.
 """
 
+import json
+import os
+
 from collections import Counter, defaultdict
 
 
@@ -383,13 +386,28 @@ def _validate_quest_prerequisites(quest, label, quest_ids, tables, errors):
         return
 
     quest_id = quest.get('id')
-    for field in ('completed_quest_ids', 'blocked_quest_ids'):
+    for field in ('completed_quest_ids', 'completed_any_quest_ids', 'blocked_quest_ids'):
         for ref in prereq.get(field) or []:
             if ref == quest_id:
                 errors.append(f"{label} — prerequisites.{field} 가 자기 자신을 참조합니다")
             elif ref not in quest_ids:
                 errors.append(
                     f"{label} — prerequisites.{field} 의 퀘스트 {ref} 가 존재하지 않습니다")
+
+    # completed_any_quest_ids 는 "이 중 하나면 된다"이므로 후보가 둘은 있어야 뜻이 선다.
+    # 하나뿐이면 그냥 AND 이고, 읽는 사람은 갈림길이 있다고 오해한다.
+    any_of = prereq.get('completed_any_quest_ids') or []
+    if len(any_of) == 1:
+        errors.append(
+            f"{label} — prerequisites.completed_any_quest_ids 가 1개뿐입니다. "
+            f"반드시 해야 하는 선행이면 completed_quest_ids 로 옮기세요")
+
+    both = set(any_of) & set(prereq.get('completed_quest_ids') or [])
+    if both:
+        errors.append(
+            f"{label} — 퀘스트 {sorted(both)} 가 completed_quest_ids 와 "
+            f"completed_any_quest_ids 에 함께 있습니다. 반드시 해야 하는 쪽이 이기므로 "
+            f"'둘 중 하나' 는 뜻이 없어집니다")
 
     for field, target_table in (('item_ids', 'Item'), ('skill_ids', 'Skill')):
         known = _ids_of(tables, target_table)
@@ -484,6 +502,161 @@ def _blocked_ids(entry):
     return [b for b in blocked if isinstance(b, int)] if isinstance(blocked, list) else []
 
 
+def _map_levels(tables):
+    """맵마다 '거기까지 가는 데 필요한 최소 레벨'. 도달할 수 없는 맵은 빠진다.
+
+    서버와 같은 규칙으로 시작 맵을 고른다(World::GetPrimaryMap — field 모드 맵 중 가장 작은
+    id). 게이트의 target_id 는 짝이 되는 게이트일 수도, 도착 지점(player_spawn)일 수도 있다
+    — 일방통행 게이트는 후자를 쓴다.
+    """
+    maps = {m['id']: m for m in (tables.get('Map') or [])
+            if isinstance(m, dict) and isinstance(m.get('id'), int)}
+    if not maps:
+        return None
+
+    modes = {m['id']: m for m in (tables.get('GameMode') or []) if isinstance(m, dict)}
+    field_maps = [mid for mid, m in maps.items()
+                  if (modes.get(m.get('game_mode_id')) or {}).get('type') == 'field']
+    if not field_maps:
+        return None
+    start = min(field_maps)
+
+    map_of_marker = {}
+    for mid, m in maps.items():
+        for gate in m.get('gates') or []:
+            if isinstance(gate, dict):
+                map_of_marker[gate.get('id')] = mid
+        for spawn in (m.get('spawn_points') or {}).get('player_spawn') or []:
+            if isinstance(spawn, dict):
+                map_of_marker[spawn.get('id')] = mid
+
+    edges = defaultdict(list)
+    for mid, m in maps.items():
+        for gate in m.get('gates') or []:
+            if not isinstance(gate, dict):
+                continue
+            destination = map_of_marker.get(gate.get('target_id'))
+            if destination is not None:
+                edges[mid].append((destination, gate.get('required_level', 1) or 1))
+
+    # 어느 길로 가든 지나는 게이트 중 가장 높은 요구 레벨이 그 맵의 문턱이고,
+    # 그중 가장 낮은 길이 실제 문턱이다.
+    levels = {start: 1}
+    frontier = [start]
+    while frontier:
+        mid = frontier.pop()
+        for destination, required in edges[mid]:
+            need = max(levels[mid], required)
+            if destination not in levels or levels[destination] > need:
+                levels[destination] = need
+                frontier.append(destination)
+    return levels
+
+
+def _objective_maps(obj, tables):
+    """이 목표를 달성할 수 있는 맵들. 판단할 근거가 없으면 None(검사 생략)."""
+    obj_type = obj.get('type')
+    target_id = obj.get('target_id', 0)
+
+    if obj_type == 'reach':
+        return {target_id}
+
+    if obj_type in ('talk', 'escort', 'protect'):
+        for npc in tables.get('Npc') or []:
+            if isinstance(npc, dict) and npc.get('id') == target_id:
+                return {npc.get('map_id')}
+        return None
+
+    maps = tables.get('Map') or []
+
+    if obj_type == 'kill':
+        found = set()
+        for m in maps:
+            for key in ('monster_spawn', 'boss_spawn'):
+                for spawn in (m.get('spawn_points') or {}).get(key) or []:
+                    if target_id in (spawn.get('monster_id'), spawn.get('boss_id')):
+                        found.add(m.get('id'))
+        return found
+
+    if obj_type == 'collect':
+        droppers = {mon['id'] for mon in tables.get('MonsterData') or []
+                    if isinstance(mon, dict)
+                    and any(d.get('item_id') == target_id for d in mon.get('drops') or [])}
+        if not droppers:
+            return set()
+        found = set()
+        for m in maps:
+            for key in ('monster_spawn', 'boss_spawn'):
+                for spawn in (m.get('spawn_points') or {}).get(key) or []:
+                    if droppers & {spawn.get('monster_id'), spawn.get('boss_id')}:
+                        found.add(m.get('id'))
+        return found
+
+    if obj_type == 'interact':
+        found = set()
+        for m in maps:
+            objects = m.get('objects') or {}
+            for key in ('static_objects', 'movable_objects'):
+                for entry in objects.get(key) or []:
+                    if entry.get('id') == target_id:
+                        found.add(m.get('id'))
+        return found
+
+    return None   # level / use_item / use_skill — 장소와 무관하다
+
+
+def _validate_quest_objectives_are_reachable(entries, tables):
+    """목표가 있는 곳까지 그 퀘스트를 받을 수 있는 레벨로 갈 수 있는가.
+
+    게이트의 `required_level` 을 올리면 그 너머를 가리키던 퀘스트가 조용히 막힌다.
+    데이터는 그대로고 검증도 통과하는데, 플레이하면 "받았지만 갈 수가 없는" 퀘스트가 된다.
+    실제로 잿빛 숲 입구를 레벨 5 로 올렸을 때 「첫 걸음」(레벨 3 목표)이 이렇게 됐다.
+    """
+    errors = []
+    if not tables:
+        return errors
+
+    levels = _map_levels(tables)
+    if levels is None:
+        return errors
+
+    for quest in entries:
+        if not isinstance(quest, dict) or quest.get('disabled'):
+            continue
+
+        min_level = quest.get('min_level', 1) or 1
+        for stage in quest.get('stages') or []:
+            if not isinstance(stage, dict):
+                continue
+            for i, obj in enumerate(stage.get('objectives') or []):
+                if not isinstance(obj, dict):
+                    continue
+
+                candidates = _objective_maps(obj, tables)
+                if candidates is None:
+                    continue
+
+                label = (f"Quest: 퀘스트 {quest.get('id')} stages[{stage.get('step')}] "
+                         f"objectives[{i}] ({obj.get('type')}/{obj.get('target_id', 0)})")
+
+                reachable = {m: levels[m] for m in candidates if m in levels}
+                if not reachable:
+                    errors.append(
+                        f"{label} — 목표가 있는 맵 {sorted(c for c in candidates if c)} 에 "
+                        f"들어가는 길이 없습니다. 받아도 끝낼 수 없습니다")
+                    continue
+
+                needed = min(reachable.values())
+                if needed > min_level:
+                    where = sorted(m for m, lv in reachable.items() if lv == needed)
+                    errors.append(
+                        f"{label} — 그곳(맵 {where})까지 가려면 레벨 {needed} 이 필요한데 "
+                        f"퀘스트 min_level 은 {min_level} 입니다. 게이트의 required_level 을 "
+                        f"넘지 못해 받고도 갈 수 없습니다")
+
+    return errors
+
+
 def _validate_quests(table_name, entries, tables):
     """Quest 테이블 전용: 스테이지/목표/선행조건/보상/시간 정책 검증."""
     errors = []
@@ -571,6 +744,8 @@ def _validate_quests(table_name, entries, tables):
                     f"{table_name}: 퀘스트 {qid} — chain_id 가 있으면 "
                     f"chain_step 은 1 이상이어야 합니다 (현재: {step})")
 
+    errors.extend(_validate_quest_objectives_are_reachable(entries, tables))
+
     return errors
 
 
@@ -634,14 +809,16 @@ def _validate_dialog_condition(clabel, choice, quest_ids, errors):
 
 
 def _validate_quests_are_obtainable(dialogs, tables):
-    """퀘스트를 시작 NPC 에게서 실제로 받을 수 있는가.
+    """퀘스트를 시작 NPC 에게서 받고, 완료 NPC 에게서 끝낼 수 있는가.
 
-    `start_npc_id` 는 "이 NPC 가 준다"는 선언인데, 그 NPC 의 대화에 수락 선택지가 없으면
-    아무도 그 퀘스트를 받을 수 없다. 데이터만 봐서는 멀쩡해 보이고(퀘스트도 있고 NPC 도
-    있다), 게임에서는 "그 NPC 에게 말을 걸어도 아무 일도 안 일어난다"로만 나타난다.
+    `start_npc_id` / `end_npc_id` 는 "이 NPC 가 준다 / 받아 준다"는 선언인데, 그 NPC 의
+    대화에 해당 선택지가 없으면 아무도 그 퀘스트를 받거나 끝낼 수 없다. 데이터만 봐서는
+    멀쩡해 보이고(퀘스트도 있고 NPC 도 있다), 게임에서는 "그 NPC 에게 말을 걸어도 아무
+    일도 안 일어난다"로만 나타난다.
 
-    실제로 활성 퀘스트 여섯 개가 이 상태였다(대장장이는 대화에 '닫기' 하나뿐이라 그가
-    준다는 퀘스트 셋이 통째로 잠겨 있었다).
+    실제로 활성 퀘스트 여섯 개가 수락 쪽에서 이 상태였고(대장장이는 대화에 '닫기'
+    하나뿐이라 그가 준다는 퀘스트 셋이 통째로 잠겨 있었다), 메인 체인 10 의 첫 칸인
+    1001 은 완료 쪽에서 같은 상태였다 — 처음부터 완료 선택지가 없었다.
     """
     errors = []
 
@@ -653,9 +830,9 @@ def _validate_quests_are_obtainable(dialogs, tables):
     nodes = {node['id']: node for node in dialogs
              if isinstance(node, dict) and isinstance(node.get('id'), int)}
 
-    def offered_quests_from(root_id):
-        """시작 노드에서 goto 를 따라가며 닿을 수 있는 accept_quest 대상 전부."""
-        offered = set()
+    def actions_from(root_id):
+        """시작 노드에서 goto 를 따라가며 닿을 수 있는 (수락 대상, 완료 대상)."""
+        accept, complete = set(), set()
         seen = set()
         stack = [root_id]
 
@@ -672,42 +849,127 @@ def _validate_quests_are_obtainable(dialogs, tables):
             for choice in node.get('choices') or []:
                 if not isinstance(choice, dict):
                     continue
-                if choice.get('action') == 'accept_quest':
-                    offered.add(choice.get('param'))
-                elif choice.get('action') == 'goto' and choice.get('next_id'):
+                action = choice.get('action')
+                if action == 'accept_quest':
+                    accept.add(choice.get('param'))
+                elif action == 'complete_quest':
+                    complete.add(choice.get('param'))
+                elif action == 'goto' and choice.get('next_id'):
                     stack.append(choice['next_id'])
 
-        return offered
+        return accept, complete
 
     roots = {}
-    offered_by_npc = {}
+    actions_by_root = {}
     for npc in npcs:
         if not isinstance(npc, dict):
             continue
         roots[npc.get('id')] = npc.get('dialog_id', 0)
 
+    def reachable_actions(root):
+        if root not in actions_by_root:
+            actions_by_root[root] = actions_from(root)
+        return actions_by_root[root]
+
     for quest in quests:
         if not isinstance(quest, dict) or quest.get('disabled'):
             continue
 
-        start_npc = quest.get('start_npc_id', 0)
-        if not start_npc:
-            continue   # 대화로 주지 않는 퀘스트(자동 부여 등)
+        quest_id = quest.get('id')
 
-        root = roots.get(start_npc)
-        if not root:
-            errors.append(
-                f"Quest: 퀘스트 {quest.get('id')} — 시작 NPC {start_npc} 에게 대화가 없어 "
-                f"받을 방법이 없습니다 (npc.dialog_id 가 0)")
+        # (선언한 NPC, 그 NPC 가 내놓아야 하는 동작, 없을 때의 말)
+        duties = [('start_npc_id', 'accept_quest', 0, '받을')]
+        if not quest.get('auto_complete'):
+            # 자동 완료 퀘스트는 목표를 채우는 순간 서버가 끝내므로 완료 선택지가 필요 없다.
+            duties.append(('end_npc_id', 'complete_quest', 1, '끝낼'))
+
+        for field, action, slot, verb in duties:
+            npc_id = quest.get(field, 0)
+            if not npc_id:
+                continue   # 대화로 주고받지 않는 퀘스트(자동 부여 등)
+
+            root = roots.get(npc_id)
+            if not root:
+                errors.append(
+                    f"Quest: 퀘스트 {quest_id} — {field} {npc_id} 에게 대화가 없어 "
+                    f"{verb} 방법이 없습니다 (npc.dialog_id 가 0)")
+                continue
+
+            if quest_id not in reachable_actions(root)[slot]:
+                errors.append(
+                    f"Quest: 퀘스트 {quest_id} — {field} {npc_id} 의 대화(노드 {root} 에서 "
+                    f"닿는 곳)에 {action} 선택지가 없어 {verb} 방법이 없습니다")
+
+    return errors
+
+
+def _validate_dialog_reward_choices(entries, tables):
+    """선택 보상 퀘스트의 완료 선택지가 보상 번호를 들고 있는가.
+
+    대화에는 보상 번호를 실어 보낼 자리가 없다 — 선택지 자체가 그것을 정한다. 그래서
+    `choice_items` 가 있는 퀘스트는 완료 선택지를 보상마다 하나씩 두어야 한다.
+    빠뜨리면 서버가 번호 없는 완료를 거절하므로, 화면에는 보이는데 눌러도 아무 일도
+    일어나지 않는 선택지가 된다(실제로 세 노드가 이 상태였다).
+    """
+    errors = []
+
+    quests = {q['id']: q for q in (tables.get('Quest') or []) if isinstance(q, dict)} \
+        if tables else {}
+    if not quests:
+        return errors
+
+    for entry in entries:
+        if not isinstance(entry, dict):
             continue
 
-        if root not in offered_by_npc:
-            offered_by_npc[root] = offered_quests_from(root)
+        by_quest = defaultdict(list)
+        for i, choice in enumerate(entry.get('choices') or []):
+            if isinstance(choice, dict) and choice.get('action') == 'complete_quest':
+                by_quest[choice.get('param')].append((i, choice))
 
-        if quest.get('id') not in offered_by_npc[root]:
-            errors.append(
-                f"Quest: 퀘스트 {quest.get('id')} — 시작 NPC {start_npc} 의 대화(노드 {root} 에서 "
-                f"닿는 곳)에 accept_quest 선택지가 없어 받을 방법이 없습니다")
+        for quest_id, group in by_quest.items():
+            quest = quests.get(quest_id)
+            if quest is None:
+                continue   # 없는 퀘스트는 위에서 이미 보고했다
+
+            options = (quest.get('rewards') or {}).get('choice_items') or []
+            label = f"Dialog[id={entry.get('id')}]"
+
+            if not options:
+                for i, choice in group:
+                    if 'reward_choice' in choice:
+                        errors.append(
+                            f"{label} choices[{i}] — 퀘스트 {quest_id} 에는 선택 보상이 없는데 "
+                            f"reward_choice 가 적혀 있습니다")
+                continue
+
+            declared = {}
+            for i, choice in group:
+                if 'reward_choice' not in choice:
+                    errors.append(
+                        f"{label} choices[{i}] — 퀘스트 {quest_id} 는 선택 보상이 "
+                        f"{len(options)}개인데 reward_choice 가 없습니다. 번호 없는 완료는 "
+                        f"서버가 거절하므로 눌러도 아무 일도 일어나지 않습니다")
+                    continue
+
+                value = choice['reward_choice']
+                if not isinstance(value, int) or isinstance(value, bool) \
+                        or not 0 <= value < len(options):
+                    errors.append(
+                        f"{label} choices[{i}] — reward_choice 는 0 이상 {len(options) - 1} "
+                        f"이하여야 합니다 (현재: {value!r})")
+                elif value in declared:
+                    errors.append(
+                        f"{label} choices[{i}] — reward_choice {value} 가 "
+                        f"choices[{declared[value]}] 과 겹칩니다")
+                else:
+                    declared[value] = i
+
+            missing = [n for n in range(len(options)) if n not in declared]
+            if missing and len(declared) == len(group):
+                errors.append(
+                    f"{label} — 퀘스트 {quest_id} 의 보상 {missing} 을 고를 선택지가 없습니다. "
+                    f"선택 보상은 완료 선택지로만 고를 수 있으므로 보상마다 하나씩 필요합니다")
 
     return errors
 
@@ -809,6 +1071,7 @@ def _validate_dialogs(table_name, entries, tables):
                 f"플레이어가 대화를 닫을 방법이 없으니 조건 없는 선택지가 하나는 필요합니다")
 
     errors.extend(_validate_quests_are_obtainable(entries, tables))
+    errors.extend(_validate_dialog_reward_choices(entries, tables))
 
     # 대화가 걸린 NPC 의 시작 노드가 실제로 존재하는지도 함께 본다.
     npcs = tables.get('Npc') if tables else None
@@ -819,6 +1082,88 @@ def _validate_dialogs(table_name, entries, tables):
         if root and root not in node_ids:
             errors.append(
                 f"Npc[id={npc.get('id')}] — dialog_id {root} 에 해당하는 대화 노드가 없습니다")
+
+    return errors
+
+
+# 사전에 있어야 하는 문자열 필드는 이름으로 알아본다. 데이터에서 값이 문자열이면서
+# 이름이 _id 로 끝나는 것은 전부 로컬라이즈 키다(name_id / desc_id / text_id).
+def _collect_text_keys(value, out):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if isinstance(item, str) and key.endswith('_id') and item:
+                out.add(item)
+            else:
+                _collect_text_keys(item, out)
+    elif isinstance(value, list):
+        for item in value:
+            _collect_text_keys(item, out)
+
+
+# 스킬 이름은 사전을 거치지 않는다. 클라이언트가 `name_id` 에서 "_name" 을 떼어 그대로
+# 쓰기 때문에(InputHandler / GameInputManager), 이 표는 사전 키가 아니라 식별자에 가깝다.
+# 스킬을 화면에 제대로 된 이름으로 내보내기로 하면 이 예외부터 지운다.
+LOCALIZATION_EXEMPT_TABLES = ('Skill',)
+
+
+def validate_localization(tables, localization_dir):
+    """데이터가 가리키는 문구가 사전에 실제로 있는가.
+
+    `name_id` 는 "이 이름은 사전에서 찾아 쓴다"는 선언인데, 사전에 없으면 화면에 키 문자열이
+    그대로 나온다(`ResourceLoader.GetText` 는 없는 키를 키 그대로 돌려준다). 데이터도 코드도
+    멀쩡하니 아무 데서도 걸리지 않고, 게임을 켜서 눈으로 봐야만 보인다.
+
+    실제로 몬스터 10종 · 기본 아이템 5종 · 맵 6곳 · NPC 하나가 이 상태였다 — 스토리 작업으로
+    새로 만든 것만 번역이 채워져 있었다.
+    """
+    errors = []
+
+    if not os.path.isdir(localization_dir):
+        return errors   # 사전이 없는 프로젝트 구성이면 검사하지 않는다
+
+    dictionaries = {}
+    for name in sorted(os.listdir(localization_dir)):
+        if not name.endswith('.json'):
+            continue
+        path = os.path.join(localization_dir, name)
+        try:
+            with open(path, encoding='utf-8') as f:
+                data = json.load(f)
+        except Exception as e:
+            errors.append(f"Localization: {name} 를 읽지 못했습니다 ({e})")
+            continue
+        if not isinstance(data, dict):
+            errors.append(f"Localization: {name} 은 키-값 오브젝트여야 합니다")
+            continue
+        dictionaries[name] = data
+
+    if not dictionaries:
+        return errors
+
+    # 언어마다 키가 다르면 그 언어에서만 문구가 비는데, 개발 언어로 켜 보면 멀쩡해 보인다.
+    union = set()
+    for data in dictionaries.values():
+        union |= set(data)
+    for name, data in dictionaries.items():
+        missing = sorted(union - set(data))
+        if missing:
+            errors.append(
+                f"Localization: {name} 에 다른 언어에는 있는 키 {len(missing)}개가 없습니다 "
+                f"({', '.join(missing[:5])}{' …' if len(missing) > 5 else ''})")
+
+    used = set()
+    for table_name, entries in (tables or {}).items():
+        if table_name in LOCALIZATION_EXEMPT_TABLES:
+            continue
+        _collect_text_keys(entries, used)
+
+    for name, data in dictionaries.items():
+        missing = sorted(used - set(data))
+        if missing:
+            errors.append(
+                f"Localization: 데이터가 쓰는 문구 {len(missing)}개가 {name} 에 없습니다 "
+                f"— 화면에는 키가 그대로 나옵니다 "
+                f"({', '.join(missing[:5])}{' …' if len(missing) > 5 else ''})")
 
     return errors
 

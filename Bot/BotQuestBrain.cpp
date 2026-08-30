@@ -36,7 +36,6 @@ namespace bot
 		next_interact_at_ = 0.0;
 		next_dialog_at_ = 0.0;
 		next_gate_at_ = 0.0;
-		next_complete_at_ = 0.0;
 	}
 
 	bool BotQuestBrain::ApplyQuestInfo(int quest_id, int state, int stage,
@@ -146,7 +145,15 @@ namespace bot
 			if (data_index < 0 || data_index >= static_cast<int>(node->choices.size()))
 				continue;
 
-			const std::string& text_id = node->choices[data_index].text_id;
+			// 선택 보상이 있으면 완료 선택지가 보상마다 하나씩 있다. 이 봇이 받기로 한
+			// 보상을 주는 것만 고른다(아무거나 누르면 봇마다 같은 것만 받게 된다).
+			// 후보에는 그 선택지로 가는 길목(goto)도 섞여 있으므로 완료 선택지만 가린다.
+			const ScenarioChoice& candidate = node->choices[data_index];
+			if (goal_.reward_choice >= 0 && candidate.action == action &&
+				candidate.reward_choice != goal_.reward_choice)
+				continue;
+
+			const std::string& text_id = candidate.text_id;
 			for (int i = 0; i < static_cast<int>(dialog_choice_text_ids_.size()); ++i)
 			{
 				if (dialog_choice_text_ids_[i] != text_id)

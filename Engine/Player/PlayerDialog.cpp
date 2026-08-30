@@ -219,7 +219,10 @@ int PlayerDialog::applyAction(const gamedata::DialogChoice& choice, bool& out_fa
 	case DialogActionType::CompleteQuest:
 	{
 		auto* quests = game_object != nullptr ? game_object->GetComponent<PlayerQuest>() : nullptr;
-		if (quests == nullptr || !quests->CompleteQuest(choice.param))
+
+		// 선택 보상은 선택지 자체가 정한다. 보상마다 완료 선택지를 하나씩 두면
+		// "무엇을 받을지"가 대화 안에서 정해져, 번호를 따로 실어 보낼 필요가 없다.
+		if (quests == nullptr || !quests->CompleteQuest(choice.param, choice.reward_choice))
 		{
 			out_failed = true;
 			return 0;

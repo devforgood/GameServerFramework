@@ -128,6 +128,25 @@ QuestAcceptResult Quest::CanAccept(const IQuestOwner& owner) const
 			return QuestAcceptResult::PrerequisiteQuest;
 	}
 
+	// 갈림길이 다시 합쳐지는 자리. 어느 가지를 탔든 하나만 끝냈으면 된다 —
+	// completed_quest_ids 는 전부 만족해야 하므로 "둘 중 하나"를 적을 수 없다.
+	const auto& any_of = prerequisites.completed_any_quest_ids;
+	if (!any_of.empty())
+	{
+		bool satisfied = false;
+		for (int required : any_of)
+		{
+			if (owner.IsQuestCompleted(required))
+			{
+				satisfied = true;
+				break;
+			}
+		}
+
+		if (!satisfied)
+			return QuestAcceptResult::PrerequisiteQuest;
+	}
+
 	// 분기 퀘스트: 반대편 가지를 이미 골랐으면 이쪽은 받을 수 없다.
 	for (int blocked : prerequisites.blocked_quest_ids)
 	{

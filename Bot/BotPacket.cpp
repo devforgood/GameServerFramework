@@ -144,12 +144,4 @@ namespace bot::packet
 			select.Union(), message_id);
 	}
 
-	Frame QuestComplete(int message_id, int quest_id, int reward_choice)
-	{
-		flatbuffers::FlatBufferBuilder builder(128);
-		auto complete = syncnet::CreateQuestComplete(builder, quest_id, reward_choice);
-
-		return FinishFrame(builder, syncnet::GameMessages::GameMessages_QuestComplete,
-			complete.Union(), message_id);
-	}
 }

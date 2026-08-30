@@ -19,6 +19,7 @@
     "chain_step": 1,
     "prerequisites": {
       "completed_quest_ids": [],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -120,6 +121,7 @@
       "completed_quest_ids": [
         1001
       ],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -191,6 +193,7 @@
     "chain_step": 0,
     "prerequisites": {
       "completed_quest_ids": [],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -235,7 +238,7 @@
     "category": "kill",
     "name_id": "quest_field_cleanup_name",
     "desc_id": "quest_field_cleanup_desc",
-    "level": 2,
+    "level": 1,
     "min_level": 1,
     "max_level": 0,
     "priority": 30,
@@ -249,6 +252,7 @@
     "chain_step": 0,
     "prerequisites": {
       "completed_quest_ids": [],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -308,6 +312,7 @@
     "chain_step": 0,
     "prerequisites": {
       "completed_quest_ids": [],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -320,9 +325,9 @@
         "objectives": [
           {
             "type": "reach",
-            "target_id": 2,
+            "target_id": 14,
             "count": 1,
-            "desc_id": "quest_first_steps_obj_reach_forest"
+            "desc_id": "quest_first_steps_obj_reach_windgap"
           },
           {
             "type": "level",
@@ -372,6 +377,7 @@
     "chain_step": 0,
     "prerequisites": {
       "completed_quest_ids": [],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -440,6 +446,7 @@
       "completed_quest_ids": [
         1003
       ],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -500,6 +507,7 @@
       "completed_quest_ids": [
         1002
       ],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -573,6 +581,7 @@
     "disabled": true,
     "prerequisites": {
       "completed_quest_ids": [],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -626,6 +635,7 @@
     "chain_step": 1,
     "prerequisites": {
       "completed_quest_ids": [],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -712,6 +722,7 @@
       "completed_quest_ids": [
         11001
       ],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [
         11009
       ],
@@ -800,6 +811,7 @@
       "completed_quest_ids": [
         11001
       ],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [
         11002
       ],
@@ -874,6 +886,10 @@
     "prerequisites": {
       "completed_quest_ids": [
         11001
+      ],
+      "completed_any_quest_ids": [
+        11002,
+        11009
       ],
       "blocked_quest_ids": [],
       "item_ids": [],
@@ -958,6 +974,7 @@
       "completed_quest_ids": [
         11003
       ],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -1044,6 +1061,7 @@
       "completed_quest_ids": [
         11004
       ],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -1123,6 +1141,7 @@
       "completed_quest_ids": [
         11005
       ],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -1213,6 +1232,7 @@
       "completed_quest_ids": [
         11006
       ],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []
@@ -1299,6 +1319,7 @@
       "completed_quest_ids": [
         11007
       ],
+      "completed_any_quest_ids": [],
       "blocked_quest_ids": [],
       "item_ids": [],
       "skill_ids": []

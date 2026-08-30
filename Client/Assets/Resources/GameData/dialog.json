@@ -17,6 +17,8 @@
     "text_id": "dlg_elder_goblin_intro",
     "choices": [
       { "text_id": "dlg_elder_accept_goblin", "action": "accept_quest", "param": 1001, "next_id": 0, "show_if": { "quest_id": 1001, "state": "acceptable" } },
+      { "text_id": "dlg_elder_report_goblin_sword", "action": "complete_quest", "param": 1001, "next_id": 0, "reward_choice": 0, "show_if": { "quest_id": 1001, "state": "ready_to_complete" } },
+      { "text_id": "dlg_elder_report_goblin_shield", "action": "complete_quest", "param": 1001, "next_id": 0, "reward_choice": 1, "show_if": { "quest_id": 1001, "state": "ready_to_complete" } },
       { "text_id": "dlg_elder_accept_chief", "action": "accept_quest", "param": 1002, "next_id": 0, "show_if": { "quest_id": 1002, "state": "acceptable" } },
       { "text_id": "dlg_elder_report_chief", "action": "complete_quest", "param": 1002, "next_id": 0, "show_if": { "quest_id": 1002, "state": "ready_to_complete" } },
       { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3001 },
@@ -109,7 +111,8 @@
     "text_id": "dlg_rinne_tally",
     "choices": [
       { "text_id": "dlg_rinne_accept_tally", "action": "accept_quest", "param": 11003, "next_id": 0, "show_if": { "quest_id": 11003, "state": "acceptable" } },
-      { "text_id": "dlg_rinne_report_tally", "action": "complete_quest", "param": 11003, "next_id": 0, "show_if": { "quest_id": 11003, "state": "ready_to_complete" } },
+      { "text_id": "dlg_rinne_report_tally_sword", "action": "complete_quest", "param": 11003, "next_id": 0, "reward_choice": 0, "show_if": { "quest_id": 11003, "state": "ready_to_complete" } },
+      { "text_id": "dlg_rinne_report_tally_shield", "action": "complete_quest", "param": 11003, "next_id": 0, "reward_choice": 1, "show_if": { "quest_id": 11003, "state": "ready_to_complete" } },
       { "text_id": "dlg_rinne_accept_verdant", "action": "accept_quest", "param": 11004, "next_id": 0, "show_if": { "quest_id": 11004, "state": "acceptable" } },
       { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3201 }
     ]
@@ -139,7 +142,8 @@
     "text_id": "dlg_aisha_greet",
     "choices": [
       { "text_id": "dlg_aisha_report_logbook", "action": "complete_quest", "param": 11005, "next_id": 0, "show_if": { "quest_id": 11005, "state": "ready_to_complete" } },
-      { "text_id": "dlg_aisha_report_mural", "action": "complete_quest", "param": 11008, "next_id": 0, "show_if": { "quest_id": 11008, "state": "ready_to_complete" } },
+      { "text_id": "dlg_aisha_report_mural_sword", "action": "complete_quest", "param": 11008, "next_id": 0, "reward_choice": 0, "show_if": { "quest_id": 11008, "state": "ready_to_complete" } },
+      { "text_id": "dlg_aisha_report_mural_shield", "action": "complete_quest", "param": 11008, "next_id": 0, "reward_choice": 1, "show_if": { "quest_id": 11008, "state": "ready_to_complete" } },
       { "text_id": "dlg_aisha_ask_ruins", "action": "goto", "param": 0, "next_id": 3402, "show_if": { "quest_id": 11005, "state": "completed" } },
       { "text_id": "dlg_common_bye", "action": "close", "param": 0, "next_id": 0 }
     ]
@@ -150,7 +154,8 @@
     "text_id": "dlg_aisha_ruins",
     "choices": [
       { "text_id": "dlg_aisha_accept_ruins", "action": "accept_quest", "param": 11006, "next_id": 0, "show_if": { "quest_id": 11006, "state": "acceptable" } },
-      { "text_id": "dlg_aisha_report_ruins", "action": "complete_quest", "param": 11006, "next_id": 0, "show_if": { "quest_id": 11006, "state": "ready_to_complete" } },
+      { "text_id": "dlg_aisha_report_ruins_potion", "action": "complete_quest", "param": 11006, "next_id": 0, "reward_choice": 0, "show_if": { "quest_id": 11006, "state": "ready_to_complete" } },
+      { "text_id": "dlg_aisha_report_ruins_elixir", "action": "complete_quest", "param": 11006, "next_id": 0, "reward_choice": 1, "show_if": { "quest_id": 11006, "state": "ready_to_complete" } },
       { "text_id": "dlg_aisha_accept_vanished", "action": "accept_quest", "param": 11007, "next_id": 0, "show_if": { "quest_id": 11007, "state": "acceptable" } },
       { "text_id": "dlg_common_back", "action": "goto", "param": 0, "next_id": 3401 }
     ]

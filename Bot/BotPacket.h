@@ -61,6 +61,4 @@ namespace bot::packet
 	// choice_index 는 서버가 보낸(조건에 걸러진) 목록에서의 번호이고, 음수면 창을 닫는다.
 	Frame DialogSelect(int message_id, int node_id, int choice_index);
 
-	// 완료 접수. reward_choice 는 선택 보상의 0-based 번호이며, 선택 보상이 없으면 -1.
-	Frame QuestComplete(int message_id, int quest_id, int reward_choice);
 }

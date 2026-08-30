@@ -162,16 +162,11 @@ namespace bot
 		bool CanSendGate(double now) const { return now >= next_gate_at_; }
 		void NoteGateSent(double now) { next_gate_at_ = now + kGateIntervalSeconds; }
 
-		// 완료 요청(선택 보상)은 한 번만 보내고 응답을 기다린다.
-		bool CanSendComplete(double now) const { return now >= next_complete_at_; }
-		void NoteCompleteSent(double now) { next_complete_at_ = now + kCompleteIntervalSeconds; }
-
 	private:
 		// 서버 게이트 쿨타임이 1초다. 그보다 촘촘히 보내면 거절만 쌓인다.
 		static constexpr double kGateIntervalSeconds = 1.5;
 		static constexpr double kInteractIntervalSeconds = 1.0;
 		static constexpr double kDialogIntervalSeconds = 0.4;
-		static constexpr double kCompleteIntervalSeconds = 2.0;
 
 		// 맵에 들어온 뒤 도달 통지를 기다려 주는 시간. 이 안에서는 다시 나가지 않는다.
 		static constexpr double kAreaCreditGraceSeconds = 3.0;
@@ -270,6 +265,5 @@ namespace bot
 		double next_interact_at_ = 0.0;
 		double next_dialog_at_ = 0.0;
 		double next_gate_at_ = 0.0;
-		double next_complete_at_ = 0.0;
 	};
 }

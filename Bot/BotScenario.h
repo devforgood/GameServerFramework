@@ -89,6 +89,10 @@ namespace bot
 		std::string action;   // close | goto | accept_quest | complete_quest
 		int param = 0;
 		int next_id = 0;
+
+		// 선택 보상 퀘스트의 완료 선택지가 어느 보상을 주는가(그 외에는 -1).
+		// 대화에는 번호를 실을 자리가 없어 선택지 자체가 보상을 정한다.
+		int reward_choice = -1;
 	};
 
 	struct ScenarioDialogNode

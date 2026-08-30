@@ -27,10 +27,6 @@ namespace bot
 		// choice_index 는 '서버가 보낸 목록'에서의 번호다. 음수면 창을 닫는다.
 		virtual void SelectDialog(int node_id, int choice_index) = 0;
 
-		// 선택 보상이 있는 퀘스트의 완료. 대화로는 무엇을 고를지 전할 수 없어 서버가
-		// 거절하므로, 클라이언트와 같이 번호를 실어 직접 보낸다.
-		virtual void CompleteQuest(int quest_id, int reward_choice) = 0;
-
 		// 게이트 진입. 목적지는 게이트가 정한다(요청에 담지 않는다).
 		virtual void EnterGate(int gate_id) = 0;
 	};

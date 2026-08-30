@@ -303,6 +303,7 @@ namespace bot
 					choice.action = ReadString(choice_json, "action");
 					choice.param = ReadInt(choice_json, "param");
 					choice.next_id = ReadInt(choice_json, "next_id");
+					choice.reward_choice = ReadInt(choice_json, "reward_choice", -1);
 					node.choices.push_back(std::move(choice));
 				}
 			}

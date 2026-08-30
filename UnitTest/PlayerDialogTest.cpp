@@ -25,8 +25,11 @@
 //
 // 조건(show_if)이 걸린 노드. 조건이 어긋난 선택지는 아예 내보내지 않으므로 클라가
 // 세는 번호와 데이터의 번호가 다르다:
-//   3002 고블린 이야기  → [0] 1001 수락, [1] 1002 수락, [2] 1002 완료,
-//                         [3] 3001 로 되돌아가기(조건 없음), [4] 닫기
+//   3002 고블린 이야기  → [0] 1001 수락, [1] 1001 완료(검), [2] 1001 완료(방패),
+//                         [3] 1002 수락, [4] 1002 완료,
+//                         [5] 3001 로 되돌아가기(조건 없음), [6] 닫기
+//                         1001 은 선택 보상이 둘이라 완료 선택지도 둘이다 — 어느 것을
+//                         고르는지는 선택지가 정한다(대화에는 번호를 실을 자리가 없다).
 //   3003 상인 이야기    → [0] 1006 수락(acceptable), [1] 1006 완료(ready_to_complete),
 //                         [2] 3001 로 되돌아가기(조건 없음)
 //   3004 마렌 스토리    → [0] 11001 수락(acceptable), [1] 11007 완료(ready_to_complete),
@@ -56,6 +59,8 @@ constexpr int kMarenStory = 3004;
 constexpr int kRinneRoot = 3201;
 
 constexpr int kGoblinHunt = 1001;
+constexpr int kBasicSword = 4;    // 1001 의 선택 보상 0번
+constexpr int kBasicShield = 5;   // 1001 의 선택 보상 1번
 constexpr int kEscortMerchant = 1006;
 
 constexpr int kMissingShips = 11001;   // 1막 1번. min_level 1, 선행 없음
@@ -333,6 +338,82 @@ TEST_F(PlayerDialogTest, CompleteQuestChoiceRequiresReadyQuest)
 	EXPECT_EQ(1, player.dialog->ResolveVisibleChoice(0));
 	EXPECT_EQ(DialogResult::Closed, player.dialog->Select(kMerchantTalk, 0));
 	EXPECT_TRUE(player.quests->IsCompleted(kEscortMerchant));
+}
+
+TEST_F(PlayerDialogTest, RewardChoiceIsDecidedByWhichCompleteChoiceIsTaken)
+{
+	// 선택 보상은 대화로 번호를 전할 자리가 없어서, 보상마다 완료 선택지를 하나씩 둔다.
+	// 이 짝이 어긋나면 완료가 조용히 거절되어 "눌러도 아무 일도 안 일어나는" 선택지가 된다.
+	TalkingPlayer player;
+
+	ASSERT_TRUE(player.quests->GmForceAccept(kGoblinHunt));
+	ASSERT_TRUE(player.quests->GmSetProgress(kGoblinHunt, 3, 1));
+	ASSERT_EQ(QuestState::ReadyToComplete, player.quests->GetState(kGoblinHunt));
+
+	ASSERT_TRUE(player.dialog->Open(kElderNpc));
+	ASSERT_EQ(DialogResult::Ok, player.dialog->Select(kElderRoot, 0)); // 3002
+
+	// 보상 번호는 손으로 적지 않는다 — 데이터에서 방패(1번)를 주는 선택지를 찾아 쓴다.
+	const gamedata::Dialog* node = player.dialog->GetCurrentNode();
+	ASSERT_NE(nullptr, node);
+
+	int shield_choice = -1;
+	for (int i = 0; i < static_cast<int>(node->choices.size()); ++i)
+	{
+		const auto& choice = node->choices[i];
+		if (choice.action == "complete_quest" && choice.param == kGoblinHunt &&
+			choice.reward_choice == 1)
+			shield_choice = i;
+	}
+	ASSERT_GE(shield_choice, 0) << "1001 의 방패 보상을 고를 완료 선택지가 없습니다";
+
+	int visible = -1;
+	for (int i = 0, seen = 0; i < static_cast<int>(node->choices.size()); ++i)
+	{
+		if (!player.dialog->IsChoiceVisible(i))
+			continue;
+		if (i == shield_choice)
+			visible = seen;
+		++seen;
+	}
+	ASSERT_GE(visible, 0) << "방패 선택지가 걸러져 나가지 않았습니다";
+
+	EXPECT_EQ(DialogResult::Closed, player.dialog->Select(kGoblinTalk, visible));
+	EXPECT_TRUE(player.quests->IsCompleted(kGoblinHunt));
+
+	auto* inventory = player.go.GetComponent<PlayerItem>();
+	ASSERT_NE(nullptr, inventory);
+	EXPECT_EQ(1, inventory->GetCount(kBasicShield));
+	EXPECT_EQ(0, inventory->GetCount(kBasicSword)) << "고르지 않은 보상까지 들어왔습니다";
+}
+
+TEST_F(PlayerDialogTest, EveryChoiceRewardQuestCanBeCompletedThroughItsDialog)
+{
+	// 선택 보상 퀘스트는 완료 선택지가 보상마다 하나씩 있어야 한다. 하나라도 빠지면
+	// 그 보상은 영영 고를 수 없고, 번호가 아예 없으면 완료 자체가 거절된다.
+	for (const auto& [quest_id, quest] : ResourceLoader::Instance().GetQuests())
+	{
+		if (quest->disabled || quest->auto_complete || quest->rewards.choice_items.empty())
+			continue;
+
+		std::vector<int> offered;
+		for (const auto& [node_id, node] : ResourceLoader::Instance().GetDialogs())
+		{
+			for (const auto& choice : node->choices)
+			{
+				if (choice.action == "complete_quest" && choice.param == quest_id)
+					offered.push_back(choice.reward_choice);
+			}
+		}
+
+		std::sort(offered.begin(), offered.end());
+		std::vector<int> expected(quest->rewards.choice_items.size());
+		for (int i = 0; i < static_cast<int>(expected.size()); ++i)
+			expected[i] = i;
+
+		EXPECT_EQ(expected, offered)
+			<< "퀘스트 " << quest_id << " 의 선택 보상마다 완료 선택지가 하나씩 있어야 합니다";
+	}
 }
 
 // ============================================================

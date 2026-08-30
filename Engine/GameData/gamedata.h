@@ -114,6 +114,7 @@ namespace gamedata
     struct QuestPrerequisites
     {
         std::vector<int> blocked_quest_ids;
+        std::vector<int> completed_any_quest_ids;
         std::vector<int> completed_quest_ids;
         std::vector<int> item_ids;
         std::vector<int> skill_ids;
@@ -236,6 +237,7 @@ namespace gamedata
         std::string action;
         int next_id = 0;
         int param = 0;
+        int reward_choice = 0;
         DialogChoiceShowIf show_if;
         std::string text_id;
     };
@@ -602,6 +604,7 @@ namespace gamedata
     inline void from_json(const nlohmann::json& j, QuestPrerequisites& o)
     {
         if (j.contains("blocked_quest_ids") && !j.at("blocked_quest_ids").is_null()) j.at("blocked_quest_ids").get_to(o.blocked_quest_ids);
+        if (j.contains("completed_any_quest_ids") && !j.at("completed_any_quest_ids").is_null()) j.at("completed_any_quest_ids").get_to(o.completed_any_quest_ids);
         if (j.contains("completed_quest_ids") && !j.at("completed_quest_ids").is_null()) j.at("completed_quest_ids").get_to(o.completed_quest_ids);
         if (j.contains("item_ids") && !j.at("item_ids").is_null()) j.at("item_ids").get_to(o.item_ids);
         if (j.contains("skill_ids") && !j.at("skill_ids").is_null()) j.at("skill_ids").get_to(o.skill_ids);
@@ -724,6 +727,7 @@ namespace gamedata
         if (j.contains("action") && !j.at("action").is_null()) j.at("action").get_to(o.action);
         if (j.contains("next_id") && !j.at("next_id").is_null()) j.at("next_id").get_to(o.next_id);
         if (j.contains("param") && !j.at("param").is_null()) j.at("param").get_to(o.param);
+        if (j.contains("reward_choice") && !j.at("reward_choice").is_null()) j.at("reward_choice").get_to(o.reward_choice);
         if (j.contains("show_if") && !j.at("show_if").is_null()) j.at("show_if").get_to(o.show_if);
         if (j.contains("text_id") && !j.at("text_id").is_null()) j.at("text_id").get_to(o.text_id);
     }

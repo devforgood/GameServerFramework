@@ -85,7 +85,6 @@ namespace bot
 		void Attack(int target_actor_id, const Vec3& target_pos) override;
 		void Interact(int target_id) override;
 		void SelectDialog(int node_id, int choice_index) override;
-		void CompleteQuest(int quest_id, int reward_choice) override;
 		void EnterGate(int gate_id) override;
 
 	private:

@@ -254,14 +254,6 @@ namespace bot
 		SendThrottled(packet::DialogSelect(NextMessageId(), node_id, choice_index));
 	}
 
-	void BotClient::CompleteQuest(int quest_id, int reward_choice)
-	{
-		if (!blackboard_.has_character)
-			return;
-
-		SendThrottled(packet::QuestComplete(NextMessageId(), quest_id, reward_choice));
-	}
-
 	void BotClient::EnterGate(int gate_id)
 	{
 		if (!blackboard_.has_character)

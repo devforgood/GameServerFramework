@@ -71,6 +71,7 @@ namespace Gamedata
     public class QuestPrerequisites
     {
         public System.Collections.Generic.List<int> blocked_quest_ids;
+        public System.Collections.Generic.List<int> completed_any_quest_ids;
         public System.Collections.Generic.List<int> completed_quest_ids;
         public System.Collections.Generic.List<int> item_ids;
         public System.Collections.Generic.List<int> skill_ids;
@@ -204,6 +205,7 @@ namespace Gamedata
         public string action;
         public int next_id;
         public int param;
+        public int reward_choice;
         public DialogChoiceShowIf show_if;
         public string text_id;
     }

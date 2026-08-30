@@ -47,6 +47,26 @@ constexpr int kGoblinChief = 1002;     // MainQuest, 선행 1001
 constexpr int kWolfPelt = 1003;        // SubQuest, 수집
 constexpr int kFieldCleanup = 1004;    // SubQuest, or 목표 + auto_complete
 constexpr int kFirstSteps = 1005;      // SubQuest, reach + level + auto_complete
+
+// 1005 가 어느 맵으로 가라고 하는지는 데이터가 정한다. 게이트의 요구 레벨이 바뀌면
+// 목표 맵도 따라 옮겨지므로(레벨 1 퀘스트가 레벨 5 게이트 뒤를 가리킬 수는 없다),
+// 여기에 번호를 적어 두면 그때마다 테스트가 깨진다.
+int FirstStepsTargetMap()
+{
+	const gamedata::Quest* quest = ResourceLoader::Instance().GetQuest(kFirstSteps);
+	if (quest == nullptr)
+		return 0;
+
+	for (const auto& stage : quest->stages)
+	{
+		for (const auto& objective : stage.objectives)
+		{
+			if (objective.type == "reach")
+				return objective.target_id;
+		}
+	}
+	return 0;
+}
 constexpr int kEscortMerchant = 1006;  // SubQuest, 1스테이지 protect(20초) / 2스테이지 escort
 constexpr int kDailyWolf = 2001;       // RepeatedQuest
 constexpr int kAncientLetter = 3001;   // LimitedTimeQuest
@@ -366,7 +386,7 @@ TEST_F(PlayerQuestTest, Accept_BranchQuestBlocksItsOppositeSide)
 
 TEST_F(PlayerQuestTest, Accept_EitherBranchLeadsToTheNextChainStep)
 {
-	// 합류: 다음 칸의 선행은 두 가지의 공통 조상(11001)이다. 그러지 않으면 한쪽 가지를
+	// 합류: 어느 가지를 탔든 다음 칸으로 이어져야 한다. 그러지 않으면 한쪽 가지를
 	// 고른 플레이어는 메인 스토리가 거기서 끊긴다.
 	PlayerQuest through_a;
 	through_a.Load(MakeExistingPlayerData(1005, std::vector<VOQuestActive>{},
@@ -377,6 +397,17 @@ TEST_F(PlayerQuestTest, Accept_EitherBranchLeadsToTheNextChainStep)
 	through_b.Load(MakeExistingPlayerData(1005, std::vector<VOQuestActive>{},
 		FlagsWithCompleted({ kMissingShips, kGoblinPorters })));
 	EXPECT_EQ(through_b.AcceptQuest(kSmugglerTally), QuestAcceptResult::Ok);
+}
+
+TEST_F(PlayerQuestTest, Accept_SkippingTheBranchAltogetherIsRejected)
+{
+	// 합류 지점은 "둘 중 하나"를 요구한다(completed_any_quest_ids). 공통 조상만 요구하면
+	// 두 가지를 통째로 건너뛰고 다음 칸을 받을 수 있다 — 대화가 막고 있을 뿐, 패킷을
+	// 직접 보내면 통과한다.
+	PlayerQuest skipped;
+	skipped.Load(MakeExistingPlayerData(1005, std::vector<VOQuestActive>{},
+		FlagsWithCompleted({ kMissingShips })));
+	EXPECT_EQ(skipped.AcceptQuest(kSmugglerTally), QuestAcceptResult::PrerequisiteQuest);
 }
 
 TEST_F(PlayerQuestTest, Accept_StartsAtStageOne)
@@ -926,11 +957,14 @@ TEST_F(PlayerQuestTest, Event_AreaEnteredAdvancesReachObjective)
 	quest->Load(MakeNewPlayerData(1001, 1));
 	ASSERT_EQ(quest->AcceptQuest(kFirstSteps), QuestAcceptResult::Ok);
 
+	const int target_map = FirstStepsTargetMap();
+	ASSERT_GT(target_map, 0);
+
 	auto* broker = go.GetComponent<PlayerEventBroker>();
-	broker->publish(EventAreaEntered{ 1001, 1 });  // 다른 맵
+	broker->publish(EventAreaEntered{ 1001, target_map + 1000 });  // 다른 맵
 	EXPECT_EQ(quest->GetProgress(kFirstSteps, 0), 0);
 
-	broker->publish(EventAreaEntered{ 1001, 2 });  // 목표 맵(Dark Forest)
+	broker->publish(EventAreaEntered{ 1001, target_map });
 	EXPECT_EQ(quest->GetProgress(kFirstSteps, 0), 1);
 }
 
@@ -942,7 +976,7 @@ TEST_F(PlayerQuestTest, Event_LevelUpCompletesAutoCompleteQuest)
 	ASSERT_EQ(quest->AcceptQuest(kFirstSteps), QuestAcceptResult::Ok);
 
 	auto* broker = go.GetComponent<PlayerEventBroker>();
-	broker->publish(EventAreaEntered{ 1001, 2 });
+	broker->publish(EventAreaEntered{ 1001, FirstStepsTargetMap() });
 	EXPECT_FALSE(quest->IsCompleted(kFirstSteps));
 
 	broker->publish(EventLevelUp{ 1001, 3 });

@@ -93,13 +93,11 @@ namespace
 		struct MoveCommand { Vec3 pos; };
 		struct AttackCommand { int target_id; Vec3 pos; };
 		struct DialogCommand { int node_id; int choice_index; };
-		struct CompleteCommand { int quest_id; int reward_choice; };
 
 		std::vector<MoveCommand> moves;
 		std::vector<AttackCommand> attacks;
 		std::vector<int> interacts;
 		std::vector<DialogCommand> dialogs;
-		std::vector<CompleteCommand> completes;
 		std::vector<int> gates;
 
 		void MoveTo(const Vec3& pos) override { moves.push_back({ pos }); }
@@ -111,10 +109,6 @@ namespace
 		void SelectDialog(int node_id, int choice_index) override
 		{
 			dialogs.push_back({ node_id, choice_index });
-		}
-		void CompleteQuest(int quest_id, int reward_choice) override
-		{
-			completes.push_back({ quest_id, reward_choice });
 		}
 		void EnterGate(int gate_id) override { gates.push_back(gate_id); }
 	};
@@ -1016,6 +1010,64 @@ TEST(BotQuestBrainTest, TakesTheOpenRouteWhenTheOtherBranchesRouteIsClosed)
 
 	ASSERT_GE(picked, 0);
 	EXPECT_EQ(greet->choices[picked].next_id, 3203);
+}
+
+TEST(BotQuestBrainTest, WalksToTheCompleteChoiceThatGivesItsOwnReward)
+{
+	// 선택 보상은 완료 선택지가 정한다. 봇은 자기 몫(봇 번호 % 보상 수)을 주는 선택지를
+	// 골라야 하는데, 그 선택지로 가는 길목(goto)까지 같이 걸러 버리면 아예 닿지 못한다.
+	const BotScenario* scenario = SharedScenario();
+	ASSERT_NE(scenario, nullptr);
+
+	const ScenarioQuest* tally = scenario->FindQuest(11003);
+	ASSERT_NE(tally, nullptr);
+	ASSERT_GT(tally->reward_choice_count, 1) << "11003 은 선택 보상이 둘 이상이어야 한다";
+
+	// 가지 A(11002)를 타고 11003 까지 온 봇.
+	int branch_index = -1;
+	for (int candidate = 0; candidate < 16 && branch_index < 0; ++candidate)
+	{
+		const std::vector<int> plan = scenario->BuildMainQuestPlan(candidate);
+		if (std::find(plan.begin(), plan.end(), 11002) != plan.end())
+			branch_index = candidate;
+	}
+	ASSERT_GE(branch_index, 0);
+
+	BotQuestBrain brain;
+	brain.Configure(scenario, branch_index);
+	brain.SetMapId(14);
+	brain.SetLevel(tally->min_level);
+	brain.ApplyQuestCompleted(11001);
+	brain.ApplyQuestCompleted(11002);
+
+	const int progress[3] = { 0, 0, 0 };
+	brain.ApplyQuestInfo(11003, BotQuestBrain::kStateReadyToComplete, 3, progress, 3);
+	brain.Update(1.0);
+
+	ASSERT_EQ(brain.Goal().quest_id, 11003);
+	ASSERT_TRUE(brain.Goal().dialog_complete);
+	const int wanted = brain.Goal().reward_choice;
+	ASSERT_GE(wanted, 0) << "선택 보상 퀘스트인데 받을 보상을 정하지 않았다";
+
+	// 리네의 첫 노드에서는 3203 으로 가는 길(goto)만 있다. 그것을 눌러야 완료 선택지가 나온다.
+	brain.OnDialogOpened(2004, 3201, VisibleTextIds(*scenario, 3201, {}));
+	const int hop = brain.ChooseDialogChoice();
+	ASSERT_GE(hop, 0) << "완료 선택지로 가는 길목을 눌러야 하는데 아무것도 고르지 않았다";
+
+	const ScenarioDialogNode* greet = scenario->FindDialog(3201);
+	ASSERT_NE(greet, nullptr);
+	EXPECT_EQ(greet->choices[hop].next_id, 3203);
+
+	// 3203 에서는 자기 몫의 보상을 주는 완료 선택지를 고른다.
+	brain.OnDialogOpened(2004, 3203, VisibleTextIds(*scenario, 3203, {}));
+	const int choice = brain.ChooseDialogChoice();
+	ASSERT_GE(choice, 0) << "완료 선택지를 고르지 못했다";
+
+	const ScenarioDialogNode* node = scenario->FindDialog(3203);
+	ASSERT_NE(node, nullptr);
+	EXPECT_EQ(node->choices[choice].action, "complete_quest");
+	EXPECT_EQ(node->choices[choice].param, 11003);
+	EXPECT_EQ(node->choices[choice].reward_choice, wanted);
 }
 
 TEST(BotQuestBrainTest, ClosesDialogThatHasNothingToDoForTheCurrentGoal)

@@ -37,10 +37,27 @@ NPC 의 **시작 노드**는 `npc.json` 의 `dialog_id` 가 가리킨다. 0 이�
 | `close` | 대화를 끝낸다 | — |
 | `goto` | `next_id` 노드로 넘어간다 | `next_id` |
 | `accept_quest` | `param` 퀘스트를 수락한다 | `param`, (`next_id`) |
-| `complete_quest` | `param` 퀘스트를 완료 접수한다 | `param`, (`next_id`) |
+| `complete_quest` | `param` 퀘스트를 완료 접수한다 | `param`, `reward_choice`, (`next_id`) |
 
 **대화로 받는다고 조건이 면제되지 않는다.** `accept_quest` 는 평소와 같은
 `Quest::CanAccept` 를 타고, `complete_quest` 는 완료 대기(ReadyToComplete)가 아니면 실패한다.
+
+### 선택 보상 (`reward_choice`)
+
+대화 응답에는 "어느 보상을 받겠다"를 실을 자리가 없다 — 서버가 받는 것은 선택지 번호뿐이다.
+그래서 **선택지 자체가 보상을 정한다**: `choice_items` 가 있는 퀘스트는 완료 선택지를
+보상마다 하나씩 두고, 각각에 0-based `reward_choice` 를 적는다.
+
+```json
+{ "text_id": "dlg_elder_report_goblin_sword",  "action": "complete_quest", "param": 1001,
+  "reward_choice": 0, "show_if": { "quest_id": 1001, "state": "ready_to_complete" } },
+{ "text_id": "dlg_elder_report_goblin_shield", "action": "complete_quest", "param": 1001,
+  "reward_choice": 1, "show_if": { "quest_id": 1001, "state": "ready_to_complete" } }
+```
+
+번호가 없으면 서버가 완료를 거절한다. 그래도 선택지는 대화창에 그대로 보이므로 증상은
+"눌러도 아무 일도 일어나지 않는다"가 된다 — 실제로 세 노드(3203 · 3401 · 3402)가 이
+상태였고, 메인 체인 10 의 1001 은 아예 완료 선택지가 없었다. 둘 다 검증이 막는다.
 
 ## 조건부 선택지 (`show_if`)
 
@@ -121,6 +138,8 @@ NPC 의 **시작 노드**는 `npc.json` 의 `dialog_id` 가 가리킨다. 0 이�
   닫힌다"로만 나타나서 단서가 남지 않는다)
 - `close` 에 `next_id` 를 적지 않았는가
 - `accept_quest`/`complete_quest` 의 `param` 이 Quest 테이블에 있는가
+- **선택 보상 퀘스트의 완료 선택지가 보상마다 하나씩 있는가** — `reward_choice` 가 있고,
+  범위 안이고, 겹치지 않고, 빠진 번호가 없는가. 선택 보상이 없는 퀘스트에 적혀 있지는 않은가
 - 선택지가 비어 있지 않은가 (없으면 플레이어가 대화를 닫을 방법이 없다)
 - 한 노드 안에서 `text_id` 가 겹치지 않는가 (같은 대사가 한 화면에 두 번 뜨는 실수이기도
   하고, 받은 선택지를 데이터의 어느 선택지인지 되짚을 단서가 `text_id` 뿐이다 — 프로토콜은
@@ -131,10 +150,12 @@ NPC 의 **시작 노드**는 `npc.json` 의 `dialog_id` 가 가리킨다. 0 이�
 - 노드에 조건 없는 선택지가 하나는 있는가
 - 노드의 선택지가 32개 이하인가 (`PlayerDialog` 가 비트마스크로 들고 있다)
 - NPC 의 `dialog_id` 가 실제 노드를 가리키는가
-- **`start_npc_id` 가 있는 퀘스트를 그 NPC 에게서 실제로 받을 수 있는가** — 시작 노드에서
-  `goto` 로 닿는 범위 안에 그 퀘스트의 `accept_quest` 선택지가 있어야 한다. 없으면 데이터는
-  멀쩡해 보이는데(퀘스트도 NPC 도 있다) 게임에서는 "말을 걸어도 아무 일도 안 일어난다"가
-  된다. 실제로 활성 퀘스트 여섯 개가 이 상태였다
+- **`start_npc_id` / `end_npc_id` 가 있는 퀘스트를 그 NPC 에게서 실제로 받고 끝낼 수
+  있는가** — 시작 노드에서 `goto` 로 닿는 범위 안에 그 퀘스트의 `accept_quest` /
+  `complete_quest` 선택지가 있어야 한다(자동 완료 퀘스트는 완료 쪽을 보지 않는다).
+  없으면 데이터는 멀쩡해 보이는데(퀘스트도 NPC 도 있다) 게임에서는 "말을 걸어도 아무 일도
+  안 일어난다"가 된다. 실제로 활성 퀘스트 여섯 개가 수락 쪽에서, 메인 체인 10 의 첫 칸인
+  1001 이 완료 쪽에서 이 상태였다
 
 ## 아직 없는 것
 

@@ -2,8 +2,14 @@ import json
 import os
 import sys
 
+# 검증 메시지는 한국어이고 —, · 같은 글자를 쓴다. 콘솔 기본 인코딩(cp949)으로는 이것이
+# UnicodeEncodeError 로 터져, 정작 오류를 알려야 할 때 도구가 죽는다.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 from schema_infer import build_structs
-from validate_data import validate_table
+from validate_data import validate_table, validate_localization
 from generate_factory import generate_factory
 from generate_resource_loader import (
     generate_gamedata_header,
@@ -76,6 +82,15 @@ def main():
     table_names = []          # top-level table class names (for C# list wrappers)
 
     had_error = preload_failed
+
+    # 사전은 테이블이 아니라 코드 생성 대상도 아니지만, 데이터가 가리키는 문구가 실제로
+    # 있는지는 여기서만 볼 수 있다(빠져도 게임을 켜기 전에는 아무 데서도 티가 나지 않는다).
+    localization_errors = validate_localization(
+        loaded, os.path.join(GAMEDATA_DIR, "Localization"))
+    for err in localization_errors:
+        print(f"{RED}[ERROR] {err}{RESET}")
+    if localization_errors:
+        had_error = True
 
     for table in tables:
         table_name = table["name"]

@@ -358,7 +358,7 @@ namespace botbt
 	};
 
 	// 도착했으면 말을 건다. 상호작용 하나로 대화 목표가 오르고, 완료 대기 중이던 퀘스트는
-	// 그 자리에서 접수된다(선택 보상이 있는 것만 예외다 — 아래 참고).
+	// 대화에서 완료 선택지를 눌러 접수된다(선택 보상도 선택지가 정한다).
 	struct InteractQuestNpc
 	{
 		static constexpr NodeKind kKind = NodeKind::Action;
@@ -373,19 +373,6 @@ namespace botbt
 			// 걸어오는 사이에 밀려났으면 다시 접근부터 한다.
 			if (bot::DistanceSqXZ(bb.self_pos, goal.pos) > goal.reach * goal.reach)
 				return Status::Failure;
-
-			// 선택 보상이 있는 퀘스트는 무엇을 고를지 전할 방법이 대화에 없어 서버가
-			// 거절한다. 클라이언트와 같이 번호를 실어 완료를 직접 보낸다.
-			if (goal.dialog_complete && goal.reward_choice >= 0)
-			{
-				if (!bb.quest.CanSendComplete(bb.now))
-					return Status::Running;
-
-				bb.quest.NoteCompleteSent(bb.now);
-				if (bb.actions != nullptr)
-					bb.actions->CompleteQuest(goal.quest_id, goal.reward_choice);
-				return Status::Running;
-			}
 
 			if (!bb.quest.CanSendInteract(bb.now))
 				return Status::Running;
