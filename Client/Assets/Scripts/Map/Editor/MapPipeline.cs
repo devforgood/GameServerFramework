@@ -248,8 +248,23 @@ public static class MapPipeline
     /// <summary>씬에 지오메트리(MeshFilter)가 있는지. NavMesh 를 구울 수 있는 최소 조건이다.</summary>
     public static int CountSceneMeshes()
     {
+        return BakeableMeshes().Length;
+    }
+
+    /// <summary>
+    /// NavMesh 입력이 되는 씬 메시. 지형이 아닌 것은 뺀다.
+    ///
+    /// NavMeshVisualizer 는 구워 둔 navmesh 를 눈으로 보라고 폴리곤마다 메시를 만들어
+    /// 자기 밑에 붙인다(`NavMeshPolygon_*/PolygonMesh`). 그런데 그것이 씬에 저장돼 있으면
+    /// **다음 굽기의 입력으로 들어간다** — 지난번 navmesh 표면(바닥보다 0.1m 위)이 지형인
+    /// 척하며 다시 구워지는 셈이다. 씬 하나에 100개씩 들어 있어 정점 예산도 그만큼 먹는다.
+    /// </summary>
+    private static MeshFilter[] BakeableMeshes()
+    {
         return Object.FindObjectsOfType<MeshFilter>()
-            .Count(mf => mf != null && mf.sharedMesh != null);
+            .Where(mf => mf != null && mf.sharedMesh != null
+                         && mf.GetComponentInParent<RecastNavigation.Unity.NavMeshVisualizer>() == null)
+            .ToArray();
     }
 
     // ── 3단계: NavMesh ──
@@ -263,9 +278,7 @@ public static class MapPipeline
         objPath = ObjPathOf(sceneName);
         error = null;
 
-        var meshFilters = Object.FindObjectsOfType<MeshFilter>()
-            .Where(mf => mf != null && mf.sharedMesh != null)
-            .ToArray();
+        var meshFilters = BakeableMeshes();
 
         if (meshFilters.Length == 0)
         {

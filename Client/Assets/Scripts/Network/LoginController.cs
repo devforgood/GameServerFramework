@@ -143,8 +143,8 @@ public class LoginController
         }
         else
         {
-            // 이미 대상 씬에 있으면 즉시 스폰한다.
-            TrySpawnCharacter();
+            // 이미 대상 씬에 있으면 로드 없이 준비 완료로 친다(스폰도 여기 딸려 온다).
+            mapTransition.NotifySceneReady();
         }
     }
 }

@@ -277,6 +277,8 @@ public static class MapJsonUpdater
             }
         }
 
+        problems += ValidateScenesExist(mapByScene);
+
         // 게이트/스폰 id 는 데이터 전체에서 유일해야 한다(맵 안이 아니라).
         // 겹치면 ResourceLoader 의 id 인덱스에서 서로를 덮어써 엉뚱한 곳으로 이동한다.
         var gateById = new Dictionary<int, (GateInfo gate, MapData map)>();
@@ -373,6 +375,52 @@ public static class MapJsonUpdater
 
         if (problems > 0)
             Debug.LogWarning($"[MapValidate] 게이트 참조 문제 {problems}건 발견 (위 경고 참조). 저장은 진행됩니다.");
+        return problems;
+    }
+
+    /// <summary>
+    /// 맵이 가리키는 씬이 실제로 있고 Build Settings 에 등록돼 있는지 본다.
+    ///
+    /// 서버는 Map.json 만 읽으므로 씬이 없어도 맵은 정상으로 보인다. 그러나 클라는
+    /// 맵 이동을 씬 로드로 하기 때문에, 씬이 없으면 플레이어는 그 맵에 **들어갈 수 없다**
+    /// (`MapTransition.LoadMapScene` 이 경고만 남기고 현재 씬에 머문다).
+    /// 데이터만 보고는 알 수 없는 종류의 구멍이라 여기서 본다.
+    /// </summary>
+    private static int ValidateScenesExist(Dictionary<string, MapData> mapByScene)
+    {
+        int problems = 0;
+
+        var registered = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in EditorBuildSettings.scenes)
+        {
+            if (entry != null && entry.enabled && !string.IsNullOrEmpty(entry.path))
+                registered.Add(Path.GetFileNameWithoutExtension(entry.path));
+        }
+
+        foreach (var pair in mapByScene)
+        {
+            string scene = pair.Key;
+            MapData map = pair.Value;
+
+            bool exists = AssetDatabase.FindAssets($"\"{scene}\" t:Scene")
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Any(p => string.Equals(Path.GetFileNameWithoutExtension(p), scene,
+                                        System.StringComparison.OrdinalIgnoreCase));
+
+            if (!exists)
+            {
+                Debug.LogWarning($"[MapValidate] 맵 '{map.name}'({map.id}) 의 씬 '{scene}' 이 없습니다 — " +
+                                 "서버는 이 맵을 띄우지만 클라는 들어갈 수 없습니다");
+                problems++;
+            }
+            else if (!registered.Contains(scene))
+            {
+                Debug.LogWarning($"[MapValidate] 맵 '{map.name}'({map.id}) 의 씬 '{scene}' 이 " +
+                                 "Build Settings 에 없습니다 — 게이트로 들어갈 수 없습니다");
+                problems++;
+            }
+        }
+
         return problems;
     }
 
@@ -738,6 +786,13 @@ public static class MapJsonUpdater
             go.transform.position = gate.position != null ? gate.position.ToVector3() : Vector3.zero;
             TrySetTag(go, "Gate");
 
+            // 트리거는 두 콜라이더 중 한쪽에 Rigidbody 가 있어야 발생한다. 플레이어
+            // (Resources/Character2)는 콜라이더뿐이라 게이트가 들고 있어야 한다
+            // (Gate.prefab 도 같은 이유로 kinematic Rigidbody 를 갖고 있다).
+            var body = go.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            body.useGravity = false;
+
             var box = go.AddComponent<BoxCollider>();
             box.isTrigger = true;
             box.size = new Vector3(2f, 3f, 2f);
@@ -814,6 +869,11 @@ public static class MapJsonUpdater
             comp.id = info.id;
             comp.spawnType = type;
             comp.monsterId = info.monster_id;
+            // count/radius 를 빠뜨리면 마커가 컴포넌트 기본값(1마리, 반경 0)으로 되살아난다.
+            // 그대로 다시 Scan 하면 몬스터 수가 조용히 줄어든 채로 JSON 에 덮어써진다.
+            // (count 가 없던 시절의 JSON 은 0 으로 읽히므로 그때의 의미인 1 로 본다)
+            comp.count = info.count > 0 ? info.count : 1;
+            comp.radius = (float)info.radius;
             comp.spawnInterval = info.spawn_interval;
             comp.bossId = info.boss_id;
             comp.spawnDelay = info.spawn_delay;

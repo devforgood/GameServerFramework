@@ -114,6 +114,11 @@ public class Session : MonoBehaviour
             dialogs.Close();
         };
 
+        // 게이트는 Map.json 이 원본이다. 씬 파일에 저장된 게이트가 데이터와 어긋나 있어도
+        // 지나갈 수 있도록, 씬이 준비될 때마다 데이터에 맞춘다(스폰보다 먼저 세운다 —
+        // 게이트 위에 도착하는 경우가 있어 트리거가 미리 있어야 한다).
+        mapTransition.SceneReady += () => MapSceneGates.Reconcile(SceneManager.GetActiveScene().name);
+
         // 씬이 준비되면 신규 로그인 대기 중이던 캐릭터를 스폰한다.
         mapTransition.SceneReady += login.TrySpawnCharacter;
     }
@@ -272,7 +277,7 @@ public class Session : MonoBehaviour
             return false;
 
         // 지금 맵은 로드된 씬으로 안다(맵 이동이 씬 교체로 이뤄진다).
-        var currentMap = resource.GetMapByName(SceneManager.GetActiveScene().name);
+        var currentMap = resource.GetMapByScene(SceneManager.GetActiveScene().name);
         if (currentMap == null)
             return false;
 

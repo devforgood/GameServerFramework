@@ -24,6 +24,9 @@
     (`navmesh_path: "Arcadia Plains_navmesh.bin"`, size 도 501.92×501.96 으로 동일 —
     평원 씬의 한 구역을 좌표로만 떼어 둔 상태). 서버 길찾기는 되지만 클라가 로드할 씬이 없다.
     메인 스토리 5막 무대라 삭제 대상이 아니다 → [doc/TODO_story.md](doc/TODO_story.md) D3.
+  - **2026-08-31 갱신**: 이제 툴이 이것을 잡는다 — 맵의 `scene` 이 실제 씬이 아니거나
+    Build Settings 에 없으면 저장할 때 경고한다(`MapJsonUpdater.ValidateMapReferences`).
+    "서버는 멀쩡한데 클라만 못 들어가는" 상태가 조용히 남지 않게 하려는 것이다.
 - [x] **A4. Map.json 사본 배포 자동화 (JSON만)**
   - Save/자동 저장 시 `GameData/Map.json`을 Client(Resources)/Game/UnitTest GameData로 verbatim 복사하도록 툴에 추가.
   - [ ] 코드젠(Gamedata.cs / gamedata.h)과 navmesh 바이너리는 여전히 GameDataFlow.py 수동 실행 필요 — 스키마 변경 시 잊지 말 것.

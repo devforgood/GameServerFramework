@@ -33,6 +33,16 @@ public class MapTransition
     /// <summary>씬이 준비됨(로드 완료, 또는 로드가 필요 없거나 불가능해 현재 씬 유지).</summary>
     public event Action SceneReady;
 
+    /// <summary>
+    /// 로드할 것이 없어 그대로 쓰는 경우(이미 목적지 씬에 있음)의 준비 완료 통보.
+    /// 씬 준비에 딸린 일(게이트 세우기·대기 중인 스폰)이 로드 경로에만 붙어 있으면
+    /// 이 경우에 통째로 빠지므로, 신호는 한 곳으로 모은다.
+    /// </summary>
+    public void NotifySceneReady()
+    {
+        SceneReady?.Invoke();
+    }
+
     public MapTransition(ServerConnection connection, ActorSync actors)
     {
         this.connection = connection;

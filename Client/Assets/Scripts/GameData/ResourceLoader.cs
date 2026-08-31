@@ -158,5 +158,26 @@ namespace Assets.Scripts.GameData
             }
             return null;
         }
+
+        /// <summary>
+        /// 로드된 씬 이름으로 맵 데이터를 찾는다. 없으면 null.
+        ///
+        /// 맵과 씬을 잇는 것은 `scene` 필드다(맵 툴의 매칭 규칙과 같다). `name` 으로도
+        /// 찾아 보는 것은 `scene` 이 비어 있던 옛 데이터 때문이고, 둘이 다를 수 있으므로
+        /// 씬 쪽 조회는 이 함수를 쓴다 — `GetMapByName` 은 `name` 만 본다.
+        /// </summary>
+        public Gamedata.Map GetMapByScene(string sceneName)
+        {
+            if (string.IsNullOrEmpty(sceneName))
+                return null;
+
+            foreach (var map in Maps.Values)
+            {
+                if (!string.IsNullOrEmpty(map.scene)
+                    && string.Equals(map.scene, sceneName, StringComparison.OrdinalIgnoreCase))
+                    return map;
+            }
+            return GetMapByName(sceneName);
+        }
     }
 }
