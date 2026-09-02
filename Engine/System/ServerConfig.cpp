@@ -1,4 +1,4 @@
-#include "ServerConfig.h"
+﻿#include "ServerConfig.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -84,6 +84,11 @@ bool ServerConfig::Load(const std::string& path)
 			ReadField(*it, "allow_debug_commands", network_.allow_debug_commands);
 		}
 
+		if (auto it = root.find("world"); it != root.end())
+		{
+			ReadField(*it, "thread_count", world_.thread_count);
+		}
+
 		if (auto it = root.find("auth"); it != root.end())
 		{
 			ReadField(*it, "mode", auth_.mode);
@@ -100,12 +105,19 @@ bool ServerConfig::Load(const std::string& path)
 	if (!envPassword.empty())
 		db_.password = envPassword;
 
+	// 스레드 수는 여기서 하한만 잡는다(상한은 월드/포트 개수에 맞춰 ServerManager 가 보정한다).
+	if (world_.thread_count < 1)
+	{
+		LOG.warn("ServerConfig: world.thread_count={} 는 유효하지 않다. 1 로 보정한다.", world_.thread_count);
+		world_.thread_count = 1;
+	}
+
 	if (auth_.mode == "allow_all")
 		LOG.warn("ServerConfig: auth.mode=allow_all — 인증이 비활성화되어 있다. 운영에서 쓰지 말 것.");
 	if (network_.allow_debug_commands)
 		LOG.warn("ServerConfig: network.allow_debug_commands=true — 디버그 핸들러가 열려 있다.");
 
-	LOG.info("ServerConfig: '{}' 로드 완료 (auth={}, max_connections={})",
-		path, auth_.mode, network_.max_connections);
+	LOG.info("ServerConfig: '{}' 로드 완료 (auth={}, max_connections={}, world.thread_count={})",
+		path, auth_.mode, network_.max_connections, world_.thread_count);
 	return true;
 }

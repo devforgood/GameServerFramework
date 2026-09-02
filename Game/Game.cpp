@@ -1,4 +1,4 @@
-// TestServer.cpp : 이 파일에는 'main' 함수가 포함됩니다. 거기서 프로그램 실행이 시작되고 종료됩니다.
+﻿// TestServer.cpp : 이 파일에는 'main' 함수가 포함됩니다. 거기서 프로그램 실행이 시작되고 종료됩니다.
 //
 
 
@@ -80,13 +80,13 @@ int main(int argc, char* argv[])
 			endpoints.push_back(endpoint);
 		}
 
-		// IO 스레드(=io_context) 개수 설정값.
-		// 1이면 단일 스레드(기존 동작), 2 이상이면 서버(포트)들을 스레드에
-		// 분산해 멀티스레드로 구동한다. 실제 스레드 수는 포트 개수 이하로 보정된다.
-		const int IO_THREAD_COUNT = 1;
+		// 월드(포트)들을 돌릴 스레드 개수는 설정 파일의 world.thread_count 에서 온다.
+		// 1이면 단일 스레드(기본), 2 이상이면 월드들을 스레드에 분산해 구동한다.
+		// 실제 스레드 수는 포트 개수 이하로 보정된다.
+		const int worldThreadCount = ServerConfig::Instance().World().thread_count;
 
 		ServerManager serverManager;
-		serverManager.SetThreadCount(IO_THREAD_COUNT);
+		serverManager.SetThreadCount(worldThreadCount);
 		serverManager.Initialize(endpoints);
 
 		serverManager.Run();

@@ -1,4 +1,4 @@
-{
+﻿{
   "_comment": [
     "게임 서버 실행 설정 예시. 실제로 쓰려면 server_config.json 으로 복사한다.",
     "실행 디렉터리의 server_config.json 을 자동으로 읽고, --config <path> 로 바꿀 수 있다.",
@@ -25,6 +25,11 @@
 
     "_comment_debug": "SetRaycast / TreeDebugRequest 허용 여부. 운영에서는 반드시 false. 기본값 false.",
     "allow_debug_commands": false
+  },
+
+  "world": {
+    "_comment": "thread_count: 월드(포트 하나당 하나)들을 나눠 돌릴 스레드 수. 1이면 전부 한 스레드에서 돈다(기본). 2 이상이면 월드를 스레드에 라운드로빈으로 배정하며, 한 월드는 항상 같은 스레드에서만 갱신된다. 실행 인자로 준 포트 개수보다 많은 스레드는 만들지 않고, 0 이하는 1로 보정한다.",
+    "thread_count": 1
   },
 
   "auth": {

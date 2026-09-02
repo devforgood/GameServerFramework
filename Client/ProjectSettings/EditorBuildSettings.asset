@@ -20,4 +20,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Arcadia Plains.unity
     guid: 6d48e81d26ffe3548b9d2bb64ff30573
+  - enabled: 1
+    path: Assets/Scenes/Starting Village.unity
+    guid: 00000000000000000000000000000000
+  - enabled: 1
+    path: Assets/Scenes/Dark Forest.unity
+    guid: 00000000000000000000000000000000
   m_configObjects: {}

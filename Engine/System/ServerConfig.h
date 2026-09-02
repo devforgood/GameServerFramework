@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 
@@ -41,6 +41,16 @@ struct NetworkConfig
 	bool allow_debug_commands = false;
 };
 
+struct WorldConfig
+{
+	// 월드(=포트 하나에 붙는 GameServer)들을 나눠 돌릴 스레드 개수.
+	// 1이면 모든 월드를 현재 스레드 하나에서 돌린다(기존 동작).
+	// 2 이상이면 월드를 스레드에 라운드로빈으로 배정한다. 한 월드는 항상 같은
+	// 스레드에서만 갱신되므로 월드 상태는 락 없이 안전하다.
+	// 실제 스레드 수는 월드(포트) 개수를 넘지 않도록 보정되고, 0 이하는 1로 본다.
+	int thread_count = 1;
+};
+
 struct AuthConfig
 {
 	// "db_token"  : session_token 테이블을 조회해 토큰을 검증한다(운영 기본).
@@ -63,6 +73,7 @@ public:
 
 	const DbConfig& Db() const { return db_; }
 	const NetworkConfig& Network() const { return network_; }
+	const WorldConfig& World() const { return world_; }
 	const AuthConfig& Auth() const { return auth_; }
 
 	// 테스트에서 설정을 직접 주입한다(파일 없이 동작을 고정하기 위함).
@@ -72,10 +83,16 @@ public:
 		auth_ = auth;
 	}
 
+	void SetForTest(const WorldConfig& world)
+	{
+		world_ = world;
+	}
+
 private:
 	ServerConfig() = default;
 
 	DbConfig db_;
 	NetworkConfig network_;
+	WorldConfig world_;
 	AuthConfig auth_;
 };

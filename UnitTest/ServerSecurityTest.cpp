@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include <gtest/gtest.h>
 
 #include <chrono>
@@ -166,6 +166,50 @@ TEST(ServerConfigTest, LoadsPartialFileAndKeepsUnsetDefaults)
 	EXPECT_EQ(config.Auth().mode, "db_token") << "auth 섹션이 없으면 기본값을 유지해야 한다";
 
 	config.SetForTest(previousNetwork, previousAuth); // 다른 테스트에 영향 주지 않게 되돌린다
+	fs::remove(path);
+}
+
+// world.thread_count 는 설정에서 읽고, 섹션이 없으면 기본값(1)을 유지한다.
+// 유효하지 않은 값(0 이하)은 1로 보정한다 — 워커가 0개면 서버가 아무것도 돌리지 못한다.
+TEST(ServerConfigTest, LoadsWorldThreadCountAndClampsInvalidValue)
+{
+	namespace fs = std::filesystem;
+	const fs::path path = fs::temp_directory_path() / "gsf_server_config_world.json";
+
+	ServerConfig& config = ServerConfig::Instance();
+	const WorldConfig previousWorld = config.World();
+	const NetworkConfig previousNetwork = config.Network();
+	const AuthConfig previousAuth = config.Auth();
+
+	{
+		std::ofstream out(path);
+		ASSERT_TRUE(out.is_open());
+		out << R"({ "world": { "thread_count": 4 } })";
+	}
+	ASSERT_TRUE(config.Load(path.string()));
+	EXPECT_EQ(config.World().thread_count, 4);
+
+	// 0 이하는 1로 보정한다.
+	{
+		std::ofstream out(path, std::ios::trunc);
+		ASSERT_TRUE(out.is_open());
+		out << R"({ "world": { "thread_count": 0 } })";
+	}
+	ASSERT_TRUE(config.Load(path.string()));
+	EXPECT_EQ(config.World().thread_count, 1);
+
+	// world 섹션이 없으면 직전 값을 그대로 두고 기본값(1)을 유지한다.
+	config.SetForTest(WorldConfig{});
+	{
+		std::ofstream out(path, std::ios::trunc);
+		ASSERT_TRUE(out.is_open());
+		out << R"({ "network": { "max_connections": 7 } })";
+	}
+	ASSERT_TRUE(config.Load(path.string()));
+	EXPECT_EQ(config.World().thread_count, WorldConfig{}.thread_count);
+
+	config.SetForTest(previousWorld);
+	config.SetForTest(previousNetwork, previousAuth);
 	fs::remove(path);
 }
 
