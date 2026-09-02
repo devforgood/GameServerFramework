@@ -7,6 +7,8 @@
 //   - BM_WorldTick          : N마리가 살아있는 상태에서 update(dt) 1회 소요 시간
 //   - BM_LargeMap*          : 가장 넓은 맵의 navmesh 전체에 흩뿌린 상태의 수용량/관심영역
 //                             (위 벤치들은 primary 맵의 좁은 좌표 집합에 몬스터를 쌓는다)
+//   - BM_MultiWorldTick*    : 월드 여러 개를 스레드에 나눠 돌렸을 때 프로세스 전체 수용량
+//                             (운영 구성 그대로 — ServerConfig.world.thread_count)
 //
 // 자산(*_navmesh.bin, Monster.xml, Map.json, *.lua, *.json)은 GameDataPath::Resolve() 가
 // 통합 폴더(Client/Assets/Resources/GameData)에서 찾는다. 리포 밖 배포 실행이면 exe 옆 GameData/ 를 쓴다.
@@ -17,9 +19,11 @@
 #include <benchmark/benchmark.h>
 
 #include <array>
+#include <barrier>
 #include <chrono>
 #include <memory>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -27,6 +31,8 @@
 // windows.h 의 min/max 매크로는 boost(uuid) 의 std::numeric_limits<T>::max() 를 깨뜨린다.
 #define NOMINMAX
 #include <windows.h>
+#include <psapi.h>
+#pragma comment(lib, "Psapi.lib")
 
 #include "World.h"
 #include "Map.h"
@@ -523,6 +529,223 @@ BENCHMARK(BM_LargeMapTickCapacityEngaged)
 	// 반경별 비교. 맵이 약 500유닛이라 이제 반경이 실제로 시야를 좁힌다(0 = 맵 전체 브로드캐스트).
 	->Args({ 10000, 50, 100 })->Args({ 10000, 50, 50 })->Args({ 10000, 50, 25 })
 	->Unit(benchmark::kMillisecond)
+	->MinTime(1.0);
+
+// ============================================================================
+// 멀티스레드 멀티 월드: "한 프로세스에 몬스터를 몇 마리까지 담을 수 있나"
+//
+// 위의 벤치들은 전부 월드 하나를 한 스레드에서 돌린 값이다. 운영 서버는
+// ServerConfig.world.thread_count 개의 스레드에 월드(=포트 하나당 GameServer 하나)를
+// 라운드로빈으로 배정하고, 한 월드는 항상 같은 스레드에서만 갱신한다(ServerManager::IoWorker).
+// 여기서는 그 구성을 그대로 재현해서 프로세스 전체 수용량을 잰다.
+//
+// 측정 기준은 "틱이 밀리지 않는가" 하나다. 서버 시뮬레이션은 10Hz(GameServer::SIM_RATE)라
+// 한 틱 예산이 100ms 이고, 여러 스레드가 병렬로 도는 상황에서 틱을 못 지키는지는
+// **가장 느린 스레드**가 결정한다. 그래서 매 틱 워커별 소요 시간의 최댓값을 모으고,
+//   budget_pct = 평균(가장 느린 스레드 시간) / 100ms
+//   worst_pct  = 최악(가장 느린 스레드 시간) / 100ms
+// 로 보고한다. budget_pct 가 100 을 넘기 직전의 monsters 값이 그 구성의 수용 한계다.
+//
+// 이 벤치는 스레드 수를 늘렸을 때 실제로 선형에 가깝게 늘어나는지도 같이 보여준다.
+// 월드끼리는 게임 상태를 전혀 공유하지 않지만, navmesh 질의/BT 틱/직렬화가 전부
+// 메모리 대역폭과 캐시를 두고 경쟁하므로 코어 수만큼 그대로 곱해지지는 않는다.
+//
+// 주의: 월드 하나가 field 맵 전부(navmesh + 그리드)를 들고 있어서 월드를 늘리면
+// 몬스터와 무관한 고정 메모리도 함께 늘어난다. rss_delta_mb / kb_per_monster 로 그 몫을 본다.
+// ============================================================================
+
+namespace multiworld
+{
+	// 현재 프로세스의 워킹셋(MB). 수용 한계는 틱뿐 아니라 메모리로도 결정되므로 같이 본다.
+	double WorkingSetMb()
+	{
+		PROCESS_MEMORY_COUNTERS pmc{};
+		if (!GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+			return 0.0;
+		return static_cast<double>(pmc.WorkingSetSize) / (1024.0 * 1024.0);
+	}
+
+	// 워커 스레드 풀. 스레드 하나가 배정받은 월드들을 순서대로 update 한다 —
+	// ServerManager::IoWorker::UpdateGameLogic 과 같은 배치다(한 월드는 늘 같은 스레드).
+	//
+	// 틱은 배리어 두 개로 동기화한다. 그래야 "모든 워커가 같은 틱을 동시에 돌 때"의
+	// 벽시계 시간을 재게 되고, 워커별 시간의 최댓값이 곧 그 틱의 실제 소요가 된다.
+	// (동기화 없이 각자 돌게 두면 빠른 스레드가 앞서 나가 경쟁 상황이 실제보다 순해진다.)
+	class Runner
+	{
+	public:
+		explicit Runner(std::vector<std::vector<World*>> assignment)
+			: assignment_(std::move(assignment))
+			, tickMs_(assignment_.size(), 0.0)
+			, start_(static_cast<std::ptrdiff_t>(assignment_.size()) + 1)
+			, done_(static_cast<std::ptrdiff_t>(assignment_.size()) + 1)
+		{
+			threads_.reserve(assignment_.size());
+			for (size_t i = 0; i < assignment_.size(); ++i)
+				threads_.emplace_back([this, i] { WorkerLoop(i); });
+		}
+
+		~Runner()
+		{
+			stop_ = true;
+			start_.arrive_and_wait(); // 대기 중인 워커를 깨워 종료시킨다(done_ 은 통과하지 않는다).
+			for (auto& t : threads_)
+				t.join();
+		}
+
+		// 모든 워커가 한 틱을 끝낼 때까지 기다리고, 그중 가장 오래 걸린 시간(ms)을 돌려준다.
+		double Tick(float dt)
+		{
+			dt_ = dt;
+			start_.arrive_and_wait();
+			done_.arrive_and_wait();
+			return *std::max_element(tickMs_.begin(), tickMs_.end());
+		}
+
+	private:
+		void WorkerLoop(size_t index)
+		{
+			for (;;)
+			{
+				start_.arrive_and_wait();
+				if (stop_)
+					return;
+
+				const auto t0 = std::chrono::steady_clock::now();
+				for (World* world : assignment_[index])
+					world->update(dt_);
+				const auto t1 = std::chrono::steady_clock::now();
+
+				// 워커마다 다른 원소만 쓴다(벡터는 재할당되지 않는다). 배리어가
+				// 이 쓰기와 메인 스레드의 읽기 사이에 순서를 만들어 준다.
+				tickMs_[index] = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+				done_.arrive_and_wait();
+			}
+		}
+
+		std::vector<std::vector<World*>> assignment_;
+		std::vector<std::thread> threads_;
+		std::vector<double> tickMs_;
+		std::barrier<> start_;
+		std::barrier<> done_;
+		float dt_ = 0.0f;
+		bool stop_ = false;   // start_ 배리어 이전에만 쓰고 이후에만 읽는다.
+	};
+} // namespace multiworld
+
+// 인자: (스레드 수, 스레드당 월드 수, 월드당 몬스터 수)
+//
+// 월드 생성/스폰은 메인 스레드에서 순차로 끝낸다 — World::Init 은 공유 lua 상태를
+// 초기화하고 ResourceLoader 를 읽으므로 병렬로 만들면 안 된다. 측정 대상은 틱뿐이다.
+static void BM_MultiWorldTickCapacity(benchmark::State& state)
+{
+	const int threadCount = static_cast<int>(state.range(0));
+	const int worldsPerThread = static_cast<int>(state.range(1));
+	const int monstersPerWorld = static_cast<int>(state.range(2));
+
+	const double rssBefore = multiworld::WorkingSetMb();
+
+	std::vector<std::unique_ptr<World>> worlds;
+	std::vector<std::vector<World*>> assignment(static_cast<size_t>(threadCount));
+	int totalMonsters = 0;
+
+	for (int t = 0; t < threadCount; ++t)
+	{
+		for (int w = 0; w < worldsPerThread; ++w)
+		{
+			auto world = std::make_unique<World>();
+			world->Init("waypoint"); // 프로덕션 기본 이동 전략.
+
+			Map* map = LargestMap(*world);
+			if (map == nullptr || map->GetNavMesh() == nullptr)
+			{
+				state.SkipWithError("no navmesh map available");
+				return;
+			}
+
+			// 월드마다 시드를 달리해 모든 월드가 똑같은 자리에 겹쳐 서지 않게 한다.
+			const uint32_t seed = kMonsterSeed + static_cast<uint32_t>(worlds.size()) * 0x9E3779B9u;
+			for (const auto& c : SampleNavMeshPoints(map->GetNavMesh(), monstersPerWorld, seed))
+			{
+				syncnet::Vec3 v(c[0], c[1], c[2]);
+				if (map->OnAddAgent(nullptr, syncnet::GameObjectType_Monster, &v))
+					++totalMonsters;
+			}
+
+			assignment[static_cast<size_t>(t)].push_back(world.get());
+			worlds.push_back(std::move(world));
+		}
+	}
+
+	const double rssAfter = multiworld::WorkingSetMb();
+
+	multiworld::Runner runner(std::move(assignment));
+
+	// 콜드 스타트: 스폰 직후 첫 틱은 전원이 같은 틱에 배회 목적지를 잡고 경로를 계산해
+	// 정상 틱보다 수십 배 비싸다. 실제 위험(기동 직후 스톨)이라 따로 기록하되,
+	// 정상 상태 수용량을 재야 하므로 측정은 안정된 뒤에 시작한다.
+	const double firstTickMs = runner.Tick(kTickDt);
+	constexpr int kWarmupTicks = 10;
+	for (int i = 0; i < kWarmupTicks; ++i)
+		runner.Tick(kTickDt);
+
+	double worstMs = 0.0;
+	double sumMs = 0.0;
+	int64_t iters = 0;
+
+	for (auto _ : state)
+	{
+		const double ms = runner.Tick(kTickDt);
+		worstMs = std::max(worstMs, ms);
+		sumMs += ms;
+		++iters;
+	}
+
+	constexpr double kTickBudgetMs = 100.0; // 10Hz(SIM_RATE) 한 틱 예산
+	const double meanMs = (iters > 0) ? (sumMs / static_cast<double>(iters)) : 0.0;
+
+	state.counters["threads"] = threadCount;
+	state.counters["worlds"] = threadCount * worldsPerThread;
+	state.counters["monsters"] = totalMonsters;            // 프로세스 전체
+	state.counters["per_world"] = monstersPerWorld;
+	state.counters["first_tick_ms"] = firstTickMs;
+	state.counters["tick_ms"] = meanMs;                    // 가장 느린 스레드 기준 평균
+	state.counters["worst_tick_ms"] = worstMs;
+	state.counters["budget_pct"] = meanMs / kTickBudgetMs * 100.0; // 100 초과 = 수용 한계 초과
+	state.counters["worst_pct"] = worstMs / kTickBudgetMs * 100.0;
+	state.counters["rss_mb"] = rssAfter;
+	// 이 구성이 새로 잡은 메모리. 여러 구성을 한 번에 돌리면 앞 구성이 반납한 블록을
+	// 할당자가 재사용해서 실제보다 작게 나온다 — 메모리를 볼 때는 구성 하나만 필터해서 돌릴 것.
+	state.counters["rss_delta_mb"] = rssAfter - rssBefore;
+	state.counters["kb_per_monster"] =
+		(totalMonsters > 0) ? ((rssAfter - rssBefore) * 1024.0 / totalMonsters) : 0.0;
+
+	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(totalMonsters));
+}
+
+// 스레드 확장성: 월드당 몬스터를 고정하고 스레드만 늘린다.
+// 이상적이면 monsters 는 스레드 수에 비례해 늘고 tick_ms 는 그대로여야 한다.
+// 실제로는 메모리 대역폭 경쟁 때문에 tick_ms 가 서서히 올라간다 — 그 기울기가 이 벤치의 핵심이다.
+BENCHMARK(BM_MultiWorldTickCapacity)
+	->Args({ 1, 1, 20000 })
+	->Args({ 2, 1, 20000 })
+	->Args({ 4, 1, 20000 })
+	->Args({ 8, 1, 20000 })
+	->Args({ 16, 1, 20000 })
+	// 스레드 수를 고정하고 월드당 몬스터를 늘려 한계 지점을 찾는다.
+	->Args({ 8, 1, 10000 })
+	->Args({ 8, 1, 30000 })
+	->Args({ 8, 1, 40000 })
+	// 코어를 다 쓰는 구성에서 월드당 밀도를 올려 100% 에 닿는 지점을 찾는다.
+	->Args({ 16, 1, 30000 })
+	->Args({ 16, 1, 40000 })
+	// 한 스레드가 월드 여러 개를 맡는 경우(포트 수 > thread_count). 같은 총량을 월드 하나로
+	// 몰았을 때와 비교하면, 비용이 몬스터 수에 붙는지 월드 수에 붙는지가 갈린다.
+	->Args({ 8, 2, 10000 })
+	->Args({ 16, 2, 20000 })
+	->Unit(benchmark::kMillisecond)
+	->UseRealTime()   // 워커가 병렬로 돌아 CPU 시간은 스레드 수만큼 부풀려진다. 벽시계로 본다.
 	->MinTime(1.0);
 
 // 대규모: 몬스터 10000마리가 살아있는 월드의 update(dt) 평균 소요 시간.

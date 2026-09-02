@@ -1,5 +1,6 @@
 #pragma once
 #include <lua.hpp>
+#include <mutex>
 #include <string>
 #include "GameDataPath.h"
 
@@ -55,6 +56,14 @@ public:
 	void  set_result(const std::string& r) { result_ = r; }
 
 	// ---- 공유 lua 상태 ----
+	//
+	// lua_State 는 프로세스에 하나뿐이고 모든 맵의 게임 모드가 그것을 함께 쓴다.
+	// 월드는 스레드마다 따로 돌지만(ServerConfig.world.thread_count) 이 VM 은 공유되므로,
+	// lua 에 들어가는 모든 경로는 luaMutex_ 로 직렬화한다. 잠그지 않으면 두 스레드가 같은
+	// lua 스택을 동시에 밀고 당겨 스택이 망가진다.
+	//
+	// 한 틱에 맵당 on_update/check_end 두 번뿐이라 이 직렬화가 병목이 되지는 않는다.
+	// (몬스터 AI 는 lua 를 타지 않는다 — behaviortree_cpp 로 돈다.)
 	static void InitializeLua(const std::string& script_base_path = GameDataPath::Resolve());
 	static void CloseLua();
 	static void RegisterHostFunctions();
@@ -71,6 +80,9 @@ private:
 
 	static lua_State* L_;
 	static std::string scriptBasePath_;
+
+	// L_ 접근 직렬화용. Update 가 End 를 부르는 등 잠금 구간이 겹치므로 recursive 를 쓴다.
+	static std::recursive_mutex luaMutex_;
 
 	int scriptRef_ = LUA_NOREF; // 스크립트가 반환한 모듈 테이블 ref
 	Map* map_ = nullptr;

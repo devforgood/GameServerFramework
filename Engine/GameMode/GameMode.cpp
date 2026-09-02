@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <lua.hpp>
+#include <mutex>
 
 #include "Common.h" // gamedata::GameMode 전체 정의
 #include "LogHelper.h"
@@ -19,6 +20,10 @@ namespace
 
 lua_State* GameMode::L_ = nullptr;
 std::string GameMode::scriptBasePath_ = GameDataPath::Resolve();
+std::recursive_mutex GameMode::luaMutex_;
+
+// L_ 를 건드리는 구간을 감싸는 이름 하나. 아래 lua 진입점마다 첫 줄에 둔다.
+#define LUA_GUARD() const std::lock_guard<std::recursive_mutex> luaLock(luaMutex_)
 
 //---------------------------------------------------------------------------------------
 // 라이프사이클
@@ -26,6 +31,7 @@ std::string GameMode::scriptBasePath_ = GameDataPath::Resolve();
 
 GameMode::~GameMode()
 {
+	LUA_GUARD();
 	if (L_ != nullptr && scriptRef_ != LUA_NOREF)
 	{
 		luaL_unref(L_, LUA_REGISTRYINDEX, scriptRef_);
@@ -35,6 +41,7 @@ GameMode::~GameMode()
 
 bool GameMode::LoadScript()
 {
+	LUA_GUARD();
 	if (L_ == nullptr)
 	{
 		std::cerr << "[GameMode] LoadScript called before InitializeLua" << std::endl;
@@ -95,6 +102,7 @@ bool GameMode::PushHandler(const char* fn)
 
 void GameMode::Start()
 {
+	LUA_GUARD();
 	if (started_)
 		return;
 	started_ = true;
@@ -113,6 +121,7 @@ void GameMode::Start()
 
 void GameMode::Update(float dt)
 {
+	LUA_GUARD();
 	if (ended_ || !started_)
 		return;
 
@@ -163,6 +172,7 @@ bool GameMode::CheckEnd()
 
 void GameMode::OnPlayerJoin(void* player)
 {
+	LUA_GUARD();
 	if (!PushHandler("on_player_join"))
 		return;
 
@@ -178,6 +188,7 @@ void GameMode::OnPlayerJoin(void* player)
 
 void GameMode::OnPlayerDead(void* player)
 {
+	LUA_GUARD();
 	if (!PushHandler("on_player_dead"))
 		return;
 
@@ -193,6 +204,7 @@ void GameMode::OnPlayerDead(void* player)
 
 void GameMode::End()
 {
+	LUA_GUARD();
 	if (ended_)
 		return;
 	ended_ = true;
@@ -215,6 +227,7 @@ void GameMode::End()
 
 void GameMode::InitializeLua(const std::string& script_base_path)
 {
+	LUA_GUARD();
 	scriptBasePath_ = script_base_path;
 	if (L_ == nullptr)
 	{
@@ -226,6 +239,7 @@ void GameMode::InitializeLua(const std::string& script_base_path)
 
 void GameMode::CloseLua()
 {
+	LUA_GUARD();
 	if (L_ != nullptr)
 	{
 		lua_close(L_);
