@@ -2,6 +2,7 @@
 
 #include <string>
 #include <cstdint>
+#include <vector>
 
 namespace bot
 {
@@ -13,6 +14,22 @@ namespace bot
 		{
 			std::string host = "127.0.0.1";
 			uint16_t port = 65001;
+
+			// 서버가 포트를 여러 개 열고 있을 때(포트 하나 = 월드 하나 = 서버 스레드 하나)
+			// 봇을 그 포트들에 나눠 붙인다. 비어 있으면 port 하나만 쓴다.
+			// 포트 하나에만 몰면 서버가 스레드를 몇 개 띄우든 월드 하나만 돌아서,
+			// 늘어난 스레드가 부하를 나눠 갖는지 확인할 수 없다.
+			std::vector<uint16_t> ports;
+
+			// 봇 번호로 포트를 고른다. 무작위로 고르면 포트별 인원이 실행마다 달라져
+			// 스레드 사이 부하 차이가 측정 잡음이 된다.
+			uint16_t PortFor(int bot_index) const
+			{
+				if (ports.empty())
+					return port;
+				const size_t slot = static_cast<size_t>(bot_index) % ports.size();
+				return ports[slot];
+			}
 		} server;
 
 		struct Bots

@@ -55,6 +55,9 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 
+		// 설정을 읽은 뒤에 로그 레벨을 맞춘다(설정 로드 자체의 로그는 남겨야 하므로 순서가 중요하다).
+		SetLogLevel(ServerConfig::Instance().Log().level);
+
 		std::list<tcp::endpoint> endpoints;
 		for (int i = 1; i < argc; ++i)
 		{

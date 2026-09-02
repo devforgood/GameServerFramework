@@ -162,7 +162,9 @@ public:
 		return ioContext_;
 	}
 
-	void UpdateGameLogic(float delta);
+	// 이 프레임에 필요했던 10Hz 시뮬레이션 틱 수를 돌려준다(0이면 이번 프레임에는
+	// 월드를 돌리지 않았다). 2 이상이면 이미 틱이 밀려 따라잡는 중이라는 뜻이다.
+	int UpdateGameLogic(float delta);
 
 	// 동시 접속 수 상한(ServerConfig.network.max_connections) 관리.
 	// 세션 생성/소멸에서 부른다. 같은 io_context(=한 스레드)에서만 호출되므로 락이 없다.
@@ -243,12 +245,27 @@ private:
 		std::shared_ptr<DbMonitorTicker> dbMonitor;
 
 		// 배정된 서버들을 한 프레임 진행시킨다. 프레임 루프에서 매번 불리므로 인라인이다.
-		void UpdateGameLogic(float delta)
+		// 돌려주는 값은 이 프레임에 돌려야 했던 10Hz 틱 수의 합이다(틱이 밀리는지 재는 데 쓴다).
+		int UpdateGameLogic(float delta)
 		{
+			int simTicks = 0;
 			for (auto& server : servers)
 			{
-				server->UpdateGameLogic(delta);
+				simTicks += server->UpdateGameLogic(delta);
 			}
+			return simTicks;
+		}
+
+		// 이 워커가 맡은 서버들의 현재 세션 수 합. 틱 통계에 함께 남겨서
+		// "몇 명이 붙었을 때 밀리기 시작했는가" 를 한 줄에서 읽을 수 있게 한다.
+		int SessionCount() const
+		{
+			int total = 0;
+			for (const auto& server : servers)
+			{
+				total += server->SessionCount();
+			}
+			return total;
 		}
 
 		// 배정된 서버들의 새 연결 수락을 멈추고 접속 중인 플레이어 저장을 요청한다.

@@ -51,6 +51,15 @@ struct WorldConfig
 	int thread_count = 1;
 };
 
+struct LogConfig
+{
+	// trace | debug | info | warn | error | critical | off
+	// 기본은 debug — 지금까지의 동작 그대로다. 부하 시험이나 운영처럼 처리량이 중요한
+	// 곳에서는 warn 으로 낮춘다. 로그는 동기로 쓰이고 콘솔 싱크는 모든 워커 스레드가
+	// 공유하므로, 패킷마다 남는 로그는 그대로 틱 지연이 된다.
+	std::string level = "debug";
+};
+
 struct AuthConfig
 {
 	// "db_token"  : session_token 테이블을 조회해 토큰을 검증한다(운영 기본).
@@ -74,6 +83,7 @@ public:
 	const DbConfig& Db() const { return db_; }
 	const NetworkConfig& Network() const { return network_; }
 	const WorldConfig& World() const { return world_; }
+	const LogConfig& Log() const { return log_; }
 	const AuthConfig& Auth() const { return auth_; }
 
 	// 테스트에서 설정을 직접 주입한다(파일 없이 동작을 고정하기 위함).
@@ -94,5 +104,6 @@ private:
 	DbConfig db_;
 	NetworkConfig network_;
 	WorldConfig world_;
+	LogConfig log_;
 	AuthConfig auth_;
 };

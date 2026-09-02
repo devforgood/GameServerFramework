@@ -13,7 +13,10 @@
 std::unordered_map<long, PlayerParty*>& PlayerParty::registry()
 {
 	// 함수 지역 정적으로 두어, 다른 번역 단위의 전역 초기화 순서와 무관하게 만든다.
-	static std::unordered_map<long, PlayerParty*> instance;
+	// 스레드 지역인 이유는 PartyManager::Instance 와 같다 — 이 맵은 로그인/로그아웃마다
+	// 고쳐지고, 월드는 스레드마다 따로 돈다. 한 월드의 플레이어는 모두 같은 워커
+	// 스레드에서 도므로 이 맵에는 동시 접근이 없다.
+	static thread_local std::unordered_map<long, PlayerParty*> instance;
 	return instance;
 }
 

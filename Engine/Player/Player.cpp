@@ -1,5 +1,6 @@
 #include "Player.h"
 #include "Server.h"
+#include <atomic>
 #include "SqlClient.h"
 #include "SqlClientManager.h"
 #include "Character.h"
@@ -27,12 +28,15 @@
 #include "PlayerEventBrokerProxy.h"
 
 // todo :  Player ID 디비에서 관리 개선 필요
-static long next_player_id = 1;
+//
+// 월드 스레드마다 플레이어가 만들어지므로 원자적으로 올린다. 그냥 ++ 로 두면 두 스레드가
+// 같은 번호를 받아 갈 수 있고, 이 번호는 파티 색인의 키다 — 겹치면 남의 파티에 붙는다.
+static std::atomic<long> next_player_id{ 1 };
 
 Player::Player()
 {
 	uuid_ = boost::uuids::random_generator()();
-	playerId_ = next_player_id++;
+	playerId_ = next_player_id.fetch_add(1, std::memory_order_relaxed);
 
 	playerLazySaveAcc_ = 0.0f;
 

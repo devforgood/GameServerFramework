@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace bot
 {
@@ -31,6 +32,61 @@ namespace bot
 		{
 			auto it = root.find(key);
 			return (it != root.end() && it->is_object()) ? *it : fallback;
+		}
+
+		// "65001-65004" 또는 "65001,65002,65003" 을 포트 목록으로 푼다.
+		// 범위 표기를 받는 이유는 서버를 포트 N개로 띄우는 명령과 한 글자만 다르게 쓰기
+		// 위해서다 — 포트 하나가 목록에서 빠지면 그 월드에는 봇이 한 명도 붙지 않는다.
+		bool ParsePortList(const char* text, std::vector<uint16_t>& out)
+		{
+			auto valid = [](long value) { return value >= 1 && value <= 65535; };
+
+			std::vector<uint16_t> parsed;
+			const std::string spec(text);
+			size_t pos = 0;
+			for (;;)
+			{
+				const size_t comma = spec.find(',', pos);
+				const std::string token = spec.substr(pos,
+					comma == std::string::npos ? std::string::npos : comma - pos);
+				if (token.empty())
+					return false;
+
+				const size_t dash = token.find('-');
+				if (dash == std::string::npos)
+				{
+					char* end = nullptr;
+					const long value = std::strtol(token.c_str(), &end, 10);
+					if (end == token.c_str() || *end != '\0' || !valid(value))
+						return false;
+					parsed.push_back(static_cast<uint16_t>(value));
+				}
+				else
+				{
+					const std::string lowText = token.substr(0, dash);
+					const std::string highText = token.substr(dash + 1);
+					char* endLow = nullptr;
+					char* endHigh = nullptr;
+					const long low = std::strtol(lowText.c_str(), &endLow, 10);
+					const long high = std::strtol(highText.c_str(), &endHigh, 10);
+					if (endLow == lowText.c_str() || *endLow != '\0' || !valid(low))
+						return false;
+					if (endHigh == highText.c_str() || *endHigh != '\0' || !valid(high) || high < low)
+						return false;
+					for (long value = low; value <= high; ++value)
+						parsed.push_back(static_cast<uint16_t>(value));
+				}
+
+				if (comma == std::string::npos)
+					break;
+				pos = comma + 1;
+			}
+
+			if (parsed.empty())
+				return false;
+
+			out = std::move(parsed);
+			return true;
 		}
 
 		bool ParseInt(const char* text, int& out)
@@ -83,6 +139,15 @@ namespace bot
 			int port = server.port;
 			ReadField(serverJson, "port", port);
 			server.port = static_cast<uint16_t>(port);
+		}
+		if (auto it = serverJson.find("ports"); it != serverJson.end() && it->is_array())
+		{
+			server.ports.clear();
+			for (const auto& entry : *it)
+			{
+				if (entry.is_number_integer())
+					server.ports.push_back(static_cast<uint16_t>(entry.get<int>()));
+			}
 		}
 
 		const json& botsJson = Section(root, "bots", empty);
@@ -162,6 +227,11 @@ namespace bot
 				if (!takeInt(port)) return false;
 				if (port < 1 || port > 65535) { std::cerr << "[bot] port out of range\n"; return false; }
 				server.port = static_cast<uint16_t>(port);
+			}
+			else if (std::strcmp(arg, "--ports") == 0)
+			{
+				if (!hasValue) { std::cerr << "[bot] --ports requires a list (65001-65004)\n"; return false; }
+				if (!ParsePortList(argv[++i], server.ports)) { std::cerr << "[bot] invalid --ports\n"; return false; }
 			}
 			else if (std::strcmp(arg, "--bots") == 0)
 			{
@@ -247,6 +317,10 @@ namespace bot
 		if (ai.attack_range <= 0.0f) { error = "ai.attack_range must be > 0"; return false; }
 		if (ai.search_radius <= 0.0f) { error = "ai.search_radius must be > 0"; return false; }
 		if (quest.branch_offset < 0) { error = "quest.branch_offset must be >= 0"; return false; }
+		for (uint16_t port : server.ports)
+		{
+			if (port == 0) { error = "server.ports entries must be 1-65535"; return false; }
+		}
 		return true;
 	}
 
@@ -256,6 +330,7 @@ namespace bot
 			"Usage: Bot [--config <path>] [options]\n"
 			"  --host <ip>        게임 서버 주소 (기본 127.0.0.1)\n"
 			"  --port <n>         게임 서버 포트 (기본 65001)\n"
+			"  --ports <list>     여러 포트에 나눠 붙는다 (65001-65004 또는 65001,65002)\n"
 			"  --bots <n>         봇 수\n"
 			"  --threads <n>      워커 스레드 수\n"
 			"  --duration <sec>   실행 시간(0 = 무한, Ctrl+C 로 종료)\n"

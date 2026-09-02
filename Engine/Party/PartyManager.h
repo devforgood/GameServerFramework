@@ -43,9 +43,23 @@ struct PartyInvite
 class PartyManager
 {
 public:
+	// 스레드마다 하나 — 곧 월드마다 하나다.
+	//
+	// 월드(포트)는 정확히 하나의 워커 스레드에 묶이고(ServerManager::IoWorker) 그 월드의
+	// 플레이어 로직은 전부 그 스레드에서만 돈다. 그래서 스레드 지역으로 두면 월드마다
+	// 독립된 파티 상태가 되고, 잠금이 하나도 필요 없다.
+	//
+	// 프로세스에 하나로 두면 안 되는 이유가 둘이다.
+	//   안전 - 로그인/로그아웃마다 아래 해시맵에 삽입·삭제가 일어난다. 월드를 여러
+	//          스레드에서 돌리면(world.thread_count > 1) 여러 워커가 같은 맵을 동시에
+	//          고쳐 서버가 죽는다. 봇 3200명을 8스레드에 붙이면 매번 재현됐다.
+	//   의미 - 다른 포트(월드)의 플레이어끼리는 서로 보이지도 않으니 같은 파티일 수 없다.
+	//          파티 상태는 애초에 월드의 것이다.
+	//
+	// 전제는 "한 월드 = 한 스레드" 하나다. 그것이 깨지면 여기부터 상태가 갈라진다.
 	static PartyManager& Instance()
 	{
-		static PartyManager instance;
+		static thread_local PartyManager instance;
 		return instance;
 	}
 

@@ -32,6 +32,11 @@
     "thread_count": 1
   },
 
+  "log": {
+    "_comment": "trace|debug|info|warn|error|critical|off. 기본 debug. 로그는 동기로 쓰이고 콘솔 싱크를 모든 월드 스레드가 공유하므로, 패킷마다 남는 로그는 그대로 틱 지연이 된다. 부하가 큰 환경에서는 warn 으로 낮출 것.",
+    "level": "debug"
+  },
+
   "auth": {
     "_comment": "db_token: session_token 테이블을 조회해 검증(기본). allow_all: 검증 없이 통과 — 로컬 개발 전용.",
     "mode": "db_token",

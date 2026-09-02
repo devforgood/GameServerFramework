@@ -75,7 +75,7 @@ namespace bot
 		, index_(index)
 		, user_id_(std::move(user_id))
 		, verbose_(verbose)
-		, session_(io_context, config.server.host, config.server.port, &stats_)
+		, session_(io_context, config.server.host, config.server.PortFor(index), &stats_)
 	{
 		blackboard_.actions = this;
 		blackboard_.ai.search_radius = config.ai.search_radius;

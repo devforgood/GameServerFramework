@@ -89,6 +89,11 @@ bool ServerConfig::Load(const std::string& path)
 			ReadField(*it, "thread_count", world_.thread_count);
 		}
 
+		if (auto it = root.find("log"); it != root.end())
+		{
+			ReadField(*it, "level", log_.level);
+		}
+
 		if (auto it = root.find("auth"); it != root.end())
 		{
 			ReadField(*it, "mode", auth_.mode);
@@ -117,7 +122,7 @@ bool ServerConfig::Load(const std::string& path)
 	if (network_.allow_debug_commands)
 		LOG.warn("ServerConfig: network.allow_debug_commands=true — 디버그 핸들러가 열려 있다.");
 
-	LOG.info("ServerConfig: '{}' 로드 완료 (auth={}, max_connections={}, world.thread_count={})",
-		path, auth_.mode, network_.max_connections, world_.thread_count);
+	LOG.info("ServerConfig: '{}' 로드 완료 (auth={}, max_connections={}, world.thread_count={}, log.level={})",
+		path, auth_.mode, network_.max_connections, world_.thread_count, log_.level);
 	return true;
 }

@@ -410,7 +410,7 @@ void GameServer::BeginShutdown()
 	}
 }
 
-void GameServer::UpdateGameLogic(float delta)
+int GameServer::UpdateGameLogic(float delta)
 {
 	//std::cout << "tick " << delta << std::endl;
 
@@ -436,6 +436,8 @@ void GameServer::UpdateGameLogic(float delta)
 		channel_.UpdatePlayers();
 		playerUpdateAcc_ -= 1.0f;
 	}
+
+	return simIter;
 }
 
 int ServerManager::ResolveWorkerCount(int serverCount, int requestedThreadCount)
@@ -586,12 +588,117 @@ void ServerManager::ShutdownWorker(IoWorker& worker)
 	}
 }
 
+namespace
+{
+	double MillisBetween(std::chrono::steady_clock::time_point from,
+		std::chrono::steady_clock::time_point to)
+	{
+		return std::chrono::duration<double, std::milli>(to - from).count();
+	}
+
+	//-------------------------------------------------------------------------------------
+	// 워커 한 스레드의 프레임 시간을 모아 주기적으로 한 줄로 남긴다.
+	//
+	// 부하 테스트에서 "동시 접속을 몇 명까지 받을 수 있는가" 는 결국 "월드 틱이 어디서부터
+	// 밀리는가" 이고, 그것은 서버 안에서만 보인다. 클라이언트가 재는 왕복 지연에는 네트워크와
+	// 클라 틱이 섞여 있어 원인을 가리지 못한다.
+	//
+	// 프레임 루프는 16ms 주기이고 월드 시뮬레이션은 그 안에서 10Hz(100ms)로 돈다.
+	// 그래서 예산이 둘이라 따로 센다.
+	//   frame : 프레임 하나(IO 폴링 + 게임 로직)가 16ms 를 넘겼는가
+	//   sim   : 월드를 실제로 돌린 프레임의 로직 시간이 100ms 예산을 넘겼는가
+	//   late  : 한 프레임에서 10Hz 틱을 두 번 이상 돌려야 했던 횟수(이미 밀린 상태다)
+	//   drop  : 따라잡기 상한(5틱)을 넘겨 시뮬레이션을 버린 횟수
+	//
+	// 통계는 워커 스레드의 지역 변수다 — 측정이 스레드 사이에 새 공유 상태를 만들지 않는다.
+	//-------------------------------------------------------------------------------------
+	class WorkerTickStats
+	{
+	public:
+		explicit WorkerTickStats(std::chrono::steady_clock::time_point now)
+			: windowStart_(now)
+		{
+		}
+
+		void Add(double frameMs, double logicMs, int simTicks)
+		{
+			++frames_;
+			frameMsSum_ += frameMs;
+			if (frameMs > frameMsMax_) frameMsMax_ = frameMs;
+			if (frameMs > kFrameBudgetMs) ++frameOver_;
+
+			if (simTicks <= 0)
+				return;
+
+			++simFrames_;
+			simTicks_ += simTicks;
+			simMsSum_ += logicMs;
+			if (logicMs > simMsMax_) simMsMax_ = logicMs;
+			if (logicMs > kSimBudgetMs) ++simOver_;
+			if (simTicks > 1) ++late_;
+			if (simTicks > kMaxCatchUpTicks) ++drop_;
+		}
+
+		// 주기가 지났으면 한 줄 남기고 창을 비운다. 세션이 하나도 없고 예산을 넘긴 적도
+		// 없으면 남기지 않는다(아무도 안 붙은 서버가 로그를 채우지 않도록).
+		void MaybeReport(int workerIndex, size_t serverCount, int sessionCount,
+			std::chrono::steady_clock::time_point now)
+		{
+			if (now - windowStart_ < kReportInterval)
+				return;
+
+			const double windowSec = std::chrono::duration<double>(now - windowStart_).count();
+			if (frames_ > 0 && (sessionCount > 0 || frameOver_ > 0 || simOver_ > 0))
+			{
+				LOG.info("[tick] worker={} servers={} sess={} | frame avg {:.2f} max {:.2f} ms "
+					"over16 {}/{} ({:.0f} fps) | sim avg {:.2f} max {:.2f} ms over100 {}/{} "
+					"late {} drop {}",
+					workerIndex, serverCount, sessionCount,
+					frameMsSum_ / frames_, frameMsMax_, frameOver_, frames_,
+					frames_ / windowSec,
+					simFrames_ > 0 ? simMsSum_ / simFrames_ : 0.0, simMsMax_,
+					simOver_, simFrames_, late_, drop_);
+			}
+
+			windowStart_ = now;
+			frames_ = 0; frameMsSum_ = 0.0; frameMsMax_ = 0.0; frameOver_ = 0;
+			simFrames_ = 0; simTicks_ = 0; simMsSum_ = 0.0; simMsMax_ = 0.0; simOver_ = 0;
+			late_ = 0; drop_ = 0;
+		}
+
+	private:
+		static constexpr double kFrameBudgetMs = 16.0;   // RunWorker 의 목표 프레임 간격
+		static constexpr double kSimBudgetMs = 100.0;    // 10Hz 시뮬레이션 한 틱의 예산
+		static constexpr int kMaxCatchUpTicks = 5;       // UpdateGameLogic 의 따라잡기 상한
+		static constexpr std::chrono::seconds kReportInterval{ 5 };
+
+		std::chrono::steady_clock::time_point windowStart_;
+
+		int frames_ = 0;
+		double frameMsSum_ = 0.0;
+		double frameMsMax_ = 0.0;
+		int frameOver_ = 0;
+
+		int simFrames_ = 0;
+		int simTicks_ = 0;
+		double simMsSum_ = 0.0;
+		double simMsMax_ = 0.0;
+		int simOver_ = 0;
+		int late_ = 0;
+		int drop_ = 0;
+	};
+}
+
 void ServerManager::RunWorker(IoWorker& worker)
 {
 	bool running = true;
 	const std::chrono::milliseconds targetInterval(16);
 	(void)running; // 종료 조건은 shutdownRequested_ 가 정한다
 	TimeVal lastTime = getPerfTime();
+
+	// workers_ 는 Run 동안 크기가 변하지 않으므로 원소 주소로 워커 번호를 구할 수 있다.
+	const int workerIndex = static_cast<int>(&worker - workers_.data());
+	WorkerTickStats stats(std::chrono::steady_clock::now());
 
 	while (!shutdownRequested_.load(std::memory_order_relaxed))
 	{
@@ -603,11 +710,17 @@ void ServerManager::RunWorker(IoWorker& worker)
 		float delta = getPerfTimeUsec(curTime - lastTime) / 1000000.0f;
 		lastTime = curTime;
 
-		worker.UpdateGameLogic(delta);
+		auto logicStart = std::chrono::steady_clock::now();
+		const int simTicks = worker.UpdateGameLogic(delta);
+		auto logicEnd = std::chrono::steady_clock::now();
 
 		worker.TickDbMonitor(frameStart);
 
 		auto frameEnd = std::chrono::steady_clock::now();
+
+		stats.Add(MillisBetween(frameStart, frameEnd), MillisBetween(logicStart, logicEnd), simTicks);
+		stats.MaybeReport(workerIndex, worker.servers.size(), worker.SessionCount(), frameEnd);
+
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(frameEnd - frameStart);
 		auto sleepTime = targetInterval - elapsed;
 

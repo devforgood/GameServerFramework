@@ -135,10 +135,27 @@ namespace bot
 		LoadScenario();
 		BuildWorkers();
 
+		// 어느 포트에 몇 명씩 붙는지는 리포트 첫 줄에서 확인할 수 있어야 한다.
+		// 포트를 잘못 주면 봇은 정상으로 보이는데 월드 하나에만 부하가 실린다.
+		std::string port_text;
+		if (config_.server.ports.empty())
+		{
+			port_text = std::to_string(static_cast<unsigned>(config_.server.port));
+		}
+		else
+		{
+			for (size_t i = 0; i < config_.server.ports.size(); ++i)
+			{
+				if (i > 0) port_text += ",";
+				port_text += std::to_string(static_cast<unsigned>(config_.server.ports[i]));
+			}
+			port_text += " (포트 " + std::to_string(config_.server.ports.size()) + "개에 분산)";
+		}
+
 		log::Printf(LogLevel::Info,
-			"봇 %d명 / 워커 %d스레드 / %s:%u / 램프업 %d cps / 실행 %d초",
+			"봇 %d명 / 워커 %d스레드 / %s:%s / 램프업 %d cps / 실행 %d초",
 			config_.bots.count, config_.run.worker_threads,
-			config_.server.host.c_str(), static_cast<unsigned>(config_.server.port),
+			config_.server.host.c_str(), port_text.c_str(),
 			config_.run.connects_per_second, config_.run.duration_seconds);
 
 		const auto run_start = std::chrono::steady_clock::now();
