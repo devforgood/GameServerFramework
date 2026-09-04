@@ -25,6 +25,9 @@ namespace engine {
 	struct StateComponent;
 	struct PositionComponent;
 }
+namespace monsterai {
+	class MonsterAISystem;
+}
 class World;
 class NavMesh;
 class INavMovement;
@@ -126,6 +129,10 @@ private:
 
 	engine::SystemManager* systemManager_;
 
+	// 몬스터 AI(ECS 백엔드). 결정은 공유 결정표에서 나오고 개체는 상태 컴포넌트만 갖는다.
+	// 액터보다 오래 살아야 한다 — 몬스터가 파괴되며 컴포넌트를 반납한다.
+	std::unique_ptr<monsterai::MonsterAISystem> aiSystem_;
+
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
 
 
@@ -171,6 +178,9 @@ public:
 	// static 버전은 맵 인스턴스 없이도(예: 단위 테스트) 데이터+navmesh 만으로 검증할 때 사용한다.
 	static int ValidateMapDataOnNavMesh(const gamedata::Map* mapData, const NavMesh* navMesh);
 	int ValidateMapDataOnNavMesh() const { return ValidateMapDataOnNavMesh(mapData_, navMesh_); }
+
+	// 몬스터 AI 시스템(ECS 백엔드). Init 전이면 nullptr.
+	monsterai::MonsterAISystem* GetAISystem() const { return aiSystem_.get(); }
 
 	// update(deltaTime) 를 구성하는 단계들. 단계별 프로파일링을 위해 분리해 노출한다.
 	// update() 는 이들을 순서대로 호출할 뿐이라 직접 호출해도 동작은 동일하다.

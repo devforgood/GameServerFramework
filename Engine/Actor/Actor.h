@@ -86,6 +86,9 @@ public:
 
 	int GetActorId() { return actorId_; }
 
+	// ECS 엔티티 id. 액터의 컴포넌트를 직접 다루는 시스템이 쓴다(actorId 와는 다른 번호다).
+	int32_t GetEntityId() const { return entityId_; }
+
 	virtual void SetPosition(float x, float y, float z);
 
 	virtual bool IsCharacter() const

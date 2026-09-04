@@ -15,6 +15,7 @@
 #include "ActorFactory.h"
 #include "Common.h"
 #include "ComponentRegistry.h"
+#include "MonsterAISystem.h"
 #include "NavMesh.h"
 #include "INavMovement.h"
 #include "NavMovementFactory.h"
@@ -192,6 +193,11 @@ void Map::InitEcs()
 
 	// 컴포넌트 타입 목록은 ECS 모듈이 소유한다(새 컴포넌트 추가 시 Map 은 수정 불필요).
 	engine::RegisterGameComponents(systemManager_->GetEntityManager());
+
+	// 몬스터 AI 컴포넌트와 그것을 도는 시스템. AI 는 이동 시뮬레이션보다 먼저 돌아야 해서
+	// systemManager_ 의 시스템 목록(단계 3)이 아니라 UpdateActors(단계 1)에서 직접 돌린다.
+	monsterai::RegisterComponents(systemManager_->GetEntityManager());
+	aiSystem_ = std::make_unique<monsterai::MonsterAISystem>(this, systemManager_->GetEntityManager());
 
 	systemManager_->RegisterSystem<engine::TimerComponent>(
 		[](float deltaTime, engine::TimerComponent& timer) {
@@ -817,6 +823,11 @@ void Map::UpdateActors(float deltaTime)
 {
 	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
 		(*itr)->Update(deltaTime);
+
+	// ECS 백엔드 몬스터는 액터 순회가 아니라 여기서 한꺼번에 사고한다.
+	// 액터 루프 뒤에 두는 이유: 다른 백엔드도 Monster::Update 안에서 스킬 쿨다운을 진행한 뒤
+	// 트리를 틱했다. 순서를 맞춰야 같은 틱에 같은 결정을 내린다.
+	aiSystem_->Update(deltaTime);
 }
 
 // 단계 2: 네비게이션 이동 전략(Detour crowd / waypoint) 시뮬레이션.

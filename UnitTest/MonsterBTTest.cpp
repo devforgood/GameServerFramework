@@ -35,9 +35,13 @@ namespace
 //---------------------------------------------------------------------------------------
 // 몬스터 BT 백엔드 동등성 검증.
 //
-// 두 백엔드(behaviortree_cpp / 인하우스)는 같은 트리 구조·같은 노드 로직을 구현하므로,
-// 같은 상황에서 같은 결정을 내려야 한다. 틱 비용 때문에 기본값을 인하우스로 바꿨는데
+// 세 백엔드(behaviortree_cpp / 인하우스 / ECS)는 같은 트리 구조·같은 노드 로직을 구현하므로,
+// 같은 상황에서 같은 결정을 내려야 한다. 틱 비용 때문에 기본값을 계속 바꿔 왔는데
 // (Benchmark/PERFORMANCE.md), 그 교체가 AI 동작을 바꾸지 않았음을 여기서 고정한다.
+//
+// ECS 백엔드는 배회 중 몇 틱에 한 번만 사고하므로(MonsterAISystem::kIdleThinkInterval)
+// 반응이 즉시가 아니다. 아래 시나리오들이 넉넉한 틱 수를 도는 이유다 —
+// 원래도 적 탐지는 10틱마다 한 번이라(DetectEnemy 스태거링) 관측 가능한 지연은 같다.
 //
 // 백엔드는 스폰 시점에 트리를 결정하므로 반드시 몬스터 생성 전에 설정한다.
 //---------------------------------------------------------------------------------------
@@ -219,7 +223,12 @@ TEST_P(MonsterBTTest, SwitchesToDeadBranchWhenHealthDepleted)
 INSTANTIATE_TEST_CASE_P(
 	Backends,
 	MonsterBTTest,
-	::testing::Values(Monster::BTBackend::CodeBase, Monster::BTBackend::BTCpp),
+	::testing::Values(Monster::BTBackend::Ecs, Monster::BTBackend::CodeBase, Monster::BTBackend::BTCpp),
 	[](const ::testing::TestParamInfo<Monster::BTBackend>& info) {
-		return info.param == Monster::BTBackend::CodeBase ? "CodeBase" : "BTCpp";
+		switch (info.param)
+		{
+		case Monster::BTBackend::Ecs:      return "Ecs";
+		case Monster::BTBackend::CodeBase: return "CodeBase";
+		default:                           return "BTCpp";
+		}
 	});

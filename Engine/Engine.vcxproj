@@ -181,6 +181,7 @@
     <ClCompile Include="Item\ItemFactory.cpp" />
     <ClCompile Include="Actor\Monster.cpp" />
     <ClCompile Include="Actor\NonPlayerCharacter.cpp" />
+    <ClCompile Include="AI\MonsterAISystem.cpp" />
     <ClCompile Include="AI\MonsterBT.cpp" />
     <ClCompile Include="AI\MonsterBTRunner.cpp" />
     <ClCompile Include="AI\MonsterCodeBaseBT.cpp" />
@@ -285,6 +286,7 @@
     <ClInclude Include="Message\GameMessage.h" />
     <ClInclude Include="Actor\Monster.h" />
     <ClInclude Include="Actor\NonPlayerCharacter.h" />
+    <ClInclude Include="AI\MonsterAISystem.h" />
     <ClInclude Include="AI\MonsterBT.h" />
     <ClInclude Include="AI\MonsterBTNodes.h" />
     <ClInclude Include="AI\MonsterBTRunner.h" />

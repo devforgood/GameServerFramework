@@ -17,13 +17,17 @@ public:
 	enum class BTBackend
 	{
 		BTCpp,    // behaviortree_cpp (GameData/Monster.xml). BT 디버그 뷰어를 지원한다.
-		CodeBase, // ../BehaviorTree (인하우스, MonsterCodeBaseBT) — 기본값. 틱 비용이 낮다.
+		CodeBase, // ../BehaviorTree (인하우스, MonsterCodeBaseBT). 마리마다 노드 객체를 만든다.
+		Ecs,      // 트리를 컴파일한 결정표 + 개체별 컴포넌트 (MonsterAISystem) — 기본값.
 	};
 	static BTBackend btBackend_;
 
 	// 몬스터 근접 공격 스킬 id(skill.json, monster_only 데이터 전용 스킬).
 	// 사거리/각도/데미지/쿨다운 튜닝은 전부 데이터에서 한다.
 	static constexpr int kMeleeSkillId = 3;
+
+	// 근접 공격 판정 거리(맨해튼). AttackRange() 와 ECS AI 의 사거리 패스가 같은 값을 쓴다.
+	static constexpr int kAttackRange = 3;
 
 private:
 	MonsterBTRunner brain_;     // 선택된 백엔드의 BT 트리(생성/틱/해제를 위임한다)
@@ -51,6 +55,11 @@ public:
 	int Attack();
 	int Resume();
 
+	// 체력이 바뀌면 AI 를 깨운다. ECS 백엔드는 배회 중 몇 틱에 한 번만 사고하므로,
+	// 그냥 두면 맞아 죽은 몬스터가 다음 사고 차례까지 살아 있는 것처럼 보인다.
+	void SetHealth(int health) override;
+	void DecrementHealth(int amount) override;
+
 	SkillSet& GetSkillSet() { return skillSet_; }
 
 	// 배회(patrol) 의 중심점. 스폰 시 네비메시에 스냅된 위치다.
@@ -68,5 +77,9 @@ public:
 	void NotifyKilledBy();
 
 	static void registerLuaFunctionAll();
+
+private:
+	// ECS 백엔드에서만 의미가 있다(다른 백엔드는 매 틱 사고하므로 깨울 것이 없다).
+	void WakeAI();
 };
 

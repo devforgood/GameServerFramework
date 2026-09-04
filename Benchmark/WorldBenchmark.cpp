@@ -1299,3 +1299,112 @@ BENCHMARK_CAPTURE(BM_BTWorldTickActors, codebase, Monster::BTBackend::CodeBase)
 	->Arg(1000)->Arg(10000)
 	->Unit(benchmark::kMillisecond)
 	->MinTime(3.0);
+BENCHMARK_CAPTURE(BM_BTWorldTickActors, ecs, Monster::BTBackend::Ecs)
+	->Arg(1000)->Arg(10000)
+	->Unit(benchmark::kMillisecond)
+	->MinTime(3.0);
+
+// 백엔드별 수용량(교전 포함). BM_WorldTickCapacityEngaged 와 같은 구성이지만 백엔드를
+// 스폰 전에 고정해 두 구현을 한 번의 실행으로 비교한다. 인자는 (몬스터 수, 플레이어 수).
+//
+// actors 단계만 재는 BM_BTWorldTickActors 와 달리 월드 전체(update)를 재므로,
+// 백엔드 교체가 이동/ECS/전송 단계에 미치는 영향(캐시 압력, 상태 변경 빈도)까지 들어온다.
+static void BM_BTCapacityEngaged(benchmark::State& state, Monster::BTBackend backend)
+{
+	const int count = static_cast<int>(state.range(0));
+	const int playerCount = static_cast<int>(state.range(1));
+	const auto& spawns = ValidSpawns("waypoint");
+
+	const Monster::BTBackend previous = Monster::btBackend_;
+	Monster::btBackend_ = backend; // 트리는 스폰 시점에 정해진다.
+
+	World world;
+	world.Init("waypoint");
+	const int spawned = SpawnMonsters(world, count, "waypoint");
+
+	std::vector<std::shared_ptr<Player>> players;
+	int placed = 0;
+	if (!spawns.empty() && playerCount > 0)
+	{
+		const size_t stride = std::max<size_t>(1, spawns.size() / static_cast<size_t>(playerCount));
+		for (int i = 0; i < playerCount; ++i)
+		{
+			const auto& c = spawns[(i * stride) % spawns.size()];
+			syncnet::Vec3 v(c[0], c[1], c[2]);
+			auto player = std::make_shared<Player>();
+			if (world.OnAddAgent(player, syncnet::GameObjectType_Character, &v))
+			{
+				players.push_back(player);
+				++placed;
+			}
+		}
+	}
+
+	MeasureTickBudget(state, world, spawned, placed);
+	Monster::btBackend_ = previous;
+}
+BENCHMARK_CAPTURE(BM_BTCapacityEngaged, codebase, Monster::BTBackend::CodeBase)
+	->Args({ 10000, 50 })->Args({ 20000, 50 })->Args({ 40000, 50 })
+	->Args({ 10000, 0 })->Args({ 40000, 0 })
+	->Unit(benchmark::kMillisecond)
+	->MinTime(1.0);
+BENCHMARK_CAPTURE(BM_BTCapacityEngaged, ecs, Monster::BTBackend::Ecs)
+	->Args({ 10000, 50 })->Args({ 20000, 50 })->Args({ 40000, 50 })
+	->Args({ 10000, 0 })->Args({ 40000, 0 })
+	->Unit(benchmark::kMillisecond)
+	->MinTime(1.0);
+
+// 백엔드별 수용량(큰 맵). BM_LargeMapTickCapacityEngaged 와 같은 구성 —
+// navmesh 전체에 면적 비례로 흩뿌리고 플레이어는 Map::Enter 까지 거쳐 실제 전송 단계를 태운다.
+// 좁은 primary 맵에 몬스터를 쌓는 BM_BTCapacityEngaged 보다 운영 분포에 가깝다.
+static void BM_LargeMapBTBackend(benchmark::State& state, Monster::BTBackend backend)
+{
+	const int count = static_cast<int>(state.range(0));
+	const int playerCount = static_cast<int>(state.range(1));
+
+	const Monster::BTBackend previous = Monster::btBackend_;
+	Monster::btBackend_ = backend; // 트리는 스폰 시점에 정해진다.
+
+	World world;
+	world.Init("waypoint");
+	Map* map = LargestMap(world);
+
+	const auto spawns = SampleNavMeshPoints(map->GetNavMesh(), count, kMonsterSeed);
+	int spawned = 0;
+	for (const auto& c : spawns)
+	{
+		syncnet::Vec3 v(c[0], c[1], c[2]);
+		if (map->OnAddAgent(nullptr, syncnet::GameObjectType_Monster, &v))
+			++spawned;
+	}
+
+	const auto playerSpots = SampleNavMeshPoints(map->GetNavMesh(), playerCount, kPlayerSeed);
+	std::vector<std::shared_ptr<Player>> players;
+	int placed = 0;
+	for (const auto& c : playerSpots)
+	{
+		syncnet::Vec3 v(c[0], c[1], c[2]);
+		auto player = std::make_shared<Player>();
+		player->SetSpawnLocation(map->GetMapId(), v);
+		map->Enter(player);
+		if (map->OnAddAgent(player, syncnet::GameObjectType_Character, &v))
+		{
+			players.push_back(player);
+			++placed;
+		}
+	}
+
+	state.counters["map_id"] = map->GetMapId();
+	MeasureTickBudget(state, world, spawned, placed);
+	Monster::btBackend_ = previous;
+}
+BENCHMARK_CAPTURE(BM_LargeMapBTBackend, codebase, Monster::BTBackend::CodeBase)
+	->Args({ 10000, 50 })->Args({ 20000, 50 })->Args({ 40000, 50 })->Args({ 60000, 50 })
+	->Unit(benchmark::kMillisecond)
+	->MinTime(1.0);
+// ECS 는 40,000마리에서도 예산에 여유가 있어 한계를 보려면 더 큰 수가 필요하다.
+BENCHMARK_CAPTURE(BM_LargeMapBTBackend, ecs, Monster::BTBackend::Ecs)
+	->Args({ 10000, 50 })->Args({ 20000, 50 })->Args({ 40000, 50 })->Args({ 60000, 50 })
+	->Args({ 100000, 50 })->Args({ 140000, 50 })
+	->Unit(benchmark::kMillisecond)
+	->MinTime(1.0);

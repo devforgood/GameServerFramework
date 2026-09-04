@@ -148,6 +148,7 @@
     <ClCompile Include="GameModeTest.cpp" />
     <ClCompile Include="MapNavMeshTest.cpp" />
     <ClCompile Include="SkillSystemTest.cpp" />
+    <ClCompile Include="MonsterAISystemTest.cpp" />
     <ClCompile Include="MonsterBTTest.cpp" />
     <ClCompile Include="CombatStatsTest.cpp" />
     <ClCompile Include="ServerSecurityTest.cpp" />

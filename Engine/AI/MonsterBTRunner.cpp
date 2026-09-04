@@ -1,6 +1,7 @@
 #include "MonsterBTRunner.h"
 
 #include "Monster.h"
+#include "MonsterAISystem.h"
 #include "MonsterBT.h"
 #include "MonsterCodeBaseBT.h"
 
@@ -15,8 +16,11 @@ void MonsterBTRunner::Create(Monster* monster)
 		ops_ = &MonsterBT::Ops();
 		break;
 	case Monster::BTBackend::CodeBase:
-	default:
 		ops_ = &MonsterCodeBaseBT::Ops();
+		break;
+	case Monster::BTBackend::Ecs:
+	default:
+		ops_ = &MonsterEcsBT::Ops();
 		break;
 	}
 

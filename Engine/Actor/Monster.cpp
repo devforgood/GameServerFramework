@@ -9,6 +9,7 @@
 #include "Common.h"
 #include "Map.h"
 #include "INavMovement.h"
+#include "MonsterAISystem.h"
 #include "SkillRegistry.h"
 #include "Player.h"
 #include "Character.h"
@@ -19,10 +20,11 @@
 
 extern std::_Binder<std::_Unforced, std::uniform_int_distribution<>&, std::default_random_engine&> dice;
 
-// 기본 백엔드는 인하우스 BT 다. 두 트리는 같은 로직을 수행하지만 틱 비용이 크게 다르다
-// (10,000마리 UpdateActors 기준 behaviortree_cpp 50ms vs 인하우스 12ms — Benchmark/PERFORMANCE.md).
+// 기본 백엔드는 ECS 다. 세 백엔드는 같은 노드 로직(MonsterBTNodes.h)을 공유하고 트리 구조도
+// 1:1 로 같지만 실행 방식이 다르다 — ECS 는 트리를 전부가 공유하고, 개체는 상태 컴포넌트만
+// 가지며, 배회 중에는 몇 틱에 한 번만 사고한다(Benchmark/PERFORMANCE.md).
 // behaviortree_cpp 로 되돌리면 BT 디버그 뷰어(BTDebugManager)를 쓸 수 있다.
-Monster::BTBackend Monster::btBackend_ = Monster::BTBackend::CodeBase;
+Monster::BTBackend Monster::btBackend_ = Monster::BTBackend::Ecs;
 
 
 Monster::Monster(Map* map)
@@ -90,7 +92,7 @@ int Monster::AttackRange()
 	const float* this_pos = nav->GetPos(GetActorId());
 	const float* target_pos = nav->GetPos(targetActorId_);
 
-	if (ManhattanDistance(this_pos, target_pos) > 3)
+	if (ManhattanDistance(this_pos, target_pos) > kAttackRange)
 		return -1;
 
 	float hitPoint[3];
@@ -122,6 +124,28 @@ int Monster::Resume()
 {
 	map_->GetNavMap()->Resume(GetActorId());
 	return 0;
+}
+
+void Monster::WakeAI()
+{
+	if (map_ == nullptr)
+		return;
+
+	monsterai::MonsterAISystem* aiSystem = map_->GetAISystem();
+	if (aiSystem != nullptr)
+		aiSystem->Wake(this);
+}
+
+void Monster::SetHealth(int health)
+{
+	Actor::SetHealth(health);
+	WakeAI();
+}
+
+void Monster::DecrementHealth(int amount)
+{
+	Actor::DecrementHealth(amount);
+	WakeAI();
 }
 
 void Monster::SetDataId(int dataId)
