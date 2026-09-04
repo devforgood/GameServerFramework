@@ -66,9 +66,19 @@ private:
 	std::unique_ptr<AoIState> aoi_;
 	bool aoiEnabled_ = false;
 
+	// 관심영역을 켜는/끄는 인구. 어느 쪽이 싼지는 인구가 정하고, 교차점은 봇 부하 측정에서
+	// 600~800명 사이였다(PERFORMANCE.md 17절). 경계에서 모드가 오가지 않도록 벌려 둔다.
+	static constexpr size_t kAoIEnablePlayers = 700;
+	static constexpr size_t kAoIDisablePlayers = 600;
+
 	float AoIRadius() const;
 	bool AoIEnabled() const { return aoiEnabled_; }
 	void RefreshAoIMode();
+
+	// 인구가 바뀌는 자리(입장/퇴장)에서 부른다. 필요하면 모드를 바꾼다.
+	void UpdateAoIMode();
+	void EnableAoI();
+	void DisableAoI();
 	void SubscribeViewer(long playerId, Actor* character, bool sendSnapshot);
 	void UnsubscribeViewer(long playerId);
 	void OnViewerCellChanged(long playerId, Actor* character);

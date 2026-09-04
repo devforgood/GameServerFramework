@@ -192,3 +192,136 @@ TEST_F(AreaOfInterestTest, MovingCharacterUpdatesInterest)
 	EXPECT_TRUE(map_->IsInViewOf(player->GetPlayerId(), target->GetActorId()))
 		<< "이동한 캐릭터의 시야에 새 액터가 들어오지 않았습니다";
 }
+
+//---------------------------------------------------------------------------------------
+// 인구에 따른 모드 전환.
+//
+// 브로드캐스트와 관심영역 중 어느 쪽이 싼지는 인구가 정한다(PERFORMANCE.md 17절 —
+// 600명에서는 브로드캐스트가, 800명에서는 관심영역이 이긴다). 그래서 데이터로 한쪽을
+// 고정하지 않고 인구를 보고 바꾼다. 여기서는 그 전환 규칙을 고정한다.
+//
+// 위 테스트들과 달리 SetAoIRadius(강제 켬)를 쓰지 않는다 — 강제 켬은 인구를 무시하므로
+// 전환 자체를 볼 수 없다. 대신 맵 데이터의 aoi_radius 를 세운 사본으로 맵을 만든다.
+//---------------------------------------------------------------------------------------
+
+class AoIModeSwitchTest : public ::testing::Test
+{
+protected:
+	std::unique_ptr<World> world_;
+	std::unique_ptr<Map> map_;
+	gamedata::Map mapData_{}; // Map 이 포인터로 들고 있으므로 이 픽스처가 수명을 쥔다
+	std::vector<std::shared_ptr<Player>> players_;
+
+	void SetUp() override
+	{
+		EnsureNetLogger();
+
+		const std::string& dataPath = GameDataPath::Resolve();
+		ASSERT_TRUE(std::filesystem::exists(dataPath + "Map.json"));
+		ASSERT_TRUE(ResourceLoader::Instance().LoadResources(dataPath)) << "LoadResources 실패";
+
+		const gamedata::Map* source = nullptr;
+		for (const auto& [id, m] : ResourceLoader::Instance().GetMaps())
+		{
+			if (m == nullptr || m->navmesh_path.empty())
+				continue;
+			if (!std::filesystem::exists(GameDataPath::Resolve() + m->navmesh_path))
+				continue;
+			if (m->spawn_points.player_spawn.empty())
+				continue;
+			if (source == nullptr || m->id < source->id)
+				source = m;
+		}
+		ASSERT_NE(source, nullptr);
+
+		mapData_ = *source;
+		mapData_.aoi_radius = 5.0; // 이 맵은 관심영역을 쓸 수 있다(켜는 시점은 인구가 정한다)
+
+		world_ = std::make_unique<World>();
+		map_ = std::make_unique<Map>(world_.get());
+		ASSERT_TRUE(map_->Init("waypoint", &mapData_)) << "Map::Init 실패";
+	}
+
+	// 캐릭터 없이 입장만 시킨다 — 전환 규칙은 인구만 본다.
+	void EnterPlayers(size_t count)
+	{
+		for (size_t i = 0; i < count; ++i)
+		{
+			auto player = std::make_shared<Player>();
+			players_.push_back(player);
+			map_->Enter(player);
+		}
+	}
+
+	void LeavePlayers(size_t count)
+	{
+		for (size_t i = 0; i < count && !players_.empty(); ++i)
+		{
+			map_->leave(players_.back());
+			players_.pop_back();
+		}
+	}
+};
+
+// 사람이 적으면 브로드캐스트, 많아지면 관심영역으로 넘어간다.
+TEST_F(AoIModeSwitchTest, TurnsOnWhenCrowded)
+{
+	EXPECT_FALSE(map_->AoIEnabled()) << "빈 맵에서 관심영역이 켜져 있습니다";
+
+	EnterPlayers(Map::kAoIEnablePlayers - 1);
+	EXPECT_FALSE(map_->AoIEnabled()) << "기준 인원 미만인데 켜졌습니다";
+
+	EnterPlayers(1);
+	EXPECT_TRUE(map_->AoIEnabled()) << "기준 인원에 닿았는데 켜지지 않았습니다";
+}
+
+// 경계에서 오가지 않게 끄는 값이 켜는 값보다 낮다(히스테리시스).
+TEST_F(AoIModeSwitchTest, KeepsModeAcrossHysteresisBand)
+{
+	EnterPlayers(Map::kAoIEnablePlayers);
+	ASSERT_TRUE(map_->AoIEnabled());
+
+	// 켜는 값 바로 아래로 내려와도 유지된다.
+	LeavePlayers(Map::kAoIEnablePlayers - Map::kAoIDisablePlayers);
+	EXPECT_EQ(map_->GetPlayerCount(), Map::kAoIDisablePlayers);
+	EXPECT_TRUE(map_->AoIEnabled()) << "히스테리시스 구간에서 모드가 바뀌었습니다";
+
+	// 끄는 값 아래로 내려가면 브로드캐스트로 돌아간다.
+	LeavePlayers(1);
+	EXPECT_FALSE(map_->AoIEnabled());
+}
+
+// 데이터가 반경을 주지 않은 맵은 사람이 아무리 많아도 켜지지 않는다.
+TEST_F(AoIModeSwitchTest, StaysOffWhenMapHasNoRadius)
+{
+	mapData_.aoi_radius = 0.0;
+
+	EnterPlayers(Map::kAoIEnablePlayers + 10);
+	EXPECT_FALSE(map_->AoIEnabled());
+}
+
+// 끄는 순간 모든 액터를 변경됨으로 세운다.
+// 관심영역에 걸러져 클라가 모르는 액터가 있는데, 브로드캐스트는 '바뀐 것' 만 보내므로
+// 가만히 있는 액터는 이 처리가 없으면 영영 전달되지 않는다.
+TEST_F(AoIModeSwitchTest, MarksEveryActorChangedWhenTurningOff)
+{
+	syncnet::Vec3 pos(
+		static_cast<float>(mapData_.spawn_points.player_spawn[0].position.x),
+		static_cast<float>(mapData_.spawn_points.player_spawn[0].position.y),
+		static_cast<float>(mapData_.spawn_points.player_spawn[0].position.z));
+	auto monster = std::dynamic_pointer_cast<Monster>(
+		map_->OnAddAgent(nullptr, syncnet::GameObjectType_Monster, &pos));
+	ASSERT_NE(monster, nullptr);
+
+	EnterPlayers(Map::kAoIEnablePlayers);
+	ASSERT_TRUE(map_->AoIEnabled());
+
+	monster->ResetChangedFlag();
+	ASSERT_EQ(monster->GetChangedFlag(), static_cast<long>(GameObjectChangeType::None));
+
+	LeavePlayers(Map::kAoIEnablePlayers - Map::kAoIDisablePlayers + 1);
+	ASSERT_FALSE(map_->AoIEnabled());
+
+	EXPECT_EQ(monster->GetChangedFlag(), static_cast<long>(GameObjectChangeType::All))
+		<< "브로드캐스트로 돌아갈 때 전체 스냅샷이 예약되지 않았습니다";
+}

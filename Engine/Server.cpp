@@ -18,6 +18,29 @@
 #include "IAuthenticator.h"
 #include "MessagePolicy.h"
 
+namespace
+{
+	//-------------------------------------------------------------------------------------
+	// 송신량 계측.
+	//
+	// 부하가 커질 때 무너지는 곳이 월드 틱이 아니라 송신 경로라는 것은 [tick] 로그가
+	// 이미 보여 준다(frame 은 1초를 넘는데 sim 은 예산의 30%). 그런데 "얼마나 보내고
+	// 있는가" 는 서버 안에서 볼 수가 없어서, 봇이 받은 바이트로 역산할 수밖에 없었다.
+	// 그래서는 관심영역(AoI)을 켰을 때 무엇이 줄었는지 서버 쪽에서 확인할 수 없다.
+	//
+	// 세션 송신은 GameSession::Send 하나로 모이므로 여기서만 세면 된다. 월드는 워커
+	// 스레드에 고정되어 있으니 thread_local 이면 곧 워커별 집계이고, 스레드 사이에
+	// 새 공유 상태(원자 연산/락)를 만들지 않는다 — 계측이 재려는 것을 바꾸면 안 된다.
+	//-------------------------------------------------------------------------------------
+	struct SendCounters
+	{
+		uint64_t messages = 0;
+		uint64_t bytes = 0;
+	};
+
+	thread_local SendCounters g_sendCounters;
+}
+
 GameChannel::GameChannel()
 {
 	world_ = new World();
@@ -145,6 +168,11 @@ void GameSession::Send(std::shared_ptr<send_message>& msg)
 
 	bool write_in_progress = !writeMsgs_.empty();
 	writeMsgs_.push_back(msg);
+
+	// 실제로 큐에 들어간 것만 센다(위에서 끊긴 세션은 나가지 않는다).
+	++g_sendCounters.messages;
+	g_sendCounters.bytes += GameMessage::header_length + msg->GetSize();
+
 	if (!write_in_progress)
 	{
 		DoWrite();
@@ -648,16 +676,26 @@ namespace
 				return;
 
 			const double windowSec = std::chrono::duration<double>(now - windowStart_).count();
+
+			// 이 창 동안 이 워커가 내보낸 양. 세션당 부하가 아니라 '얼마나 보내고 있는가'가
+			// 지금의 병목이라 프레임/틱과 같은 줄에 둔다.
+			const uint64_t sentMessages = g_sendCounters.messages;
+			const uint64_t sentBytes = g_sendCounters.bytes;
+			g_sendCounters = SendCounters{};
+
 			if (frames_ > 0 && (sessionCount > 0 || frameOver_ > 0 || simOver_ > 0))
 			{
 				LOG.info("[tick] worker={} servers={} sess={} | frame avg {:.2f} max {:.2f} ms "
 					"over16 {}/{} ({:.0f} fps) | sim avg {:.2f} max {:.2f} ms over100 {}/{} "
-					"late {} drop {}",
+					"late {} drop {} | out {:.1f} MB/s {:.0f} msg/s avg {:.0f} B",
 					workerIndex, serverCount, sessionCount,
 					frameMsSum_ / frames_, frameMsMax_, frameOver_, frames_,
 					frames_ / windowSec,
 					simFrames_ > 0 ? simMsSum_ / simFrames_ : 0.0, simMsMax_,
-					simOver_, simFrames_, late_, drop_);
+					simOver_, simFrames_, late_, drop_,
+					static_cast<double>(sentBytes) / windowSec / (1024.0 * 1024.0),
+					static_cast<double>(sentMessages) / windowSec,
+					sentMessages > 0 ? static_cast<double>(sentBytes) / static_cast<double>(sentMessages) : 0.0);
 			}
 
 			windowStart_ = now;

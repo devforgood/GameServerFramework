@@ -312,11 +312,19 @@ float Map::AoIRadius() const
 }
 
 // 반경/데이터가 바뀌면 켜짐 여부를 다시 계산한다. 매 액터마다 확인하지 않도록 bool 로 캐시한다.
+//
+// 반경 override(SetAoIRadius)는 "지금 켜라"는 뜻이라 인구와 무관하게 그대로 켠다
+// (벤치마크/단위 테스트가 소수의 플레이어로 관심영역 동작을 재현하는 통로다).
+// 데이터(aoi_radius)는 "이 맵은 이 반경으로 쓸 수 있다"까지고, 실제로 켜는 것은 인구다.
 void Map::RefreshAoIMode()
 {
-	aoiEnabled_ = AoIRadius() > 0.0f;
-	if (aoiEnabled_ && aoi_ == nullptr)
-		aoi_ = std::make_unique<AoIState>();
+	if (aoi_ != nullptr && aoi_->radiusOverride > 0.0f)
+	{
+		aoiEnabled_ = true;
+		return;
+	}
+
+	UpdateAoIMode();
 }
 
 void Map::SetAoIRadius(float radius)
@@ -325,6 +333,92 @@ void Map::SetAoIRadius(float radius)
 		aoi_ = std::make_unique<AoIState>();
 	aoi_->radiusOverride = radius;
 	RefreshAoIMode();
+}
+
+//---------------------------------------------------------------------------------------
+// 인구에 따라 브로드캐스트 ↔ 관심영역을 오간다.
+//
+// 둘 중 어느 쪽이 싼지는 인구가 정한다(측정치는 PERFORMANCE.md 17절).
+//   - 사람이 적으면 브로드캐스트가 싸다. 메시지를 한 번 만들어 전원이 같은 버퍼를 공유한다.
+//   - 사람이 많으면 관심영역이 싸다. 뷰어마다 메시지를 따로 만드는 대신, 보내는 양이
+//     '전원 × 전원' 에서 '시야 안 × 그 자리를 보는 사람' 으로 떨어진다.
+// 봇 부하 측정에서 교차점은 600~800명 사이였다(800명에서 브로드캐스트는 p99 866ms 에
+// drop 이 나고, 관심영역은 484ms 에 drop 이 없다. 600명에서는 반대다).
+//
+// 그래서 데이터로 한쪽을 고정하면 어느 구간에서든 한 번은 손해를 본다. 여기서 인구를 보고
+// 바꾼다. 경계에서 오가지 않도록 켜는 값과 끄는 값을 벌려 둔다(히스테리시스).
+//---------------------------------------------------------------------------------------
+void Map::UpdateAoIMode()
+{
+	if (aoi_ != nullptr && aoi_->radiusOverride > 0.0f)
+		return; // 명시적으로 켜 둔 상태다 — 인구로 끄지 않는다.
+
+	// 데이터가 반경을 주지 않은 맵은 관심영역을 쓰지 않는다.
+	if (mapData_ == nullptr || mapData_->aoi_radius <= 0.0)
+	{
+		if (aoiEnabled_)
+			DisableAoI();
+		return;
+	}
+
+	const size_t playerCount = players_.size();
+	if (!aoiEnabled_ && playerCount >= kAoIEnablePlayers)
+		EnableAoI();
+	else if (aoiEnabled_ && playerCount < kAoIDisablePlayers)
+		DisableAoI();
+}
+
+// 켜는 순간 이미 들어와 있는 플레이어 전원을 구독시킨다. 구독과 함께 스냅샷(enter)이
+// 큐잉되므로, 전환 직후 한 틱은 브로드캐스트 한 틱과 같은 양이 나간다(그 뒤로 줄어든다).
+void Map::EnableAoI()
+{
+	if (aoi_ == nullptr)
+		aoi_ = std::make_unique<AoIState>();
+
+	aoiEnabled_ = true;
+
+	for (auto& entry : players_)
+	{
+		if (entry.second == nullptr)
+			continue;
+		auto character = entry.second->GetCharacter();
+		if (character == nullptr)
+			continue;
+
+		SubscribeViewer(entry.first, character.get(), /*sendSnapshot=*/true);
+	}
+
+	LOG.info("Map {} 관심영역 켬 (플레이어 {}명, 반경 {:.1f})", GetMapId(), players_.size(), AoIRadius());
+}
+
+// 끌 때는 구독을 걷어내는 것만으로 부족하다. 관심영역에 걸러져 클라이언트가 아직 모르는
+// 액터가 있는데, 브로드캐스트는 '이번 틱에 바뀐 것' 만 보내므로 가만히 있는 액터는
+// 영영 전달되지 않는다. 그래서 전원을 변경됨으로 세워 다음 한 틱을 전체 스냅샷으로 만든다.
+void Map::DisableAoI()
+{
+	aoiEnabled_ = false;
+
+	if (aoi_ != nullptr)
+	{
+		std::vector<long> viewers;
+		viewers.reserve(aoi_->slotOf.size());
+		for (const auto& entry : aoi_->slotOf)
+			viewers.push_back(entry.first);
+
+		for (const long playerId : viewers)
+			UnsubscribeViewer(playerId);
+
+		for (AoIState::Slot& slot : aoi_->slots)
+			slot.pending.clear();
+	}
+
+	for (auto& actor : actorList_)
+	{
+		if (actor != nullptr)
+			actor->AddChangedFlag(static_cast<long>(GameObjectChangeType::All));
+	}
+
+	LOG.info("Map {} 관심영역 끔 (플레이어 {}명)", GetMapId(), players_.size());
 }
 
 bool Map::IsInViewOf(long playerId, int actorId)
@@ -1192,6 +1286,7 @@ void Map::OnRemoveAgent(int actor_id)
 		if (itr_player != players_.end())
 		{
 			players_.erase(itr_player);
+			UpdateAoIMode(); // 인구가 줄었다.
 		}
 		ForgetPlayerModeState(character->GetPlayerId());
 	}
@@ -1328,6 +1423,9 @@ void Map::Enter(std::shared_ptr<Player> player)
 	}
 	players_.insert(std::make_pair(player->GetPlayerId(), player));
 
+	// 인구가 늘었다 — 관심영역을 켜야 하는 구간인지 본다.
+	UpdateAoIMode();
+
 	// 진행 로직에 입장을 알린다. 생존 수를 먼저 채워야 on_player_join 안에서 조회해도 맞는다.
 	if (gameMode_ != nullptr)
 	{
@@ -1391,6 +1489,9 @@ void Map::leave(std::shared_ptr<Player> player)
 	UnsubscribeViewer(player->GetPlayerId());
 	players_.erase(itr);
 	ForgetPlayerModeState(player->GetPlayerId());
+
+	// 인구가 줄었다 — 브로드캐스트가 다시 싼 구간인지 본다.
+	UpdateAoIMode();
 }
 
 // 맵을 떠난 플레이어의 사망/부활 대기 상태를 지운다. 남겨 두면 다른 맵으로 간 뒤에도
