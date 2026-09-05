@@ -93,7 +93,7 @@
       "movable_objects": []
     },
     "navmesh_path": "Starting Village_navmesh.bin",
-    "aoi_radius": 0
+    "aoi_radius": 5
   },
   {
     "id": 2,

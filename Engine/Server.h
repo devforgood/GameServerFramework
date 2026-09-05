@@ -131,6 +131,11 @@ private:
 	GameChannel& room_;
 	RingBuffer* ringBuf_;
 	GameMessageQueue writeMsgs_;
+
+	// 모아쓰기(gather write) 상태. 큐에 쌓인 메시지를 한 번의 async_write 로 내보낸다.
+	// writeBuffers_ 는 그 write 가 끝날 때까지 살아 있어야 하므로 멤버로 둔다.
+	std::vector<boost::asio::const_buffer> writeBuffers_;
+	size_t writeBatch_ = 0;      // 지금 나가는 중인 메시지 개수(완료 시 이만큼 큐에서 뺀다)
 	PlayerController* playerController_;
 	std::shared_ptr<Player> player_;
 	boost::asio::strand<boost::asio::thread_pool::executor_type> strand_;

@@ -193,6 +193,51 @@ TEST_F(AreaOfInterestTest, MovingCharacterUpdatesInterest)
 		<< "이동한 캐릭터의 시야에 새 액터가 들어오지 않았습니다";
 }
 
+// 회귀 테스트: 부활은 좌표를 직접 쓰는 이동이라 구독이 따라가지 않았다.
+//
+// 평소 이동은 SyncActorState 가 '네비 위치 != 액터 위치' 를 보고 구독을 옮긴다.
+// 그런데 RespawnPlayer 는 스스로 위치를 써 버려서 그 대조가 '변화 없음' 이 됐고,
+// 부활한 플레이어의 구독 셀은 죽은 자리에 남았다. 그러면 새 자리의 어떤 액터도
+// 받지 못하고 — 자기 자신의 부활조차 못 받아서 클라는 계속 죽은 줄 안다.
+// (1,000봇 부하에서 서버는 1,698번 부활시켰는데 봇이 인지한 것은 228번뿐이었다.)
+TEST_F(AreaOfInterestTest, RespawnMovesInterestToSpawnPoint)
+{
+	std::shared_ptr<Player> player;
+	auto character = SpawnCharacter(player, 0.0f, 0.0f);
+	ASSERT_NE(character, nullptr);
+
+	// 사망/부활은 players_ 에 등록된 플레이어만 대상으로 돈다.
+	map_->Enter(player);
+
+	// 스폰 지점 옆의 몬스터. 부활하면 다시 보여야 하는 대상이다.
+	auto atSpawn = SpawnMonster(1.0f, 0.0f);
+	ASSERT_NE(atSpawn, nullptr);
+	ASSERT_TRUE(map_->IsInViewOf(player->GetPlayerId(), atSpawn->GetActorId()));
+
+	// 스폰 지점에서 떨어진 곳으로 이동(평소 이동 경로 — 여기서는 구독이 잘 따라간다).
+	// 목적지는 네비메시 위여야 하므로 그 자리에 세운 몬스터의 좌표를 그대로 쓴다.
+	auto farAway = SpawnMonster(12.0f, 0.0f);
+	ASSERT_NE(farAway, nullptr);
+
+	const Vector3& farPos = farAway->GetPosition();
+	Vector3 dest(farPos.x, farPos.y, farPos.z);
+	ASSERT_TRUE(map_->GetNavMap()->TeleportAgent(character->GetActorId(), dest.pos()));
+	map_->UpdateSystems(1.0f / 30.0f);
+	ASSERT_FALSE(map_->IsInViewOf(player->GetPlayerId(), atSpawn->GetActorId()))
+		<< "멀리 이동했는데 스폰 지점의 액터가 아직 시야에 있습니다(사전 조건 실패)";
+
+	// 죽고 즉시 부활시킨다.
+	character->SetHealth(0);
+	map_->UpdatePlayerDeath(0.0f);
+	map_->SchedulePlayerRespawn(player->GetPlayerId(), 0.0f);
+	map_->UpdatePlayerDeath(0.0f);
+
+	EXPECT_TRUE(map_->IsInViewOf(player->GetPlayerId(), atSpawn->GetActorId()))
+		<< "부활했는데 구독이 죽은 자리에 남아 있습니다";
+	EXPECT_TRUE(map_->IsInViewOf(player->GetPlayerId(), character->GetActorId()))
+		<< "부활한 플레이어가 자기 자신조차 보지 못합니다";
+}
+
 //---------------------------------------------------------------------------------------
 // 인구에 따른 모드 전환.
 //

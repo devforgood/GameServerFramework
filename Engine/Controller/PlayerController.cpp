@@ -527,7 +527,8 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 		return;
 	}
 
-	LOG.info("UseSkill id :{}, skillId :{}, targetId :{} pos:({},{},{})", msg->id(), msg->skillId(), msg->targetId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
+	// 패킷마다 찍히는 줄이라 info 로 두면 전투가 몰릴 때 로그 자체가 부하가 된다.
+	LOG.debug("UseSkill id :{}, skillId :{}, targetId :{} pos:({},{},{})", msg->id(), msg->skillId(), msg->targetId(), msg->pos()->x(), msg->pos()->y(), msg->pos()->z());
 
 	auto character = player_->GetCharacter();
 	if (!character)
@@ -580,7 +581,9 @@ void PlayerController::handle(const syncnet::UseSkill* msg)
 		).Union()
 	);
 	builder_ptr->Finish(send_msg);
-	character->GetMap()->SendBroadcast(builder_ptr, player_);
+	// 시전자를 보고 있는 사람에게만 보낸다. 맵 전원에게 보내면 시전 한 번이
+	// '접속자 수' 만큼의 메시지가 되어, 인원이 늘수록 제곱으로 커진다.
+	character->GetMap()->SendToViewersOf(character.get(), builder_ptr, player_);
 
 	// 서버가 실제로 시전을 인정한 뒤에만 알린다(스킬 사용 퀘스트가 이 이벤트를 센다).
 	if (auto* broker = player_->GetComponent<PlayerEventBroker>())

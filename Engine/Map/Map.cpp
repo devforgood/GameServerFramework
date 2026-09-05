@@ -258,6 +258,12 @@ struct Map::AoIState
 	// 한 슬롯을 다 조립한 뒤에야 다음 슬롯으로 넘어가므로 하나면 충분하다.
 	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> infoScratch;
 
+	// 액터가 셀을 넘을 때 '옛 셀 구독자'와 '새 셀 구독자'의 차집합을 구하는 표식 배열.
+	// 슬롯 번호로 색인하고, 값이 이번 호출의 스탬프와 같으면 그 목록에 들어 있다는 뜻이다.
+	// 스탬프를 매번 올리므로 호출마다 배열을 비울 필요가 없다.
+	std::vector<uint64_t> cellMark;
+	uint64_t cellStamp = 0;
+
 	int AcquireSlot(long playerId)
 	{
 		auto itr = slotOf.find(playerId);
@@ -556,27 +562,66 @@ void Map::OnActorCellChanged(Actor* actor, int oldCellX, int oldCellY, int newCe
 	if (aoi_->slotOf.empty())
 		return;
 
+	// SubscribersOf 는 셀 안의 벡터를 그대로 가리킨다. 여기서 구독을 건드리지 않으므로
+	// 두 참조는 함수가 끝날 때까지 유효하다(복사할 이유가 없다).
 	const std::vector<int>& before = gridManager_->SubscribersOf(oldCellX, oldCellY);
-	// 새 셀 구독자는 복사해 둔다(아래에서 before 를 순회하는 동안 참조가 살아 있어야 한다).
-	const std::vector<int> after = gridManager_->SubscribersOf(newCellX, newCellY);
+	const std::vector<int>& after = gridManager_->SubscribersOf(newCellX, newCellY);
+	if (before.empty() && after.empty())
+		return;
 
-	auto contains = [](const std::vector<int>& list, int slot) {
-		for (int v : list)
-			if (v == slot) return true;
-		return false;
-	};
+	// 두 목록의 차집합. 예전에는 서로를 선형 탐색해서 '구독자 수의 제곱' 이었다 —
+	// 사람이 몰린 셀에서는 액터 한 마리가 셀을 넘을 때마다 수천 번을 비교했고,
+	// 셀을 넘는 액터는 매 틱 수백 마리다. 표식 배열을 쓰면 두 목록 길이의 합이 된다.
+	std::vector<uint64_t>& mark = aoi_->cellMark;
+	if (mark.size() < aoi_->slots.size())
+		mark.resize(aoi_->slots.size(), 0);
+
+	const uint64_t inAfter = ++aoi_->cellStamp;
+	for (int slot : after)
+		mark[slot] = inAfter;
 
 	for (int slot : before)
 	{
-		if (!contains(after, slot))
+		if (mark[slot] != inAfter)
 			aoi_->slots[slot].pending.leaves.push_back(actor->GetActorId());
 	}
 
+	const uint64_t inBefore = ++aoi_->cellStamp;
+	for (int slot : before)
+		mark[slot] = inBefore;
+
 	for (int slot : after)
 	{
-		if (!contains(before, slot))
+		if (mark[slot] != inBefore)
 			aoi_->slots[slot].pending.enters.push_back(actor);
 	}
+}
+
+// 액터를 새 좌표로 옮기면서 관심영역 장부(구독 셀 / 시야 진입·이탈)까지 갱신한다.
+//
+// 순간이동(부활, 게이트)이 쓰는 경로다. 평소 이동은 SyncActorState 가 movement 결과와
+// 좌표를 대조해 같은 일을 하는데, 순간이동은 좌표를 직접 써 버려서 그 대조가 '변화 없음'
+// 으로 보인다. 그러면 구독 셀이 옛 자리에 남아, 부활한 플레이어는 새 자리의 아무것도
+// 못 받는다 — 자기 자신의 부활조차 못 받아서 클라는 계속 죽은 줄 안다.
+// (실측: 1,000봇 2분에 서버는 1,698번 부활시켰는데 봇이 인지한 것은 228번뿐이었다.)
+void Map::MoveActorAndUpdateView(Actor* actor, float x, float y, float z)
+{
+	const int oldCellX = actor->GetGridX();
+	const int oldCellY = actor->GetGridY();
+
+	actor->SetPosition(x, y, z);
+	gridManager_->move(actor, x, z);
+
+	if (!aoiEnabled_)
+		return;
+
+	if (actor->GetGridX() == oldCellX && actor->GetGridY() == oldCellY)
+		return;
+
+	if (actor->IsCharacter())
+		OnViewerCellChanged(static_cast<Character*>(actor)->GetPlayerId(), actor);
+
+	OnActorCellChanged(actor, oldCellX, oldCellY, actor->GetGridX(), actor->GetGridY());
 }
 
 // 변경된 액터를 그 액터가 있는 셀의 구독자에게만 큐잉한다(슬롯 색인이라 해시 조회가 없다).
@@ -1076,8 +1121,10 @@ void Map::RespawnPlayer(long playerId)
 	const syncnet::Vec3 spawn = GetPlayerSpawnPos();
 	Vector3 serverPos(&spawn);
 	movement_->TeleportAgent(character->GetActorId(), serverPos.pos());
-	character->SetPosition(serverPos.x, serverPos.y, serverPos.z);
-	gridManager_->move(character.get(), serverPos.x, serverPos.z);
+
+	// 좌표를 직접 쓰는 이동이므로 관심영역 장부도 여기서 함께 옮겨야 한다
+	// (SyncActorState 는 이 이동을 '변화 없음' 으로 본다).
+	MoveActorAndUpdateView(character.get(), serverPos.x, serverPos.y, serverPos.z);
 
 	// 최대 체력으로 되살린다. 예전에는 상수 100 이라, 레벨이 오를수록 부활 직후
 	// 체력이 최대치에 한참 못 미쳤다(레벨 20 이면 1500 중 100).
@@ -1261,6 +1308,34 @@ void Map::SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Playe
 			continue;
 
 		itr->second->Send(msg);
+	}
+}
+
+// 그 액터가 있는 자리에서 일어난 일을 '그 자리를 보고 있는 사람' 에게만 알린다.
+// 관심영역이 꺼져 있으면(작은 맵) 예전처럼 맵 전원에게 보낸다.
+//
+// 스킬 시전 알림이 이 경로를 쓴다. 예전에는 전원 브로드캐스트라 시전 한 번이
+// '접속자 수' 만큼의 메시지가 됐고, 전투가 몰리면 그 곱이 워커 스레드를 통째로
+// 잡아먹었다(800명 측정에서 8,700 msg/s 가 47,000 msg/s 로 튀었다).
+void Map::SendToViewersOf(Actor* source, std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except)
+{
+	if (!AoIEnabled() || source == nullptr || aoi_ == nullptr)
+	{
+		SendBroadcast(msg, except);
+		return;
+	}
+
+	const long exceptId = except != nullptr ? except->GetPlayerId() : -1;
+
+	for (int slot : gridManager_->SubscribersOf(source->GetGridX(), source->GetGridY()))
+	{
+		const long viewerId = aoi_->slots[slot].playerId;
+		if (viewerId == exceptId)
+			continue;
+
+		auto player = FindPlayer(viewerId);
+		if (player != nullptr)
+			player->Send(msg);
 	}
 }
 

@@ -307,12 +307,36 @@ void GameSession::HandlePacket(std::span<const char> data) {
 	playerController_->handle(msg);
 }
 
+// 큐에 쌓인 것을 한 번의 async_write 로 모아 보낸다.
+//
+// 메시지마다 write 를 걸면 그 수만큼 커널 호출과 완료 핸들러가 생긴다. 시뮬레이션은
+// 10Hz 라 평소에는 세션당 한 통이지만, 전투가 몰리면 한 틱에 수십 통이 쌓이고
+// 그때 완료 핸들러 처리(PollIo)가 워커 프레임을 통째로 잡아먹었다(측정: frame 874ms,
+// 그중 sim 은 74ms). 모아 보내면 그 구간이 write 한 번으로 접힌다.
 void GameSession::DoWrite()
 {
 	if (closed_)
 		return;
 
-	boost::asio::async_write(socket_, writeMsgs_.front()->to_buffers(),
+	// 한 번에 너무 많이 묶으면 WSASend 의 버퍼 배열이 커지기만 하고 이득이 없다.
+	static constexpr size_t kMaxWriteBatch = 64;
+
+	writeBuffers_.clear();
+	writeBatch_ = 0;
+	for (auto& msg : writeMsgs_)
+	{
+		if (writeBatch_ >= kMaxWriteBatch)
+			break;
+
+		// 헤더 + 본문 두 조각. 가리키는 메모리는 send_message 안에 있고,
+		// 그 메시지는 완료될 때까지 writeMsgs_ 가 붙들고 있으므로 유효하다.
+		const auto bufs = msg->to_buffers();
+		writeBuffers_.push_back(bufs[0]);
+		writeBuffers_.push_back(bufs[1]);
+		++writeBatch_;
+	}
+
+	boost::asio::async_write(socket_, writeBuffers_,
 		std::bind_front(&GameSession::OnWrite, shared_from_this()));
 }
 
@@ -324,7 +348,11 @@ void GameSession::OnWrite(const boost::system::error_code& ec, std::size_t /*len
 		return;
 	}
 
-	writeMsgs_.pop_front();
+	// 나간 만큼만 뺀다. write 가 도는 동안 Send 가 뒤에 더 넣었을 수 있다.
+	writeMsgs_.erase(writeMsgs_.begin(),
+		writeMsgs_.begin() + static_cast<GameMessageQueue::difference_type>(writeBatch_));
+	writeBatch_ = 0;
+
 	if (!writeMsgs_.empty())
 	{
 		DoWrite();

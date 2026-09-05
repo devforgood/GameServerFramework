@@ -78,6 +78,11 @@ private:
 	void OnViewerCellChanged(long playerId, Actor* character);
 	void OnActorCellChanged(Actor* actor, int oldCellX, int oldCellY, int newCellX, int newCellY);
 	void QueueUpdate(Actor* actor);
+
+	// 좌표를 직접 써서 옮기는 경로(순간이동)가 관심영역 장부까지 갱신하도록 묶어 둔 것.
+	// 평소 이동은 SyncActorState 가 같은 규칙을 인라인으로 수행한다(매 틱 액터마다 도는
+	// 자리라 분기 하나가 그대로 비용이 된다).
+	void MoveActorAndUpdateView(Actor* actor, float x, float y, float z);
 	void SendPendingViews();
 
 	// Init 을 구성하는 단계들. Init 은 이들을 순서대로 호출하는 오케스트레이터다.
@@ -260,6 +265,10 @@ public:
 	void SendBroadcastState();
 	void SendBroadcast(std::shared_ptr<send_message> msg);
 	void SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except);
+
+	// 관심영역이 켜져 있으면 source 가 있는 셀의 구독자에게만, 꺼져 있으면 전원에게 보낸다.
+	// 특정 액터 주변에서 일어난 일(스킬 시전 등)을 알릴 때 쓴다.
+	void SendToViewersOf(Actor* source, std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except);
 	void OnRemoveAgent(int actor_id);
 	std::shared_ptr<Actor> OnAddAgent(std::shared_ptr<Player> player, syncnet::GameObjectType type, const syncnet::Vec3* pos);
 	void OnSetMoveTarget(int actor_id, const syncnet::Vec3* pos);
