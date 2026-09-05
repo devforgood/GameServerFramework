@@ -1,5 +1,6 @@
 #include "Map.h"
 #include "SendMessagePool.h"
+#include <chrono>
 #include "syncnet_generated.h"
 #include <algorithm>
 #include <iostream>
@@ -26,6 +27,77 @@
 #include "GridManager.h"
 #include "World.h"
 
+
+//---------------------------------------------------------------------------------------
+// 틱 단계별 소요 계측.
+//
+// 27절에서 이 분해가 병목을 갈랐다 — 1,000명에서 프레임의 91%가 송신 경로였고, 월드
+// 로직(actors/move/death/spawn/mode)은 다 합쳐 2% 였다. 설정이 바뀔 때마다(관심영역
+// 반경, 스폰 분포) 비율이 크게 달라지므로 상시로 둔다. 비용은 틱당 시계 7쌍이라
+// 초당 수십 마이크로초다(뷰어 루프 안에는 두지 않았다 - 거기는 초당 만 번이다).
+//
+// SEND 안의 직렬화/전송 비율이 필요하면 [tick] 의 write/s 로 유도한다:
+//   write ms/s ~= writes/s x 25.5us (24절), 직렬화 ~= SEND - write.
+//---------------------------------------------------------------------------------------
+namespace
+{
+	enum { kPhActors, kPhMove, kPhSys, kPhDeath, kPhSpawn, kPhMode, kPhSend, kPhCount };
+
+	const char* kPhName[kPhCount] = { "actors", "move", "sys", "death", "spawn",
+	                                  "mode", "SEND" };
+
+	struct PhaseProf
+	{
+		uint64_t ns[kPhCount] = {};
+		uint64_t viewers = 0;   // SendPendingViews 가 실제로 메시지를 만든 슬롯 수
+		uint64_t entries = 0;   // 그 메시지들에 담은 ActorInfo 총 개수
+		uint64_t ticks = 0;
+		std::chrono::steady_clock::time_point windowStart = std::chrono::steady_clock::now();
+	};
+
+	// 월드는 워커 스레드에 고정돼 있으므로 thread_local 이면 곧 '이 워커의 합계' 다.
+	// 맵 5개가 같은 스레드에서 돌아 자연히 합산된다. 창은 개수가 아니라 시간으로 끊는다
+	// (맵마다 카운터를 세면 창 길이가 맵 수만큼 짧아진다 - 23절에서 한 번 틀렸던 부분).
+	thread_local PhaseProf g_phase;
+
+	struct ScopedPhase
+	{
+		explicit ScopedPhase(int slot) : slot_(slot), t0_(std::chrono::steady_clock::now()) {}
+		~ScopedPhase()
+		{
+			g_phase.ns[slot_] += static_cast<uint64_t>(
+				std::chrono::duration_cast<std::chrono::nanoseconds>(
+					std::chrono::steady_clock::now() - t0_).count());
+		}
+		int slot_;
+		std::chrono::steady_clock::time_point t0_;
+	};
+
+	void ReportPhases()
+	{
+		const auto now = std::chrono::steady_clock::now();
+		const double sec = std::chrono::duration<double>(now - g_phase.windowStart).count();
+		if (sec < 5.0)
+			return;
+
+		std::string line;
+		double total = 0.0;
+		for (int i = 0; i < kPhCount; ++i)
+		{
+			const double msPerSec = static_cast<double>(g_phase.ns[i]) / 1e6 / sec;
+			total += msPerSec;
+			line += fmt::format(" {} {:.0f}", kPhName[i], msPerSec);
+		}
+		LOG.info("[phase] 합계 {:.0f} ms/s |{} | viewers {:.0f}/s entries {:.0f}/s ({:.1f}/msg)",
+			total, line,
+			static_cast<double>(g_phase.viewers) / sec,
+			static_cast<double>(g_phase.entries) / sec,
+			g_phase.viewers > 0 ? static_cast<double>(g_phase.entries) / static_cast<double>(g_phase.viewers) : 0.0);
+
+		g_phase = PhaseProf{};
+		g_phase.windowStart = now;
+	}
+}
 
 //const float g_fDistance = std::powf(10.0f, 2);
 const float g_fDistance = 10.0f;
@@ -337,6 +409,34 @@ struct Map::AoIState
 	}
 };
 
+//---------------------------------------------------------------------------------------
+// 관심영역 반경(월드 단위).
+//
+// 이 값은 셀 개수로 바뀌어 쓰인다 — R = ceil(반경 / kGridCellSize) 이고, 뷰어는 자기 셀에서
+// R 칸 떨어진 곳까지 (2R+1)^2 개 셀을 구독한다. 뷰어가 셀 어디에 서 있는지에 따라 실제
+// 시야가 달라지므로, **보장되는 시야는 2R 유닛**이다(운이 좋으면 2R+2 까지 본다).
+// kGridCellSize 가 2 이므로 결국 '데이터에 적은 숫자 ≈ 보장 시야(유닛)' 로 읽으면 된다.
+//
+// 그래서 이 값에는 하한이 있다. 상호작용 거리보다 짧으면 게임이 깨진다.
+//   - 몬스터 적 탐지 g_fDistance = 10
+//   - 스킬 최대 사거리 14 (12~14 짜리가 54종 중 5종)
+//   - 클라 카메라는 거리 15 / 높이 6 이라 지면 20 유닛쯤이 화면에 들어온다
+// 10 보다 짧으면 몬스터가 나를 인지하고 달려오는 동안 화면에 없다가 튀어나온다.
+//
+// 위쪽은 비용이 정한다. 창이 (2R+1)^2 로 커지므로 좁은 맵에서는 금세 맵 전체가 된다.
+// 1,000명 실측(PERFORMANCE.md 25절, 51x50 유닛 맵 = 812셀):
+//   반경  5 -> 49셀(맵의 6%)   sim 32~35ms, over100 0     시야 6유닛 (몬스터 탐지보다 짧다)
+//   반경 10 -> 121셀(15%)      sim 38~41ms, over100 0     <- 채택
+//   반경 14 -> 225셀(28%)      sim 44~51ms, max 96ms      예산 경계
+//   반경 20 -> 441셀(54%)      over100 3/41, late 6       예산 초과
+// 넓은 맵이라고 반경을 키울 수 있는 것은 아니다. 맵 15(502x502)에 반경 20 을 주고
+// 1,000명을 넣었더니 세션 1,909개가 전송 큐 넘침으로 끊겼다(26절). 사람이 한 곳에
+// 뭉치면 창 안에 전원이 들어와 맵 크기가 계산에서 사라지고, 시전 한 번이 창 안 전원에게
+// 가는 이벤트 팬아웃이 상태 갱신보다 훨씬 커진다(UseSkill 초당 18만 건 대 상태 9천 건).
+//
+// 0 이면 이 맵은 관심영역을 쓰지 않는다(항상 브로드캐스트). 700명에 닿을 수 없는
+// 인스턴스 맵이 그렇다 — 켜지지도 않을 값을 적어 두면 의도가 흐려진다.
+//---------------------------------------------------------------------------------------
 float Map::AoIRadius() const
 {
 	if (aoi_ != nullptr && aoi_->radiusOverride > 0.0f)
@@ -739,6 +839,11 @@ void Map::SendPendingViews()
 		auto notify = syncnet::CreateUpdateActorNotifyDirect(*builder, &actors, nullptr, &view.leaves);
 		auto msg = syncnet::CreateGameMessage(*builder, syncnet::GameMessages::GameMessages_UpdateActorNotify, notify.Union());
 		builder->Finish(msg);
+
+		// 개수만 센다(시계 호출 없음). 이 둘이 제곱으로 자라는 항의 크기를 말해 준다.
+		++g_phase.viewers;
+		g_phase.entries += actors.size();
+
 		player->Send(builder);
 
 		view.clear();
@@ -1021,13 +1126,14 @@ void Map::update(float deltaTime)
 	//LOG.info("World update begin");
 	// 단계별 메서드는 프로파일링/벤치마크에서 개별 측정할 수 있도록 public 으로 노출돼 있다.
 	// 호출 순서/동작은 여기서 순서대로 부르는 것과 동일하다.
-	UpdateActors(deltaTime);
-	UpdateMovement(deltaTime);
-	UpdateSystems(deltaTime);
-	UpdatePlayerDeath(deltaTime);
-	UpdateMonsterSpawns(deltaTime);
-	UpdateGameMode(deltaTime);
-	SendWorldState();
+	{ ScopedPhase p(kPhActors); UpdateActors(deltaTime); }
+	{ ScopedPhase p(kPhMove);   UpdateMovement(deltaTime); }
+	{ ScopedPhase p(kPhSys);    UpdateSystems(deltaTime); }
+	{ ScopedPhase p(kPhDeath);  UpdatePlayerDeath(deltaTime); }
+	{ ScopedPhase p(kPhSpawn);  UpdateMonsterSpawns(deltaTime); }
+	{ ScopedPhase p(kPhMode);   UpdateGameMode(deltaTime); }
+	{ ScopedPhase p(kPhSend);   SendWorldState(); }
+	ReportPhases();
 	//LOG.info("World update end");
 }
 

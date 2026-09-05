@@ -506,7 +506,8 @@ public class MapToolWindow : EditorWindow
 
         mapFields.navmesh_path = EditorGUILayout.TextField("navmesh_path", mapFields.navmesh_path);
         mapFields.aoi_radius = EditorGUILayout.IntField("aoi_radius (0 = off)", mapFields.aoi_radius);
-        EditorGUILayout.LabelField("aoi_radius: server interest radius; 0 broadcasts the whole map.", EditorStyles.miniLabel);
+        EditorGUILayout.LabelField("aoi_radius: guaranteed view radius in world units; 0 broadcasts the whole map.", EditorStyles.miniLabel);
+        EditorGUILayout.LabelField("Must be >= 10 (monster detect range). Cost grows as (radius+1)^2 - see PERFORMANCE.md 25.", EditorStyles.miniLabel);
 
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Save fields to Map.json"))

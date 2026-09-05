@@ -93,7 +93,7 @@
       "movable_objects": []
     },
     "navmesh_path": "Starting Village_navmesh.bin",
-    "aoi_radius": 5
+    "aoi_radius": 10
   },
   {
     "id": 2,
@@ -290,7 +290,7 @@
       "movable_objects": []
     },
     "navmesh_path": "Dark Forest_navmesh.bin",
-    "aoi_radius": 0
+    "aoi_radius": 10
   },
   {
     "id": 6,
@@ -553,7 +553,7 @@
       "movable_objects": []
     },
     "navmesh_path": "Field1_navmesh.bin",
-    "aoi_radius": 0
+    "aoi_radius": 10
   },
   {
     "id": 14,
@@ -652,7 +652,7 @@
       "movable_objects": []
     },
     "navmesh_path": "Field2_navmesh.bin",
-    "aoi_radius": 0
+    "aoi_radius": 10
   },
   {
     "id": 15,
@@ -3493,6 +3493,6 @@
       "movable_objects": []
     },
     "navmesh_path": "Arcadia Plains_navmesh.bin",
-    "aoi_radius": 0
+    "aoi_radius": 10
   }
 ]

@@ -36,6 +36,12 @@ namespace
 	{
 		uint64_t messages = 0;
 		uint64_t bytes = 0;
+
+		// async_write 호출 수와 한 번에 실린 메시지 수. 24절에서 이 호출 하나가 25us 로
+		// sim 의 81% 라는 것이 나왔고, 그 비용은 실린 바이트와 무관하다. 그래서 '얼마나
+		// 보냈는가(messages/bytes)' 와 '몇 번 불렀는가(writes)' 를 따로 본다.
+		uint64_t writes = 0;
+		uint64_t batched = 0;
 	};
 
 	thread_local SendCounters g_sendCounters;
@@ -363,6 +369,9 @@ void GameSession::DoWrite()
 		writeBuffers_.push_back(bufs[1]);
 		++writeBatch_;
 	}
+
+	++g_sendCounters.writes;
+	g_sendCounters.batched += writeBatch_;
 
 	boost::asio::async_write(socket_, writeBuffers_,
 		std::bind_front(&GameSession::OnWrite, shared_from_this()));
@@ -737,13 +746,16 @@ namespace
 			// 지금의 병목이라 프레임/틱과 같은 줄에 둔다.
 			const uint64_t sentMessages = g_sendCounters.messages;
 			const uint64_t sentBytes = g_sendCounters.bytes;
+			const uint64_t writes = g_sendCounters.writes;
+			const uint64_t batched = g_sendCounters.batched;
 			g_sendCounters = SendCounters{};
 
 			if (frames_ > 0 && (sessionCount > 0 || frameOver_ > 0 || simOver_ > 0))
 			{
 				LOG.info("[tick] worker={} servers={} sess={} | frame avg {:.2f} max {:.2f} ms "
 					"over16 {}/{} ({:.0f} fps) | sim avg {:.2f} max {:.2f} ms over100 {}/{} "
-					"late {} drop {} | out {:.1f} MB/s {:.0f} msg/s avg {:.0f} B",
+					"late {} drop {} | out {:.1f} MB/s {:.0f} msg/s avg {:.0f} B"
+					" | write {:.0f}/s batch {:.2f}",
 					workerIndex, serverCount, sessionCount,
 					frameMsSum_ / frames_, frameMsMax_, frameOver_, frames_,
 					frames_ / windowSec,
@@ -751,7 +763,9 @@ namespace
 					simOver_, simFrames_, late_, drop_,
 					static_cast<double>(sentBytes) / windowSec / (1024.0 * 1024.0),
 					static_cast<double>(sentMessages) / windowSec,
-					sentMessages > 0 ? static_cast<double>(sentBytes) / static_cast<double>(sentMessages) : 0.0);
+					sentMessages > 0 ? static_cast<double>(sentBytes) / static_cast<double>(sentMessages) : 0.0,
+					static_cast<double>(writes) / windowSec,
+					writes > 0 ? static_cast<double>(batched) / static_cast<double>(writes) : 0.0);
 			}
 
 			windowStart_ = now;
