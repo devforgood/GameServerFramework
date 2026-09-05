@@ -308,6 +308,20 @@ public:
 	static constexpr size_t kAoIEnablePlayers = 700;
 	static constexpr size_t kAoIDisablePlayers = 600;
 
+	// 위치 갱신 빈도 등급(뷰어 셀에서의 체비쇼프 셀 거리). 멀수록 드물게 보낸다.
+	// 셀 한 칸은 2유닛이다.
+	//
+	//   0 ~ Near   매 틱        10Hz
+	//   ~ Mid      3틱마다      3.3Hz
+	//   그 밖      5틱마다      2Hz
+	//
+	// 위치만 바뀐 경우에만 솎는다. 체력/상태/입력잠금이 함께 바뀌었으면 등급과 무관하게
+	// 그 틱에 보낸다 — 그것은 사건이라 건너뛰면 영영 사라지지만, 위치는 다음 갱신이 덮는다.
+	static constexpr int kAoINearCells = 2;
+	static constexpr int kAoIMidCells = 4;
+	static constexpr uint32_t kAoIMidInterval = 3;
+	static constexpr uint32_t kAoIFarInterval = 5;
+
 	// 지금 이 맵이 관심영역으로 돌고 있는가(진단/테스트용).
 	bool AoIEnabled() const { return aoiEnabled_; }
 

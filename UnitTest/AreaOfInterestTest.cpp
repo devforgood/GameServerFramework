@@ -43,6 +43,15 @@ namespace
 		}
 	};
 
+	// 세션 없이도 "실제로 무엇이 나갔는가" 를 볼 수 있게, 보낸 메시지를 붙들어 둔다.
+	class CapturingPlayer : public Player
+	{
+	public:
+		std::vector<std::shared_ptr<send_message>> sent;
+
+		void Send(std::shared_ptr<send_message>& msg) override { sent.push_back(msg); }
+	};
+
 	void EnsureNetLogger()
 	{
 		if (!spdlog::get("net"))
@@ -128,6 +137,61 @@ protected:
 			static_cast<float>(spawnZ_) + offsetZ);
 		return std::dynamic_pointer_cast<Character>(
 			map_->OnAddAgent(player, syncnet::GameObjectType_Character, &pos));
+	}
+
+	// 붙들어 둔 메시지들에서 그 액터의 ActorInfo 를 찾아 어떤 필드가 실려 있는지 본다.
+	// state/health 는 변경 플래그가 세워졌을 때만 실린다(Actor::GetActorInfo).
+	struct SentFields
+	{
+		bool seen = false;
+		bool state = false;
+		bool health = false;
+	};
+
+	static SentFields ScanSentFor(const CapturingPlayer& player, int actorId)
+	{
+		SentFields found;
+		for (const auto& msg : player.sent)
+		{
+			auto game = syncnet::GetGameMessage(msg->GetBufferPointer());
+			if (game == nullptr)
+				continue;
+			auto notify = game->msg_as_UpdateActorNotify();
+			if (notify == nullptr || notify->actors() == nullptr)
+				continue;
+
+			for (auto info : *notify->actors())
+			{
+				if (info == nullptr || info->actorId() != actorId)
+					continue;
+				found.seen = true;
+				if (info->state() != nullptr) found.state = true;
+				if (info->health() != nullptr) found.health = true;
+			}
+		}
+		return found;
+	}
+
+	// 붙들어 둔 메시지들에 그 액터가 몇 번 실렸는지 센다.
+	static int CountSentFor(const CapturingPlayer& player, int actorId)
+	{
+		int count = 0;
+		for (const auto& msg : player.sent)
+		{
+			auto game = syncnet::GetGameMessage(msg->GetBufferPointer());
+			if (game == nullptr)
+				continue;
+			auto notify = game->msg_as_UpdateActorNotify();
+			if (notify == nullptr || notify->actors() == nullptr)
+				continue;
+
+			for (auto info : *notify->actors())
+			{
+				if (info != nullptr && info->actorId() == actorId)
+					++count;
+			}
+		}
+		return count;
 	}
 
 	// 내용은 상관없다 - 순회 도중 퇴장이 일어나는지만 본다.
@@ -296,6 +360,125 @@ TEST_F(AreaOfInterestTest, RespawnMovesInterestToSpawnPoint)
 		<< "부활했는데 구독이 죽은 자리에 남아 있습니다";
 	EXPECT_TRUE(map_->IsInViewOf(player->GetPlayerId(), character->GetActorId()))
 		<< "부활한 플레이어가 자기 자신조차 보지 못합니다";
+}
+
+//---------------------------------------------------------------------------------------
+// 변경분이 실제로 실려 나가는가.
+//
+// 관심영역 모드는 브로드캐스트와 달리 직렬화를 뒤로 미룬다 - 3단계(SyncActorState)가
+// 액터 포인터만 큐에 담고, 7단계(SendPendingViews)에서 조립한다. 그 사이에 무엇이
+// 변경됐는지를 잃어버리면 위치만 나가고 체력/상태는 조용히 사라진다.
+//---------------------------------------------------------------------------------------
+
+TEST_F(AreaOfInterestTest, UpdateCarriesStateAndHealthToViewers)
+{
+	auto viewer = std::make_shared<CapturingPlayer>();
+	auto character = SpawnCharacterFor(viewer, 0.0f, 0.0f);
+	ASSERT_NE(character, nullptr);
+	map_->Enter(viewer);
+	ASSERT_TRUE(map_->AoIEnabled());
+
+	auto monster = SpawnMonster(1.0f, 0.0f);
+	ASSERT_NE(monster, nullptr);
+	ASSERT_TRUE(map_->IsInViewOf(viewer->GetPlayerId(), monster->GetActorId()));
+
+	// 구독하며 쌓인 스냅샷(enter)을 흘려보낸다. 그것은 전체 필드라 검사에 쓸 수 없다.
+	map_->UpdateSystems(1.0f / 30.0f);
+	map_->SendWorldState();
+	viewer->sent.clear();
+
+	// 단계 1~2 에서 생기는 변화를 흉내낸다 - 전투 피해와 AI 상태 전이가 이 자리다.
+	monster->SetHealth(monster->GetHealth() - 10);
+	monster->SetState(syncnet::AIState::AIState_Attack);
+	ASSERT_NE(monster->GetChangedFlag(), 0);
+
+	map_->UpdateSystems(1.0f / 30.0f); // 단계 3: 큐잉
+	map_->SendWorldState();            // 단계 7: 조립·전송
+
+	const SentFields sent = ScanSentFor(*viewer, monster->GetActorId());
+	ASSERT_TRUE(sent.seen) << "변경된 액터가 시야 안 뷰어에게 아예 나가지 않았습니다";
+	EXPECT_TRUE(sent.health) << "체력 변화가 실리지 않았습니다";
+	EXPECT_TRUE(sent.state) << "상태 변화가 실리지 않았습니다";
+}
+
+//---------------------------------------------------------------------------------------
+// 거리별 갱신 빈도.
+//
+// 시야 안 인원이 늘면 대역은 '시야 안 액터 수 x 10Hz' 로 곧장 커진다. 멀리 있는 액터의
+// 좌표를 초당 열 번 보내는 것은 값어치가 없으므로 거리에 따라 솎는다. 다만 솎아도 되는
+// 것은 위치뿐이다 - 체력/상태는 사건이라 건너뛰면 영영 사라진다.
+//---------------------------------------------------------------------------------------
+
+TEST_F(AreaOfInterestTest, DistantActorsUpdateLessOften)
+{
+	// 반경을 넓혀 먼 등급까지 시야에 들어오게 한다(기본 4 는 근거리 등급으로 끝난다).
+	map_->SetAoIRadius(12.0f);
+
+	auto viewer = std::make_shared<CapturingPlayer>();
+	auto character = SpawnCharacterFor(viewer, 0.0f, 0.0f);
+	ASSERT_NE(character, nullptr);
+	map_->Enter(viewer);
+
+	// 셀 한 칸은 2유닛이다. 가까운 쪽은 0~2칸, 먼 쪽은 5칸 밖에 세운다.
+	// (near/far 는 windows.h 매크로라 변수명으로 쓸 수 없다.)
+	auto nearby = SpawnMonster(1.0f, 0.0f);
+	auto distant = SpawnMonster(12.0f, 0.0f);
+	ASSERT_NE(nearby, nullptr);
+	ASSERT_NE(distant, nullptr);
+	ASSERT_TRUE(map_->IsInViewOf(viewer->GetPlayerId(), nearby->GetActorId()));
+	ASSERT_TRUE(map_->IsInViewOf(viewer->GetPlayerId(), distant->GetActorId()));
+
+	// 구독하며 쌓인 스냅샷(enter)을 흘려보낸다.
+	map_->UpdateSystems(1.0f / 30.0f);
+	map_->SendWorldState();
+	viewer->sent.clear();
+
+	// 매 틱 위치만 바꾼다. 등급이 걸리는 것은 이 경우뿐이다.
+	constexpr int kTicks = 30;
+	for (int i = 0; i < kTicks; ++i)
+	{
+		nearby->AddChangedFlag(static_cast<long>(GameObjectChangeType::Position));
+		distant->AddChangedFlag(static_cast<long>(GameObjectChangeType::Position));
+		map_->UpdateSystems(1.0f / 30.0f);
+		map_->SendWorldState();
+	}
+
+	const int nearCount = CountSentFor(*viewer, nearby->GetActorId());
+	const int farCount = CountSentFor(*viewer, distant->GetActorId());
+
+	EXPECT_EQ(nearCount, kTicks) << "가까운 액터는 매 틱 나가야 합니다";
+	EXPECT_GT(farCount, 0) << "먼 액터가 아예 나가지 않습니다";
+	EXPECT_LT(farCount, nearCount / 2) << "먼 액터가 솎이지 않았습니다";
+}
+
+TEST_F(AreaOfInterestTest, DistantActorsStillGetStateAndHealthEveryTick)
+{
+	// 솎는 것은 위치뿐이다. 사건(체력/상태)은 거리와 무관하게 그 틱에 나가야 한다.
+	map_->SetAoIRadius(12.0f);
+
+	auto viewer = std::make_shared<CapturingPlayer>();
+	auto character = SpawnCharacterFor(viewer, 0.0f, 0.0f);
+	ASSERT_NE(character, nullptr);
+	map_->Enter(viewer);
+
+	auto distant = SpawnMonster(12.0f, 0.0f);
+	ASSERT_NE(distant, nullptr);
+	ASSERT_TRUE(map_->IsInViewOf(viewer->GetPlayerId(), distant->GetActorId()));
+
+	map_->UpdateSystems(1.0f / 30.0f);
+	map_->SendWorldState();
+	viewer->sent.clear();
+
+	constexpr int kTicks = 8;
+	for (int i = 0; i < kTicks; ++i)
+	{
+		distant->SetHealth(distant->GetHealth() - 1);
+		map_->UpdateSystems(1.0f / 30.0f);
+		map_->SendWorldState();
+	}
+
+	EXPECT_EQ(CountSentFor(*viewer, distant->GetActorId()), kTicks)
+		<< "먼 액터의 체력 변화가 솎였습니다";
 }
 
 //---------------------------------------------------------------------------------------

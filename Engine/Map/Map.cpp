@@ -238,12 +238,25 @@ void Map::InitEcs()
 // (매 틱 '변경 액터 수 × 구독자 수' 만큼 반복되는 자리라 조회 비용이 그대로 틱 비용이 된다.)
 struct Map::AoIState
 {
+	// 변경분 하나. 액터와 '무엇이 바뀌었는지' 를 함께 담는다.
+	//
+	// 플래그를 여기에 복사해 두는 이유: 큐잉(단계 3, SyncActorState)과 직렬화(단계 7,
+	// SendPendingViews)가 떨어져 있는데, 큐잉한 함수가 바로 뒤에서 Actor::ResetChangedFlag
+	// 를 부른다. 액터 포인터만 담아 두면 직렬화 시점의 플래그는 이미 0이라 위치만 나가고
+	// 체력/상태 변화는 조용히 사라진다(브로드캐스트 경로는 그 자리에서 직렬화하므로
+	// 멀쩡했다 — 관심영역을 켠 맵에서만 나타나는 비대칭이었다).
+	struct PendingUpdate
+	{
+		Actor* actor;
+		long flags;
+	};
+
 	// 한 틱 동안 그 플레이어에게 보낼 것들.
 	// enter 는 전체 스냅샷, update 는 변경분, leave 는 시야에서 빠진 actorId.
 	struct PendingView
 	{
 		std::vector<Actor*> enters;
-		std::vector<Actor*> updates;
+		std::vector<PendingUpdate> updates;
 		std::vector<int> leaves;
 
 		bool empty() const { return enters.empty() && updates.empty() && leaves.empty(); }
@@ -276,6 +289,9 @@ struct Map::AoIState
 	// 스탬프를 매번 올리므로 호출마다 배열을 비울 필요가 없다.
 	std::vector<uint64_t> cellMark;
 	uint64_t cellStamp = 0;
+
+	// 갱신 빈도 등급이 쓰는 틱 번호. SendWorldState 가 틱마다 한 번 올린다.
+	uint32_t tick = 0;
 
 	int AcquireSlot(long playerId)
 	{
@@ -638,10 +654,53 @@ void Map::MoveActorAndUpdateView(Actor* actor, float x, float y, float z)
 }
 
 // 변경된 액터를 그 액터가 있는 셀의 구독자에게만 큐잉한다(슬롯 색인이라 해시 조회가 없다).
+//
+// 무엇이 바뀌었는지(변경 플래그)를 지금 복사해 둔다 — 부르는 쪽이 곧바로 액터의 플래그를
+// 지우기 때문이다(PendingUpdate 주석 참고).
+//
+// 위치만 바뀐 경우에는 뷰어와의 거리에 따라 솎는다(kAoINearCells 주석). 시야 안 인원이
+// 늘수록 대역은 '시야 안 액터 수 × 10Hz' 로 곧장 커지는데, 멀리 있는 액터의 좌표를
+// 초당 열 번 보내는 것은 값어치가 없다. 가까운 것은 그대로 매 틱 보낸다.
 void Map::QueueUpdate(Actor* actor)
 {
-	for (int slot : gridManager_->SubscribersOf(actor->GetGridX(), actor->GetGridY()))
-		aoi_->slots[slot].pending.updates.push_back(actor);
+	const AoIState::PendingUpdate update{ actor, actor->GetChangedFlag() };
+	const std::vector<int>& subscribers =
+		gridManager_->SubscribersOf(actor->GetGridX(), actor->GetGridY());
+
+	// 위치 외에 바뀐 것이 있으면 등급을 따지지 않는다. 사건은 건너뛰면 사라진다.
+	constexpr long kPositionOnly = static_cast<long>(GameObjectChangeType::Position);
+	if ((update.flags & ~kPositionOnly) != 0)
+	{
+		for (int slot : subscribers)
+			aoi_->slots[slot].pending.updates.push_back(update);
+		return;
+	}
+
+	// 이번 틱이 각 등급의 차례인지는 액터마다 한 번만 따진다(구독자마다 나눗셈을 하지
+	// 않는다). 위상을 액터 번호로 어긋내 먼 액터들이 같은 틱에 몰리지 않게 한다.
+	const uint32_t phase = aoi_->tick + static_cast<uint32_t>(actor->GetActorId());
+	const bool midDue = (phase % kAoIMidInterval) == 0;
+	const bool farDue = (phase % kAoIFarInterval) == 0;
+
+	const int actorCellX = actor->GetGridX();
+	const int actorCellY = actor->GetGridY();
+
+	for (int slot : subscribers)
+	{
+		const AoIState::Slot& viewer = aoi_->slots[slot];
+
+		const int dx = std::abs(actorCellX - viewer.cellX);
+		const int dy = std::abs(actorCellY - viewer.cellY);
+		const int distance = dx > dy ? dx : dy;
+
+		if (distance > kAoINearCells)
+		{
+			if (!(distance <= kAoIMidCells ? midDue : farDue))
+				continue;
+		}
+
+		aoi_->slots[slot].pending.updates.push_back(update);
+	}
 }
 
 // 플레이어마다 자기 시야 분량의 메시지를 조립해 보낸다. enter 는 전체 스냅샷, update 는 변경분만 담는다.
@@ -674,8 +733,8 @@ void Map::SendPendingViews()
 
 		for (Actor* actor : view.enters)
 			actors.push_back(actor->GetActorInfo(*builder, static_cast<long>(GameObjectChangeType::All)));
-		for (Actor* actor : view.updates)
-			actors.push_back(actor->GetActorInfo(*builder, actor->GetChangedFlag()));
+		for (const AoIState::PendingUpdate& update : view.updates)
+			actors.push_back(update.actor->GetActorInfo(*builder, update.flags));
 
 		auto notify = syncnet::CreateUpdateActorNotifyDirect(*builder, &actors, nullptr, &view.leaves);
 		auto msg = syncnet::CreateGameMessage(*builder, syncnet::GameMessages::GameMessages_UpdateActorNotify, notify.Union());
@@ -1230,6 +1289,11 @@ int Map::ProfileSerializeAll()
 // 플레이어마다 자기 관심영역 분량의 메시지를 조립해 보낸다(맵 전체 브로드캐스트가 아니다).
 void Map::SendWorldState()
 {
+	// 갱신 빈도 등급이 보는 틱 번호. 틱마다 정확히 한 번 올라가야 하므로,
+	// 아래 어떤 분기로 빠지든 지나가는 이 자리에서 올린다.
+	if (aoi_ != nullptr)
+		++aoi_->tick;
+
 	// 관전자가 없으면 만들 것도 보낼 것도 없다. 제거 대기 액터 정리는 그대로 수행한다.
 	if (players_.empty())
 	{
