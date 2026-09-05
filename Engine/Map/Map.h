@@ -139,8 +139,12 @@ private:
 	engine::SystemManager* systemManager_;
 
 	// 몬스터 AI(ECS 백엔드). 결정은 공유 결정표에서 나오고 개체는 상태 컴포넌트만 갖는다.
-	// 액터보다 오래 살아야 한다 — 몬스터가 파괴되며 컴포넌트를 반납한다.
-	std::unique_ptr<monsterai::MonsterAISystem> aiSystem_;
+	//
+	// 소유권은 systemManager_ 에 있다(PreMovement 단계로 등록). 여기 있는 것은 조회용
+	// 포인터다 — 몬스터가 스폰/소멸하며 자기 컴포넌트를 등록·반납하려고 찾아온다.
+	// 그래서 액터보다 오래 살아야 하는데, systemManager_ 가 소유하므로 그 안의
+	// EntityManager 와 정확히 같은 수명이 된다(액터가 이미 의존하는 그 수명이다).
+	monsterai::MonsterAISystem* aiSystem_ = nullptr;
 
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
 
@@ -209,7 +213,7 @@ public:
 	int ValidateMapDataOnNavMesh() const { return ValidateMapDataOnNavMesh(mapData_, navMesh_); }
 
 	// 몬스터 AI 시스템(ECS 백엔드). Init 전이면 nullptr.
-	monsterai::MonsterAISystem* GetAISystem() const { return aiSystem_.get(); }
+	monsterai::MonsterAISystem* GetAISystem() const { return aiSystem_; }
 
 	// update(deltaTime) 를 구성하는 단계들. 단계별 프로파일링을 위해 분리해 노출한다.
 	// update() 는 이들을 순서대로 호출할 뿐이라 직접 호출해도 동작은 동일하다.

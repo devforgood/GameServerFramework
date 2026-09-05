@@ -1521,3 +1521,71 @@ Release 490개, Debug 490개 전부 통과.
 - **`max_send_queue = 256` 이 맞는 값인지는 재지 않았다.** 20절 관심영역 구성에서 세션당
   틱마다 한 통이므로 여유는 크지만, 상한에 닿는 실제 상황(모바일 회선 끊김 등)을 재현해
   "얼마나 참아 줄 것인가" 를 정한 적은 없다.
+
+## 22. 업데이트 단계를 시스템 매니저로 — 어디까지 되는가
+
+"몬스터 AI 시스템만 왜 `systemManager_` 밖에서 따로 도는가, 이유가 없다면 합치자" 라는
+물음에서 시작했다. 이유는 있었지만 좋은 이유는 아니었다 — **`SystemManager` 에 순서 개념이
+없어서** 였다.
+
+### 전부는 안 된다
+
+한 틱은 일곱 단계인데, 그중 다섯은 컴포넌트 배열 순회가 아니다.
+
+| 단계 | 하는 일 | ECS 시스템이 될 수 있나 |
+|---|---|---|
+| 1 UpdateActors | 액터 가상 호출 + 레거시 BT 백엔드 2종 + 스킬 쿨다운 | 스킬 ECS 이관과 레거시 백엔드 제거가 선행 |
+| 2 UpdateMovement | `movement_->Update()` — Detour crowd | 불가(외부 라이브러리가 저장소를 소유) |
+| 3 UpdateSystems | 컴포넌트 시스템 | 이미 ECS |
+| 4 UpdatePlayerDeath | `players_`/`deadPlayers_`/lua 콜백 | 엔티티 단위가 아님 |
+| 5 UpdateMonsterSpawns | 스포너 마커 목록 | 엔티티 단위가 아님 |
+| 6 UpdateGameMode | lua 구동, 단일 객체 | 불가 |
+| 7 SendWorldState | 네트워크 메시지 조립 | 불가 |
+
+제약이 하나 더 있다. **각 단계는 벤치마크와 테스트가 개별로 부르는 공개 API다** —
+`BM_BTWorldTickActors` 는 `UpdateActors` 만 불러 18절의 AI 수치를 뽑고, 관심영역 테스트는
+`UpdateSystems` 만 불러 상태를 전진시킨다. `Map::update` 를 `systemManager_->Update(dt)` 하나로
+접으면 파이프라인을 도는 길이 둘이 되고 조용히 어긋난다.
+
+그리고 lua·Detour·네트워크를 공용 ECS 모듈에 넣으면 `SystemManager` 의 뜻이 "컴포넌트 시스템"
+에서 "아무거나 순서대로" 로 희석된다.
+
+### 진짜 문제만 고쳤다
+
+`SystemManager` 에 단계를 넣었다([SystemManager.h](../ECS/SystemManager.h)).
+
+```
+PreMovement   이동 목표를 정하는 쪽   (몬스터 AI)
+PostMovement  이동 결과를 읽는 쪽     (위치 변경 감지, 타이머)
+```
+
+순서는 취향이 아니라 정확성이다. 이동 목표를 정하는 시스템이 이동 뒤에 돌면 모든 결정이
+한 틱(10Hz 니까 100ms) 늦게 반영되고, 이동 결과를 읽는 시스템이 이동 앞에 돌면 지난 틱의
+위치를 본다. 그 제약이 이제 주석이 아니라 **단계 이름**으로 남는다.
+
+- `AddSystem(unique_ptr<ISystem>, phase)` 를 더해, 원소마다 도는 콜백이 아닌 **배치 패스
+  시스템**도 등록할 수 있게 했다. `MonsterAISystem` 이 `engine::ISystem` 을 상속하고
+  `PreMovement` 로 등록된다 — 더 이상 특별 취급이 아니다.
+- `Map::update` 의 일곱 줄은 그대로다. `UpdateActors` 가 `PreMovement` 를,
+  `UpdateSystems` 가 `PostMovement` 를 돌린다. 벤치마크·테스트의 단계별 호출도 그대로다.
+- 단계를 나눌 필요가 없는 쪽(ECSTest, ECSBenchmark)은 기존 `Update(float)` 을 그대로 쓴다.
+  모든 단계를 순서대로 돈다.
+
+### 덤 — 수명 하나가 정리됐다
+
+예전에는 `aiSystem_` 이 Map 의 `unique_ptr` 멤버라 소멸자 본문이 끝난 뒤에 파괴됐고,
+`systemManager_` 는 본문 안에서 `delete` 됐다. 즉 **aiSystem_ 이 자기가 가리키는
+EntityManager 보다 오래 살았다.** 소멸자가 그 포인터를 만지지 않아서 드러나지 않았을 뿐이다.
+이제 시스템 매니저가 소유하므로 둘이 같이 죽는다 — 액터가 이미 의존하고 있던 그 수명이다.
+
+### 확인
+
+Release 490 / Debug 490 전부 통과, 빌드 경고 0. 백엔드 세 종이 같은 결정을 내리는지는
+`MonsterBTTest` 가 그대로 고정한다. 간접 호출이 하나 늘었으므로 AI 단계를 다시 쟀다.
+
+| 몬스터 | 18절 | 이번 |
+|---|---|---|
+| 1,000 | 0.054 ms | 0.056 ms |
+| 10,000 | 0.630 ms | 0.639 ms |
+
+실행 간 흔들림 범위 안이다(18절 측정 주의 참고).

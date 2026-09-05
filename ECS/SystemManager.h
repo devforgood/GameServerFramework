@@ -109,22 +109,64 @@ namespace engine
         }
     };
     
+    //-----------------------------------------------------------------------------------
+    // 시스템이 도는 지점.
+    //
+    // 한 틱은 "무엇을 할지 정한다 -> 이동을 시뮬레이션한다 -> 그 결과를 반영한다" 순서이고,
+    // 시스템마다 이 중 어디에 끼어야 하는지가 다르다. 이동 목표를 정하는 시스템이 이동
+    // 뒤에 돌면 결정이 한 틱 늦게 반영되고, 이동 결과를 읽는 시스템이 이동 앞에 돌면
+    // 지난 틱의 위치를 본다. 그래서 순서는 취향이 아니라 정확성이다.
+    //
+    //   PreMovement  : 이동 목표를 정하는 쪽 (몬스터 AI)
+    //   PostMovement : 이동 결과를 읽는 쪽 (위치 변경 감지, 타이머)
+    //
+    // 같은 단계 안에서는 등록 순서대로 돈다.
+    //-----------------------------------------------------------------------------------
+    enum class SystemPhase
+    {
+        PreMovement,
+        PostMovement,
+    };
+
+    inline constexpr size_t kSystemPhaseCount = 2;
+
     // System Manager for managing all systems
     class SystemManager
     {
     public:
+        // 컴포넌트 배열을 원소마다 도는 시스템.
         template<typename... Components>
-        void RegisterSystem(std::function<void(float, Components&...)> updateFunction)
+        void RegisterSystem(std::function<void(float, Components&...)> updateFunction,
+            SystemPhase phase = SystemPhase::PostMovement)
         {
             auto system = std::make_unique<ComponentSystem<Components...>>(&m_EntityManager, updateFunction);
-            m_Systems.push_back(std::move(system));
+            AddSystem(std::move(system), phase);
         }
-        
-        void Update(float deltaTime)
+
+        // 원소마다 도는 형태가 아닌 시스템을 그대로 등록한다. 배치 패스로 짠 시스템
+        // (예: 조건을 좁혀 가며 훑고 행동별 버킷으로 실행하는 몬스터 AI)이 이쪽이다.
+        void AddSystem(std::unique_ptr<engine::ISystem> system,
+            SystemPhase phase = SystemPhase::PostMovement)
         {
-            for (auto& system : m_Systems)
+            m_Systems[static_cast<size_t>(phase)].push_back(std::move(system));
+        }
+
+        // 한 단계만 돌린다. 단계 사이에 ECS 밖의 일(이동 시뮬레이션 등)이 끼는 쪽에서 쓴다.
+        void UpdatePhase(SystemPhase phase, float deltaTime)
+        {
+            for (auto& system : m_Systems[static_cast<size_t>(phase)])
             {
                 system->Update(deltaTime);
+            }
+        }
+
+        // 모든 단계를 순서대로 돌린다. 단계를 나눌 필요가 없는 쪽에서 쓴다 -
+        // UpdatePhase 와 섞어 부르면 같은 시스템이 한 틱에 두 번 돈다.
+        void Update(float deltaTime)
+        {
+            for (size_t phase = 0; phase < kSystemPhaseCount; ++phase)
+            {
+                UpdatePhase(static_cast<SystemPhase>(phase), deltaTime);
             }
         }
         
@@ -132,6 +174,6 @@ namespace engine
         
     private:
         EntityManager m_EntityManager;
-        std::vector<std::unique_ptr<engine::ISystem>> m_Systems;
+        std::array<std::vector<std::unique_ptr<engine::ISystem>>, kSystemPhaseCount> m_Systems;
     };
 } 

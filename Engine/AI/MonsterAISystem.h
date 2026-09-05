@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "ECS.h"
 #include "MonsterBTRunner.h"
 
 namespace engine
@@ -134,7 +135,9 @@ namespace monsterai
 	// Map::InitEcs 가 부른다. EntityManager 는 등록된 타입만 다룰 수 있다.
 	void RegisterComponents(engine::EntityManager& entityManager);
 
-	class MonsterAISystem
+	// 시스템 매니저에 PreMovement 단계로 등록된다(Map::InitEcs). 이동 목표를 정하는 쪽이라
+	// 이동 시뮬레이션보다 먼저 돌아야 한다 - 뒤에 돌면 모든 결정이 한 틱씩 늦는다.
+	class MonsterAISystem : public engine::ISystem
 	{
 	public:
 		// 교전 중/사망 처리 중에는 매 틱, 배회 중에는 이 주기로만 사고한다.
@@ -153,8 +156,8 @@ namespace monsterai
 		// 다음 틱에 반드시 사고하게 만든다(피격/사망 등 즉시 반응이 필요한 사건).
 		void Wake(Monster* monster);
 
-		// Map::UpdateActors 가 매 틱 한 번 부른다.
-		void Update(float deltaTime);
+		// Map::UpdateActors 가 PreMovement 단계를 돌릴 때 매 틱 한 번 불린다.
+		void Update(float deltaTime) override;
 
 		size_t AgentCount() const;
 		uint32_t CurrentTick() const { return tick_; }

@@ -78,10 +78,13 @@ Map::~Map()
 		gridManager_ = nullptr;
 	}
 
+	// aiSystem_ 은 systemManager_ 가 소유한다(PreMovement 단계). 여기서 함께 사라지는데,
+	// 그 시점은 위에서 액터를 모두 정리한 뒤다 - 몬스터가 컴포넌트를 반납할 때는 아직 살아 있다.
 	if (systemManager_)
 	{
 		delete systemManager_;
 		systemManager_ = nullptr;
+		aiSystem_ = nullptr;
 	}
 }
 
@@ -195,20 +198,29 @@ void Map::InitEcs()
 	// 컴포넌트 타입 목록은 ECS 모듈이 소유한다(새 컴포넌트 추가 시 Map 은 수정 불필요).
 	engine::RegisterGameComponents(systemManager_->GetEntityManager());
 
-	// 몬스터 AI 컴포넌트와 그것을 도는 시스템. AI 는 이동 시뮬레이션보다 먼저 돌아야 해서
-	// systemManager_ 의 시스템 목록(단계 3)이 아니라 UpdateActors(단계 1)에서 직접 돌린다.
+	// 몬스터 AI 컴포넌트와 그것을 도는 시스템. 이동 목표를 정하는 쪽이라 PreMovement 다
+	// (이동 뒤에 돌면 모든 결정이 한 틱 늦게 반영된다). 소유권은 시스템 매니저가 갖고
+	// Map 은 조회용 포인터만 들고 있는다 - 몬스터가 스폰/소멸하며 찾아오는 창구다.
 	monsterai::RegisterComponents(systemManager_->GetEntityManager());
-	aiSystem_ = std::make_unique<monsterai::MonsterAISystem>(this, systemManager_->GetEntityManager());
+	{
+		auto aiSystem = std::make_unique<monsterai::MonsterAISystem>(
+			this, systemManager_->GetEntityManager());
+		aiSystem_ = aiSystem.get();
+		systemManager_->AddSystem(std::move(aiSystem), engine::SystemPhase::PreMovement);
+	}
 
 	systemManager_->RegisterSystem<engine::TimerComponent>(
 		[](float deltaTime, engine::TimerComponent& timer) {
 			engine::TimerSystem::Update(deltaTime, timer);
-		});
+		},
+		engine::SystemPhase::PostMovement);
 
+	// 이동 결과를 읽어 변화를 잡아내므로 이동 뒤여야 한다 - 앞에 두면 지난 틱의 위치를 본다.
 	systemManager_->RegisterSystem<engine::StateComponent, engine::PositionComponent>(
 		[this](float, engine::StateComponent& state, engine::PositionComponent& position) {
 			SyncActorState(state, position);
-		});
+		},
+		engine::SystemPhase::PostMovement);
 }
 
 // ── 관심영역(AoI) ── (설계 배경은 AOI_DESIGN.md)
@@ -966,10 +978,12 @@ void Map::UpdateActors(float deltaTime)
 	for (std::list<std::shared_ptr<Actor>>::iterator itr = actorList_.begin(); itr != actorList_.end(); ++itr)
 		(*itr)->Update(deltaTime);
 
-	// ECS 백엔드 몬스터는 액터 순회가 아니라 여기서 한꺼번에 사고한다.
+	// 이동 앞에 도는 시스템들(몬스터 AI). ECS 백엔드 몬스터는 액터 순회가 아니라
+	// 여기서 한꺼번에 사고한다.
+	//
 	// 액터 루프 뒤에 두는 이유: 다른 백엔드도 Monster::Update 안에서 스킬 쿨다운을 진행한 뒤
 	// 트리를 틱했다. 순서를 맞춰야 같은 틱에 같은 결정을 내린다.
-	aiSystem_->Update(deltaTime);
+	systemManager_->UpdatePhase(engine::SystemPhase::PreMovement, deltaTime);
 }
 
 // 단계 2: 네비게이션 이동 전략(Detour crowd / waypoint) 시뮬레이션.
@@ -978,10 +992,13 @@ void Map::UpdateMovement(float deltaTime)
 	movement_->Update(deltaTime);
 }
 
-// 단계 3: ECS 시스템(위치 변경 감지 → ActorInfo 누적, 제거 대상 수집 등).
+// 단계 3: 이동 뒤에 도는 ECS 시스템(위치 변경 감지 → ActorInfo 누적, 제거 대상 수집 등).
+//
+// 단계 1 의 PreMovement 와 짝이다. 둘을 합쳐 한 번에 돌릴 수 없다 - 사이에 단계 2
+// (이동 시뮬레이션)가 끼어야 하고, 그 순서가 곧 정확성이다(SystemPhase 주석 참고).
 void Map::UpdateSystems(float deltaTime)
 {
-	systemManager_->Update(deltaTime);
+	systemManager_->UpdatePhase(engine::SystemPhase::PostMovement, deltaTime);
 }
 
 // 단계 4: 게임 모드 진행.
