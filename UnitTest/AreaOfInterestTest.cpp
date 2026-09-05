@@ -8,6 +8,7 @@
 #include "spdlog/sinks/stdout_sinks.h"
 
 #include "GameData/ResourceLoader.h"
+#include "SendMessagePool.h"
 #include "gamedata.h"
 #include "World.h"
 #include "Map.h"
@@ -20,6 +21,28 @@
 
 namespace
 {
+	// 브로드캐스트 순회 도중에 맵을 떠나는 플레이어.
+	//
+	// 실제로 이 순서를 만드는 것은 송신 큐 넘침이다 - Map 이 players_ 를 순회하며 Send 를
+	// 부르고, 그 안에서 GameSession 이 한도를 넘긴 연결을 끊고, 그 끝이 Map::leave 다.
+	// 소켓 없이는 재현할 수 없어서 Player::Send 를 가로채 같은 순서를 만든다.
+	class LeavingOnSendPlayer : public Player
+	{
+	public:
+		Map* leaveOn = nullptr; // 첫 Send 에서 여기서 떠난다
+		int sendCount = 0;
+
+		void Send(std::shared_ptr<send_message>& /*msg*/) override
+		{
+			++sendCount;
+
+			Map* map = leaveOn;
+			leaveOn = nullptr; // 한 번만
+			if (map != nullptr)
+				map->leave(shared_from_this());
+		}
+	};
+
 	void EnsureNetLogger()
 	{
 		if (!spdlog::get("net"))
@@ -90,8 +113,14 @@ protected:
 	std::shared_ptr<Character> SpawnCharacter(std::shared_ptr<Player>& outPlayer, float offsetX, float offsetZ)
 	{
 		auto player = std::make_shared<Player>();
-		players_.push_back(player);
 		outPlayer = player;
+		return SpawnCharacterFor(player, offsetX, offsetZ);
+	}
+
+	// 파생 Player(LeavingOnSendPlayer 등)로도 스폰할 수 있게 분리했다.
+	std::shared_ptr<Character> SpawnCharacterFor(const std::shared_ptr<Player>& player, float offsetX, float offsetZ)
+	{
+		players_.push_back(player);
 
 		syncnet::Vec3 pos(
 			static_cast<float>(spawnX_) + offsetX,
@@ -99,6 +128,37 @@ protected:
 			static_cast<float>(spawnZ_) + offsetZ);
 		return std::dynamic_pointer_cast<Character>(
 			map_->OnAddAgent(player, syncnet::GameObjectType_Character, &pos));
+	}
+
+	// 내용은 상관없다 - 순회 도중 퇴장이 일어나는지만 본다.
+	static std::shared_ptr<send_message> MakeEmptyNotify()
+	{
+		auto builder = SendMessagePool::Acquire();
+		auto notify = syncnet::CreateUpdateActorNotifyDirect(*builder, nullptr, nullptr, nullptr);
+		auto msg = syncnet::CreateGameMessage(
+			*builder, syncnet::GameMessages::GameMessages_UpdateActorNotify, notify.Union());
+		builder->Finish(msg);
+		return builder;
+	}
+
+	// 같은 자리에 세 명을 세우고 전원이 첫 Send 에서 맵을 떠나게 만든다.
+	// 한 명만 떠나게 하면 unordered_map 의 순서에 따라 그가 마지막 원소일 수 있어
+	// 무효화된 이터레이터를 증가시키는 경로를 지나가지 않을 수 있다.
+	std::vector<std::shared_ptr<LeavingOnSendPlayer>> SpawnThreeLeavers()
+	{
+		std::vector<std::shared_ptr<LeavingOnSendPlayer>> leavers;
+		for (int i = 0; i < 3; ++i)
+		{
+			auto player = std::make_shared<LeavingOnSendPlayer>();
+			auto character = SpawnCharacterFor(player, 0.0f, 0.0f);
+			if (character == nullptr)
+				return {};
+
+			map_->Enter(player);
+			player->leaveOn = map_.get();
+			leavers.push_back(player);
+		}
+		return leavers;
 	}
 
 	std::shared_ptr<Monster> SpawnMonster(float offsetX, float offsetZ)
@@ -236,6 +296,58 @@ TEST_F(AreaOfInterestTest, RespawnMovesInterestToSpawnPoint)
 		<< "부활했는데 구독이 죽은 자리에 남아 있습니다";
 	EXPECT_TRUE(map_->IsInViewOf(player->GetPlayerId(), character->GetActorId()))
 		<< "부활한 플레이어가 자기 자신조차 보지 못합니다";
+}
+
+//---------------------------------------------------------------------------------------
+// 순회 도중 퇴장 - 브로드캐스트가 자기 발밑을 파지 않는가.
+//
+// Map 의 송신 경로는 컨테이너를 순회하며 Player::Send 를 부른다. 그런데 Send 는 끊길 수
+// 있다(송신 큐가 상한을 넘으면 GameSession 이 그 연결을 버린다). 그 끝은 Map::leave 라,
+// 아무 대비 없이 두면 순회 중인 이터레이터와 - 관심영역이라면 셀 구독자 벡터의 참조까지
+// - 그 자리에서 무효가 된다.
+//
+// 실제 부하에서는 봇이 즉시 읽어 한 번도 나타나지 않았다. 나타나는 순간은 서버가 가장
+// 바쁠 때 실클라 하나가 버벅이는 순간이다. 그래서 여기서 고정한다.
+//---------------------------------------------------------------------------------------
+
+TEST_F(AreaOfInterestTest, BroadcastSurvivesPlayersLeavingDuringSend)
+{
+	// 브로드캐스트 모드에서 players_ 순회 중 퇴장.
+	map_->SetAoIRadius(0.0f);
+	ASSERT_FALSE(map_->AoIEnabled());
+
+	auto leavers = SpawnThreeLeavers();
+	ASSERT_EQ(leavers.size(), 3u);
+	ASSERT_EQ(map_->GetPlayerCount(), 3u);
+
+	map_->SendBroadcast(MakeEmptyNotify());
+
+	for (const auto& player : leavers)
+		EXPECT_EQ(player->sendCount, 1) << "순회가 중간에 끊겼습니다";
+
+	EXPECT_EQ(map_->GetPlayerCount(), 0u) << "미뤄 둔 퇴장이 처리되지 않았습니다";
+}
+
+TEST_F(AreaOfInterestTest, ViewerSendSurvivesPlayersLeavingDuringSend)
+{
+	// 관심영역 모드. SendToViewersOf 는 셀 구독자 벡터의 참조를 들고 돈다 - 순회 중에
+	// UnsubscribeViewer 가 그 벡터에서 원소를 빼면 참조가 그대로 상한다.
+	ASSERT_TRUE(map_->AoIEnabled());
+
+	auto leavers = SpawnThreeLeavers();
+	ASSERT_EQ(leavers.size(), 3u);
+	ASSERT_EQ(map_->GetPlayerCount(), 3u);
+
+	auto source = leavers.front()->GetCharacter();
+	ASSERT_NE(source, nullptr);
+
+	std::shared_ptr<Player> noExcept;
+	map_->SendToViewersOf(source.get(), MakeEmptyNotify(), noExcept);
+
+	for (const auto& player : leavers)
+		EXPECT_EQ(player->sendCount, 1) << "구독자 순회가 중간에 끊겼습니다";
+
+	EXPECT_EQ(map_->GetPlayerCount(), 0u) << "미뤄 둔 퇴장이 처리되지 않았습니다";
 }
 
 //---------------------------------------------------------------------------------------
