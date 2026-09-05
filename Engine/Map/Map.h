@@ -66,13 +66,7 @@ private:
 	std::unique_ptr<AoIState> aoi_;
 	bool aoiEnabled_ = false;
 
-	// 관심영역을 켜는/끄는 인구. 어느 쪽이 싼지는 인구가 정하고, 교차점은 봇 부하 측정에서
-	// 600~800명 사이였다(PERFORMANCE.md 17절). 경계에서 모드가 오가지 않도록 벌려 둔다.
-	static constexpr size_t kAoIEnablePlayers = 700;
-	static constexpr size_t kAoIDisablePlayers = 600;
-
 	float AoIRadius() const;
-	bool AoIEnabled() const { return aoiEnabled_; }
 	void RefreshAoIMode();
 
 	// 인구가 바뀌는 자리(입장/퇴장)에서 부른다. 필요하면 모드를 바꾼다.
@@ -276,8 +270,17 @@ public:
 	// 교전 중에는 전체 재탐색 대신 이 검사만 돌려 탐지 비용을 줄인다.
 	bool IsTargetVisible(Actor* viewer, int targetActorId);
 
+	// 관심영역을 켜는/끄는 인구. 어느 쪽이 싼지는 인구가 정하고, 교차점은 봇 부하 측정에서
+	// 600~800명 사이였다(PERFORMANCE.md 17절). 경계에서 모드가 오가지 않도록 벌려 둔다.
+	static constexpr size_t kAoIEnablePlayers = 700;
+	static constexpr size_t kAoIDisablePlayers = 600;
+
+	// 지금 이 맵이 관심영역으로 돌고 있는가(진단/테스트용).
+	bool AoIEnabled() const { return aoiEnabled_; }
+
 	// 관심영역 반경을 강제로 지정한다(0 이하면 맵 데이터 값). 테스트/벤치에서 효과를 관찰하기 위한 것으로,
 	// 이미 구독 중인 플레이어에게는 다음 구독 갱신부터 적용된다.
+	// 인구와 무관하게 켠다 — 소수의 플레이어로 관심영역 동작을 재현하는 통로다.
 	void SetAoIRadius(float radius);
 
 	// 진단/테스트용: 이 액터가 해당 플레이어의 관심영역(구독 셀) 안에 있는가.

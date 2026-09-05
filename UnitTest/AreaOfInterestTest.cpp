@@ -235,7 +235,7 @@ protected:
 		ASSERT_NE(source, nullptr);
 
 		mapData_ = *source;
-		mapData_.aoi_radius = 5.0; // 이 맵은 관심영역을 쓸 수 있다(켜는 시점은 인구가 정한다)
+		mapData_.aoi_radius = 5; // 이 맵은 관심영역을 쓸 수 있다(켜는 시점은 인구가 정한다)
 
 		world_ = std::make_unique<World>();
 		map_ = std::make_unique<Map>(world_.get());
@@ -294,7 +294,7 @@ TEST_F(AoIModeSwitchTest, KeepsModeAcrossHysteresisBand)
 // 데이터가 반경을 주지 않은 맵은 사람이 아무리 많아도 켜지지 않는다.
 TEST_F(AoIModeSwitchTest, StaysOffWhenMapHasNoRadius)
 {
-	mapData_.aoi_radius = 0.0;
+	mapData_.aoi_radius = 0;
 
 	EnterPlayers(Map::kAoIEnablePlayers + 10);
 	EXPECT_FALSE(map_->AoIEnabled());
