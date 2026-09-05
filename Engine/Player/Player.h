@@ -109,7 +109,11 @@ public:
 	// 빙의 시점과, 스킬을 새로 배운 뒤(퀘스트 보상 등)에 호출한다.
 	void ApplyOwnedSkillsToCharacter();
 
-	void Send(std::shared_ptr<send_message>& msg);
+	// 가상 함수인 이유는 테스트 때문이다. "브로드캐스트 순회 도중에 세션이 끊긴다" 는
+	// 상황은 실제로는 송신 큐가 넘칠 때만 생겨서 소켓 없이 재현할 수 없는데, 그 순간
+	// 맵이 무너지지 않는지는 반드시 고정해야 한다(BroadcastScope). 비용은 무시할 수
+	// 있다 - 이 함수는 이미 매 호출 weak_ptr::lock 을 지불한다.
+	virtual void Send(std::shared_ptr<send_message>& msg);
 	void Close();
 
 	std::shared_ptr<Character> & GetCharacter() { return character_; }

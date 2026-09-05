@@ -144,6 +144,26 @@ private:
 
 	std::unordered_map<long, std::shared_ptr<Player>> players_;
 
+	// 브로드캐스트 순회 중에는 players_ 도 관심영역 슬롯도 건드릴 수 없다. 순회하면서
+	// 부르는 Player::Send 가 세션을 끊으면 그 끝이 leave 이기 때문이다. 순회 깊이를 세고,
+	// 그 사이에 들어온 leave 는 미뤘다가 순회가 끝나는 자리에서 처리한다.
+	int broadcastDepth_ = 0;
+	std::vector<std::shared_ptr<Player>> deferredLeaves_;
+
+	void DrainDeferredLeaves();
+
+	// 위 깊이를 RAII 로 센다. 중첩될 수 있으므로(SendStateTo -> SendPendingViews)
+	// 마지막 스코프가 닫힐 때만 미뤄 둔 leave 를 처리한다.
+	struct BroadcastScope
+	{
+		explicit BroadcastScope(Map& map) : map_(map) { ++map_.broadcastDepth_; }
+		~BroadcastScope() { if (--map_.broadcastDepth_ == 0) map_.DrainDeferredLeaves(); }
+		BroadcastScope(const BroadcastScope&) = delete;
+		BroadcastScope& operator=(const BroadcastScope&) = delete;
+
+		Map& map_;
+	};
+
 
 public:
 	Map(World* world);

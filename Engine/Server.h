@@ -127,6 +127,10 @@ private:
 	// 프로토콜 위반/한도 초과로 세션을 끊는다.
 	void Disconnect(const char* reason);
 
+	// 월드 로직 한가운데서 끊어야 할 때 쓰는 Disconnect.
+	// 입은 즉시 막고(closed_), 월드에서 빼는 일만 io_context 로 미룬다.
+	void DisconnectDeferred(const char* reason);
+
 	tcp::socket socket_;
 	GameChannel& room_;
 	RingBuffer* ringBuf_;

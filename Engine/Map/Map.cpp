@@ -1,6 +1,7 @@
 #include "Map.h"
 #include "SendMessagePool.h"
 #include "syncnet_generated.h"
+#include <algorithm>
 #include <iostream>
 #include "Server.h"
 #include "Monster.h"
@@ -636,6 +637,8 @@ void Map::SendPendingViews()
 {
 	if (aoi_ == nullptr)
 		return;
+
+	BroadcastScope guard(*this);
 
 	for (AoIState::Slot& slot : aoi_->slots)
 	{
@@ -1294,6 +1297,8 @@ void Map::SendTreeDebugSync()
 
 void Map::SendBroadcast(std::shared_ptr<send_message> msg)
 {
+	BroadcastScope guard(*this);
+
 	for (auto itr = players_.begin(); itr != players_.end(); ++itr)
 	{
 		itr->second->Send(msg);
@@ -1302,6 +1307,8 @@ void Map::SendBroadcast(std::shared_ptr<send_message> msg)
 
 void Map::SendBroadcast(std::shared_ptr<send_message> msg, std::shared_ptr<Player>& except)
 {
+	BroadcastScope guard(*this);
+
 	for (auto itr = players_.begin(); itr != players_.end(); ++itr)
 	{
 		if (itr->second.get() == except.get())
@@ -1324,6 +1331,8 @@ void Map::SendToViewersOf(Actor* source, std::shared_ptr<send_message> msg, std:
 		SendBroadcast(msg, except);
 		return;
 	}
+
+	BroadcastScope guard(*this);
 
 	const long exceptId = except != nullptr ? except->GetPlayerId() : -1;
 
@@ -1561,12 +1570,36 @@ void Map::leave(std::shared_ptr<Player> player)
 		LOG.error("Map::leave error player not found");
 		return;
 	}
+
+	// 브로드캐스트 순회 중이면 지금 지울 수 없다 - 순회 중인 이터레이터와, 관심영역이라면
+	// 셀 구독자 벡터의 참조까지 무효가 된다. 순회가 끝나는 자리에서 처리한다.
+	if (broadcastDepth_ > 0)
+	{
+		if (std::find(deferredLeaves_.begin(), deferredLeaves_.end(), player) == deferredLeaves_.end())
+			deferredLeaves_.push_back(player);
+		return;
+	}
+
 	UnsubscribeViewer(player->GetPlayerId());
 	players_.erase(itr);
 	ForgetPlayerModeState(player->GetPlayerId());
 
 	// 인구가 줄었다 — 브로드캐스트가 다시 싼 구간인지 본다.
 	UpdateAoIMode();
+}
+
+// 순회 중이라 미뤄 둔 퇴장을 실제로 처리한다. 마지막 BroadcastScope 가 닫힐 때 불린다.
+// 이 안의 leave 가 또 브로드캐스트를 부르지는 않지만, 목록을 비우며 도는 편이 안전하다.
+void Map::DrainDeferredLeaves()
+{
+	while (!deferredLeaves_.empty())
+	{
+		std::vector<std::shared_ptr<Player>> pending;
+		pending.swap(deferredLeaves_);
+
+		for (auto& player : pending)
+			leave(player);
+	}
 }
 
 // 맵을 떠난 플레이어의 사망/부활 대기 상태를 지운다. 남겨 두면 다른 맵으로 간 뒤에도

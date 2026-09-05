@@ -133,6 +133,42 @@ cd flatbuffer
 
 If direct generation into target folders fails, generate inside `flatbuffer` first and then copy the generated files as described in [BUILD_ENVIRONMENT.md](BUILD_ENVIRONMENT.md).
 
+## Performance
+
+### Monster AI: Behavior Tree to ECS
+
+Every monster used to walk its own behavior tree from the root, every tick: 13 heap-allocated nodes per monster, virtual dispatch down the same path whether or not the first condition held. The tree is identical for all monsters, yet it was duplicated per instance.
+
+[MonsterAISystem](Engine/AI/MonsterAISystem.h) replaces the traversal with batch passes over component arrays and is now the default backend (`BTBackend::Ecs`). This tree — one fallback over three conditions — compiles into a lookup table from a 3-bit condition mask to an action, so a tick becomes: scan the schedule, evaluate conditions over progressively narrower sets, index the table into per-action buckets, then run one loop per bucket. The two earlier backends are untouched and still selectable.
+
+Four decisions carry the gain:
+
+- **Hot/cold component split.** Only a 4-byte `AIScheduleComponent` array is swept every tick (160 KB at 40,000 monsters). The 64-byte agent component is touched only by entities whose turn it is.
+- **Patrolling monsters think once per 10 ticks.** The expensive detection scan already ran at that interval; now everything else does too. Engaged or dying monsters still think every tick, and damage wakes an agent immediately.
+- **Simulation time, not `steady_clock::now()`.** On Windows that call is QPC, and per-monster it becomes tick cost — besides making tests depend on the wall clock.
+- **Actor state is written only when it changes**, instead of paying a component lookup every tick to re-assert `Patrol`.
+
+**AI step only** (`BM_BTWorldTickActors`, one run):
+
+| Monsters | behaviortree_cpp | In-house BT | **ECS** |
+| --- | --- | --- | --- |
+| 1,000 | 1.67 ms | 0.157 ms | **0.054 ms** |
+| 10,000 | 49.4 ms | 2.08 ms | **0.630 ms** |
+
+**Full world tick**, 500x500 map with 50 players (`BM_LargeMapBTBackend`, one run):
+
+| Monsters | In-house BT | **ECS** |
+| --- | --- | --- |
+| 20,000 | 27.5 ms | **12.7 ms** |
+| 60,000 | 107 ms | **50.1 ms** |
+| 100,000 | — | **90.0 ms** |
+
+Against the 10 Hz budget (100 ms), one thread went from roughly **55,000 to 110,000 monsters**. Cold start fell with it: the first tick after spawning 40,000 monsters went from 2,077 ms to 408 ms, because first-think time is now spread over 10 ticks by `actorId % 10`.
+
+Trade-offs. The `BTDebugManager` viewer attaches only to behaviortree_cpp trees, so inspecting a tree means switching the backend back before monsters spawn. And changing the tree means changing the decision table with it — three conditions is eight rows, and the approach stops paying at around ten.
+
+Measurement note: figures within one table come from a single run and are comparable to each other; across runs the large counts swing up to ±30%. Method, per-backend equivalence tests, and the remaining bottleneck (path generation, now the most expensive part of a patrol-only world) are in [Benchmark/PERFORMANCE.md](Benchmark/PERFORMANCE.md).
+
 ## Key Dependencies
 
 - gRPC / Protocol Buffers

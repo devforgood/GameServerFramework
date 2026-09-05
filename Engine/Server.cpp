@@ -142,6 +142,31 @@ void GameSession::Disconnect(const char* reason)
 	room_.Leave(shared_from_this());
 }
 
+// 월드 로직 한가운데서 세션을 끊어야 할 때 쓴다.
+//
+// Disconnect 는 room_.Leave 로 이어지고, 그 끝은 Map::players_ 와 관심영역 구독 목록에서
+// 원소를 빼는 일이다. 그런데 Send 는 브로드캐스트 순회 안에서 불린다 - 그 자리에서 지우면
+// 순회 중인 이터레이터가, SendToViewersOf 라면 들고 있던 셀 구독자 벡터의 참조까지 무효가
+// 된다. 인구가 임계 아래로 떨어지면 UpdateAoIMode 가 슬롯 전체를 갈아엎기도 한다.
+//
+// 그래서 입만 즉시 막고(closed_ - 이후 Send/Read 는 모두 무시된다), 월드에서 빼는 일은
+// io_context 로 미룬다. 미뤄진 핸들러는 다음 PollIo 에서, 즉 게임 로직 바깥에서 실행된다.
+void GameSession::DisconnectDeferred(const char* reason)
+{
+	if (closed_)
+		return;
+	closed_ = true;
+
+	LOG.warn("session disconnected: {}", reason);
+
+	boost::system::error_code ignored;
+	socket_.shutdown(tcp::socket::shutdown_both, ignored);
+	socket_.close(ignored);
+
+	boost::asio::post(socket_.get_executor(),
+		[self = shared_from_this()]() { self->room_.Leave(self); });
+}
+
 void GameSession::SetPlayer(std::shared_ptr<Player> player)
 {
 	player_ = player;
@@ -159,10 +184,13 @@ void GameSession::Send(std::shared_ptr<send_message>& msg)
 	// 백프레셔: 수신을 멈춘 클라이언트가 있으면 async_write 가 완료되지 않아 큐가 계속 쌓인다.
 	// 상한이 없으면 그 세션 하나가 서버 메모리를 끝까지 끌어올린다(브로드캐스트가 매 틱 밀어넣는다).
 	// 따라가지 못하는 연결은 살려둘 가치가 없으므로 끊는다.
+	//
+	// 여기는 대개 브로드캐스트 순회 한가운데다. 지금 월드에서 빼면 순회 중인 컨테이너가
+	// 무효가 되므로 지연 종료를 쓴다(DisconnectDeferred 주석 참고).
 	const int limit = ServerConfig::Instance().Network().max_send_queue;
 	if (limit > 0 && static_cast<int>(writeMsgs_.size()) >= limit)
 	{
-		Disconnect("send queue overflow (client not reading)");
+		DisconnectDeferred("send queue overflow (client not reading)");
 		return;
 	}
 
