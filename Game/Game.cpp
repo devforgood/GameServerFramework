@@ -31,6 +31,16 @@ int main(int argc, char* argv[])
 		InitLog();
 		LOG.info("Game Server start!!");
 
+		// 빌드 구성을 먼저 남긴다. Debug 로 부하를 재면 송신 경로(vector/deque/shared_ptr)가
+		// 검사된 이터레이터를 지나 sim 이 70배까지 느려진다 - 실제로 한 번 그 수치를
+		// 두고 원인을 엉뚱한 곳에서 찾았다(PERFORMANCE.md 32절). [tick] 값을 문서의 표와
+		// 비교하기 전에 첫 번째로 확인해야 하는 줄이다.
+#ifdef _DEBUG
+		LOG.warn("빌드: Debug — 성능 측정용이 아니다. 부하 시험은 Release 로 할 것.");
+#else
+		LOG.info("빌드: Release");
+#endif
+
 		if (argc < 2)
 		{
 			std::cerr << "Usage: game_server <port> [<port> ...] [--config <path>]\n";
