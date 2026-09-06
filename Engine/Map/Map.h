@@ -5,6 +5,8 @@
 #include <unordered_set>
 #include <memory>
 #include <string>
+#include <atomic>
+#include <mutex>
 #include "syncnet_generated.h"
 #include "MonsterSpawner.h"
 
@@ -85,6 +87,10 @@ private:
 	void MoveActorAndUpdateView(Actor* actor, float x, float y, float z);
 	void SendPendingViews();
 
+	// 슬롯 하나의 메시지를 만들어 보낸다. 작업자 풀의 아무 스레드에서나 불린다
+	// (근거는 Map.cpp 의 구현 주석). workerIndex 는 스레드별 스크래치 색인이다.
+	void SendPendingView(int slotIndex, int workerIndex);
+
 	// Init 을 구성하는 단계들. Init 은 이들을 순서대로 호출하는 오케스트레이터다.
 	// 내비게이션: 맵별 navmesh 로드/정합 검증 + 이동 전략 생성. 실패 시 false.
 	bool InitNavigation(const std::string& movementType);
@@ -151,7 +157,12 @@ private:
 	// 브로드캐스트 순회 중에는 players_ 도 관심영역 슬롯도 건드릴 수 없다. 순회하면서
 	// 부르는 Player::Send 가 세션을 끊으면 그 끝이 leave 이기 때문이다. 순회 깊이를 세고,
 	// 그 사이에 들어온 leave 는 미뤘다가 순회가 끝나는 자리에서 처리한다.
-	int broadcastDepth_ = 0;
+	//
+	// 송신 단계는 작업자 풀이 나눠 처리하므로, 그 사이에 들어오는 leave 는 여러
+	// 스레드에서 올 수 있다. 깊이는 순회 밖(월드 스레드)에서만 바뀌지만 안에서 읽히므로
+	// 원자로 두고, 미뤄 둔 목록은 뮤텍스로 지킨다 — leave 는 드문 경로라 값이 싸다.
+	std::atomic<int> broadcastDepth_{ 0 };
+	std::mutex deferredLeavesMutex_;
 	std::vector<std::shared_ptr<Player>> deferredLeaves_;
 
 	void DrainDeferredLeaves();
@@ -321,6 +332,10 @@ public:
 	static constexpr int kAoIMidCells = 4;
 	static constexpr uint32_t kAoIMidInterval = 3;
 	static constexpr uint32_t kAoIFarInterval = 5;
+
+	// 송신 단계를 나눌 때 스레드 하나가 한 번에 가져가는 뷰어 수.
+	// 너무 작으면 원자 커서 경합이, 너무 크면 배리어에서 기다리는 시간이 는다.
+	static constexpr size_t kSendChunk = 16;
 
 	// 지금 이 맵이 관심영역으로 돌고 있는가(진단/테스트용).
 	bool AoIEnabled() const { return aoiEnabled_; }

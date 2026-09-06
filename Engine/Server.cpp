@@ -17,6 +17,7 @@
 #include "ServerConfig.h"
 #include "IAuthenticator.h"
 #include "MessagePolicy.h"
+#include "ParallelFor.h"
 
 namespace
 {
@@ -31,20 +32,10 @@ namespace
 	// 세션 송신은 GameSession::Send 하나로 모이므로 여기서만 세면 된다. 월드는 워커
 	// 스레드에 고정되어 있으니 thread_local 이면 곧 워커별 집계이고, 스레드 사이에
 	// 새 공유 상태(원자 연산/락)를 만들지 않는다 — 계측이 재려는 것을 바꾸면 안 된다.
+	//
+	// 카운터 자체는 GameServer::SendCounters 에 있다(Server.h). 송신 단계가 여러
+	// 스레드로 나뉘면서 thread_local 로는 셀 수 없게 됐다 - 그쪽 주석 참고.
 	//-------------------------------------------------------------------------------------
-	struct SendCounters
-	{
-		uint64_t messages = 0;
-		uint64_t bytes = 0;
-
-		// async_write 호출 수와 한 번에 실린 메시지 수. 24절에서 이 호출 하나가 25us 로
-		// sim 의 81% 라는 것이 나왔고, 그 비용은 실린 바이트와 무관하다. 그래서 '얼마나
-		// 보냈는가(messages/bytes)' 와 '몇 번 불렀는가(writes)' 를 따로 본다.
-		uint64_t writes = 0;
-		uint64_t batched = 0;
-	};
-
-	thread_local SendCounters g_sendCounters;
 }
 
 GameChannel::GameChannel()
@@ -204,8 +195,10 @@ void GameSession::Send(std::shared_ptr<send_message>& msg)
 	writeMsgs_.push_back(msg);
 
 	// 실제로 큐에 들어간 것만 센다(위에서 끊긴 세션은 나가지 않는다).
-	++g_sendCounters.messages;
-	g_sendCounters.bytes += GameMessage::header_length + msg->GetSize();
+	// 송신 단계가 병렬이라 여러 스레드가 같은 서버의 카운터를 올린다.
+	GameServer::SendCounters& counters = server_->Counters();
+	counters.messages.fetch_add(1, std::memory_order_relaxed);
+	counters.bytes.fetch_add(GameMessage::header_length + msg->GetSize(), std::memory_order_relaxed);
 
 	if (!write_in_progress)
 	{
@@ -370,8 +363,11 @@ void GameSession::DoWrite()
 		++writeBatch_;
 	}
 
-	++g_sendCounters.writes;
-	g_sendCounters.batched += writeBatch_;
+	{
+		GameServer::SendCounters& counters = server_->Counters();
+		counters.writes.fetch_add(1, std::memory_order_relaxed);
+		counters.batched.fetch_add(writeBatch_, std::memory_order_relaxed);
+	}
 
 	boost::asio::async_write(socket_, writeBuffers_,
 		std::bind_front(&GameSession::OnWrite, shared_from_this()));
@@ -625,6 +621,18 @@ void ServerManager::Run()
 		return;
 	}
 
+	// 송신 단계를 나눠 처리할 작업자 풀. 프로세스에 하나이고 모든 월드가 나눠 쓴다.
+	// 여기서 한 번 띄우고 Run 이 끝날 때 정리한다 - 워커 스레드보다 먼저 살아 있어야
+	// 첫 틱부터 병렬로 돈다.
+	{
+		const int configured = ServerConfig::Instance().World().send_threads;
+		const int sendThreads = configured == 0 ? engine::WorkerPool::AutoThreadCount()
+			: (configured < 0 ? 0 : configured);
+		engine::WorkerPool::Instance().Start(sendThreads);
+		LOG.info("송신 작업자 풀: 보조 스레드 {}개 (설정 {}, 0이면 자동/음수면 끔)",
+			sendThreads, configured);
+	}
+
 	// SIGINT(Ctrl+C) / SIGTERM 을 받으면 루프를 멈추게 한다.
 	// 핸들러는 별도 io_context 에서 돌린다 — 워커의 io_context 는 poll() 로만 돌아가서
 	// 게임 로직이 길어지면 시그널 처리가 늦어진다.
@@ -661,6 +669,9 @@ void ServerManager::Run()
 	signalContext.stop();
 	if (signalThread.joinable())
 		signalThread.join();
+
+	// 워커가 모두 멈춘 뒤에 정리한다 - 송신 중인 조각이 남아 있으면 안 된다.
+	engine::WorkerPool::Instance().Stop();
 
 	LOG.info("모든 워커 종료 완료");
 }
@@ -734,21 +745,26 @@ namespace
 
 		// 주기가 지났으면 한 줄 남기고 창을 비운다. 세션이 하나도 없고 예산을 넘긴 적도
 		// 없으면 남기지 않는다(아무도 안 붙은 서버가 로그를 채우지 않도록).
-		void MaybeReport(int workerIndex, size_t serverCount, int sessionCount,
-			std::chrono::steady_clock::time_point now)
+		// 창이 찼는가. 리포트가 송신 카운터를 비우므로(TakeSendCounters) 호출자가
+		// 먼저 이것으로 물어보고, 찰 때만 카운터를 걷어 Report 로 넘긴다.
+		bool DueFor(std::chrono::steady_clock::time_point now) const
 		{
-			if (now - windowStart_ < kReportInterval)
-				return;
+			return now - windowStart_ >= kReportInterval;
+		}
 
+		// send 는 이 창 동안 워커가 내보낸 양이다. 호출자가 미리 합산해 넘긴다
+		// (카운터가 서버별로 흩어져 있다 - GameServer::SendCounters 주석).
+		void Report(int workerIndex, size_t serverCount, int sessionCount,
+			const SendTotals& send, std::chrono::steady_clock::time_point now)
+		{
 			const double windowSec = std::chrono::duration<double>(now - windowStart_).count();
 
-			// 이 창 동안 이 워커가 내보낸 양. 세션당 부하가 아니라 '얼마나 보내고 있는가'가
-			// 지금의 병목이라 프레임/틱과 같은 줄에 둔다.
-			const uint64_t sentMessages = g_sendCounters.messages;
-			const uint64_t sentBytes = g_sendCounters.bytes;
-			const uint64_t writes = g_sendCounters.writes;
-			const uint64_t batched = g_sendCounters.batched;
-			g_sendCounters = SendCounters{};
+			// 세션당 부하가 아니라 '얼마나 보내고 있는가'가 지금의 병목이라
+			// 프레임/틱과 같은 줄에 둔다.
+			const uint64_t sentMessages = send.messages;
+			const uint64_t sentBytes = send.bytes;
+			const uint64_t writes = send.writes;
+			const uint64_t batched = send.batched;
 
 			if (frames_ > 0 && (sessionCount > 0 || frameOver_ > 0 || simOver_ > 0))
 			{
@@ -827,7 +843,11 @@ void ServerManager::RunWorker(IoWorker& worker)
 		auto frameEnd = std::chrono::steady_clock::now();
 
 		stats.Add(MillisBetween(frameStart, frameEnd), MillisBetween(logicStart, logicEnd), simTicks);
-		stats.MaybeReport(workerIndex, worker.servers.size(), worker.SessionCount(), frameEnd);
+		if (stats.DueFor(frameEnd))
+		{
+			stats.Report(workerIndex, worker.servers.size(), worker.SessionCount(),
+				worker.TakeSendCounters(), frameEnd);
+		}
 
 		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(frameEnd - frameStart);
 		auto sleepTime = targetInterval - elapsed;

@@ -87,6 +87,7 @@ bool ServerConfig::Load(const std::string& path)
 		if (auto it = root.find("world"); it != root.end())
 		{
 			ReadField(*it, "thread_count", world_.thread_count);
+			ReadField(*it, "send_threads", world_.send_threads);
 		}
 
 		if (auto it = root.find("log"); it != root.end())

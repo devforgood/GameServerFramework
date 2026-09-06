@@ -157,12 +157,44 @@ private:
 
 //----------------------------------------------------------------------
 
+// 워커 하나가 한 창 동안 내보낸 양. IoWorker 가 private 이라 그 안에 두면
+// 통계 리포터(Server.cpp 익명 네임스페이스)가 이름을 쓸 수 없어 여기에 둔다.
+struct SendTotals
+{
+	uint64_t messages = 0;
+	uint64_t bytes = 0;
+	uint64_t writes = 0;
+	uint64_t batched = 0;
+};
+
 class GameServer
 {
 	const static int TICK_RATES = 100; // ms
 	const static int DB_THREAD_POOL_SIZE = 4;
 
 public:
+	//---------------------------------------------------------------------------------
+	// 송신량 계측. 이 서버(포트)로 나간 것만 센다.
+	//
+	// 예전에는 thread_local 이었다 - 워커 하나 = 스레드 하나라 그것이 곧 워커별 집계였다.
+	// 송신 단계를 작업자 풀로 나눠 처리하면서 그 전제가 깨졌다(같은 서버의 메시지가
+	// 여러 스레드에서 나간다). 세션은 자기 GameServer 를 알고 있으므로 여기에 두고
+	// 원자 연산으로 센다 - 초당 3만 번 남짓이라 비용은 계측 대상에 묻힌다.
+	//---------------------------------------------------------------------------------
+	struct SendCounters
+	{
+		std::atomic<uint64_t> messages{ 0 };
+		std::atomic<uint64_t> bytes{ 0 };
+
+		// async_write 호출 수와 한 번에 실린 메시지 수. 28절에서 이 호출 하나가 커널에서만
+		// 8~12us 라는 것이 나왔고 그 비용은 실린 바이트와 무관하다. 그래서 '얼마나
+		// 보냈는가(messages/bytes)' 와 '몇 번 불렀는가(writes)' 를 따로 본다.
+		std::atomic<uint64_t> writes{ 0 };
+		std::atomic<uint64_t> batched{ 0 };
+	};
+
+	SendCounters& Counters() { return sendCounters_; }
+
 	GameServer(std::shared_ptr<boost::asio::io_context> io_context,
 		const tcp::endpoint& endpoint);
 
@@ -204,6 +236,7 @@ private:
 	float playerUpdateAcc_;
 	std::shared_ptr<boost::asio::io_context> ioContext_;
 	boost::asio::thread_pool dbThreadPool_;
+	SendCounters sendCounters_;
 
 
 private:
@@ -263,6 +296,23 @@ private:
 				simTicks += server->UpdateGameLogic(delta);
 			}
 			return simTicks;
+		}
+
+		// 이 워커가 맡은 서버들의 송신 카운터를 합산해 가져오고 비운다.
+		// 카운터가 서버별로 흩어져 있는 것은 송신 단계를 여러 스레드가 나눠 처리하기
+		// 때문이다(GameServer::SendCounters 주석). 여기서 다시 워커 단위로 모은다.
+		SendTotals TakeSendCounters()
+		{
+			SendTotals total;
+			for (auto& server : servers)
+			{
+				GameServer::SendCounters& counters = server->Counters();
+				total.messages += counters.messages.exchange(0, std::memory_order_relaxed);
+				total.bytes += counters.bytes.exchange(0, std::memory_order_relaxed);
+				total.writes += counters.writes.exchange(0, std::memory_order_relaxed);
+				total.batched += counters.batched.exchange(0, std::memory_order_relaxed);
+			}
+			return total;
 		}
 
 		// 이 워커가 맡은 서버들의 현재 세션 수 합. 틱 통계에 함께 남겨서

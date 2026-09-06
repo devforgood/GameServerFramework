@@ -1,5 +1,6 @@
 #include "Map.h"
 #include "SendMessagePool.h"
+#include "ParallelFor.h"
 #include <chrono>
 #include "syncnet_generated.h"
 #include <algorithm>
@@ -353,8 +354,29 @@ struct Map::AoIState
 
 	// 슬롯 하나의 메시지를 조립하는 동안만 쓰는 버퍼. 슬롯마다 지역 변수로 두면
 	// 매 틱 '접속자 수' 만큼 힙 할당이 생긴다(조립이 끝나면 곧바로 버려지는데도).
-	// 한 슬롯을 다 조립한 뒤에야 다음 슬롯으로 넘어가므로 하나면 충분하다.
-	std::vector<flatbuffers::Offset<syncnet::ActorInfo>> infoScratch;
+	//
+	// 송신 단계를 작업자 풀로 나눠 처리하므로 스레드마다 하나씩 있어야 한다.
+	// 색인은 ParallelFor 가 넘겨주는 workerIndex 이고 0 이 호출(월드) 스레드다.
+	std::vector<std::vector<flatbuffers::Offset<syncnet::ActorInfo>>> infoScratch;
+
+	// 이번 틱에 실제로 보낼 슬롯 번호. 빈 슬롯이 섞인 채로 나누면 청크마다 부하가
+	// 들쭉날쭉해져서, 먼저 추려 놓고 그 배열을 나눈다.
+	std::vector<int> sendList;
+
+	// 스레드별 집계(뷰어 수, 담은 ActorInfo 수). 원자 연산 없이 각자 칸에 쌓고
+	// 배리어 뒤에 합산한다.
+	std::vector<uint64_t> viewerCount;
+	std::vector<uint64_t> entryCount;
+
+	// 작업자 수가 바뀌거나 처음 쓸 때 스레드별 배열 크기를 맞춘다.
+	void EnsureWorkerSlots(size_t workers)
+	{
+		if (infoScratch.size() >= workers)
+			return;
+		infoScratch.resize(workers);
+		viewerCount.resize(workers, 0);
+		entryCount.resize(workers, 0);
+	}
 
 	// 액터가 셀을 넘을 때 '옛 셀 구독자'와 '새 셀 구독자'의 차집합을 구하는 표식 배열.
 	// 슬롯 번호로 색인하고, 값이 이번 호출의 스탬프와 같으면 그 목록에 들어 있다는 뜻이다.
@@ -804,6 +826,60 @@ void Map::QueueUpdate(Actor* actor)
 }
 
 // 플레이어마다 자기 시야 분량의 메시지를 조립해 보낸다. enter 는 전체 스냅샷, update 는 변경분만 담는다.
+//---------------------------------------------------------------------------------------
+// 슬롯 하나의 메시지를 만들어 그 플레이어에게 보낸다.
+//
+// 작업자 풀의 아무 스레드에서나 불린다. 슬롯끼리 독립적이라 그럴 수 있는데, 근거는
+// 이렇다(PERFORMANCE.md 30절).
+//   - Actor::GetActorInfo 는 순수하다. 액터를 읽어 빌더에만 쓴다.
+//   - 이 구간에 액터가 변하지 않는다. UpdateGameLogic 중에는 PollIo 가 돌지 않아
+//     수신 핸들러가 없고, 다른 단계도 배리어 뒤에 온다.
+//   - players_ 도 변하지 않는다. 21절 이후 DisconnectDeferred 가 월드에서 빼는 일을
+//     io_context 로 미루므로 순회 중에 erase 가 일어나지 않는다.
+//   - 슬롯 1개 = 플레이어 1명 = 세션 1개라, writeMsgs_ 를 건드리는 스레드가 정확히 하나다.
+//   - SendMessagePool 은 스레드별이고 회수 조건이 use_count()==1 + acquire 펜스라,
+//     빌린 스레드와 반납하는 스레드가 달라도 성립한다.
+//---------------------------------------------------------------------------------------
+void Map::SendPendingView(int slotIndex, int workerIndex)
+{
+	AoIState::Slot& slot = aoi_->slots[slotIndex];
+
+	auto player = FindPlayer(slot.playerId);
+	if (player == nullptr)
+		return;
+
+	AoIState::PendingView& view = slot.pending;
+	auto builder = SendMessagePool::Acquire();
+
+	// 용량은 남겨 두고 내용만 비운다. reserve 는 이미 충분하면 아무것도 하지 않는다.
+	std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& actors =
+		aoi_->infoScratch[static_cast<size_t>(workerIndex)];
+	actors.clear();
+	actors.reserve(view.enters.size() + view.updates.size());
+
+	for (Actor* actor : view.enters)
+		actors.push_back(actor->GetActorInfo(*builder, static_cast<long>(GameObjectChangeType::All)));
+	for (const AoIState::PendingUpdate& update : view.updates)
+		actors.push_back(update.actor->GetActorInfo(*builder, update.flags));
+
+	auto notify = syncnet::CreateUpdateActorNotifyDirect(*builder, &actors, nullptr, &view.leaves);
+	auto msg = syncnet::CreateGameMessage(*builder, syncnet::GameMessages::GameMessages_UpdateActorNotify, notify.Union());
+	builder->Finish(msg);
+
+	// 개수만 센다(시계 호출 없음). 이 둘이 제곱으로 자라는 항의 크기를 말해 준다.
+	// 스레드별 칸에 쌓고 배리어 뒤에 합산한다 - 원자 연산을 뷰어마다 돌리지 않기 위함이다.
+	++aoi_->viewerCount[static_cast<size_t>(workerIndex)];
+	aoi_->entryCount[static_cast<size_t>(workerIndex)] += actors.size();
+
+	player->Send(builder);
+}
+
+//---------------------------------------------------------------------------------------
+// 이번 틱에 쌓인 뷰를 뷰어마다 조립해 내보낸다.
+//
+// 27절에서 이 단계가 프레임의 91%(직렬화 + async_write)로 나왔고, 뷰어끼리 독립적이라
+// 나눠 처리한다. 배리어까지 기다린 뒤에야 pending 을 비우고 돌아간다.
+//---------------------------------------------------------------------------------------
 void Map::SendPendingViews()
 {
 	if (aoi_ == nullptr)
@@ -811,42 +887,42 @@ void Map::SendPendingViews()
 
 	BroadcastScope guard(*this);
 
-	for (AoIState::Slot& slot : aoi_->slots)
+	// 보낼 슬롯만 추린다. 빈 슬롯이 섞인 채로 나누면 청크마다 부하가 들쭉날쭉해진다.
+	aoi_->sendList.clear();
+	for (size_t i = 0; i < aoi_->slots.size(); ++i)
 	{
+		AoIState::Slot& slot = aoi_->slots[i];
 		if (!slot.active)
 			continue;
-
-		AoIState::PendingView& view = slot.pending;
-		auto player = FindPlayer(slot.playerId);
-		if (player == nullptr || view.empty())
-		{
-			view.clear();
+		if (slot.pending.empty())
 			continue;
+		aoi_->sendList.push_back(static_cast<int>(i));
+	}
+
+	if (!aoi_->sendList.empty())
+	{
+		const size_t workers = static_cast<size_t>(engine::WorkerPool::Instance().Size()) + 1;
+		aoi_->EnsureWorkerSlots(workers);
+
+		engine::ParallelFor(aoi_->sendList.size(), kSendChunk,
+			[this](size_t n, int workerIndex) {
+				SendPendingView(aoi_->sendList[n], workerIndex);
+			});
+
+		for (size_t w = 0; w < workers; ++w)
+		{
+			g_phase.viewers += aoi_->viewerCount[w];
+			g_phase.entries += aoi_->entryCount[w];
+			aoi_->viewerCount[w] = 0;
+			aoi_->entryCount[w] = 0;
 		}
+	}
 
-		auto builder = SendMessagePool::Acquire();
-
-		// 용량은 남겨 두고 내용만 비운다. reserve 는 이미 충분하면 아무것도 하지 않는다.
-		std::vector<flatbuffers::Offset<syncnet::ActorInfo>>& actors = aoi_->infoScratch;
-		actors.clear();
-		actors.reserve(view.enters.size() + view.updates.size());
-
-		for (Actor* actor : view.enters)
-			actors.push_back(actor->GetActorInfo(*builder, static_cast<long>(GameObjectChangeType::All)));
-		for (const AoIState::PendingUpdate& update : view.updates)
-			actors.push_back(update.actor->GetActorInfo(*builder, update.flags));
-
-		auto notify = syncnet::CreateUpdateActorNotifyDirect(*builder, &actors, nullptr, &view.leaves);
-		auto msg = syncnet::CreateGameMessage(*builder, syncnet::GameMessages::GameMessages_UpdateActorNotify, notify.Union());
-		builder->Finish(msg);
-
-		// 개수만 센다(시계 호출 없음). 이 둘이 제곱으로 자라는 항의 크기를 말해 준다.
-		++g_phase.viewers;
-		g_phase.entries += actors.size();
-
-		player->Send(builder);
-
-		view.clear();
+	// 비우는 것은 배리어 뒤다. 조립 중인 스레드가 아직 view 를 읽고 있을 수 있다.
+	for (AoIState::Slot& slot : aoi_->slots)
+	{
+		if (slot.active)
+			slot.pending.clear();
 	}
 }
 
@@ -1760,8 +1836,11 @@ void Map::leave(std::shared_ptr<Player> player)
 
 	// 브로드캐스트 순회 중이면 지금 지울 수 없다 - 순회 중인 이터레이터와, 관심영역이라면
 	// 셀 구독자 벡터의 참조까지 무효가 된다. 순회가 끝나는 자리에서 처리한다.
-	if (broadcastDepth_ > 0)
+	if (broadcastDepth_.load(std::memory_order_relaxed) > 0)
 	{
+		// 송신 단계가 병렬이라 여기 오는 스레드가 여럿일 수 있다.
+		// leave 는 드문 경로(전송 큐 넘침/접속 종료)라 뮤텍스 값이 싸다.
+		std::lock_guard<std::mutex> lock(deferredLeavesMutex_);
 		if (std::find(deferredLeaves_.begin(), deferredLeaves_.end(), player) == deferredLeaves_.end())
 			deferredLeaves_.push_back(player);
 		return;
@@ -1779,10 +1858,17 @@ void Map::leave(std::shared_ptr<Player> player)
 // 이 안의 leave 가 또 브로드캐스트를 부르지는 않지만, 목록을 비우며 도는 편이 안전하다.
 void Map::DrainDeferredLeaves()
 {
-	while (!deferredLeaves_.empty())
+	// 배리어 뒤(월드 스레드)에서만 불린다. 그래도 목록을 꺼낼 때는 잠근다 —
+	// 미뤄 둔 leave 를 넣은 것은 다른 스레드일 수 있다.
+	for (;;)
 	{
 		std::vector<std::shared_ptr<Player>> pending;
-		pending.swap(deferredLeaves_);
+		{
+			std::lock_guard<std::mutex> lock(deferredLeavesMutex_);
+			if (deferredLeaves_.empty())
+				break;
+			pending.swap(deferredLeaves_);
+		}
 
 		for (auto& player : pending)
 			leave(player);

@@ -58,6 +58,7 @@
     <ClInclude Include="ComponentRegistry.h" />
     <ClInclude Include="Components.h" />
     <ClInclude Include="ECS.h" />
+    <ClInclude Include="ParallelFor.h" />
     <ClInclude Include="SystemManager.h" />
     <ClInclude Include="Systems.h" />
   </ItemGroup>

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include <gtest/gtest.h>
 #include <filesystem>
+#include <set>
 #include <memory>
 #include <string>
 #include <vector>
@@ -9,6 +10,7 @@
 
 #include "GameData/ResourceLoader.h"
 #include "SendMessagePool.h"
+#include "ParallelFor.h"
 #include "gamedata.h"
 #include "World.h"
 #include "Map.h"
@@ -50,6 +52,18 @@ namespace
 		std::vector<std::shared_ptr<send_message>> sent;
 
 		void Send(std::shared_ptr<send_message>& msg) override { sent.push_back(msg); }
+	};
+
+	// 송신 단계 병렬화를 이 테스트 구간에서만 켠다.
+	// 풀은 프로세스 전역이라, 켠 채로 두면 다른 테스트의 동작까지 바꾼다.
+	class ParallelSendGuard
+	{
+	public:
+		explicit ParallelSendGuard(int threads)
+		{
+			engine::WorkerPool::Instance().Start(threads);
+		}
+		~ParallelSendGuard() { engine::WorkerPool::Instance().Stop(); }
 	};
 
 	void EnsureNetLogger()
@@ -529,6 +543,92 @@ TEST_F(AreaOfInterestTest, ViewerSendSurvivesPlayersLeavingDuringSend)
 
 	for (const auto& player : leavers)
 		EXPECT_EQ(player->sendCount, 1) << "구독자 순회가 중간에 끊겼습니다";
+
+	EXPECT_EQ(map_->GetPlayerCount(), 0u) << "미뤄 둔 퇴장이 처리되지 않았습니다";
+}
+
+//---------------------------------------------------------------------------------------
+// 송신 단계 병렬화(PERFORMANCE.md 30절).
+//
+// SendPendingViews 는 뷰어마다 메시지를 따로 조립해 보낸다. 그 일이 프레임의 91% 라
+// 작업자 풀로 나눠 처리하는데, 나누려면 슬롯끼리 정말 독립적이어야 한다. 여기서
+// 고정하는 것은 두 가지다.
+//   1) 나눠도 뷰어 전원이 정확히 한 통씩, 내용이 온전한 채로 받는다
+//      (스레드별 스크래치가 섞이면 액터 목록이 무너져 여기서 걸린다)
+//   2) 조립 도중 퇴장이 여러 스레드에서 겹쳐 들어와도 순회가 끊기지 않는다
+//---------------------------------------------------------------------------------------
+
+TEST_F(AreaOfInterestTest, ParallelSendReachesEveryViewer)
+{
+	ParallelSendGuard parallel(3);
+	ASSERT_GT(engine::WorkerPool::Instance().Size(), 0) << "풀이 뜨지 않아 병렬 경로를 지나지 않습니다";
+
+	// kSendChunk(16)보다 충분히 커야 실제로 여러 스레드에 나뉜다.
+	constexpr int kViewers = 200;
+
+	std::vector<std::shared_ptr<CapturingPlayer>> viewers;
+	for (int i = 0; i < kViewers; ++i)
+	{
+		auto player = std::make_shared<CapturingPlayer>();
+		ASSERT_NE(SpawnCharacterFor(player, 0.0f, 0.0f), nullptr);
+		map_->Enter(player);
+		viewers.push_back(player);
+	}
+	ASSERT_TRUE(map_->AoIEnabled());
+
+	map_->SendWorldState();
+
+	for (size_t i = 0; i < viewers.size(); ++i)
+	{
+		const auto& viewer = *viewers[i];
+		ASSERT_EQ(viewer.sent.size(), 1u) << i << "번 뷰어가 받은 메시지 수가 1이 아닙니다";
+
+		const auto* message = syncnet::GetGameMessage(viewer.sent.front()->GetBufferPointer());
+		ASSERT_NE(message, nullptr) << i << "번 뷰어의 버퍼가 깨졌습니다";
+
+		const auto* notify = message->msg_as_UpdateActorNotify();
+		ASSERT_NE(notify, nullptr) << i << "번 뷰어의 메시지 종류가 다릅니다";
+		ASSERT_NE(notify->actors(), nullptr) << i << "번 뷰어의 액터 목록이 비었습니다";
+
+		// 구독 시점의 스냅샷이 담긴다. i번째 뷰어는 자기 앞의 i명 + 자신을 본다
+		// (전원이 같은 자리에 서 있고, 뒤에 들어온 사람은 다음 틱부터 보인다).
+		// 스레드별 스크래치를 하나로 공유하면 조립 도중 남의 clear() 를 맞아
+		// 이 개수가 무너진다 - 그것을 잡는 것이 이 단언의 목적이다.
+		ASSERT_EQ(notify->actors()->size(), static_cast<uint32_t>(i + 1))
+			<< i << "번 뷰어의 액터 수가 틀립니다";
+
+		std::set<int> ids;
+		for (uint32_t n = 0; n < notify->actors()->size(); ++n)
+			ids.insert(notify->actors()->Get(n)->actorId());
+		EXPECT_EQ(ids.size(), notify->actors()->size())
+			<< i << "번 뷰어의 목록에 중복된 액터가 있습니다";
+	}
+}
+
+TEST_F(AreaOfInterestTest, ParallelSendSurvivesPlayersLeavingDuringSend)
+{
+	ParallelSendGuard parallel(3);
+	ASSERT_GT(engine::WorkerPool::Instance().Size(), 0);
+
+	// 여러 스레드가 동시에 Map::leave 로 들어온다. 미뤄 둔 목록이 뮤텍스로 지켜지지
+	// 않으면 여기서 목록이 깨지거나 퇴장이 누락된다.
+	constexpr int kLeavers = 64;
+
+	std::vector<std::shared_ptr<LeavingOnSendPlayer>> leavers;
+	for (int i = 0; i < kLeavers; ++i)
+	{
+		auto player = std::make_shared<LeavingOnSendPlayer>();
+		ASSERT_NE(SpawnCharacterFor(player, 0.0f, 0.0f), nullptr);
+		map_->Enter(player);
+		player->leaveOn = map_.get();
+		leavers.push_back(player);
+	}
+	ASSERT_EQ(map_->GetPlayerCount(), static_cast<size_t>(kLeavers));
+
+	map_->SendWorldState();
+
+	for (size_t i = 0; i < leavers.size(); ++i)
+		EXPECT_EQ(leavers[i]->sendCount, 1) << i << "번 뷰어에게 조립이 닿지 않았습니다";
 
 	EXPECT_EQ(map_->GetPlayerCount(), 0u) << "미뤄 둔 퇴장이 처리되지 않았습니다";
 }
