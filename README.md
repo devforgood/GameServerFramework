@@ -169,6 +169,42 @@ Trade-offs. The `BTDebugManager` viewer attaches only to behaviortree_cpp trees,
 
 Measurement note: figures within one table come from a single run and are comparable to each other; across runs the large counts swing up to ±30%. Method, per-backend equivalence tests, and the remaining bottleneck (path generation, now the most expensive part of a patrol-only world) are in [Benchmark/PERFORMANCE.md](Benchmark/PERFORMANCE.md).
 
+### Sending: one thread to a worker pool
+
+At 1,000 players in one world, the frame was **91% send path and 2% world simulation**. A world is pinned to one thread by design — handlers and game logic never run concurrently, so nothing in the world needs a lock — and that one thread was spending its budget assembling and submitting packets.
+
+Profiling the frame end to end ([Map.cpp](Engine/Map/Map.cpp) phase timers plus a per-call kernel micro-benchmark) split that cost in two, and the two halves behave differently:
+
+- **Linear in players — `async_write`.** Each session gets exactly one message per 10 Hz tick, so calls scale as `sessions x tick rate` (11,500/s at 1,000 players) and `batch` sits at 1.00: there is nothing to coalesce. The call costs 13-25 us and **that cost is fixed per call** — a 13.5 KB message costs the same as a 1.7 KB one. Stripping asio away entirely, a raw `WSASend` on a loopback socket is 8-12 us, and a UDP comparison puts only ~2.3 us of that on the TCP stack. Most of it is the socket send path itself, which a real NIC pays too.
+- **Quadratic in density — FlatBuffers serialization.** Each viewer's message is built from scratch over the actors in its window, so entries grow as `players x players in view`. Measured between 800 and 1,000 players: `async_write` calls rose 1.27x (linear) while serialized entries rose 1.70x (N^2.4), at a constant 83 ns per entry.
+
+The linear half cannot shrink without lowering the send rate, which is sync quality. The quadratic half can. Both, however, are just work on one thread — and the box has 32 of them.
+
+[`engine::ParallelFor`](ECS/ParallelFor.h) splits [`Map::SendPendingViews`](Engine/Map/Map.cpp) across a worker pool. Three properties matter:
+
+- **One pool per process, not per world.** A world is one thread, so a pool per world would mean 16 worlds x 4 threads on a 16-core box. Worlds share it.
+- **The calling thread works too**, as `workerIndex 0`. So zero auxiliary threads degrades to a plain sequential loop, and every path that never starts the pool — unit tests, benchmarks — runs exactly the code it ran before.
+- **Chunks are handed out from an atomic cursor**, not partitioned up front. Per-viewer cost varies widely (176-242 entries per message is only the mean), and static partitioning would leave three threads waiting on whoever drew the heavy slice.
+
+Splitting the loop is safe because of what is *not* running, not because the world thread waits — it does not wait, it participates. Within `UpdateGameLogic` there is no `poll()`, so no read or write completion runs; the update phases are sequential; and DB work posts its completion back to the owning `io_context` rather than touching the session from a pool thread. Inside the region the work partitions cleanly: slot to player to session is 1:1:1, so one thread owns a slot's pending view, its session's write queue, and its own scratch buffer. What is shared is read-only (actors — `GetActorInfo` is pure; the player map — leaves are deferred since the reentrancy fix) or already thread-safe (`SendMessagePool` is thread-local and reclaims by `use_count()==1` behind an acquire fence, which holds even when the borrowing and releasing threads differ). The barrier guards the *boundary* — it is why `pending.clear()` sits after the loop — not the inside.
+
+Two things had to change alongside. The send counters were `thread_local`, which was correct only while one worker meant one thread; spread across a pool they would have **silently under-reported**, so they moved to per-`GameServer` atomics that the worker re-aggregates. And `Map::leave` — reachable from `Player::Send` when a send queue overflows — can now arrive from several threads at once, so the deferred-leave list took a mutex.
+
+**Adjacent A/B**, same binary, config toggled, 1,000 players, runs back to back:
+
+| | sim | frame | send phase | over budget | writes/s | entries/s |
+| --- | --- | --- | --- | --- | --- | --- |
+| Sequential | 443 ms/s | 560 ms/s | 381 ms/s | 4/688 | 11,658 | 2,395,053 |
+| **Pool (3 + caller)** | **162 ms/s** | **290 ms/s** | **110 ms/s** | **0/691** | 11,600 | 2,226,366 |
+
+`writes/s` and `entries/s` are within 1% and 7% — the same work was done. On top of it the tick went **2.7x lighter** and stopped overrunning its 100 ms budget. `UpdateSystems`, which was left serial, held at 41 -> 38 ms/s; that it did not move is itself evidence the measurement isolated the right term.
+
+Trade-offs. Total CPU is unchanged — the work moved to other cores, so this buys **one world holding more players**, not more machine capacity; a deployment already running 16 worlds on 16 threads gains nothing. And the barrier costs tail latency: the world thread waits on the slowest chunk, and ping p99 went 119 -> 191 ms while p50 and p95 both improved (17 -> 16, 47 -> 38). No session was dropped in either run.
+
+The bottleneck moved rather than vanished. Of the remaining 290 ms/s, **`PollIo` is now the largest single term at 128 ms/s (44%)** — write completions and inbound packet handling — against 110 ms/s for the send phase it used to dwarf.
+
+Measurement note: figures within one table come from adjacent runs on an idle box; across runs the absolute milliseconds swing up to ±25%, which is why the stable counters (`writes/s`, `entries/s`) are quoted alongside them. Full method, the kernel micro-benchmark, the scaling derivation, and the rejected alternatives are in [Benchmark/PERFORMANCE.md](Benchmark/PERFORMANCE.md) (sections 24-31).
+
 ## Key Dependencies
 
 - gRPC / Protocol Buffers
