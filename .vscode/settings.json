@@ -3,5 +3,6 @@
         "iostream": "cpp",
         "iterator": "cpp",
         "xstring": "cpp"
-    }
+    },
+    "cmake.sourceDirectory": "D:/projects/GameServerFramework/flatbuffer/flatbuffers-1.12.0"
 }
