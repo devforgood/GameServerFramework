@@ -6,6 +6,10 @@ A sample framework for building and experimenting with game server architecture.
 
 The current codebase is organized around Windows and Visual Studio 2022. Most production-style services target .NET Core 3.1, while the native game stack uses MSBuild C++ projects with the v143 toolset.
 
+## Development with AI Assistance
+
+Parts of this repository — implementation, refactoring, benchmark analysis, and documentation — are written with the help of AI coding assistants (mainly Claude Code). AI output is not committed as-is: every change is reviewed, built, and tested by a human before it lands. The coding conventions the assistants are asked to follow live in [AGENTS.md](AGENTS.md).
+
 ## At a Glance
 
 | Area | Projects |
