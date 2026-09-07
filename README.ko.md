@@ -115,6 +115,16 @@ dotnet run --project Chat\Chat.csproj
 
 `Engine`은 `GridManager`, ECS, RingBuffer 같은 서버 사이드 자료구조와 유틸리티를 제공합니다. `BehaviorTree`와 `FiniteStateMachine`은 AI 상태 전이와 행동 제어를 실험하기 위한 C++ 라이브러리입니다.
 
+몬스터의 성향은 `monster.json` 의 `ai` 필드가 정합니다([MonsterAIProfile.h](Engine/AI/MonsterAIProfile.h)).
+
+| 성향 | 행동 |
+| --- | --- |
+| `aggressive` | 기본값. 시야에 든 적을 먼저 뭅니다. |
+| `passive` | 먼저 공격하지 않습니다. 시야 스캔 자체를 돌지 않고, 맞았을 때만 때린 쪽을 뭅니다. |
+| `boss` | 체력 구간마다 공격 패턴(스킬 + 사거리)이 바뀝니다. 절반 이하로 떨어지면 붙어서 때리던 강타 대신 더 먼 거리에서 광역 노바를 씁니다. |
+
+개체가 갖는 것은 성향 번호와 페이즈 번호 두 바이트뿐이고, "어떤 스킬을 어느 사거리에서 쓰는가" 는 전부 공유 표에 있습니다. 세 BT 백엔드가 같은 표와 같은 판정 함수(`Monster::UpdateCombatPhase`)를 쓰므로 — BT 둘은 노드로, ECS 는 패스로 — 성향에 따른 동작이 백엔드와 무관하게 같습니다. 이 동등성은 [MonsterBTTest](UnitTest/MonsterBTTest.cpp)가 세 백엔드를 같은 시나리오로 돌려 고정합니다.
+
 ### 데이터 생성
 
 원본 데이터는 [GameData/](GameData/)의 JSON 파일에서 관리합니다. [GameDataFlow/](GameDataFlow/)는 `gamedata.proto`를 기준으로 Python, C++, C# Protobuf 산출물을 생성합니다.

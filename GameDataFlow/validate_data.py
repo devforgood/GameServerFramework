@@ -26,6 +26,8 @@
      - two_way: 상대가 게이트여야 하고, 그 게이트도 two_way 이며 이 게이트를
        되가리켜야 한다(입구/출구 짝). 짝이 어긋나면 한쪽 방향 이동이 조용히 실패한다.
      - one_way: 레이드 등 인스턴스 던전 입구용. 짝이 필요 없고 스폰 지점을 가리켜도 된다.
+  7) (MonsterData 전용) "ai" 성향 이름 검증: 서버가 모르는 이름은 조용히 aggressive 로
+     되돌아가므로, 오타 난 성향은 게임을 켜서 몬스터가 달려드는 것을 봐야만 알 수 있다.
   6) (Quest 전용) 스테이지/목표/선행조건/보상/시간 정책 검증:
      - 목표 type 은 서버가 해석할 수 있는 것이어야 하고, target_id 는 실제 다른 테이블
        (몬스터/아이템/스킬/맵)에 있는 id 여야 한다. 오타 난 target_id 는 영원히 진행되지
@@ -1088,6 +1090,34 @@ def _validate_dialogs(table_name, entries, tables):
 
 # 사전에 있어야 하는 문자열 필드는 이름으로 알아본다. 데이터에서 값이 문자열이면서
 # 이름이 _id 로 끝나는 것은 전부 로컬라이즈 키다(name_id / desc_id / text_id).
+MONSTER_AI_PROFILES = ('aggressive', 'passive', 'boss')
+
+
+def _validate_monster_ai(table_name, entries):
+    """Monster 전용: "ai" 필드는 서버가 아는 성향 이름이어야 한다.
+
+    서버(monsterai::ParseProfile)는 모르는 이름을 조용히 aggressive 로 되돌린다 — 몬스터가
+    멈추지 않게 하려는 폴백이지만, 그래서 "pasive" 같은 오타는 아무 데서도 티가 나지 않는다.
+    평화로워야 할 몬스터가 먼저 달려드는 것을 게임을 켜서 보기 전까지 알 수 없으므로 여기서 막는다.
+    """
+    errors = []
+
+    for entry in entries:
+        if not isinstance(entry, dict) or 'ai' not in entry:
+            continue    # 필드를 생략하면 서버 기본값(aggressive)이다
+
+        profile = entry.get('ai')
+        if profile in MONSTER_AI_PROFILES:
+            continue
+
+        errors.append(
+            f"{table_name}: 몬스터 {entry.get('id')}('{entry.get('name', '')}') 의 "
+            f"ai 값 {profile!r} 을 서버가 모릅니다 — "
+            f"{', '.join(MONSTER_AI_PROFILES)} 중 하나여야 합니다.")
+
+    return errors
+
+
 def _collect_text_keys(value, out):
     if isinstance(value, dict):
         for key, item in value.items():
@@ -1244,6 +1274,10 @@ def validate_table(table_name, entries, tables=None):
     # 7) Dialog 전용: 노드 참조/동작/선택지 검증
     if table_name == "Dialog":
         errors.extend(_validate_dialogs(table_name, entries, tables))
+
+    # 8) Monster 전용: AI 성향 이름 검증
+    if table_name == "MonsterData":
+        errors.extend(_validate_monster_ai(table_name, entries))
 
     # 3) 필드명 오타 의심 검사 (중첩 객체 포함, 경로 단위로 비교)
     field_paths = defaultdict(set)  # (path, name) -> 등장한 객체 인스턴스 id 집합

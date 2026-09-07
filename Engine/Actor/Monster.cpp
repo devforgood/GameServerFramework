@@ -33,8 +33,10 @@ Monster::Monster(Map* map)
 	gameObjectType_ = syncnet::GameObjectType::GameObjectType_Monster;
 	targetActorId_ = -1;
 
-	// 근접 공격 스킬 등록. 데이터가 없으면 nullptr 등록이라 TryCast 가 SkillNotFound 로 거부한다.
-	skillSet_.AddSkill(kMeleeSkillId, SkillRegistry::Instance().Get(kMeleeSkillId));
+	// 기본 성향이 쓰는 스킬을 등록한다. 종류(monster.json)가 정해지면 SetDataId 가
+	// 그 성향의 스킬로 다시 등록한다. 데이터가 없으면 nullptr 등록이라 TryCast 가
+	// SkillNotFound 로 거부한다.
+	ApplyAIProfile(aiProfile_);
 }
 
 Monster::~Monster()
@@ -92,7 +94,9 @@ int Monster::AttackRange()
 	const float* this_pos = nav->GetPos(GetActorId());
 	const float* target_pos = nav->GetPos(targetActorId_);
 
-	if (ManhattanDistance(this_pos, target_pos) > kAttackRange)
+	// 사거리는 성향과 페이즈가 정한다 — 보스가 2페이즈에서 멀찍이 서서 때리는 것이
+	// 여기서 나온다(1페이즈에는 붙어야 한다).
+	if (ManhattanDistance(this_pos, target_pos) > GetAttackPattern().attackRange)
 		return -1;
 
 	float hitPoint[3];
@@ -105,15 +109,20 @@ int Monster::AttackRange()
 
 int Monster::Attack()
 {
+	return Attack(GetAttackPattern().skillId);
+}
+
+int Monster::Attack(int skillId)
+{
 	map_->GetNavMap()->Stop(GetActorId());
 
-	// 추격 대상 방향으로 근접 스킬을 시전한다 — 플레이어와 동일한 스킬 파이프라인.
+	// 추격 대상 방향으로 스킬을 시전한다 — 플레이어와 동일한 스킬 파이프라인.
 	// 쿨다운 등으로 거부되면 이번 틱은 공격하지 않는다(BT 가 다음 틱에 재시도).
 	auto target = map_->FindActor(targetActorId_);
 	if (target != nullptr)
 	{
 		CastContext ctx;
-		ctx.skillId = kMeleeSkillId;
+		ctx.skillId = skillId;
 		ctx.targetActorId = targetActorId_;
 		ctx.targetPos = target->GetPosition();
 		skillSet_.TryCast(this, ctx);
@@ -145,7 +154,82 @@ void Monster::SetHealth(int health)
 void Monster::DecrementHealth(int amount)
 {
 	Actor::DecrementHealth(amount);
-	WakeAI();
+
+	// 킬 크레딧은 체력 감소 직전에 새겨진다(combat::ApplyDamage). 그래서 여기서
+	// "누가 때렸는지" 를 알 수 있다.
+	OnDamaged(GetLastAttackerActorId());
+}
+
+void Monster::OnDamaged(int attackerActorId)
+{
+	// 먼저 공격하지 않는 성향이 교전에 들어가는 유일한 경로다. 백엔드와 무관하게
+	// 여기서 대상을 잡으므로, 세 백엔드가 같은 반격 규칙을 쓴다.
+	//
+	// 탐지가 잡을 수 있는 상대만 문다 — 광역기는 아군 몬스터도 때리는데(combat 에
+	// 진영 구분이 없다), 그것까지 표적이 되면 몬스터끼리 싸우기 시작한다.
+	if (targetActorId_ < 0 && attackerActorId >= 0 && attackerActorId != actorId_ && map_ != nullptr)
+	{
+		auto attacker = map_->FindActor(attackerActorId);
+		if (attacker != nullptr && attacker->IsMonsterTarget())
+			targetActorId_ = attackerActorId;
+	}
+
+	if (map_ == nullptr)
+		return;
+
+	monsterai::MonsterAISystem* aiSystem = map_->GetAISystem();
+	if (aiSystem != nullptr)
+		aiSystem->OnDamaged(this); // 깨우고, 방금 잡은 대상을 슬롯에 반영한다.
+}
+
+const monsterai::AttackPattern& Monster::GetAttackPattern() const
+{
+	return monsterai::PatternOf(aiProfile_, combatPhase_);
+}
+
+bool Monster::UpdateCombatPhase()
+{
+	const int maxHealth = GetMaxHealth();
+	const float ratio = maxHealth > 0
+		? static_cast<float>(health_) / static_cast<float>(maxHealth)
+		: 0.0f;
+
+	const uint8_t phase = monsterai::PhaseFor(aiProfile_, ratio);
+	if (phase == combatPhase_)
+		return false;
+
+	combatPhase_ = phase;
+
+	const monsterai::AttackPattern& pattern = GetAttackPattern();
+	LOG.info("Monster {} ({}) 페이즈 {} 진입 — 스킬 {} / 사거리 {}",
+		actorId_, monsterai::ProfileName(aiProfile_), phase, pattern.skillId, pattern.attackRange);
+	return true;
+}
+
+void Monster::ApplyAIProfile(monsterai::AIProfile profile)
+{
+	aiProfile_ = profile;
+
+	// 이 성향이 페이즈마다 쓰는 스킬을 전부 등록한다. 페이즈가 넘어간 뒤에 등록하면
+	// 그 틱의 시전이 SkillNotFound 로 거부된다.
+	const monsterai::ProfileTraits& traits = monsterai::TraitsOf(profile);
+	for (uint8_t i = 0; i < traits.patternCount; ++i)
+	{
+		const int skillId = traits.patterns[i].skillId;
+		skillSet_.AddSkill(skillId, SkillRegistry::Instance().Get(skillId));
+	}
+
+	// 지금 체력에 맞는 페이즈로 맞춘다(성향이 바뀌면 페이즈 번호의 의미도 달라진다).
+	combatPhase_ = 0;
+	UpdateCombatPhase();
+
+	// 스폰(=AI 등록) 뒤에 종류가 새겨지므로, 이미 등록된 슬롯이면 성향을 밀어 넣는다.
+	if (map_ != nullptr)
+	{
+		monsterai::MonsterAISystem* aiSystem = map_->GetAISystem();
+		if (aiSystem != nullptr)
+			aiSystem->ApplyProfile(this);
+	}
 }
 
 void Monster::SetDataId(int dataId)
@@ -162,6 +246,9 @@ void Monster::SetDataId(int dataId)
 	// 스폰 시점이므로 체력을 최대치로 채운다.
 	SetCombatStats(data->hp, data->attack, data->defense, /*resetHealth=*/true);
 	name_ = data->name.empty() ? name_ : data->name;
+
+	// 성향도 종류가 정한다. 체력을 채운 뒤여야 보스의 시작 페이즈가 1페이즈로 잡힌다.
+	ApplyAIProfile(monsterai::ParseProfile(data->ai));
 }
 
 int Monster::GetRewardExp() const

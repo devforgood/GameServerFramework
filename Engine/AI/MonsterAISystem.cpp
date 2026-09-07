@@ -38,6 +38,7 @@ void monsterai::MonsterAISystem::Register(Monster* monster)
 	agent.owner = monster;
 	agent.actorId = monster->GetActorId();
 	agent.targetActorId = monster->targetActorId_;
+	agent.profile = static_cast<uint8_t>(monster->GetAIProfile());
 	const float* spawnPos = monster->GetSpawnPos();
 	agent.spawnPos[0] = spawnPos[0];
 	agent.spawnPos[1] = spawnPos[1];
@@ -62,9 +63,56 @@ void monsterai::MonsterAISystem::Wake(Monster* monster)
 	schedules->GetData(entity).nextThinkTick = tick_;
 }
 
+// 종류 id 는 스폰이 끝난 뒤에 새겨진다(Map::SpawnMonsterAt). 그래서 성향은 등록 시점이
+// 아니라 여기서 확정되고, 페이즈도 지금의 체력으로 다시 잡는다.
+void monsterai::MonsterAISystem::ApplyProfile(Monster* monster)
+{
+	AIAgentComponent* agent = FindAgent(monster);
+	if (agent == nullptr)
+		return;
+
+	agent->profile = static_cast<uint8_t>(monster->GetAIProfile());
+	agent->combatPhase = monster->GetCombatPhase();
+}
+
+void monsterai::MonsterAISystem::OnDamaged(Monster* monster)
+{
+	Wake(monster);
+
+	AIAgentComponent* agent = FindAgent(monster);
+	if (agent == nullptr || agent->targetActorId >= 0)
+		return; // 이미 물고 있는 대상이 있으면 바꾸지 않는다(맞을 때마다 표적이 흔들린다).
+
+	// Monster 가 반격 대상을 잡았으면 그것을 슬롯으로 옮긴다. 대상이 시야 밖이면
+	// 다음 탐지 패스가 곧바로 놓아 준다.
+	agent->targetActorId = monster->targetActorId_;
+}
+
 size_t monsterai::MonsterAISystem::AgentCount() const
 {
 	return entityManager_->GetComponentArray<AIScheduleComponent>()->GetSize();
+}
+
+const monsterai::AttackPattern* monsterai::MonsterAISystem::CurrentPattern(const Monster* monster) const
+{
+	const AIAgentComponent* agent = FindAgent(monster);
+	if (agent == nullptr)
+		return nullptr;
+
+	return &PatternOf(static_cast<AIProfile>(agent->profile), agent->combatPhase);
+}
+
+monsterai::AIAgentComponent* monsterai::MonsterAISystem::FindAgent(const Monster* monster) const
+{
+	if (monster == nullptr)
+		return nullptr;
+
+	auto* agents = entityManager_->GetComponentArray<AIAgentComponent>();
+	const engine::EntityID entity = static_cast<engine::EntityID>(monster->GetEntityId());
+	if (!agents->HasData(entity))
+		return nullptr; // 다른 백엔드이거나 아직 등록 전이다.
+
+	return &agents->GetData(entity);
 }
 
 float monsterai::MonsterAISystem::NextRestSeconds()
@@ -110,6 +158,7 @@ void monsterai::MonsterAISystem::Update(float deltaTime)
 
 	// 조건 평가 — 비쌀수록 더 좁은 무리에만 돈다.
 	EvaluateAlive(agents);
+	EvaluatePhase(agents);
 	EvaluateDetect(agents);
 	EvaluateAttackRange(agents);
 
@@ -142,6 +191,7 @@ void monsterai::MonsterAISystem::CollectDue(AIScheduleComponent* schedules, size
 void monsterai::MonsterAISystem::EvaluateAlive(AIAgentComponent* agents)
 {
 	alive_.clear();
+	phased_.clear();
 	for (const uint32_t slot : due_)
 	{
 		AIAgentComponent& agent = agents[slot];
@@ -153,6 +203,29 @@ void monsterai::MonsterAISystem::EvaluateAlive(AIAgentComponent* agents)
 		agent.conditions = kAlive;
 		agent.flags &= ~static_cast<uint8_t>(kDeadHandled); // 되살아났다면 사망 처리를 다시 할 수 있게 한다.
 		alive_.push_back(slot);
+
+		// 페이즈가 하나뿐인 성향(=보스가 아닌 전부)은 다음 패스에 담지 않는다.
+		if (TraitsOf(static_cast<AIProfile>(agent.profile)).patternCount > 1)
+			phased_.push_back(slot);
+	}
+}
+
+// 패스 2-a'. 공격 페이즈. 보스처럼 패턴이 여럿인 개체에만 돈다 — 맵에 보스가 없으면
+// 버킷이 비어 있어 이 패스는 사실상 존재하지 않는다.
+//
+// 페이즈가 바뀐다는 것은 이 뒤의 두 패스가 다른 값을 읽게 된다는 뜻이다:
+// 사거리 조건이 쓰는 거리와 공격 패스가 시전하는 스킬이 함께 바뀐다.
+void monsterai::MonsterAISystem::EvaluatePhase(AIAgentComponent* agents)
+{
+	for (const uint32_t slot : phased_)
+	{
+		AIAgentComponent& agent = agents[slot];
+
+		// 페이즈 판정 자체는 Monster 가 한다 — 세 백엔드가 같은 규칙을 써야 하기 때문이다
+		// (BT 백엔드는 ActionUpdateCombatPhase 노드가 같은 함수를 부른다).
+		// 여기서는 그 결과를 컴포넌트에 캐시해 두고, 뒤의 두 패스는 Monster 를 만지지 않는다.
+		agent.owner->UpdateCombatPhase();
+		agent.combatPhase = agent.owner->GetCombatPhase();
 	}
 }
 
@@ -178,7 +251,14 @@ void monsterai::MonsterAISystem::EvaluateDetect(AIAgentComponent* agents)
 				continue;
 			}
 			agent.targetActorId = -1; // 놓쳤다 — 아래에서 새 대상을 찾는다.
+			monster->targetActorId_ = -1;
 		}
+
+		// 먼저 공격하지 않는 성향은 여기서 끝난다. 시야 스캔은 이 패스에서 가장 비싼
+		// 작업인데, 그 결과를 쓸 일이 없기 때문이다 —
+		// 대상은 피격(Monster::OnDamaged)으로만 들어온다.
+		if (!TraitsOf(static_cast<AIProfile>(agent.profile)).scansForEnemies)
+			continue;
 
 		agent.targetActorId = map_->DetectEnemy(monster);
 		monster->targetActorId_ = agent.targetActorId; // 공격/테스트가 보는 값과 맞춘다.
@@ -197,9 +277,11 @@ void monsterai::MonsterAISystem::EvaluateAttackRange(AIAgentComponent* agents)
 	{
 		AIAgentComponent& agent = agents[slot];
 
+		const AttackPattern& pattern = PatternOf(static_cast<AIProfile>(agent.profile), agent.combatPhase);
+
 		const float* selfPos = nav_->GetPos(agent.actorId);
 		const float* targetPos = nav_->GetPos(agent.targetActorId);
-		if (ManhattanDistance(selfPos, targetPos) > Monster::kAttackRange)
+		if (ManhattanDistance(selfPos, targetPos) > pattern.attackRange)
 			continue;
 
 		float hitPoint[3];
@@ -295,7 +377,8 @@ void monsterai::MonsterAISystem::RunChase(AIAgentComponent* agents)
 	}
 }
 
-// 패스 4-c. 공격. 시전은 플레이어와 같은 스킬 파이프라인(SkillSet::TryCast)을 탄다 —
+// 패스 4-c. 공격. 무엇을 시전할지는 성향과 페이즈가 정한다(공유 표 조회 한 번).
+// 시전 자체는 플레이어와 같은 스킬 파이프라인(SkillSet::TryCast)을 탄다 —
 // 쿨다운 등으로 거부되면 이번 틱은 공격하지 않고 다음 틱에 다시 시도한다.
 void monsterai::MonsterAISystem::RunAttack(AIAgentComponent* agents)
 {
@@ -303,7 +386,7 @@ void monsterai::MonsterAISystem::RunAttack(AIAgentComponent* agents)
 	{
 		AIAgentComponent& agent = agents[slot];
 		agent.nextState = static_cast<uint8_t>(syncnet::AIState_Attack);
-		agent.owner->Attack();
+		agent.owner->Attack(PatternOf(static_cast<AIProfile>(agent.profile), agent.combatPhase).skillId);
 	}
 }
 

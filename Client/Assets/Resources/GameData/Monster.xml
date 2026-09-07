@@ -5,6 +5,7 @@
     <Fallback>
       <Sequence>
         <ConditionCheckHealth/>
+        <ActionUpdateCombatPhase/>
         <Fallback>
           <Sequence>
             <ConditionDetectEnemy/>

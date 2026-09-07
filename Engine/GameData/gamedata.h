@@ -532,6 +532,7 @@ namespace gamedata
 
     struct MonsterData
     {
+        std::string ai;
         int attack = 0;
         int defense = 0;
         std::vector<MonsterDataDrop> drops;
@@ -998,6 +999,7 @@ namespace gamedata
 
     inline void from_json(const nlohmann::json& j, MonsterData& o)
     {
+        if (j.contains("ai") && !j.at("ai").is_null()) j.at("ai").get_to(o.ai);
         if (j.contains("attack") && !j.at("attack").is_null()) j.at("attack").get_to(o.attack);
         if (j.contains("defense") && !j.at("defense").is_null()) j.at("defense").get_to(o.defense);
         if (j.contains("drops") && !j.at("drops").is_null()) j.at("drops").get_to(o.drops);

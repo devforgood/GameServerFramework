@@ -12,4 +12,5 @@ namespace BTDebugNodeId
 	constexpr uint16_t ConditionCheckHealth = 6;
 	constexpr uint16_t ActionDead = 7;
 	constexpr uint16_t ActionDestroyed = 8;
+	constexpr uint16_t ActionUpdateCombatPhase = 9;
 }

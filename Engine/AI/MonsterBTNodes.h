@@ -6,6 +6,7 @@
 
 #include "BTDebugNodeIds.h"
 #include "Monster.h"
+#include "MonsterAIProfile.h"
 #include "Map.h"
 #include "INavMovement.h"
 #include "LogHelper.h"
@@ -103,6 +104,15 @@ namespace monsterbt
 					return Success("target still visible");
 				}
 				monster->targetActorId_ = -1; // 놓쳤다 — 아래에서 새 대상을 찾는다.
+			}
+
+			// 먼저 공격하지 않는 성향(평화로운 몬스터)은 여기서 끝난다. 시야 스캔은 이 노드에서
+			// 가장 비싼 작업인데 그 결과를 쓸 일이 없다 — 대상은 피격(Monster::OnDamaged)으로만
+			// 들어온다. 성향 판정은 세 백엔드가 같은 표를 본다(MonsterAIProfile.h).
+			if (!monsterai::TraitsOf(monster->GetAIProfile()).scansForEnemies)
+			{
+				monster->SetState(syncnet::AIState_Patrol);
+				return Failure("passive: does not seek enemies");
 			}
 
 			// 스태거링: 적 탐지 그리드 스캔은 비싸다(월드 업데이트 병목). 배회 중에는 N틱마다 1회만
@@ -230,6 +240,26 @@ namespace monsterbt
 		}
 	};
 
+	// 체력 구간에 맞는 공격 패턴(페이즈)을 고른다. 이 노드가 생존 조건 바로 뒤에 오므로,
+	// 아래의 사거리 조건과 공격 액션은 언제나 '이번 틱의' 패턴을 본다.
+	//
+	// 페이즈가 하나뿐인 성향(보스가 아닌 전부)에서는 아무것도 바꾸지 않는다.
+	// ECS 백엔드의 EvaluatePhase 패스가 하는 일과 같다(같은 Monster::UpdateCombatPhase 를 부른다).
+	struct UpdateCombatPhase
+	{
+		static constexpr NodeKind kKind = NodeKind::Action;
+		static constexpr const char* kName = "ActionUpdateCombatPhase";
+		static constexpr uint16_t kDebugId = BTDebugNodeId::ActionUpdateCombatPhase;
+
+		TickResult Tick(Monster* monster)
+		{
+			if (monster->UpdateCombatPhase())
+				return Success("combat phase changed");
+
+			return Success("combat phase unchanged");
+		}
+	};
+
 	struct Chase
 	{
 		static constexpr NodeKind kKind = NodeKind::Action;
@@ -296,6 +326,7 @@ namespace monsterbt
 
 	using AllNodes = NodeList<
 		CheckHealth,
+		UpdateCombatPhase,
 		DetectEnemy,
 		AttackRange,
 		Patrol,

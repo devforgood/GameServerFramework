@@ -152,6 +152,8 @@ Four decisions carry the gain:
 - **Simulation time, not `steady_clock::now()`.** On Windows that call is QPC, and per-monster it becomes tick cost — besides making tests depend on the wall clock.
 - **Actor state is written only when it changes**, instead of paying a component lookup every tick to re-assert `Patrol`.
 
+Monster temperament comes from the `ai` field in `monster.json` ([MonsterAIProfile.h](Engine/AI/MonsterAIProfile.h)): `aggressive` (the default) hunts whatever enters its sight; `passive` never scans for enemies at all and only fights back at whoever hit it; `boss` swaps its attack pattern — skill and engagement range — once health drops to half, trading the point-blank cleave for a wider nova. An entity carries two bytes (profile and phase); which skill at which range lives in a shared table. All three BT backends read that table and the same `Monster::UpdateCombatPhase` — the tree backends through nodes, ECS through a pass — so behavior is identical across them, which [MonsterBTTest](UnitTest/MonsterBTTest.cpp) pins by running all three through the same scenarios.
+
 **AI step only** (`BM_BTWorldTickActors`, one run):
 
 | Monsters | behaviortree_cpp | In-house BT | **ECS** |

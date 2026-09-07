@@ -219,6 +219,7 @@ BTDebugDefinition BTDebugManager::BuildMonsterTreeDefinition(int64_t monster_id)
 	definition.monster_id = monster_id;
 	definition.nodes = {
 		{ BTDebugNodeId::ConditionCheckHealth, -1, "ConditionCheckHealth", BTDebugNodeType::Condition },
+		{ BTDebugNodeId::ActionUpdateCombatPhase, BTDebugNodeId::ConditionCheckHealth, "ActionUpdateCombatPhase", BTDebugNodeType::Action },
 		{ BTDebugNodeId::ConditionDetectEnemy, BTDebugNodeId::ConditionCheckHealth, "ConditionDetectEnemy", BTDebugNodeType::Condition },
 		{ BTDebugNodeId::ConditionAttackRange, BTDebugNodeId::ConditionDetectEnemy, "ConditionAttackRange", BTDebugNodeType::Condition },
 		{ BTDebugNodeId::ActionAttack, BTDebugNodeId::ConditionAttackRange, "ActionAttack", BTDebugNodeType::Action },

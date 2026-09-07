@@ -59,6 +59,48 @@
     "element": "physical"
   },
   {
+    "id": 4,
+    "type": "active",
+    "monster_only": true,
+    "min_damage": 12,
+    "max_damage": 24,
+    "range": 5,
+    "angle": 180,
+    "cooldown": 2.0,
+    "name_id": "boss_cleave_name",
+    "desc_id": "boss_cleave_desc",
+    "effects": [
+      {
+        "type": "damage"
+      }
+    ],
+    "fx": "slash",
+    "element": "physical"
+  },
+  {
+    "id": 5,
+    "type": "active",
+    "monster_only": true,
+    "min_damage": 20,
+    "max_damage": 40,
+    "range": 9,
+    "angle": 360,
+    "cooldown": 3.0,
+    "knockback": 3,
+    "name_id": "boss_nova_name",
+    "desc_id": "boss_nova_desc",
+    "effects": [
+      {
+        "type": "damage"
+      },
+      {
+        "type": "knockback"
+      }
+    ],
+    "fx": "nova",
+    "element": "physical"
+  },
+  {
     "id": 100,
     "type": "active",
     "min_damage": 6,

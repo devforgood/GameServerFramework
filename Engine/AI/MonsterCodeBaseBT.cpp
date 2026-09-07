@@ -19,6 +19,7 @@
 //  Fallback(Selector)
 //  ├─ Sequence                       (생존 분기)
 //  │  ├─ ConditionCheckHealth
+//  │  ├─ ActionUpdateCombatPhase     (체력 구간에 맞는 공격 패턴을 고른다 — 항상 성공)
 //  │  └─ Fallback
 //  │     ├─ Sequence
 //  │     │  ├─ ConditionDetectEnemy
@@ -137,6 +138,7 @@ BT::BehaviorTree* MonsterCodeBaseBT::createTree(Monster* monster)
 		.Selector()                                                          // Fallback (root)
 			->Sequence()                                                     // 생존 분기
 				->Condition(MonsterNode<CheckHealth>::Create(monster))->Back()
+				->Action(MonsterNode<UpdateCombatPhase>::Create(monster))->Back()
 				->Selector()                                                 // Fallback
 					->Sequence()
 						->Condition(MonsterNode<DetectEnemy>::Create(monster))->Back()

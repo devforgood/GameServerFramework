@@ -13,6 +13,7 @@
 #include "Map.h"
 #include "Character.h"
 #include "Monster.h"
+#include "MonsterAIProfile.h"
 #include "Player.h"
 #include "SkillRegistry.h"
 #include "Vector3.h"
@@ -121,6 +122,29 @@ protected:
 		return std::dynamic_pointer_cast<Monster>(
 			map_->OnAddAgent(nullptr, syncnet::GameObjectType_Monster, &pos));
 	}
+
+	// 성향은 monster.json 의 종류가 정한다. 서버가 밟는 순서(스폰 → SetDataId)를 그대로 태운다.
+	std::shared_ptr<Monster> SpawnMonsterOfKind(int dataId, float offsetX, float offsetZ)
+	{
+		auto monster = SpawnMonster(offsetX, offsetZ);
+		if (monster != nullptr)
+			monster->SetDataId(dataId);
+		return monster;
+	}
+
+	// 지정한 성향을 가진 monster.json 의 첫 종류 id. 데이터가 바뀌어도 테스트가 따라간다.
+	static int FindMonsterKindWithProfile(monsterai::AIProfile profile)
+	{
+		int found = -1;
+		for (const auto& [id, data] : ResourceLoader::Instance().GetMonsterDatas())
+		{
+			if (data == nullptr || monsterai::ParseProfile(data->ai) != profile)
+				continue;
+			if (found < 0 || id < found)
+				found = static_cast<int>(id);
+		}
+		return found;
+	}
 };
 
 // 근처의 캐릭터를 탐지해 추격/공격까지 진행한다.
@@ -218,6 +242,93 @@ TEST_P(MonsterBTTest, SwitchesToDeadBranchWhenHealthDepleted)
 	// Destroyed 는 Delay(2000ms) 이후라 이 틱에는 아직 아니다(두 백엔드 동일).
 	map_->UpdateActors(kTickDt);
 	EXPECT_EQ(monster->GetState(), syncnet::AIState_Dead);
+}
+
+//---------------------------------------------------------------------------------------
+// 성향(monster.json 의 "ai")도 백엔드를 가리지 않는다.
+//
+// 성향이 트리에 붙는 방식은 백엔드마다 다르다 — BT 둘은 노드(ConditionDetectEnemy 의
+// 성향 분기, ActionUpdateCombatPhase)로, ECS 는 패스로 처리한다. 그래도 판정 규칙 자체는
+// Monster 와 공유 표(MonsterAIProfile.h) 한 곳에 있으므로, 셋의 결과가 같아야 한다.
+//---------------------------------------------------------------------------------------
+
+// 평화로운 성향은 코앞에 적이 있어도 먼저 물지 않는다.
+TEST_P(MonsterBTTest, PassiveMonsterDoesNotAttackFirst)
+{
+	const int passiveKind = FindMonsterKindWithProfile(monsterai::AIProfile::Passive);
+	ASSERT_GT(passiveKind, 0) << "monster.json 에 passive 몬스터가 없습니다";
+
+	auto victim = SpawnCharacter();
+	auto passive = SpawnMonsterOfKind(passiveKind, 1.0f, 0.0f);
+	ASSERT_NE(victim, nullptr);
+	ASSERT_NE(passive, nullptr);
+
+	const int healthBefore = victim->GetHealth();
+	for (int i = 0; i < 30; ++i)
+		map_->UpdateActors(kTickDt);
+
+	// 같은 자리에서 시야 스캔을 직접 돌리면 적이 잡힌다 —
+	// 즉 '보이지 않아서' 가만히 있는 것이 아니라 스캔을 돌지 않아서다.
+	ASSERT_EQ(map_->DetectEnemy(passive.get()), victim->GetActorId());
+
+	EXPECT_EQ(passive->targetActorId_, -1) << "평화로운 몬스터가 먼저 적을 잡았습니다";
+	EXPECT_EQ(passive->GetState(), syncnet::AIState_Patrol);
+	EXPECT_EQ(victim->GetHealth(), healthBefore);
+}
+
+// 맞으면 문다. 평화로운 성향이 교전에 들어가는 유일한 경로다.
+TEST_P(MonsterBTTest, PassiveMonsterRetaliates)
+{
+	const int passiveKind = FindMonsterKindWithProfile(monsterai::AIProfile::Passive);
+	ASSERT_GT(passiveKind, 0);
+
+	auto attacker = SpawnCharacter();
+	auto passive = SpawnMonsterOfKind(passiveKind, 1.0f, 0.0f);
+	ASSERT_NE(attacker, nullptr);
+	ASSERT_NE(passive, nullptr);
+
+	for (int i = 0; i < 30; ++i)
+		map_->UpdateActors(kTickDt);
+	ASSERT_EQ(passive->targetActorId_, -1);
+
+	// 전투 경로와 같은 순서: 킬 크레딧을 새긴 뒤 체력을 깎는다(combat::ApplyDamage).
+	passive->SetLastAttacker(attacker->GetActorId());
+	passive->DecrementHealth(1);
+
+	for (int i = 0; i < 3; ++i)
+		map_->UpdateActors(kTickDt);
+
+	EXPECT_EQ(passive->targetActorId_, attacker->GetActorId()) << "맞고도 반격하지 않았습니다";
+	EXPECT_NE(passive->GetState(), syncnet::AIState_Patrol);
+}
+
+// 보스는 체력이 절반 이하가 되면 공격 패턴(스킬 + 사거리)이 바뀐다.
+TEST_P(MonsterBTTest, BossSwitchesAttackPatternAtHealthThreshold)
+{
+	const int bossKind = FindMonsterKindWithProfile(monsterai::AIProfile::Boss);
+	ASSERT_GT(bossKind, 0) << "monster.json 에 boss 몬스터가 없습니다";
+
+	auto boss = SpawnMonsterOfKind(bossKind, 1.0f, 0.0f);
+	ASSERT_NE(boss, nullptr);
+
+	map_->UpdateActors(kTickDt);
+	const int phase1Skill = boss->GetAttackPattern().skillId;
+	const int phase1Range = boss->GetAttackPattern().attackRange;
+	EXPECT_EQ(boss->GetCombatPhase(), 0) << "만피인데 1페이즈가 아닙니다";
+
+	boss->SetHealth(boss->GetMaxHealth() / 2 + 1);
+	map_->UpdateActors(kTickDt);
+	EXPECT_EQ(boss->GetAttackPattern().skillId, phase1Skill) << "아직 절반 위인데 패턴이 바뀌었습니다";
+
+	boss->SetHealth(boss->GetMaxHealth() / 2);
+	map_->UpdateActors(kTickDt);
+
+	EXPECT_NE(boss->GetAttackPattern().skillId, phase1Skill) << "체력이 절반인데 패턴이 그대로입니다";
+	EXPECT_NE(boss->GetAttackPattern().attackRange, phase1Range);
+
+	// 바뀐 패턴의 스킬을 실제로 시전할 수 있어야 한다 — 등록되어 있지 않으면
+	// 페이즈만 넘어가고 공격은 SkillNotFound 로 조용히 거부된다.
+	EXPECT_TRUE(boss->GetSkillSet().HasSkill(boss->GetAttackPattern().skillId));
 }
 
 INSTANTIATE_TEST_CASE_P(

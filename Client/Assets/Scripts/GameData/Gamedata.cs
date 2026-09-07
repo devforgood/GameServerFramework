@@ -527,6 +527,7 @@ namespace Gamedata
     [Serializable]
     public class MonsterData
     {
+        public string ai;
         public int attack;
         public int defense;
         public System.Collections.Generic.List<MonsterDataDrop> drops;

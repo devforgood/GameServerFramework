@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "ECS.h"
+#include "MonsterAIProfile.h"
 #include "MonsterBTRunner.h"
 
 namespace engine
@@ -29,20 +30,24 @@ class Monster;
 //   Fallback                                조건 비트           행동
 //   ├─ Sequence                            ─────────────────────────────
 //   │  ├─ CheckHealth                      !Alive            → Dead
-//   │  └─ Fallback                          Alive             → Patrol
-//   │     ├─ Sequence                       Alive+Target      → Chase
-//   │     │  ├─ DetectEnemy                 Alive+Target+범위 → Attack
+//   │  ├─ UpdateCombatPhase                 Alive             → Patrol
+//   │  └─ Fallback                          Alive+Target      → Chase
+//   │     ├─ Sequence                       Alive+Target+범위 → Attack
+//   │     │  ├─ DetectEnemy
 //   │     │  └─ Fallback
 //   │     │     ├─ Sequence [AttackRange, Attack]
 //   │     │     └─ Chase
 //   │     └─ Patrol
 //   └─ Sequence [Dead, Delay(2s) → Destroyed]
 //
+// (UpdateCombatPhase 는 조건이 아니라 '이번 틱에 어떤 공격 패턴을 쓸지'를 정하는 노드다 —
+//  항상 성공하므로 표에는 나타나지 않고, 아래 패스 2-a' 로 컴파일된다.)
+//
 // 그래서 한 틱은 트리 순회가 아니라 **동종 작업의 배치 패스** 몇 개로 끝난다.
 //
 //   1) 스케줄 스캔  : 4바이트 배열만 훑어 이번 틱에 사고할 개체를 고른다
-//   2) 조건 평가    : 생존 → (생존한 것만) 탐지 → (교전 중인 것만) 사거리
-//                     비싼 조건일수록 더 좁은 무리에만 돈다
+//   2) 조건 평가    : 생존 → (페이즈가 여럿인 것만) 페이즈 → (생존한 것만) 탐지
+//                     → (교전 중인 것만) 사거리. 비싼 조건일수록 더 좁은 무리에만 돈다
 //   3) 결정         : 조건 비트로 표를 찾아 행동별 버킷에 담는다(분기 없음)
 //   4) 실행         : 버킷마다 한 가지 일만 하는 루프 — 배회 / 추격 / 공격 / 사망
 //
@@ -66,6 +71,18 @@ class Monster;
 //   - 배회 중 주기는 예전 DetectEnemy 노드가 스스로 걸던 스태거 주기(10틱)와 같다.
 //     즉 가장 비싼 적 탐지 스캔의 간격은 예전과 같고, 대신 나머지 전부를 함께 건너뛴다.
 //   - 피격/체력 변화는 Monster 가 Wake 로 즉시 깨운다(다음 틱에 사고).
+//
+// 성향(AI 프로필)도 같은 방식으로 붙는다. monster.json 의 "ai" 필드가 정하는 성향은
+// 개체 레코드의 두 바이트(프로필 번호 + 페이즈 번호)일 뿐이고, "어떤 스킬을 어느 사거리에서
+// 쓰는가" 는 전부 공유 표(MonsterAIProfile.h)에 있다. 그래서 성향이 늘어도 패스 구조와
+// 개체 레코드 크기는 그대로다.
+//
+//   Passive  탐지 패스에서 시야 스캔을 건너뛴다(먼저 공격하지 않으므로 스캔할 이유가 없다).
+//            교전에 들어가는 유일한 경로는 피격이다 — Monster 가 OnDamaged 로 대상을 넘긴다.
+//   Boss     체력 비율로 페이즈를 정하는 패스가 하나 더 붙는데, 페이즈가 둘 이상인 개체
+//            (=보스)만 그 패스의 버킷에 담기므로 나머지 몬스터의 틱 비용은 변하지 않는다.
+//
+// 성향은 ECS 백엔드에서만 의미가 있다. 다른 두 백엔드는 트리가 고정이라 언제나 Aggressive 다.
 //
 // 이 백엔드는 BT 디버그 뷰어(BTDebugManager)를 지원하지 않는다 — 뷰어는 behaviortree_cpp
 // 트리에만 붙는다. 필요하면 몬스터 스폰 전에 Monster::btBackend_ 를 BTCpp 로 돌린다.
@@ -127,7 +144,9 @@ namespace monsterai
 		uint8_t action = 0;      // Action
 		uint8_t nextState = 0;   // 이번 틱에 있어야 할 syncnet::AIState
 		uint8_t flags = 0;       // AgentFlag
-		uint8_t reserved[3]{};
+		uint8_t profile = 0;     // AIProfile. 값은 공유 표에 있고 개체는 번호만 든다.
+		uint8_t combatPhase = 0; // 현재 공격 패턴 번호(보스 외에는 항상 0)
+		uint8_t reserved[1]{};
 	};
 
 	static_assert(sizeof(AIAgentComponent) <= 64, "에이전트 레코드가 캐시 라인을 넘었다");
@@ -156,10 +175,22 @@ namespace monsterai
 		// 다음 틱에 반드시 사고하게 만든다(피격/사망 등 즉시 반응이 필요한 사건).
 		void Wake(Monster* monster);
 
+		// 몬스터의 성향이 정해졌을 때(Monster::SetDataId) 슬롯에 반영한다.
+		// 종류 id 는 스폰(=Register) 뒤에 새겨지므로 등록 시점에는 아직 알 수 없다.
+		void ApplyProfile(Monster* monster);
+
+		// 피격 시 Monster::OnDamaged 가 부른다. 깨우고, Monster 가 방금 잡은 반격 대상을
+		// 슬롯에 반영한다(대상을 고르는 규칙 자체는 백엔드 공용이라 Monster 에 있다).
+		void OnDamaged(Monster* monster);
+
 		// Map::UpdateActors 가 PreMovement 단계를 돌릴 때 매 틱 한 번 불린다.
 		void Update(float deltaTime) override;
 
 		size_t AgentCount() const;
+
+		// 지금 이 몬스터가 쓰는 공격 패턴. 등록되지 않았으면 nullptr.
+		// (보스의 페이즈가 실제로 넘어갔는지 밖에서 확인할 수 있는 창이다)
+		const AttackPattern* CurrentPattern(const Monster* monster) const;
 		uint32_t CurrentTick() const { return tick_; }
 		float WorldTime() const { return worldTime_; }
 
@@ -174,6 +205,7 @@ namespace monsterai
 		// 한 틱의 패스들. 각각 하나의 동종 작업만 한다.
 		void CollectDue(AIScheduleComponent* schedules, size_t count);
 		void EvaluateAlive(AIAgentComponent* agents);
+		void EvaluatePhase(AIAgentComponent* agents);
 		void EvaluateDetect(AIAgentComponent* agents);
 		void EvaluateAttackRange(AIAgentComponent* agents);
 		void Decide(AIAgentComponent* agents);
@@ -186,6 +218,10 @@ namespace monsterai
 
 		void IssuePatrolTarget(AIAgentComponent& agent);
 		float NextRestSeconds();
+
+		// 엔티티 해시로 슬롯을 찾는다. 매 틱 도는 경로가 아니라, 스폰/피격처럼
+		// 바깥에서 한 마리를 지목해 들어올 때만 쓴다.
+		AIAgentComponent* FindAgent(const Monster* monster) const;
 
 		Map* map_;
 		engine::EntityManager* entityManager_;
@@ -201,6 +237,7 @@ namespace monsterai
 		//  몬스터 제거는 Map 이 나중 단계에서 모아 처리한다.)
 		std::vector<uint32_t> due_;
 		std::vector<uint32_t> alive_;
+		std::vector<uint32_t> phased_;   // 페이즈가 둘 이상인 개체(=보스)만 담긴다
 		std::vector<uint32_t> engaged_;
 		std::vector<uint32_t> patrolling_;
 		std::vector<uint32_t> chasing_;
