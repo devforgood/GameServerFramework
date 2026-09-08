@@ -53,6 +53,15 @@ void monsterai::MonsterAISystem::Register(Monster* monster)
 	entityManager_->AddComponent(entity, schedule);
 }
 
+void monsterai::MonsterAISystem::Unregister(Monster* monster)
+{
+	const engine::EntityID entity = static_cast<engine::EntityID>(monster->GetEntityId());
+
+	// 없는 컴포넌트를 빼는 것은 무해하다(ComponentArray::RemoveData 가 그냥 돌아간다).
+	entityManager_->RemoveComponent<AIAgentComponent>(entity);
+	entityManager_->RemoveComponent<AIScheduleComponent>(entity);
+}
+
 void monsterai::MonsterAISystem::Wake(Monster* monster)
 {
 	auto* schedules = entityManager_->GetComponentArray<AIScheduleComponent>();
@@ -73,19 +82,6 @@ void monsterai::MonsterAISystem::ApplyProfile(Monster* monster)
 
 	agent->profile = static_cast<uint8_t>(monster->GetAIProfile());
 	agent->combatPhase = monster->GetCombatPhase();
-}
-
-void monsterai::MonsterAISystem::OnDamaged(Monster* monster)
-{
-	Wake(monster);
-
-	AIAgentComponent* agent = FindAgent(monster);
-	if (agent == nullptr || agent->targetActorId >= 0)
-		return; // 이미 물고 있는 대상이 있으면 바꾸지 않는다(맞을 때마다 표적이 흔들린다).
-
-	// Monster 가 반격 대상을 잡았으면 그것을 슬롯으로 옮긴다. 대상이 시야 밖이면
-	// 다음 탐지 패스가 곧바로 놓아 준다.
-	agent->targetActorId = monster->targetActorId_;
 }
 
 size_t monsterai::MonsterAISystem::AgentCount() const
@@ -140,8 +136,9 @@ void monsterai::MonsterAISystem::Update(float deltaTime)
 	auto* agentArray = entityManager_->GetComponentArray<AIAgentComponent>();
 	if (agentArray->GetSize() != count)
 	{
-		// 두 컴포넌트는 Register 에서 함께 붙고 DestroyEntity 에서 함께 빠지므로
-		// 두 배열의 같은 인덱스가 같은 개체를 가리킨다. 어긋났다면 그 규칙이 깨진 것이다.
+		// 두 컴포넌트는 언제나 함께 붙고 함께 빠지므로(Register / Unregister /
+		// DestroyEntity) 두 배열의 같은 인덱스가 같은 개체를 가리킨다.
+		// 어긋났다면 그 규칙이 깨진 것이다.
 		LOG.error("MonsterAISystem: schedule/agent 배열 크기 불일치 ({} vs {})",
 			count, agentArray->GetSize());
 		return;
@@ -252,6 +249,16 @@ void monsterai::MonsterAISystem::EvaluateDetect(AIAgentComponent* agents)
 			}
 			agent.targetActorId = -1; // 놓쳤다 — 아래에서 새 대상을 찾는다.
 			monster->targetActorId_ = -1;
+		}
+
+		// 맞았다면 때린 쪽부터 본다. 판정은 여기서 한 번만 하고(피격 시점에는 공격자 id 만
+		// 적혀 있다), 슬롯에는 맵 조회 없이 바로 옮긴다 — 지금 그 슬롯을 손에 들고 있다.
+		if (monster->AcquireRetaliationTarget())
+		{
+			agent.targetActorId = monster->targetActorId_;
+			agent.conditions |= kHasTarget;
+			engaged_.push_back(slot);
+			continue;
 		}
 
 		// 먼저 공격하지 않는 성향은 여기서 끝난다. 시야 스캔은 이 패스에서 가장 비싼
@@ -461,7 +468,10 @@ namespace
 		}
 
 		system->Register(monster);
-		return system; // 트리 인스턴스가 없으므로 '등록됨' 표식으로만 쓴다.
+
+		// 트리 인스턴스가 없으므로 등록한 몬스터 자신을 핸들로 쓴다.
+		// (해제할 때 어느 개체의 슬롯을 반납할지 알아야 한다 — 아래 DestroyBrain 참고)
+		return monster;
 	}
 
 	void TickBrain(void* /*tree*/, Monster* /*monster*/)
@@ -469,9 +479,19 @@ namespace
 		// 실행은 Map::UpdateActors 가 부르는 MonsterAISystem::Update 가 일괄로 한다.
 	}
 
-	void DestroyBrain(void* /*tree*/)
+	void DestroyBrain(void* handle)
 	{
-		// 컴포넌트는 Actor::Clear 의 DestroyEntity 가 다른 컴포넌트와 함께 정리한다.
+		// 몬스터가 사라지는 길이라면 Actor::Clear 의 DestroyEntity 가 어차피 걷어가므로
+		// 여기서 반납해도 무해하다. 반드시 필요한 것은 다른 길이다 — 개체가 다른 백엔드로
+		// 갈아탈 때, 슬롯이 남아 있으면 트리와 이 시스템이 한 몬스터를 같이 조종한다.
+		//
+		// 이 시점에 Monster 는 소멸 중일 수 있다(brain_ 은 Monster 의 멤버다). 그래서
+		// 비가상 접근자만 쓴다 — GetMap/GetEntityId 는 아직 살아 있는 Actor 부분을 읽는다.
+		Monster* monster = static_cast<Monster*>(handle);
+		Map* map = monster->GetMap();
+		monsterai::MonsterAISystem* system = map != nullptr ? map->GetAISystem() : nullptr;
+		if (system != nullptr)
+			system->Unregister(monster);
 	}
 }
 

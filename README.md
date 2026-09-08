@@ -145,6 +145,8 @@ Every monster used to walk its own behavior tree from the root, every tick: 13 h
 
 [MonsterAISystem](Engine/AI/MonsterAISystem.h) replaces the traversal with batch passes over component arrays and is now the default backend (`BTBackend::Ecs`). This tree — one fallback over three conditions — compiles into a lookup table from a 3-bit condition mask to an action, so a tick becomes: scan the schedule, evaluate conditions over progressively narrower sets, index the table into per-action buckets, then run one loop per bucket. The two earlier backends are untouched and still selectable.
 
+The backend is per monster, not per process. `MonsterBTRunner` was already an instance member; only the *choice* was global, and that choice now lives in `Monster::ResolveBTBackend`. Backends mix freely within one map — `MonsterAISystem` iterates only registered components, so a tree-backed monster is simply absent from those arrays, and an ECS monster's `Tick` is a no-op. One rule ships with it: flipping `Monster::debugBossOnBTCpp_` spawns bosses on `BTCpp` so the [BT debug viewer](Engine/AI/BTDebugManager.h) can show their reasoning, leaving everything else on ECS. It defaults to off — BTCpp reparses `Monster.xml` on every spawn, so it is a debugging switch, not a production default.
+
 Four decisions carry the gain:
 
 - **Hot/cold component split.** Only a 4-byte `AIScheduleComponent` array is swept every tick (160 KB at 40,000 monsters). The 64-byte agent component is touched only by entities whose turn it is.

@@ -440,6 +440,101 @@ TEST_F(MonsterAISystemTest, BossSwitchesAttackPatternAtHealthThreshold)
 	EXPECT_TRUE(boss->GetSkillSet().HasSkill(phase1Skill));
 }
 
+//---------------------------------------------------------------------------------------
+// 개체별 백엔드.
+//
+// 백엔드는 프로세스 전역이 아니라 몬스터마다 다를 수 있다. 정책은
+// Monster::ResolveBTBackend 한 곳에 있고, 기본값은 "전부 프로세스 기본 백엔드" 다.
+// 아래 테스트는 그 스위치를 켰을 때 (1) 보스만 갈아타는지 (2) 갈아탄 개체가 ECS 슬롯을
+// 확실히 반납하는지를 고정한다 — 반납하지 않으면 트리와 시스템이 한 몬스터를 같이 조종한다.
+//---------------------------------------------------------------------------------------
+
+// 스위치를 켜고 끄는 것을 잊지 않게 감싸 둔다(전역 상태라 다음 테스트로 샌다).
+class MonsterBackendSwitchTest : public MonsterAISystemTest
+{
+protected:
+	void SetUp() override
+	{
+		MonsterAISystemTest::SetUp();
+		previousSwitch_ = Monster::debugBossOnBTCpp_;
+		Monster::debugBossOnBTCpp_ = true;
+	}
+
+	void TearDown() override
+	{
+		Monster::debugBossOnBTCpp_ = previousSwitch_;
+		MonsterAISystemTest::TearDown();
+	}
+
+private:
+	bool previousSwitch_ = false;
+};
+
+// 스위치가 꺼져 있으면(기본값) 성향과 무관하게 전부 프로세스 기본 백엔드다.
+TEST_F(MonsterAISystemTest, KeepsProcessBackendForEveryoneByDefault)
+{
+	ASSERT_FALSE(Monster::debugBossOnBTCpp_) << "개체별 백엔드 스위치의 기본값은 꺼짐이어야 합니다";
+
+	const int bossKind = FindMonsterKindWithProfile(monsterai::AIProfile::Boss);
+	ASSERT_GT(bossKind, 0);
+
+	auto boss = SpawnMonsterOfKind(bossKind, 1.0f, 0.0f);
+	ASSERT_NE(boss, nullptr);
+
+	EXPECT_EQ(boss->GetBTBackend(), Monster::BTBackend::Ecs);
+	EXPECT_EQ(map_->GetAISystem()->AgentCount(), 1u);
+}
+
+// 스위치를 켜면 보스만 BTCpp 로 가고 나머지는 ECS 에 남는다 — 한 맵 안에서 섞여 돈다.
+TEST_F(MonsterBackendSwitchTest, RunsBossOnBTCppAndOthersOnEcs)
+{
+	const int bossKind = FindMonsterKindWithProfile(monsterai::AIProfile::Boss);
+	const int passiveKind = FindMonsterKindWithProfile(monsterai::AIProfile::Passive);
+	ASSERT_GT(bossKind, 0);
+	ASSERT_GT(passiveKind, 0);
+
+	auto boss = SpawnMonsterOfKind(bossKind, 1.0f, 0.0f);
+	auto passive = SpawnMonsterOfKind(passiveKind, 2.0f, 0.0f);
+	auto plain = SpawnMonster(3.0f, 0.0f); // 종류가 없으면 기본 성향이다
+	ASSERT_NE(boss, nullptr);
+	ASSERT_NE(passive, nullptr);
+	ASSERT_NE(plain, nullptr);
+
+	EXPECT_EQ(boss->GetBTBackend(), Monster::BTBackend::BTCpp);
+	EXPECT_EQ(passive->GetBTBackend(), Monster::BTBackend::Ecs);
+	EXPECT_EQ(plain->GetBTBackend(), Monster::BTBackend::Ecs);
+
+	// 보스는 ECS 시스템에서 빠져야 한다. 남아 있으면 트리와 시스템이 함께 조종한다.
+	EXPECT_EQ(map_->GetAISystem()->AgentCount(), 2u) << "갈아탄 보스가 ECS 슬롯을 반납하지 않았습니다";
+	EXPECT_EQ(map_->GetAISystem()->CurrentPattern(boss.get()), nullptr);
+
+	// 섞인 채로 돌아도 양쪽이 각자 살아 움직인다.
+	Tick(30);
+	EXPECT_EQ(boss->GetState(), syncnet::AIState_Patrol);
+	EXPECT_EQ(plain->GetState(), syncnet::AIState_Patrol);
+}
+
+// 갈아탄 뒤에도 성향은 그대로 따라간다(백엔드가 달라도 판정 규칙은 하나다).
+TEST_F(MonsterBackendSwitchTest, BossKeepsProfileBehaviorAfterSwitchingBackend)
+{
+	const int bossKind = FindMonsterKindWithProfile(monsterai::AIProfile::Boss);
+	ASSERT_GT(bossKind, 0);
+
+	auto victim = SpawnCharacter();
+	auto boss = SpawnMonsterOfKind(bossKind, 1.0f, 0.0f);
+	ASSERT_NE(victim, nullptr);
+	ASSERT_NE(boss, nullptr);
+	ASSERT_EQ(boss->GetBTBackend(), Monster::BTBackend::BTCpp);
+
+	Tick(20);
+	EXPECT_EQ(boss->targetActorId_, victim->GetActorId()) << "갈아탄 보스가 적을 탐지하지 못했습니다";
+
+	const int phase1Skill = boss->GetAttackPattern().skillId;
+	boss->SetHealth(boss->GetMaxHealth() / 2);
+	Tick(1);
+	EXPECT_NE(boss->GetAttackPattern().skillId, phase1Skill) << "갈아탄 보스의 페이즈가 넘어가지 않았습니다";
+}
+
 // 보스가 아닌 몬스터는 체력이 얼마가 되든 패턴이 하나다(페이즈 패스에 담기지도 않는다).
 TEST_F(MonsterAISystemTest, NonBossKeepsSinglePattern)
 {

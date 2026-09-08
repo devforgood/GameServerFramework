@@ -62,16 +62,67 @@ namespace monsterai
 	};
 
 	// 프로필 이름 → 프로필. 모르는 이름이면 Aggressive(데이터 오타가 몬스터를 멈추게 하지 않는다).
+	// 데이터를 읽는 시점(스폰)에만 부르므로 헤더에 둘 이유가 없다.
 	AIProfile ParseProfile(std::string_view name);
 
 	// 로그/툴용 이름. ParseProfile 이 되받을 수 있는 문자열을 돌려준다.
 	const char* ProfileName(AIProfile profile);
 
-	const ProfileTraits& TraitsOf(AIProfile profile);
+	//-----------------------------------------------------------------------------------
+	// 표와 조회 함수는 헤더에 둔다.
+	//
+	// AI 의 가장 안쪽 루프가 개체마다 이것을 부른다(MonsterAISystem 의 조건 평가 패스,
+	// BT 의 탐지 노드). .cpp 에 두면 링크 타임 최적화가 없는 이 빌드에서 인라인되지 않아
+	// 틱마다 함수 호출이 남는다 — 재보니 교전 중 ECS 틱이 그만큼(약 8~10%) 느려졌다.
+	// 전부 constexpr 이라 대개 컴파일 타임에 접힌다.
+	//-----------------------------------------------------------------------------------
+
+	// 기본 성향. 예전 트리와 같은 값이다(근접 스킬 하나, 사거리 3).
+	inline constexpr AttackPattern kSingleMeleePattern[] = {
+		{ 0.0f, kMeleeSkillId, kMeleeAttackRange },
+	};
+
+	// 보스. 체력이 절반 이하로 떨어지면 붙어서 때리던 것을 멈추고,
+	// 더 먼 거리에서 사방으로 터지는 노바로 바꾼다.
+	inline constexpr AttackPattern kBossPatterns[] = {
+		{ kBossPhase2HealthRatio, kBossCleaveSkillId, kBossCleaveRange },
+		{ 0.0f,                   kBossNovaSkillId,   kBossNovaRange },
+	};
+
+	inline constexpr ProfileTraits kProfileTraits[] = {
+		/* Aggressive */ { true,  kSingleMeleePattern, 1 },
+		/* Passive    */ { false, kSingleMeleePattern, 1 },
+		/* Boss       */ { true,  kBossPatterns,       2 },
+	};
+
+	inline constexpr uint8_t kProfileCount = static_cast<uint8_t>(AIProfile::Count);
+
+	static_assert(sizeof(kProfileTraits) / sizeof(kProfileTraits[0]) == kProfileCount,
+		"프로필을 추가했으면 특성 표도 함께 채워야 한다");
+
+	inline constexpr const ProfileTraits& TraitsOf(AIProfile profile)
+	{
+		const uint8_t index = static_cast<uint8_t>(profile);
+		return kProfileTraits[index < kProfileCount ? index : 0];
+	}
 
 	// 체력 비율에 해당하는 페이즈 번호. 페이즈가 하나뿐인 프로필은 항상 0 이다.
-	uint8_t PhaseFor(AIProfile profile, float healthRatio);
+	inline constexpr uint8_t PhaseFor(AIProfile profile, float healthRatio)
+	{
+		const ProfileTraits& traits = TraitsOf(profile);
+		for (uint8_t phase = 0; phase + 1 < traits.patternCount; ++phase)
+		{
+			if (healthRatio > traits.patterns[phase].healthAbove)
+				return phase;
+		}
+		return static_cast<uint8_t>(traits.patternCount - 1);
+	}
 
 	// 페이즈 번호에 해당하는 패턴. 범위를 벗어난 번호는 마지막 페이즈로 잘린다.
-	const AttackPattern& PatternOf(AIProfile profile, uint8_t phase);
+	inline constexpr const AttackPattern& PatternOf(AIProfile profile, uint8_t phase)
+	{
+		const ProfileTraits& traits = TraitsOf(profile);
+		const uint8_t last = static_cast<uint8_t>(traits.patternCount - 1);
+		return traits.patterns[phase < traits.patternCount ? phase : last];
+	}
 }

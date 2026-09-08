@@ -5,20 +5,21 @@
 #include "MonsterBT.h"
 #include "MonsterCodeBaseBT.h"
 
-void MonsterBTRunner::Create(Monster* monster)
+void MonsterBTRunner::Create(Monster* monster, Backend backend)
 {
-	Destroy(); // 재생성 시 이전 트리를 흘리지 않는다.
+	Destroy(); // 재생성 시 이전 백엔드를 흘리지 않는다(ECS 는 여기서 슬롯을 반납한다).
 
-	// 백엔드 선택은 여기 한 곳뿐이다. 백엔드가 늘어나면 이 스위치에 한 줄 추가한다.
-	switch (Monster::btBackend_)
+	// 백엔드 → 전략 테이블 변환은 여기 한 곳뿐이다.
+	// 백엔드가 늘어나면 이 스위치에 한 줄 추가한다.
+	switch (backend)
 	{
-	case Monster::BTBackend::BTCpp:
+	case Backend::BTCpp:
 		ops_ = &MonsterBT::Ops();
 		break;
-	case Monster::BTBackend::CodeBase:
+	case Backend::CodeBase:
 		ops_ = &MonsterCodeBaseBT::Ops();
 		break;
-	case Monster::BTBackend::Ecs:
+	case Backend::Ecs:
 	default:
 		ops_ = &MonsterEcsBT::Ops();
 		break;

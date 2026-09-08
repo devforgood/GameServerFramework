@@ -14,9 +14,10 @@
 //---------------------------------------------------------------------------------------
 // 몬스터 AI 노드 로직의 단일 원본.
 //
-// BT 백엔드는 두 가지다(Monster::BTBackend).
+// 여기 있는 노드로 트리를 짜는 백엔드는 둘이다(MonsterBTRunner::Backend).
 //   - BTCpp    : behaviortree_cpp + GameData/Monster.xml (BT 디버그 뷰어 지원)
-//   - CodeBase : ../BehaviorTree(인하우스) + 코드 빌더 (틱 비용이 낮다 — 기본값)
+//   - CodeBase : ../BehaviorTree(인하우스) + 코드 빌더
+// (기본값인 Ecs 는 트리를 짜지 않고 같은 로직을 배치 패스로 편다 — MonsterAISystem.h)
 // 예전에는 같은 게임 로직을 두 프레임워크의 노드 클래스로 각각 구현해 두 파일이 통째로
 // 중복됐다. 지금은 로직을 아래의 백엔드 중립 구조체 하나로만 쓰고, 각 백엔드의 노드 클래스는
 // 템플릿 어댑터(MonsterBT.cpp / MonsterCodeBaseBT.cpp)가 컴파일 타임에 생성한다.
@@ -104,6 +105,14 @@ namespace monsterbt
 					return Success("target still visible");
 				}
 				monster->targetActorId_ = -1; // 놓쳤다 — 아래에서 새 대상을 찾는다.
+			}
+
+			// 맞았다면 때린 쪽부터 본다(피격 시점에는 공격자 id 만 적혀 있다).
+			// ECS 백엔드의 탐지 패스도 같은 자리에서 같은 함수를 부른다.
+			if (monster->AcquireRetaliationTarget())
+			{
+				monster->SetState(syncnet::AIState_Detect);
+				return Success("retaliating against attacker");
 			}
 
 			// 먼저 공격하지 않는 성향(평화로운 몬스터)은 여기서 끝난다. 시야 스캔은 이 노드에서

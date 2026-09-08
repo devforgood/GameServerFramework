@@ -1304,6 +1304,122 @@ BENCHMARK_CAPTURE(BM_BTWorldTickActors, ecs, Monster::BTBackend::Ecs)
 	->Unit(benchmark::kMillisecond)
 	->MinTime(3.0);
 
+// ============================================================================
+// 개체별 백엔드를 섞었을 때의 비용.
+//
+// 백엔드는 프로세스가 아니라 몬스터마다 정해진다(Monster::ResolveBTBackend). 운영에서 쓸
+// 조합은 "보스 몇 마리만 BTCpp(디버그 뷰어), 나머지는 ECS" 이므로, 전부 ECS 인 경우보다
+// 얼마나 비싼지를 재야 한다. 위 BM_BTWorldTickActors 와 같은 방식(플레이어 없이 UpdateActors
+// 만)이라 이동/전송이 섞이지 않고 AI 단계만 보인다.
+//
+// 세 구성을 같은 인자로 비교하면 두 가지 비용이 분리된다.
+//   ecs_only : 전부 ECS, 보스 없음            → 기준선
+//   ecs_boss : 전부 ECS, 보스 K마리           → '보스 성향' 자체의 비용(페이즈 패스가 돈다)
+//   mixed    : 보스 K마리만 BTCpp, 나머지 ECS → 백엔드를 섞는 비용
+// (mixed − ecs_boss) 가 BTCpp 로 갈아탄 K마리가 실제로 더 내는 값이다.
+// ============================================================================
+
+namespace
+{
+	// monster.json 에서 boss 성향인 첫 종류 id. 데이터가 바뀌어도 벤치가 따라간다.
+	int BossMonsterKind()
+	{
+		int found = -1;
+		for (const auto& [id, data] : ResourceLoader::Instance().GetMonsterDatas())
+		{
+			if (data == nullptr || monsterai::ParseProfile(data->ai) != monsterai::AIProfile::Boss)
+				continue;
+			if (found < 0 || id < found)
+				found = static_cast<int>(id);
+		}
+		return found;
+	}
+
+	enum class MixMode { EcsOnly, EcsBoss, Mixed };
+}
+
+static void BM_BTBackendMix(benchmark::State& state, MixMode mode)
+{
+	const int count = static_cast<int>(state.range(0));
+	const int requestedBosses = (mode == MixMode::EcsOnly) ? 0 : static_cast<int>(state.range(1));
+
+	const auto& spawns = ValidSpawns("waypoint");
+	if (spawns.empty())
+	{
+		state.SkipWithError("유효한 스폰 좌표가 없다");
+		return;
+	}
+
+	const int bossKind = BossMonsterKind();
+	if (requestedBosses > 0 && bossKind < 0)
+	{
+		state.SkipWithError("monster.json 에 boss 성향 몬스터가 없다");
+		return;
+	}
+
+	// 백엔드는 스폰 시점에 정해지므로 둘 다 스폰 전에 설정한다.
+	const Monster::BTBackend previousBackend = Monster::btBackend_;
+	const bool previousSwitch = Monster::debugBossOnBTCpp_;
+	Monster::btBackend_ = Monster::BTBackend::Ecs;         // 일반 몬스터는 전부 ECS
+	Monster::debugBossOnBTCpp_ = (mode == MixMode::Mixed); // 보스만 BTCpp 로 갈아탄다
+
+	World world;
+	world.Init("waypoint");
+	Map* map = world.GetPrimaryMap();
+
+	int spawned = 0;
+	int bosses = 0;
+	int onBTCpp = 0;
+	for (int i = 0; i < count; ++i)
+	{
+		const auto& c = spawns[i % spawns.size()];
+		syncnet::Vec3 v(c[0], c[1], c[2]);
+		auto actor = world.OnAddAgent(nullptr, syncnet::GameObjectType_Monster, &v);
+		if (actor == nullptr)
+			continue;
+		++spawned;
+
+		if (bosses >= requestedBosses)
+			continue;
+
+		// 종류는 스폰 뒤에 새긴다 — 운영 경로(Map::SpawnMonsterAt)와 같은 순서이고,
+		// 백엔드 교체가 일어나는 지점도 바로 여기다.
+		auto* mob = dynamic_cast<Monster*>(actor.get());
+		if (mob == nullptr)
+			continue;
+
+		mob->SetDataId(bossKind);
+		++bosses;
+		if (mob->GetBTBackend() == Monster::BTBackend::BTCpp)
+			++onBTCpp;
+	}
+
+	for (auto _ : state)
+	{
+		map->UpdateActors(kTickDt);
+	}
+
+	Monster::btBackend_ = previousBackend;
+	Monster::debugBossOnBTCpp_ = previousSwitch;
+
+	state.counters["monsters"] = spawned;
+	state.counters["bosses"] = bosses;
+	state.counters["btcpp"] = onBTCpp; // 실제로 갈아탄 수(0 이면 섞이지 않은 것이다)
+	state.SetItemsProcessed(state.iterations() * static_cast<int64_t>(spawned));
+}
+BENCHMARK_CAPTURE(BM_BTBackendMix, ecs_only, MixMode::EcsOnly)
+	->Args({ 10000, 0 })
+	->Unit(benchmark::kMillisecond)
+	->MinTime(3.0);
+BENCHMARK_CAPTURE(BM_BTBackendMix, ecs_boss, MixMode::EcsBoss)
+	->Args({ 10000, 10 })->Args({ 10000, 100 })->Args({ 10000, 1000 })
+	->Unit(benchmark::kMillisecond)
+	->MinTime(3.0);
+BENCHMARK_CAPTURE(BM_BTBackendMix, mixed, MixMode::Mixed)
+	->Args({ 10000, 10 })->Args({ 10000, 100 })->Args({ 10000, 1000 })
+	->Unit(benchmark::kMillisecond)
+	->MinTime(3.0);
+
 // 백엔드별 수용량(교전 포함). BM_WorldTickCapacityEngaged 와 같은 구성이지만 백엔드를
 // 스폰 전에 고정해 두 구현을 한 번의 실행으로 비교한다. 인자는 (몬스터 수, 플레이어 수).
 //

@@ -85,7 +85,9 @@ class Monster;
 // 성향은 ECS 백엔드에서만 의미가 있다. 다른 두 백엔드는 트리가 고정이라 언제나 Aggressive 다.
 //
 // 이 백엔드는 BT 디버그 뷰어(BTDebugManager)를 지원하지 않는다 — 뷰어는 behaviortree_cpp
-// 트리에만 붙는다. 필요하면 몬스터 스폰 전에 Monster::btBackend_ 를 BTCpp 로 돌린다.
+// 트리에만 붙는다. 백엔드는 개체마다 다를 수 있으므로, 전부를 돌릴 필요는 없다:
+// Monster::debugBossOnBTCpp_ 를 켜면 보스만 BTCpp 로 스폰되고 나머지는 여기 남는다
+// (정책은 Monster::ResolveBTBackend 한 곳에 있다).
 // 세 백엔드가 같은 결정을 내리는지는 UnitTest/MonsterBTTest.cpp 가 고정한다.
 //---------------------------------------------------------------------------------------
 
@@ -169,8 +171,16 @@ namespace monsterai
 		MonsterAISystem(Map* map, engine::EntityManager& entityManager)
 			: map_(map), entityManager_(&entityManager) {}
 
-		// 스폰 시 슬롯(컴포넌트)을 만든다. 해제는 Actor::Clear 의 DestroyEntity 가 함께 처리한다.
+		// 스폰 시 슬롯(컴포넌트)을 만든다.
 		void Register(Monster* monster);
+
+		// 슬롯을 반납한다. 몬스터가 사라질 때는 Actor::Clear 의 DestroyEntity 가 알아서
+		// 함께 걷어가므로, 이것이 필요한 경우는 하나다 — 개체가 다른 백엔드로 갈아탈 때
+		// (Monster::ApplyAIProfile). 남겨 두면 트리와 이 시스템이 한 몬스터를 같이 조종한다.
+		//
+		// 두 컴포넌트를 반드시 함께 뺀다. Update 가 두 배열의 같은 인덱스를 같은 개체로
+		// 보기 때문에, 한쪽만 빠지면 그 규칙이 깨진다.
+		void Unregister(Monster* monster);
 
 		// 다음 틱에 반드시 사고하게 만든다(피격/사망 등 즉시 반응이 필요한 사건).
 		void Wake(Monster* monster);
@@ -178,10 +188,6 @@ namespace monsterai
 		// 몬스터의 성향이 정해졌을 때(Monster::SetDataId) 슬롯에 반영한다.
 		// 종류 id 는 스폰(=Register) 뒤에 새겨지므로 등록 시점에는 아직 알 수 없다.
 		void ApplyProfile(Monster* monster);
-
-		// 피격 시 Monster::OnDamaged 가 부른다. 깨우고, Monster 가 방금 잡은 반격 대상을
-		// 슬롯에 반영한다(대상을 고르는 규칙 자체는 백엔드 공용이라 Monster 에 있다).
-		void OnDamaged(Monster* monster);
 
 		// Map::UpdateActors 가 PreMovement 단계를 돌릴 때 매 틱 한 번 불린다.
 		void Update(float deltaTime) override;
