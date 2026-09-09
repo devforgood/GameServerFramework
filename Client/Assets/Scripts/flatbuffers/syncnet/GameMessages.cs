@@ -36,6 +36,7 @@ public enum GameMessages : byte
   DialogNode = 26,
   DialogSelect = 27,
   PlayerStatSync = 28,
+  Chat = 29,
 };
 
 

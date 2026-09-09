@@ -13,6 +13,7 @@ using UnityEngine.SceneManagement;
 //   MapTransition     게이트 이동과 씬 전환
 //   LoginController   로그인/재접속 핸드오버/자동 스폰
 //   DialogController  NPC 대화(상호작용 → 노드 표시 → 고른 번호 회신)
+//   ChatWindow        채팅 창(지금은 치트 명령 전용)
 //
 // Session 이 MonoBehaviour 로 남는 이유는 두 가지다. 씬에 배치된 컴포넌트 참조를 유지해야 하고,
 // TcpConnection 이 Receiver 를 Session 타입으로 캐스팅하기 때문이다. 그래서 프레임 진행(Update)과
@@ -29,6 +30,7 @@ public class Session : MonoBehaviour
     private MapTransition mapTransition;
     private LoginController login;
     private DialogController dialogs;
+    private ChatWindow chat;
 
     /// <summary>NPC 에게 말을 거는 키. 근처에 NPC 가 없으면 아무 일도 하지 않는다.</summary>
     public KeyCode interactKey = KeyCode.F;
@@ -97,6 +99,7 @@ public class Session : MonoBehaviour
         skills = new SkillController(this, connection, actors, () => player_actor_id);
         mapTransition = new MapTransition(connection, actors);
         dialogs = new DialogController(connection);
+        chat = new ChatWindow(SendChat);
         login = new LoginController(connection, mapTransition,
             actorId => player_actor_id = actorId,
             pos => AddAgent(0, pos, GameObjectType.Character));
@@ -172,7 +175,8 @@ public class Session : MonoBehaviour
         actors.Tick();
 
         // 대화 중에는 말 걸기 키를 받지 않는다(창 안의 선택지로 진행한다).
-        if (Input.GetKeyDown(interactKey) && !dialogs.IsOpen)
+        // 채팅 입력 중에도 마찬가지다 — 타이핑한 글자가 게임 조작으로도 읽히면 안 된다.
+        if (Input.GetKeyDown(interactKey) && !dialogs.IsOpen && !chat.IsCapturing)
             TryInteractNearestNpc();
     }
 
@@ -202,6 +206,9 @@ public class Session : MonoBehaviour
                 break;
             case GameMessages.PlayerStatSync:
                 OnPlayerStatSync(recv_msg.Msg<PlayerStatSync>().Value);
+                break;
+            case GameMessages.Chat:
+                chat.AddServerLine(recv_msg.Msg<syncnet.Chat>().Value.Message);
                 break;
         }
 
@@ -364,6 +371,23 @@ public class Session : MonoBehaviour
     public void UseSkill(int skillId, Vector3 pos, int type)
     {
         skills.Cast(skillId, pos, type);
+    }
+
+    /// <summary>채팅 입력창이 키보드를 가로채는 중인가. 게임 입력(InputHandler)은 이때 쉰다.</summary>
+    public bool IsChatCapturing { get { return chat != null && chat.IsCapturing; } }
+
+    /// <summary>채팅 한 줄을 서버로 보낸다(치트 명령 통로).</summary>
+    public void SendChat(string text)
+    {
+        connection.Send(PacketFactory.CreateChatMessage(text));
+    }
+
+    // 채팅 창은 Session 이 그린다. 씬마다 UI 를 두지 않아도 되고(게임 필드 씬이 여럿이다),
+    // Session 은 DontDestroyOnLoad 라 씬이 바뀌어도 로그가 이어진다.
+    void OnGUI()
+    {
+        if (chat != null)
+            chat.Draw();
     }
 
     /// <summary>밟은 게이트 id 를 서버에 알린다. 목적지는 서버가 정한다.</summary>

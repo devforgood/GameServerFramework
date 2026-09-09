@@ -56,6 +56,9 @@ public class InputHandler : MonoBehaviour
 
     private void Update()
     {
+        // 채팅 입력 중에는 숫자키가 타이핑이다. 여기서 먹으면 "1" 을 칠 때마다 핫바가 바뀐다.
+        if (session != null && session.IsChatCapturing) return;
+
         // 숫자키 1~9 로 핫바 스킬 선택.
         if (skillBar == null) return;
         int count = Mathf.Min(skillBar.Length, 9);

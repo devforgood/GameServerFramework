@@ -31,6 +31,7 @@ union GameMessages
   DialogNode,
   DialogSelect,
   PlayerStatSync,
+  Chat,
 } // Optionally add more tables.
 
 enum StatusCode:short
@@ -361,6 +362,16 @@ table DialogSelect {
 table PlayerStatSync {
   level:int = 1;
   exp:long = 0;
+}
+
+// ── 채팅 / 치트 ──
+// 클라 -> 서버 : 채팅 창에 입력한 한 줄. 서버 -> 클라 : 그 줄에 대한 시스템 응답 한 줄.
+//
+// 지금 서버가 이 줄로 하는 일은 치트 명령 처리뿐이다(일반 대화는 아직 없다).
+// 명령은 앞에 '/' 를 붙여도 되고 안 붙여도 된다 — 어차피 이 통로로 오는 것은 명령뿐이다.
+// 치트 실행은 network.allow_debug_commands 가 켜져 있을 때만 허용된다(운영에서는 꺼 둔다).
+table Chat {
+  message:string;
 }
 
 root_type GameMessage;

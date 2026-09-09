@@ -125,6 +125,9 @@ struct DialogSelectBuilder;
 struct PlayerStatSync;
 struct PlayerStatSyncBuilder;
 
+struct Chat;
+struct ChatBuilder;
+
 enum GameMessages {
   GameMessages_NONE = 0,
   GameMessages_AddAgent = 1,
@@ -155,11 +158,12 @@ enum GameMessages {
   GameMessages_DialogNode = 26,
   GameMessages_DialogSelect = 27,
   GameMessages_PlayerStatSync = 28,
+  GameMessages_Chat = 29,
   GameMessages_MIN = GameMessages_NONE,
-  GameMessages_MAX = GameMessages_PlayerStatSync
+  GameMessages_MAX = GameMessages_Chat
 };
 
-inline const GameMessages (&EnumValuesGameMessages())[29] {
+inline const GameMessages (&EnumValuesGameMessages())[30] {
   static const GameMessages values[] = {
     GameMessages_NONE,
     GameMessages_AddAgent,
@@ -189,13 +193,14 @@ inline const GameMessages (&EnumValuesGameMessages())[29] {
     GameMessages_PartyQuestShareReply,
     GameMessages_DialogNode,
     GameMessages_DialogSelect,
-    GameMessages_PlayerStatSync
+    GameMessages_PlayerStatSync,
+    GameMessages_Chat
   };
   return values;
 }
 
 inline const char * const *EnumNamesGameMessages() {
-  static const char * const names[30] = {
+  static const char * const names[31] = {
     "NONE",
     "AddAgent",
     "RemoveAgent",
@@ -225,13 +230,14 @@ inline const char * const *EnumNamesGameMessages() {
     "DialogNode",
     "DialogSelect",
     "PlayerStatSync",
+    "Chat",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameGameMessages(GameMessages e) {
-  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_PlayerStatSync)) return "";
+  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_Chat)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesGameMessages()[index];
 }
@@ -350,6 +356,10 @@ template<> struct GameMessagesTraits<syncnet::DialogSelect> {
 
 template<> struct GameMessagesTraits<syncnet::PlayerStatSync> {
   static const GameMessages enum_value = GameMessages_PlayerStatSync;
+};
+
+template<> struct GameMessagesTraits<syncnet::Chat> {
+  static const GameMessages enum_value = GameMessages_Chat;
 };
 
 bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type);
@@ -698,6 +708,9 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::PlayerStatSync *msg_as_PlayerStatSync() const {
     return msg_type() == syncnet::GameMessages_PlayerStatSync ? static_cast<const syncnet::PlayerStatSync *>(msg()) : nullptr;
   }
+  const syncnet::Chat *msg_as_Chat() const {
+    return msg_type() == syncnet::GameMessages_Chat ? static_cast<const syncnet::Chat *>(msg()) : nullptr;
+  }
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
@@ -825,6 +838,10 @@ template<> inline const syncnet::DialogSelect *GameMessage::msg_as<syncnet::Dial
 
 template<> inline const syncnet::PlayerStatSync *GameMessage::msg_as<syncnet::PlayerStatSync>() const {
   return msg_as_PlayerStatSync();
+}
+
+template<> inline const syncnet::Chat *GameMessage::msg_as<syncnet::Chat>() const {
+  return msg_as_Chat();
 }
 
 struct GameMessageBuilder {
@@ -3348,6 +3365,58 @@ inline flatbuffers::Offset<PlayerStatSync> CreatePlayerStatSync(
   return builder_.Finish();
 }
 
+struct Chat FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef ChatBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_MESSAGE = 4
+  };
+  const flatbuffers::String *message() const {
+    return GetPointer<const flatbuffers::String *>(VT_MESSAGE);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_MESSAGE) &&
+           verifier.VerifyString(message()) &&
+           verifier.EndTable();
+  }
+};
+
+struct ChatBuilder {
+  typedef Chat Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_message(flatbuffers::Offset<flatbuffers::String> message) {
+    fbb_.AddOffset(Chat::VT_MESSAGE, message);
+  }
+  explicit ChatBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ChatBuilder &operator=(const ChatBuilder &);
+  flatbuffers::Offset<Chat> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Chat>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Chat> CreateChat(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> message = 0) {
+  ChatBuilder builder_(_fbb);
+  builder_.add_message(message);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Chat> CreateChatDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *message = nullptr) {
+  auto message__ = message ? _fbb.CreateString(message) : 0;
+  return syncnet::CreateChat(
+      _fbb,
+      message__);
+}
+
 inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type) {
   switch (type) {
     case GameMessages_NONE: {
@@ -3463,6 +3532,10 @@ inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj,
     }
     case GameMessages_PlayerStatSync: {
       auto ptr = reinterpret_cast<const syncnet::PlayerStatSync *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_Chat: {
+      auto ptr = reinterpret_cast<const syncnet::Chat *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;

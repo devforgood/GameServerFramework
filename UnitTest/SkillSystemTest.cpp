@@ -23,6 +23,8 @@
 #include <algorithm>
 #include "Vector3.h"
 #include "syncnet_generated.h"
+#include "CheatCommands.h"
+#include "PlayerSkill.h"
 
 namespace
 {
@@ -581,4 +583,63 @@ TEST_F(SkillSystemTest, PassiveAuraAutoPulsesHeal)
 	EXPECT_EQ(caster->GetHealth(), 55);
 	skills.Update(caster.get(), 2.0f); // 밀린 2회 pulse → +10
 	EXPECT_EQ(caster->GetHealth(), 65);
+}
+
+//---------------------------------------------------------------------------------------
+// 치트 allskill: 채팅 창에서 온 한 줄이 "배운 스킬" 목록을 채우고, 그 자리에서
+// 캐릭터에 실린다(다음 접속까지 기다리지 않는다). 몬스터 전용은 여전히 제외된다.
+//---------------------------------------------------------------------------------------
+TEST_F(SkillSystemTest, CheatAllSkillGrantsEveryPlayerSkill)
+{
+	auto caster = SpawnCharacter();
+	ASSERT_NE(caster, nullptr);
+	ASSERT_FALSE(players_.empty());
+	auto& player = players_.back();
+
+	// starter 가 아닌 스킬 하나를 고른다(파이어볼). 치트 전에는 보유하지 않은 상태다.
+	constexpr int kNonStarterSkillId = 101;
+	const gamedata::Skill* nonStarter = ResourceLoader::Instance().GetSkill(kNonStarterSkillId);
+	ASSERT_NE(nonStarter, nullptr);
+	ASSERT_FALSE(nonStarter->starter) << "이 테스트는 기본 지급되지 않는 스킬을 전제로 한다";
+
+	SkillSet& skills = caster->GetSkillSet();
+	CastContext ctx;
+	ctx.targetPos = caster->GetPosition();
+	ctx.skillId = kNonStarterSkillId;
+	EXPECT_EQ(skills.TryCast(caster.get(), ctx), CastResult::SkillNotFound);
+
+	// '/' 를 붙여도 같은 명령이다.
+	const cheat::Result result = cheat::Execute(player.get(), "/allskill");
+	EXPECT_TRUE(result.handled);
+	EXPECT_FALSE(result.reply.empty());
+
+	EXPECT_EQ(skills.TryCast(caster.get(), ctx), CastResult::Success);
+
+	// 몬스터 전용 스킬(근접 3번)은 치트로도 배우지 않는다 — 배워 봐야 쓰지 못한다.
+	auto* owned = player->GetComponent<PlayerSkill>();
+	ASSERT_NE(owned, nullptr);
+	EXPECT_FALSE(owned->Has(3));
+	EXPECT_TRUE(owned->Has(kNonStarterSkillId));
+}
+
+// 모르는 명령은 조용히 사라지지 않고 안내를 돌려준다(치트가 안 먹히는 이유가 보여야 한다).
+TEST_F(SkillSystemTest, CheatUnknownCommandIsReported)
+{
+	auto caster = SpawnCharacter();
+	ASSERT_FALSE(players_.empty());
+	auto& player = players_.back();
+
+	const cheat::Result unknown = cheat::Execute(player.get(), "nosuchcheat");
+	EXPECT_FALSE(unknown.handled);
+	EXPECT_NE(unknown.reply.find("nosuchcheat"), std::string::npos);
+
+	// 빈 줄(엔터만)은 아무 말도 하지 않는다.
+	const cheat::Result blank = cheat::Execute(player.get(), "   ");
+	EXPECT_FALSE(blank.handled);
+	EXPECT_TRUE(blank.reply.empty());
+
+	// help 는 표에 있는 명령을 읽어 준다.
+	const cheat::Result help = cheat::Execute(player.get(), "help");
+	EXPECT_TRUE(help.handled);
+	EXPECT_NE(help.reply.find("allskill"), std::string::npos);
 }

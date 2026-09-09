@@ -36,7 +36,8 @@ struct NetworkConfig
 	int max_packets_per_second = 60;
 	int packet_burst = 120;
 
-	// SetRaycast / TreeDebugRequest 같은 디버그 전용 핸들러 허용 여부.
+	// SetRaycast / TreeDebugRequest 같은 디버그 전용 핸들러와,
+	// 채팅 창으로 들어오는 치트 명령(Chat -> cheat::Execute) 허용 여부.
 	// 운영에서는 반드시 false 여야 한다.
 	bool allow_debug_commands = false;
 };

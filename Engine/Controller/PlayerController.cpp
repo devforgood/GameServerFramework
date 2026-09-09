@@ -24,6 +24,7 @@
 #include "PlayerParty.h"
 #include "PlayerDialog.h"
 #include "BTDebugManager.h"
+#include "CheatCommands.h"
 
 namespace
 {
@@ -150,6 +151,7 @@ void PlayerController::handle(const syncnet::GameMessage* msg)
 	case syncnet::GameMessages::GameMessages_PartyQuestShare:	handle(msg->msg_as_PartyQuestShare()); break;
 	case syncnet::GameMessages::GameMessages_PartyQuestShareReply: handle(msg->msg_as_PartyQuestShareReply()); break;
 	case syncnet::GameMessages::GameMessages_DialogSelect:		handle(msg->msg_as_DialogSelect()); break;
+	case syncnet::GameMessages::GameMessages_Chat:				handle(msg->msg_as_Chat()); break;
 	}
 }
 
@@ -1141,4 +1143,47 @@ void PlayerController::handle(const syncnet::DialogSelect* msg)
 		SendDialogNode(nullptr, 0, syncnet::StatusCode::StatusCode_Failed);
 		break;
 	}
+}
+
+//---------------------------------------------------------------------------------------
+// 채팅 한 줄. 지금 이 통로로 하는 일은 치트 명령 처리뿐이다(일반 대화는 아직 없다).
+//
+// 인가는 두 겹이다. 메시지 자체는 로그인한 세션만 보낼 수 있고(인가 게이트),
+// 명령 실행은 network.allow_debug_commands 가 켜져 있을 때만 허용한다. 꺼져 있으면
+// 조용히 버리지 않고 그렇다고 되돌려 준다 - 안 먹히는 이유를 모르는 채로 두면
+// 개발 중에 "치트가 고장났다" 로 오인하게 된다.
+//---------------------------------------------------------------------------------------
+void PlayerController::handle(const syncnet::Chat* msg)
+{
+	const flatbuffers::String* text = msg->message();
+	if (text == nullptr)
+		return;
+
+	if (!ServerConfig::Instance().Network().allow_debug_commands)
+	{
+		LOG.warn("치트 거부: '{}' (allow_debug_commands=false, player {})",
+			text->str(), player_ != nullptr ? player_->GetPlayerId() : 0);
+		SendChat("치트가 꺼져 있습니다(server_config.json 의 network.allow_debug_commands).");
+		return;
+	}
+
+	const cheat::Result result = cheat::Execute(player_.get(), text->string_view());
+	if (!result.reply.empty())
+		SendChat(result.reply);
+}
+
+// 채팅 창에 뿌릴 한 줄을 보낸다. 요청에 대한 응답이 아니라 통보라 id 는 0 이다
+// (클라의 요청-응답 짝 맞추기를 건드리지 않는다).
+void PlayerController::SendChat(const std::string& text)
+{
+	if (player_ == nullptr)
+		return;
+
+	player_->Send(
+		syncnet::CreateChatDirect
+		, syncnet::GameMessages::GameMessages_Chat
+		, 0
+		, syncnet::StatusCode::StatusCode_Success
+		, text.c_str()
+	);
 }

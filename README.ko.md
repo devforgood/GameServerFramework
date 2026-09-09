@@ -111,6 +111,17 @@ dotnet run --project Chat\Chat.csproj
 
 네이티브 런타임 로직은 `Game` 프로젝트에 모여 있습니다. `Actor`, `Player`, `Monster`, `Skill`, `World`, `Map`, `NavMap`, `SqlClient`, `BTDebugManager` 등이 포함되며 `Engine`, `BehaviorTree`, `GameDataProtobuf`, `recastnavigation`을 참조합니다.
 
+### 치트 명령
+
+클라이언트에서 **Enter** 로 채팅 창을 열고 명령을 입력하면 `syncnet::Chat` 으로 서버에 올라가고, [cheat::Execute](Engine/Cheat/CheatCommands.cpp) 가 처리한 뒤 결과 한 줄을 채팅 창에 되돌려 줍니다. 명령 앞의 `/` 는 붙여도 되고 안 붙여도 됩니다.
+
+| 명령 | 하는 일 |
+| --- | --- |
+| `allskill` | `skill.json` 의 플레이어 스킬(몬스터 전용 제외)을 전부 습득합니다. 습득한 스킬은 그 자리에서 캐릭터에 실려 바로 시전할 수 있습니다. |
+| `help` | 명령 목록을 보여 줍니다. |
+
+치트는 `server_config.json` 의 `network.allow_debug_commands` 가 `true` 일 때만 실행됩니다(운영 기본값은 `false`). 꺼져 있으면 조용히 무시하지 않고 꺼져 있다고 되돌려 줍니다.
+
 ### 공간 처리와 AI
 
 `Engine`은 `GridManager`, ECS, RingBuffer 같은 서버 사이드 자료구조와 유틸리티를 제공합니다. `BehaviorTree`와 `FiniteStateMachine`은 AI 상태 전이와 행동 제어를 실험하기 위한 C++ 라이브러리입니다.

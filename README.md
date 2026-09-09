@@ -111,6 +111,17 @@ Service configuration lives in files such as `appsettings.json`, `appsettings.Re
 
 The native runtime logic is in `Game`: `Actor`, `Player`, `Monster`, `Skill`, `World`, `Map`, `NavMap`, `SqlClient`, and `BTDebugManager`. It references `Engine`, `BehaviorTree`, `GameDataProtobuf`, and `recastnavigation`.
 
+### Cheat Commands
+
+Press **Enter** in the client to open the chat window. The line is sent as `syncnet::Chat`, handled by [cheat::Execute](Engine/Cheat/CheatCommands.cpp), and one result line comes back to the chat window. A leading `/` is optional.
+
+| Command | Effect |
+| --- | --- |
+| `allskill` | Learns every player skill in `skill.json` (monster-only skills excluded) and loads them onto the character immediately. |
+| `help` | Lists the available commands. |
+
+Cheats run only when `network.allow_debug_commands` is `true` in `server_config.json` (default `false`). When it is off the server says so instead of dropping the line silently.
+
 ### Data Generation
 
 Source data is stored as JSON under [GameData/](GameData/). [GameDataFlow/](GameDataFlow/) generates Python, C++, and C# Protobuf outputs from `gamedata.proto`.

@@ -23,7 +23,7 @@
     "max_packets_per_second": 60,
     "packet_burst": 120,
 
-    "_comment_debug": "SetRaycast / TreeDebugRequest 허용 여부. 운영에서는 반드시 false. 기본값 false.",
+    "_comment_debug": "SetRaycast / TreeDebugRequest 와 채팅 창 치트 명령(allskill 등) 허용 여부. 운영에서는 반드시 false. 기본값 false.",
     "allow_debug_commands": false
   },
 

@@ -20,6 +20,9 @@
     <Filter Include="AI">
       <UniqueIdentifier>{30aba9c6-232f-46e0-9bfb-0d7c441bd6e1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Cheat">
+      <UniqueIdentifier>{0eb79e78-54ce-41b3-b00a-d0f4061377d7}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Auth">
       <UniqueIdentifier>{a71f0c11-9d21-4f0e-9b3a-6b2f7c1d4e01}</UniqueIdentifier>
     </Filter>
@@ -173,6 +176,9 @@
     </ClCompile>
     <ClCompile Include="Auth\Authenticators.cpp">
       <Filter>Auth</Filter>
+    </ClCompile>
+    <ClCompile Include="Cheat\CheatCommands.cpp">
+      <Filter>Cheat</Filter>
     </ClCompile>
     <ClCompile Include="System\ServerConfig.cpp">
       <Filter>System</Filter>
@@ -445,6 +451,9 @@
     </ClInclude>
     <ClInclude Include="Auth\Authenticators.h">
       <Filter>Auth</Filter>
+    </ClInclude>
+    <ClInclude Include="Cheat\CheatCommands.h">
+      <Filter>Cheat</Filter>
     </ClInclude>
     <ClInclude Include="Auth\IAuthenticator.h">
       <Filter>Auth</Filter>

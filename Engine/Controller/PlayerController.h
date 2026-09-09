@@ -44,6 +44,7 @@ public:
 	void handle(const syncnet::PartyQuestShare* msg);
 	void handle(const syncnet::PartyQuestShareReply* msg);
 	void handle(const syncnet::DialogSelect* msg);
+	void handle(const syncnet::Chat* msg);
 
 	// 인증 검증(DB 스레드 왕복) 이후 게임 스레드에서 이어지는 로그인 처리.
 	// handle(Login) / 로드 완료 콜백이 비동기로 호출하므로 public 이다.
@@ -57,5 +58,8 @@ public:
 private:
 	// 지금 열려 있는 대화 노드를 클라에 보낸다. node 가 nullptr 이면 "닫힘"을 보낸다.
 	void SendDialogNode(const gamedata::Dialog* node, int npc_id, syncnet::StatusCode status);
+
+	// 채팅 창에 뿌릴 시스템 한 줄(치트 결과/거부 사유).
+	void SendChat(const std::string& text);
 };
 

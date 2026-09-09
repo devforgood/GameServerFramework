@@ -157,4 +157,17 @@ public static class PacketFactory
         builder.Finish(msg.Value);
         return builder.SizedByteArray();
     }
+
+    // 채팅 한 줄. 지금 서버가 이 줄로 하는 일은 치트 명령 처리뿐이다(Chat 테이블 주석 참고).
+    public static byte[] CreateChatMessage(string text)
+    {
+        var builder = new FlatBufferBuilder(256);
+        var textOffset = builder.CreateString(text ?? "");
+        syncnet.Chat.StartChat(builder);
+        syncnet.Chat.AddMessage(builder, textOffset);
+        var offset = syncnet.Chat.EndChat(builder);
+        var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.Chat, offset.Value);
+        builder.Finish(msg.Value);
+        return builder.SizedByteArray();
+    }
 }
