@@ -4,5 +4,18 @@
         "iterator": "cpp",
         "xstring": "cpp"
     },
-    "cmake.sourceDirectory": "D:/projects/GameServerFramework/flatbuffer/flatbuffers-1.12.0"
+    "cmake.sourceDirectory": "D:/projects/GameServerFramework/flatbuffer/flatbuffers-1.12.0",
+    // 벤더링된 flatbuffers 1.12.0 안드로이드 샘플은 Gradle 4.0 래퍼를 쓴다.
+    // Gradle 4.0은 Java 9까지만 지원하므로(Java 17은 Gradle 7.3+ 필요) VS Code Java
+    // 확장이 자동 임포트하면 "Could not use Gradle version 4.0 and Java version 17" 에러가 난다.
+    // 이 저장소에서 빌드하지 않는 샘플이므로 임포트 대상에서 제외한다.
+    "java.import.exclusions": [
+        "**/node_modules/**",
+        "**/.metadata/**",
+        "**/archetype-resources/**",
+        "**/META-INF/maven/**",
+        "**/flatbuffer/**"
+    ],
+    "java.import.gradle.enabled": false,
+    "gradle.nestedProjects": false
 }
