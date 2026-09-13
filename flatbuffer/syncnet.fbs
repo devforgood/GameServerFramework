@@ -32,6 +32,7 @@ union GameMessages
   DialogSelect,
   PlayerStatSync,
   Chat,
+  CheatList,
 } // Optionally add more tables.
 
 enum StatusCode:short
@@ -372,6 +373,31 @@ table PlayerStatSync {
 // 치트 실행은 network.allow_debug_commands 가 켜져 있을 때만 허용된다(운영에서는 꺼 둔다).
 table Chat {
   message:string;
+}
+
+// 치트 명령 하나의 설명. 클라의 입력 자동완성이 이것만 보고 후보를 만든다.
+//
+//   name      "spawn"
+//   args      "<monsterId> [count] [radius]"  — 인자 힌트(없으면 빈 문자열)
+//   help      한 줄 설명
+//   complete  첫 인자를 자동완성할 때 어느 데이터에서 id 를 고를지.
+//             "monster"/"item"/"skill"/"map"/"quest" 중 하나이며, 없으면 빈 문자열이다.
+//             클라도 같은 GameData 를 읽으므로 종류만 알려 주면 id 와 이름을 붙여 준다.
+table CheatCommandInfo {
+  name:string;
+  args:string;
+  help:string;
+  complete:string;
+}
+
+// 클라 -> 서버 : 빈 요청(치트 목록을 달라).
+// 서버 -> 클라 : 지금 이 서버가 받아 주는 치트 목록.
+//
+// 목록을 클라에 박아 두지 않는 이유는 하나다 — 명령표는 서버에만 있고, 거기서 지운 명령이
+// 클라의 자동완성에 남아 있으면 "있는 줄 알고 쳤는데 없는 명령" 이 된다.
+// 치트가 꺼져 있는 서버(allow_debug_commands=false)는 빈 목록을 돌려준다.
+table CheatList {
+  commands:[CheatCommandInfo];
 }
 
 root_type GameMessage;

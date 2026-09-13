@@ -1028,6 +1028,59 @@ int Map::SpawnMonsterAt(const gamedata::MapSpawnPointsMonsterSpawn& marker,
 	return monster->GetActorId();
 }
 
+// 마커 없이 한 마리를 세운다. SpawnMonsterAt 과 같은 일을 하지만 스포너를 거치지 않으므로
+// 정원에 들어가지 않는다 — 치트로 부른 몬스터가 죽은 뒤 자동으로 다시 서면 곤란하다.
+int Map::SpawnMonsterOfType(int monsterId, double x, double y, double z)
+{
+	if (ResourceLoader::Instance().GetMonsterData(monsterId) == nullptr)
+	{
+		LOG.warn("Map {} 몬스터 스폰 실패: monster.json 에 종류 {} 가 없습니다.", GetMapId(), monsterId);
+		return -1;
+	}
+
+	syncnet::Vec3 pos(
+		static_cast<float>(x),
+		static_cast<float>(y),
+		static_cast<float>(z));
+
+	auto monster = OnAddAgent(nullptr, syncnet::GameObjectType::GameObjectType_Monster, &pos);
+	if (monster == nullptr)
+		return -1;
+
+	// 종류를 새기면 그 종류의 전투 스탯도 함께 적용된다(Monster::SetDataId).
+	if (auto* mob = dynamic_cast<Monster*>(monster.get()))
+		mob->SetDataId(monsterId);
+
+	return monster->GetActorId();
+}
+
+void Map::TeleportActor(Actor* actor, const Vector3& serverPos)
+{
+	if (actor == nullptr)
+		return;
+
+	// 이동 에이전트를 먼저 옮긴다. 이것을 빠뜨리면 다음 이동 틱이 예전 자리에서
+	// 시뮬레이션을 이어가서 캐릭터가 원래 있던 곳으로 끌려간다.
+	const float destination[3] = { serverPos.x, serverPos.y, serverPos.z };
+	if (movement_ != nullptr)
+		movement_->TeleportAgent(actor->GetActorId(), destination);
+
+	// 좌표를 직접 쓰는 이동이라 관심영역 장부도 여기서 함께 옮긴다
+	// (SyncActorState 는 이 이동을 '변화 없음' 으로 본다).
+	MoveActorAndUpdateView(actor, serverPos.x, serverPos.y, serverPos.z);
+}
+
+std::vector<std::shared_ptr<Actor>> Map::CollectActors(syncnet::GameObjectType type) const
+{
+	std::vector<std::shared_ptr<Actor>> found;
+	for (const auto& actor : actorList_)
+	{
+		if (actor != nullptr && actor->GetType() == type)
+			found.push_back(actor);
+	}
+	return found;
+}
+
 int Map::SpawnMonstersFromData()
 {
 	if (mapData_ == nullptr)
@@ -1381,11 +1434,7 @@ void Map::RespawnPlayer(long playerId)
 	// 스폰 지점으로 되돌린다. GetPlayerSpawnPos 는 클라 좌표계라 서버 좌표계로 변환한다.
 	const syncnet::Vec3 spawn = GetPlayerSpawnPos();
 	Vector3 serverPos(&spawn);
-	movement_->TeleportAgent(character->GetActorId(), serverPos.pos());
-
-	// 좌표를 직접 쓰는 이동이므로 관심영역 장부도 여기서 함께 옮겨야 한다
-	// (SyncActorState 는 이 이동을 '변화 없음' 으로 본다).
-	MoveActorAndUpdateView(character.get(), serverPos.x, serverPos.y, serverPos.z);
+	TeleportActor(character.get(), serverPos);
 
 	// 최대 체력으로 되살린다. 예전에는 상수 100 이라, 레벨이 오를수록 부활 직후
 	// 체력이 최대치에 한참 못 미쳤다(레벨 20 이면 1500 중 100).

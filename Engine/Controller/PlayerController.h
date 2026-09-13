@@ -45,6 +45,7 @@ public:
 	void handle(const syncnet::PartyQuestShareReply* msg);
 	void handle(const syncnet::DialogSelect* msg);
 	void handle(const syncnet::Chat* msg);
+	void handle(const syncnet::CheatList* msg);
 
 	// 인증 검증(DB 스레드 왕복) 이후 게임 스레드에서 이어지는 로그인 처리.
 	// handle(Login) / 로드 완료 콜백이 비동기로 호출하므로 public 이다.

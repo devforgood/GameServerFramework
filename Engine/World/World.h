@@ -137,6 +137,13 @@ public:
 	// 성공 시 outMapId/outPos(도착 위치)/outActorId(재생성된 새 actor id)를 채우고 true.
 	bool ChangeMap(std::shared_ptr<Player> player, int targetId, int& outMapId, syncnet::Vec3& outPos, int& outActorId);
 
+	// 클라가 요청하지 않은 맵 이동(강제 이동). ChangeMap 에 더해 클라에 EnterGate 를
+	// 밀어 주고 새 맵의 상태까지 보낸다 — 이 세 가지는 항상 같이 가야 한다.
+	// 하나라도 빠지면 클라는 씬을 바꾸지 않은 채(또는 빈 맵에) 남는다.
+	//
+	// 인스턴스 종료 퇴장과 치트 이동이 같은 경로를 쓴다. 성공하면 true.
+	bool ForceMove(std::shared_ptr<Player> player, int targetId);
+
 	// ── 광역 경로 탐색 ──
 	// navmesh 는 맵 하나의 지형만 안다. 맵을 넘나드는 이동은 ZoneGraph 가 "어느 게이트를
 	// 어떤 순서로 밟을지"를 정하고, 구간마다 걷는 것은 그 맵의 navmesh 가 맡는다.

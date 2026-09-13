@@ -156,6 +156,7 @@
     <ClCompile Include="AreaOfInterestTest.cpp" />
     <ClCompile Include="MapGridTest.cpp" />
     <ClCompile Include="MonsterSpawnerTest.cpp" />
+    <ClCompile Include="CheatCommandTest.cpp" />
     <ClCompile Include="BotLogicTest.cpp" />
     <ClCompile Include="..\Bot\WorldView.cpp" />
     <ClCompile Include="..\Bot\BotPacket.cpp" />

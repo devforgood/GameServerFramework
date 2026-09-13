@@ -170,4 +170,17 @@ public static class PacketFactory
         builder.Finish(msg.Value);
         return builder.SizedByteArray();
     }
+
+    // 치트 목록 요청(본문 없음). 채팅 입력의 자동완성이 쓸 명령표를 서버에서 받아 온다.
+    // 명령표는 서버에만 있으므로, 클라가 목록을 들고 있으면 서버에서 지운 명령이
+    // 자동완성에 남는다(CheatList 테이블 주석 참고).
+    public static byte[] CreateCheatListRequest()
+    {
+        var builder = new FlatBufferBuilder(64);
+        syncnet.CheatList.StartCheatList(builder);
+        var offset = syncnet.CheatList.EndCheatList(builder);
+        var msg = syncnet.GameMessage.CreateGameMessage(builder, syncnet.GameMessages.CheatList, offset.Value);
+        builder.Finish(msg.Value);
+        return builder.SizedByteArray();
+    }
 }

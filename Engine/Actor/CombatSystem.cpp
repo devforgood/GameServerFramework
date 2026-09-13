@@ -43,6 +43,11 @@ void ApplyDamage(Actor* attacker, IGridActor* target, double damage)
 	if (attacker == nullptr || target == nullptr)
 		return;
 
+	// 무적(치트 god)은 여기서 한 번만 거른다. 데미지가 단일 경로라 스킬/몬스터 공격/광역기가
+	// 전부 이 자리를 지난다 — 경로마다 검사를 넣으면 새 경로를 낼 때 빠뜨리게 된다.
+	if (target->IsInvincible())
+		return;
+
 	const int finalDamage = ComputeDamage(damage, attacker->GetAttack(), target->GetDefense());
 
 	// 사망 시 킬러를 추적할 수 있도록 마지막 공격자를 데미지보다 먼저 기록한다.

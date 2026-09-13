@@ -34,6 +34,7 @@ class World;
 class NavMesh;
 class INavMovement;
 class GameMode;
+class Vector3;
 namespace gamedata {
 	struct Map;
 }
@@ -204,6 +205,20 @@ public:
 	// 스폰에 성공한 수를 반환한다. 서버 기동 시 World::SpawnMapMonsters 에서 호출된다
 	// (벤치마크/테스트는 World::Init 만 호출하므로 몬스터가 자동 스폰되지 않는다).
 	int SpawnMonstersFromData();
+
+	// 종류를 지정해 임의 위치(클라 좌표계)에 몬스터 한 마리를 세운다. 성공하면 actor id,
+	// 실패하면 -1. 마커가 관리하는 스폰과 달리 스포너의 정원에 들어가지 않는다 —
+	// 죽으면 그 자리로 끝이고 리스폰되지 않는다(치트/도구가 부르는 경로다).
+	int SpawnMonsterOfType(int monsterId, double x, double y, double z);
+
+	// 좌표를 직접 써서 액터를 옮긴다(순간이동). 위치는 서버 좌표계다.
+	// 이동 에이전트와 관심영역 장부까지 함께 옮긴다 — 둘 중 하나라도 빠뜨리면
+	// 다음 틱에 원래 자리로 끌려가거나(에이전트), 옮긴 자리에서 아무것도 못 본다(장부).
+	void TeleportActor(Actor* actor, const Vector3& serverPos);
+
+	// 지정한 종류의 액터를 모아 돌려준다. 복사본이라 순회하면서 액터를 죽이거나 지워도
+	// 안전하다(그 순간 actorList_ 가 바뀐다).
+	std::vector<std::shared_ptr<Actor>> CollectActors(syncnet::GameObjectType type) const;
 
 	// npc.json 에서 이 맵에 속하고 hp 가 있는 NPC 를 액터로 스폰한다.
 	// hp 가 없는 NPC(퀘스트를 주는 마을 사람 등)는 데이터로만 존재하며 여기 오지 않는다.

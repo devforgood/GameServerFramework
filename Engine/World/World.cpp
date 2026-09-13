@@ -336,34 +336,45 @@ void World::EvictInstancePlayers(Map* instance)
 	// ChangeMap 이 players_ 를 건드리므로 목록을 먼저 복사해 두고 순회한다.
 	for (auto& player : instance->GetPlayers())
 	{
-		syncnet::Vec3 outPos(0, 0, 0);
-		int outActorId = 0;
-		int outMapId = 0;
-		if (!ChangeMap(player, exitTargetId, outMapId, outPos, outActorId))
+		if (!ForceMove(player, exitTargetId))
 		{
 			LOG.error("인스턴스 퇴장 실패: player {} -> target {}",
 				player->GetPlayerId(), exitTargetId);
-			continue;
 		}
-
-		// 클라가 요청하지 않은 이동이므로 EnterGate 를 그대로 밀어 준다(id 0 = 서버 통보).
-		// 클라는 응답 대기 콜백이 아니라 메시지 종류로 받아 처리한다(Session.OnReceive).
-		player->Send(
-			syncnet::CreateEnterGate
-			, syncnet::GameMessages::GameMessages_EnterGate
-			, 0
-			, syncnet::StatusCode::StatusCode_Success
-			, outMapId
-			, exitTargetId
-			, &outPos
-			, outActorId
-		);
-
-		auto& character = player->GetCharacter();
-		Map* destMap = character != nullptr ? character->GetMap() : nullptr;
-		if (destMap != nullptr)
-			destMap->SendStateTo(player);
 	}
+}
+
+bool World::ForceMove(std::shared_ptr<Player> player, int targetId)
+{
+	if (player == nullptr)
+		return false;
+
+	syncnet::Vec3 outPos(0, 0, 0);
+	int outActorId = 0;
+	int outMapId = 0;
+	if (!ChangeMap(player, targetId, outMapId, outPos, outActorId))
+		return false;
+
+	// 클라가 요청하지 않은 이동이므로 EnterGate 를 그대로 밀어 준다(id 0 = 서버 통보).
+	// 클라는 응답 대기 콜백이 아니라 메시지 종류로 받아 처리한다(Session.OnReceive).
+	player->Send(
+		syncnet::CreateEnterGate
+		, syncnet::GameMessages::GameMessages_EnterGate
+		, 0
+		, syncnet::StatusCode::StatusCode_Success
+		, outMapId
+		, targetId
+		, &outPos
+		, outActorId
+	);
+
+	// 상태는 응답 뒤에 보낸다. 클라가 씬을 교체한 다음에 받아야 새 맵의 액터가 제 자리에 선다.
+	auto& character = player->GetCharacter();
+	Map* destMap = character != nullptr ? character->GetMap() : nullptr;
+	if (destMap != nullptr)
+		destMap->SendStateTo(player);
+
+	return true;
 }
 
 void World::CleanupInstances()

@@ -40,6 +40,7 @@ protected:
 	int defense_ = 0;
 
 	int lastAttackerActorId_ = -1; // 마지막으로 데미지를 입힌 액터 ID (킬 판정용)
+	bool invincible_ = false;      // 피해를 받지 않는 상태(치트 god)
 	syncnet::GameObjectType gameObjectType_;
 	int32_t entityId_ = -1; // 엔티티 ID (필요시 사용)
 
@@ -259,6 +260,11 @@ public:
 
 	// 마지막으로 데미지를 입힌 액터(킬러) ID
 	int GetLastAttackerActorId() const { return lastAttackerActorId_; }
+
+	// 무적(치트 god). 데미지 단일 경로(combat::ApplyDamage)가 이 값을 보고 걸러낸다.
+	// 액터가 들고 있으므로 맵을 옮기면 풀린다 — 캐릭터가 새로 만들어지기 때문이다.
+	bool IsInvincible() const override { return invincible_; }
+	void SetInvincible(bool on) { invincible_ = on; }
 
 	virtual flatbuffers::Offset<syncnet::ActorInfo> GetActorInfo(flatbuffers::FlatBufferBuilder& _fbb, long flag);
 

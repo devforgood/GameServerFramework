@@ -57,6 +57,31 @@ void PlayerLevel::GainExp(int amount)
     SendToClient();
 }
 
+bool PlayerLevel::GmSetLevel(int level)
+{
+    const gamedata::Level* data = ResourceLoader::Instance().GetLevel(level);
+    if (data == nullptr)
+        return false;
+
+    level_ = level;
+    exp_ = data->required_exp;
+    markDirty();
+
+    // 스탯은 체력까지 채운다. 레벨업과 달리 "그 레벨의 캐릭터로 만들어 달라"는 뜻이라,
+    // 레벨을 내렸을 때 최대치를 넘는 체력이 남아 있으면 안 된다.
+    if (auto* player = dynamic_cast<Player*>(game_object))
+    {
+        if (auto character = player->GetCharacter())
+            ApplyStatsTo(character.get(), /*resetHealth=*/true);
+    }
+
+    if (auto* broker = game_object->GetComponent<PlayerEventBroker>())
+        broker->publish(EventLevelUp{ static_cast<int>(characterId_), level_ });
+
+    SendToClient();
+    return true;
+}
+
 void PlayerLevel::SendToClient() const
 {
     auto* sender = game_object != nullptr ? game_object->GetComponent<PlayerSender>() : nullptr;

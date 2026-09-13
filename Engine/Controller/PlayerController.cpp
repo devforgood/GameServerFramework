@@ -152,6 +152,7 @@ void PlayerController::handle(const syncnet::GameMessage* msg)
 	case syncnet::GameMessages::GameMessages_PartyQuestShareReply: handle(msg->msg_as_PartyQuestShareReply()); break;
 	case syncnet::GameMessages::GameMessages_DialogSelect:		handle(msg->msg_as_DialogSelect()); break;
 	case syncnet::GameMessages::GameMessages_Chat:				handle(msg->msg_as_Chat()); break;
+	case syncnet::GameMessages::GameMessages_CheatList:			handle(msg->msg_as_CheatList()); break;
 	}
 }
 
@@ -1170,6 +1171,47 @@ void PlayerController::handle(const syncnet::Chat* msg)
 	const cheat::Result result = cheat::Execute(player_.get(), text->string_view());
 	if (!result.reply.empty())
 		SendChat(result.reply);
+}
+
+//---------------------------------------------------------------------------------------
+// 치트 목록 요청. 클라의 채팅 입력 자동완성이 '/' 를 처음 칠 때 한 번 물어본다.
+//
+// 목록을 클라에 박아 두지 않는 이유는 명령표가 서버에만 있기 때문이다 — 서버에서 지운
+// 명령이 자동완성에 남아 있으면 "있는 줄 알고 친 명령" 이 된다.
+//
+// 치트가 꺼져 있는 서버는 빈 목록을 돌려준다. 목록 자체가 "이 서버에서 무엇을 할 수 있는가"
+// 라서, 운영 서버가 명령 이름을 흘리지 않게 한다(꺼져 있다는 안내는 실제로 쳤을 때 나간다).
+//---------------------------------------------------------------------------------------
+void PlayerController::handle(const syncnet::CheatList* msg)
+{
+	auto builder_ptr = SendMessagePool::Acquire();
+
+	std::vector<flatbuffers::Offset<syncnet::CheatCommandInfo>> commands;
+	if (ServerConfig::Instance().Network().allow_debug_commands)
+	{
+		const auto& table = cheat::Commands();
+		commands.reserve(table.size());
+		for (const cheat::CommandInfo& command : table)
+		{
+			commands.push_back(syncnet::CreateCheatCommandInfo(
+				*builder_ptr,
+				builder_ptr->CreateString(command.name),
+				builder_ptr->CreateString(command.args),
+				builder_ptr->CreateString(command.help),
+				builder_ptr->CreateString(command.complete)));
+		}
+	}
+
+	auto payload = syncnet::CreateCheatList(*builder_ptr, builder_ptr->CreateVector(commands));
+	auto send_msg = syncnet::CreateGameMessage(
+		*builder_ptr,
+		syncnet::GameMessages::GameMessages_CheatList,
+		payload.Union(),
+		lastMessageId_,
+		syncnet::StatusCode::StatusCode_Success);
+	builder_ptr->Finish(send_msg);
+
+	player_->Send(builder_ptr);
 }
 
 // 채팅 창에 뿌릴 한 줄을 보낸다. 요청에 대한 응답이 아니라 통보라 id 는 0 이다

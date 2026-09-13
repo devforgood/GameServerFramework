@@ -31,6 +31,7 @@ public class Session : MonoBehaviour
     private LoginController login;
     private DialogController dialogs;
     private ChatWindow chat;
+    private CheatCompletion cheats;
 
     /// <summary>NPC 에게 말을 거는 키. 근처에 NPC 가 없으면 아무 일도 하지 않는다.</summary>
     public KeyCode interactKey = KeyCode.F;
@@ -99,7 +100,8 @@ public class Session : MonoBehaviour
         skills = new SkillController(this, connection, actors, () => player_actor_id);
         mapTransition = new MapTransition(connection, actors);
         dialogs = new DialogController(connection);
-        chat = new ChatWindow(SendChat);
+        cheats = new CheatCompletion();
+        chat = new ChatWindow(SendChat, cheats, RequestCheatList);
         login = new LoginController(connection, mapTransition,
             actorId => player_actor_id = actorId,
             pos => AddAgent(0, pos, GameObjectType.Character));
@@ -209,6 +211,9 @@ public class Session : MonoBehaviour
                 break;
             case GameMessages.Chat:
                 chat.AddServerLine(recv_msg.Msg<syncnet.Chat>().Value.Message);
+                break;
+            case GameMessages.CheatList:
+                OnCheatList(recv_msg.Msg<syncnet.CheatList>().Value);
                 break;
         }
 
@@ -380,6 +385,37 @@ public class Session : MonoBehaviour
     public void SendChat(string text)
     {
         connection.Send(PacketFactory.CreateChatMessage(text));
+    }
+
+    // 치트 목록을 서버에 물어본다. 채팅 창이 처음 열릴 때 한 번만 부른다 —
+    // 명령표는 서버에만 있고, 서버마다(운영/개발) 다를 수 있다.
+    private void RequestCheatList()
+    {
+        connection.Send(PacketFactory.CreateCheatListRequest());
+    }
+
+    // 받은 목록을 자동완성에 싣는다. 치트가 꺼진 서버는 빈 목록을 보내므로
+    // 그때는 자동완성이 조용히 꺼진 채로 채팅만 된다.
+    private void OnCheatList(syncnet.CheatList message)
+    {
+        var commands = new List<CheatCompletion.Command>();
+        for (int i = 0; i < message.CommandsLength; i++)
+        {
+            var info = message.Commands(i);
+            if (info == null)
+                continue;
+
+            commands.Add(new CheatCompletion.Command
+            {
+                Name = info.Value.Name ?? "",
+                Args = info.Value.Args ?? "",
+                Help = info.Value.Help ?? "",
+                Complete = info.Value.Complete ?? "",
+            });
+        }
+
+        cheats.SetCommands(commands);
+        Debug.Log($"[Cheat] 명령 {commands.Count}개를 받았습니다.");
     }
 
     // 채팅 창은 Session 이 그린다. 씬마다 UI 를 두지 않아도 되고(게임 필드 씬이 여럿이다),

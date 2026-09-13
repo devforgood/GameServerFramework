@@ -28,6 +28,11 @@ public:
 	// 피해 경감 계산에 쓰는 방어력. 데미지 적용이 그리드에서 찾은 대상에게 이뤄지므로
 	// (combat::ApplyAoEDamage) 여기에 있어야 대상을 Actor 로 다운캐스트하지 않는다.
 	virtual int GetDefense() const = 0;
+
+	// 피해를 아예 받지 않는가(치트 god). 방어력과 같은 이유로 여기에 있다 —
+	// 데미지 경로는 그리드에서 찾은 대상만 알기 때문이다.
+	// 순수 가상이 아닌 것은 이 인터페이스를 직접 구현하는 테스트 더미 때문이다.
+	virtual bool IsInvincible() const { return false; }
 };
 
 #endif // IGRID_ACTOR_H

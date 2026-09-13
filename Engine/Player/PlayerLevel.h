@@ -19,6 +19,13 @@ public:
     // 경험치를 추가하고, 임계치를 넘으면 레벨 업을 적용한다.
     void GainExp(int amount);
 
+    // 운영(GM)/치트용: 레벨을 직접 세운다. 내리는 것도 된다.
+    //
+    // 누적 경험치도 그 레벨의 required_exp 로 맞춘다. 그러지 않으면 다음 경험치 획득 때
+    // ResolveLevel 이 예전 경험치를 보고 레벨을 되돌려 놓는다.
+    // level.json 에 없는 레벨이면 아무것도 하지 않고 false.
+    bool GmSetLevel(int level);
+
     int GetLevel() const { return level_; }
     long long GetExp() const { return exp_; }
     const std::string& GetName() const { return name_; }

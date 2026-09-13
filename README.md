@@ -117,10 +117,30 @@ Press **Enter** in the client to open the chat window. The line is sent as `sync
 
 | Command | Effect |
 | --- | --- |
-| `allskill` | Learns every player skill in `skill.json` (monster-only skills excluded) and loads them onto the character immediately. |
-| `help` | Lists the available commands. |
+| `spawn <monsterId> [count] [radius]` | Spawns monsters around you. They are not marker spawns, so they do not respawn once killed. |
+| `killall [radius]` | Kills every monster in the map (or within the radius). Kill credit goes to your character, so exp and quest progress work exactly as with a real kill. |
+| `heal` / `hp <value>` / `die` | Refills health, sets it to a given value, or kills your character (to exercise the respawn flow). |
+| `god [on\|off]` | Toggles invincibility. Changing maps recreates the character and clears it. |
+| `level <level>` / `exp <amount>` | Sets the level directly, or grants exp. |
+| `gold <amount>` / `item <itemId> [count]` | Grants gold (negative to spend) and items. |
+| `skill <skillId>` / `allskill` | Learns one skill, or every player skill in `skill.json` (monster-only skills excluded). Learned skills load onto the character immediately. |
+| `quest <accept\|complete\|reset> <questId>` | Sets quest state, skipping the normal condition checks. |
+| `tp <x> [y] <z>` / `goto <mapId>` | Teleports within the current map, or moves to another map (coordinates are in client space). |
+| `where` / `list <kind> [filter]` | Shows the current map, position, health and level, or looks up ids in `monster`/`item`/`skill`/`map`/`quest` data. |
+| `help [command]` | Lists the commands, or shows the usage of one. |
 
-Cheats run only when `network.allow_debug_commands` is `true` in `server_config.json` (default `false`). When it is off the server says so instead of dropping the line silently.
+The command table lives in one place — `kCommands` in [CheatCommands.cpp](Engine/Cheat/CheatCommands.cpp). Adding a row and a function updates `help` and the client autocomplete together.
+
+Typing a leading `/` opens autocomplete. The command list comes from the server (`syncnet::CheatList`); argument ids are built on the client from the same GameData.
+
+| Key | Effect |
+| --- | --- |
+| `Tab` | Completes when there is one candidate, otherwise fills in the common prefix. |
+| `↑` `↓` | Moves through the candidates, or recalls previously sent lines when there are none. |
+| `Enter` | Applies the selected candidate, or sends the line when nothing is selected. |
+| `Esc` | Closes the candidate list, or the window when no list is open. |
+
+Cheats run only when `network.allow_debug_commands` is `true` in `server_config.json` (default `false`). When it is off the server says so instead of dropping the line silently, and the autocomplete list comes back empty so a live server never leaks the command names.
 
 ### Data Generation
 

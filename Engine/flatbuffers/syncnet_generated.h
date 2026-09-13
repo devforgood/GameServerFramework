@@ -128,6 +128,12 @@ struct PlayerStatSyncBuilder;
 struct Chat;
 struct ChatBuilder;
 
+struct CheatCommandInfo;
+struct CheatCommandInfoBuilder;
+
+struct CheatList;
+struct CheatListBuilder;
+
 enum GameMessages {
   GameMessages_NONE = 0,
   GameMessages_AddAgent = 1,
@@ -159,11 +165,12 @@ enum GameMessages {
   GameMessages_DialogSelect = 27,
   GameMessages_PlayerStatSync = 28,
   GameMessages_Chat = 29,
+  GameMessages_CheatList = 30,
   GameMessages_MIN = GameMessages_NONE,
-  GameMessages_MAX = GameMessages_Chat
+  GameMessages_MAX = GameMessages_CheatList
 };
 
-inline const GameMessages (&EnumValuesGameMessages())[30] {
+inline const GameMessages (&EnumValuesGameMessages())[31] {
   static const GameMessages values[] = {
     GameMessages_NONE,
     GameMessages_AddAgent,
@@ -194,13 +201,14 @@ inline const GameMessages (&EnumValuesGameMessages())[30] {
     GameMessages_DialogNode,
     GameMessages_DialogSelect,
     GameMessages_PlayerStatSync,
-    GameMessages_Chat
+    GameMessages_Chat,
+    GameMessages_CheatList
   };
   return values;
 }
 
 inline const char * const *EnumNamesGameMessages() {
-  static const char * const names[31] = {
+  static const char * const names[32] = {
     "NONE",
     "AddAgent",
     "RemoveAgent",
@@ -231,13 +239,14 @@ inline const char * const *EnumNamesGameMessages() {
     "DialogSelect",
     "PlayerStatSync",
     "Chat",
+    "CheatList",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameGameMessages(GameMessages e) {
-  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_Chat)) return "";
+  if (flatbuffers::IsOutRange(e, GameMessages_NONE, GameMessages_CheatList)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesGameMessages()[index];
 }
@@ -360,6 +369,10 @@ template<> struct GameMessagesTraits<syncnet::PlayerStatSync> {
 
 template<> struct GameMessagesTraits<syncnet::Chat> {
   static const GameMessages enum_value = GameMessages_Chat;
+};
+
+template<> struct GameMessagesTraits<syncnet::CheatList> {
+  static const GameMessages enum_value = GameMessages_CheatList;
 };
 
 bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type);
@@ -711,6 +724,9 @@ struct GameMessage FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const syncnet::Chat *msg_as_Chat() const {
     return msg_type() == syncnet::GameMessages_Chat ? static_cast<const syncnet::Chat *>(msg()) : nullptr;
   }
+  const syncnet::CheatList *msg_as_CheatList() const {
+    return msg_type() == syncnet::GameMessages_CheatList ? static_cast<const syncnet::CheatList *>(msg()) : nullptr;
+  }
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
   }
@@ -842,6 +858,10 @@ template<> inline const syncnet::PlayerStatSync *GameMessage::msg_as<syncnet::Pl
 
 template<> inline const syncnet::Chat *GameMessage::msg_as<syncnet::Chat>() const {
   return msg_as_Chat();
+}
+
+template<> inline const syncnet::CheatList *GameMessage::msg_as<syncnet::CheatList>() const {
+  return msg_as_CheatList();
 }
 
 struct GameMessageBuilder {
@@ -3417,6 +3437,153 @@ inline flatbuffers::Offset<Chat> CreateChatDirect(
       message__);
 }
 
+struct CheatCommandInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef CheatCommandInfoBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_NAME = 4,
+    VT_ARGS = 6,
+    VT_HELP = 8,
+    VT_COMPLETE = 10
+  };
+  const flatbuffers::String *name() const {
+    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  const flatbuffers::String *args() const {
+    return GetPointer<const flatbuffers::String *>(VT_ARGS);
+  }
+  const flatbuffers::String *help() const {
+    return GetPointer<const flatbuffers::String *>(VT_HELP);
+  }
+  const flatbuffers::String *complete() const {
+    return GetPointer<const flatbuffers::String *>(VT_COMPLETE);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_NAME) &&
+           verifier.VerifyString(name()) &&
+           VerifyOffset(verifier, VT_ARGS) &&
+           verifier.VerifyString(args()) &&
+           VerifyOffset(verifier, VT_HELP) &&
+           verifier.VerifyString(help()) &&
+           VerifyOffset(verifier, VT_COMPLETE) &&
+           verifier.VerifyString(complete()) &&
+           verifier.EndTable();
+  }
+};
+
+struct CheatCommandInfoBuilder {
+  typedef CheatCommandInfo Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+    fbb_.AddOffset(CheatCommandInfo::VT_NAME, name);
+  }
+  void add_args(flatbuffers::Offset<flatbuffers::String> args) {
+    fbb_.AddOffset(CheatCommandInfo::VT_ARGS, args);
+  }
+  void add_help(flatbuffers::Offset<flatbuffers::String> help) {
+    fbb_.AddOffset(CheatCommandInfo::VT_HELP, help);
+  }
+  void add_complete(flatbuffers::Offset<flatbuffers::String> complete) {
+    fbb_.AddOffset(CheatCommandInfo::VT_COMPLETE, complete);
+  }
+  explicit CheatCommandInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CheatCommandInfoBuilder &operator=(const CheatCommandInfoBuilder &);
+  flatbuffers::Offset<CheatCommandInfo> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<CheatCommandInfo>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CheatCommandInfo> CreateCheatCommandInfo(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    flatbuffers::Offset<flatbuffers::String> args = 0,
+    flatbuffers::Offset<flatbuffers::String> help = 0,
+    flatbuffers::Offset<flatbuffers::String> complete = 0) {
+  CheatCommandInfoBuilder builder_(_fbb);
+  builder_.add_complete(complete);
+  builder_.add_help(help);
+  builder_.add_args(args);
+  builder_.add_name(name);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<CheatCommandInfo> CreateCheatCommandInfoDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *name = nullptr,
+    const char *args = nullptr,
+    const char *help = nullptr,
+    const char *complete = nullptr) {
+  auto name__ = name ? _fbb.CreateString(name) : 0;
+  auto args__ = args ? _fbb.CreateString(args) : 0;
+  auto help__ = help ? _fbb.CreateString(help) : 0;
+  auto complete__ = complete ? _fbb.CreateString(complete) : 0;
+  return syncnet::CreateCheatCommandInfo(
+      _fbb,
+      name__,
+      args__,
+      help__,
+      complete__);
+}
+
+struct CheatList FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef CheatListBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_COMMANDS = 4
+  };
+  const flatbuffers::Vector<flatbuffers::Offset<syncnet::CheatCommandInfo>> *commands() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<syncnet::CheatCommandInfo>> *>(VT_COMMANDS);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_COMMANDS) &&
+           verifier.VerifyVector(commands()) &&
+           verifier.VerifyVectorOfTables(commands()) &&
+           verifier.EndTable();
+  }
+};
+
+struct CheatListBuilder {
+  typedef CheatList Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_commands(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::CheatCommandInfo>>> commands) {
+    fbb_.AddOffset(CheatList::VT_COMMANDS, commands);
+  }
+  explicit CheatListBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  CheatListBuilder &operator=(const CheatListBuilder &);
+  flatbuffers::Offset<CheatList> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<CheatList>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<CheatList> CreateCheatList(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<syncnet::CheatCommandInfo>>> commands = 0) {
+  CheatListBuilder builder_(_fbb);
+  builder_.add_commands(commands);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<CheatList> CreateCheatListDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<flatbuffers::Offset<syncnet::CheatCommandInfo>> *commands = nullptr) {
+  auto commands__ = commands ? _fbb.CreateVector<flatbuffers::Offset<syncnet::CheatCommandInfo>>(*commands) : 0;
+  return syncnet::CreateCheatList(
+      _fbb,
+      commands__);
+}
+
 inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj, GameMessages type) {
   switch (type) {
     case GameMessages_NONE: {
@@ -3536,6 +3703,10 @@ inline bool VerifyGameMessages(flatbuffers::Verifier &verifier, const void *obj,
     }
     case GameMessages_Chat: {
       auto ptr = reinterpret_cast<const syncnet::Chat *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case GameMessages_CheatList: {
+      auto ptr = reinterpret_cast<const syncnet::CheatList *>(obj);
       return verifier.VerifyTable(ptr);
     }
     default: return true;
