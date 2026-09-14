@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 342539d8d4b8b4f4698f2466cb145ac6
+timeCreated: 1580721611
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 199890
+  packageName: Low Poly Modular Armors - Free - LOWPOLY MEDIEVAL FANTASY SERIES
+  packageVersion: 1.3.0
+  assetPath: Assets/Polytope Studio/Lowpoly_Weapons/Animations/PT_Longbow_02_anim_ctrl.controller
+  uploadId: 942460
