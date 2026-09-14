@@ -41,6 +41,17 @@ public class Actor : MonoBehaviour
     /// <summary>바라보는 방향이 도는 속도(도/초).</summary>
     private const float TurnSpeed = 720f;
 
+    // ── 발 미끄러짐 보정 ──
+    // 애니메이션 클립은 저마다 '이 속도로 걷는다'는 보폭을 갖고 있다. 실제 이동이 그보다 빠르면
+    // 딱 그 차이만큼 발이 땅에서 미끄러진다. 그래서 넘어가는 만큼 재생 속도를 올려 보폭을 맞춘다.
+    //
+    // 값은 CharacterResourceTool 이 컨트롤러의 블렌드 문턱값에서 읽어 프리팹에 새겨 준다.
+    // 직접 고치지 말 것 — 컨트롤러를 다시 만들면 덮어쓴다.
+    [HideInInspector] public float locomotionTopSpeed = 1.69f;
+
+    /// <summary>재생 속도 배율 상한. 이보다 올리면 다리가 우스울 만큼 빨라진다.</summary>
+    private const float MaxPlaybackScale = 1.8f;
+
     void Awake()
     {
         CreateHealthBar();
@@ -70,6 +81,13 @@ public class Actor : MonoBehaviour
         // 서버 갱신은 10Hz 라 프레임별 이동량이 고르지 않다. 그대로 넣으면 걷기가 깜빡인다.
         smoothedSpeed = Mathf.Lerp(smoothedSpeed, instant, 1f - Mathf.Exp(-SpeedDamping * Time.deltaTime));
         locomotionAnimator.SetFloat(SpeedParam, smoothedSpeed);
+
+        // 문턱값 안쪽은 블렌드 트리가 보폭을 맞춰 주므로 등속으로 재생한다.
+        // 그 위로는 클립이 따라오지 못하니 재생 속도로 메운다(상한까지).
+        float scale = 1f;
+        if (locomotionTopSpeed > 0.01f && smoothedSpeed > locomotionTopSpeed)
+            scale = Mathf.Min(smoothedSpeed / locomotionTopSpeed, MaxPlaybackScale);
+        locomotionAnimator.speed = scale;
 
         // 서버가 방향을 안 보내므로 이동 방향으로 직접 돌린다.
         // 이게 없으면 걷는 자세 그대로 옆으로 미끄러진다.

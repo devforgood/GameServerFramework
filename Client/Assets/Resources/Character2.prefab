@@ -78,6 +78,7 @@ MonoBehaviour:
   posReceivedTime: 0
   posInterval: 0.1
   healthBar: {fileID: 0}
+  locomotionTopSpeed: 3.4673822
 --- !u!1001 &7530301383415771188
 PrefabInstance:
   m_ObjectHideFlags: 0

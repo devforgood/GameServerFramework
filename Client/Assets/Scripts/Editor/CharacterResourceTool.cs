@@ -151,7 +151,22 @@ public static class CharacterResourceTool
             }
             root.AddComponent(type);
 
-            // 6. 저장.
+            // 6. 발 미끄러짐 보정값을 새긴다.
+            // 런타임이 컨트롤러를 뜯어볼 수는 없으니, 여기서 블렌드 트리의 가장 높은 문턱값
+            // (= 가장 빠른 클립의 보행 속도)을 읽어 Actor 에 넣어 준다.
+            var actor = root.GetComponent<Actor>();
+            if (actor != null)
+            {
+                float top = TopBlendThreshold(b.Controller);
+                if (top > 0f)
+                {
+                    actor.locomotionTopSpeed = top;
+                    Log($"{targetName}: 클립 최고 보행 속도 {top:F2} m/s 를 프리팹에 기록");
+                }
+                else Warn($"{targetName}: 블렌드 문턱값을 읽지 못해 기본값을 그대로 둔다");
+            }
+
+            // 7. 저장.
             PrefabUtility.SaveAsPrefabAsset(root, b.Target, out bool saved);
             if (!saved)
             {
@@ -186,6 +201,25 @@ public static class CharacterResourceTool
         var b = renderers[0].bounds;
         for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
         return b;
+    }
+
+    /// <summary>
+    /// 컨트롤러 블렌드 트리에서 가장 높은 문턱값을 찾는다.
+    /// 문턱값은 그 클립이 실제로 걷는 속도(m/s)라 발 미끄러짐 보정의 기준이 된다.
+    /// </summary>
+    static float TopBlendThreshold(string controllerPath)
+    {
+        var ctrl = AssetDatabase.LoadAssetAtPath<UnityEditor.Animations.AnimatorController>(controllerPath);
+        if (ctrl == null || ctrl.layers.Length == 0) return 0f;
+
+        float top = 0f;
+        foreach (var state in ctrl.layers[0].stateMachine.states)
+        {
+            if (!(state.state.motion is UnityEditor.Animations.BlendTree tree)) continue;
+            foreach (var child in tree.children)
+                top = Mathf.Max(top, child.threshold);
+        }
+        return top;
     }
 
     static Type FindMonoBehaviour(string name) =>

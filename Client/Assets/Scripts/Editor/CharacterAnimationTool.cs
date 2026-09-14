@@ -1,100 +1,119 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
 
 /// <summary>
-/// 걷기/대기 애니메이션 클립과 로코모션 컨트롤러를 코드로 만들어 낸다.
+/// 캐릭터 로코모션 컨트롤러를 만든다.
 ///
-/// 왜 코드로 만드는가:
-///   Polytope 무료 팩에는 정지 포즈(PT_Pose_01) 하나뿐이라 이동 클립이 없다.
-///   리그가 Humanoid 라 근육(muscle) 커브만 채우면 뼈 이름과 무관하게 동작한다.
+/// 클립은 직접 만들지 않고 <b>RPG Animations Pack FREE</b>(DoubleL, 에셋스토어 무료) 것을 쓴다.
+/// 손으로 사인파를 그려 만든 걸음은 아무리 다듬어도 기계적이라, 표준 팩을 가져오는 편이 낫다.
 ///
-/// 근육 커브 바인딩 이름은 HumanTrait.MuscleName 문자열을 그대로 쓴다.
-/// (예: "Left Upper Leg Front-Back" — 띄어쓰기를 빼면 조용히 무시된다. 실측으로 확인함.)
+/// 쓰는 클립은 전부 <b>InPlace</b> 변형이다. 루트 모션이 빠져 있어 제자리에서 걷고,
+/// 실제 위치는 서버가 준 좌표를 ActorSync 가 넣는다. 이 프로젝트 구조에 그대로 맞는다.
 ///
-/// 에디터: Tools > Character Resource > Rebuild Locomotion Clips
+/// 리그는 양쪽 다 Humanoid 라 뼈 이름이 달라도 아바타를 통해 리타게팅된다.
+///
+/// 에디터: Tools > Character Resource > Rebuild Locomotion
 /// CLI  : -executeMethod CharacterAnimationTool.Rebuild
 /// </summary>
 public static class CharacterAnimationTool
 {
     public const string OutputDir = "Assets/Animations/Character";
     public const string ControllerPath = OutputDir + "/Locomotion.controller";
-    public const string WalkPath = OutputDir + "/Walk.anim";
-    public const string IdlePath = OutputDir + "/Idle.anim";
 
-    /// <summary>블렌드 트리에서 걷기가 완전히 켜지는 속도(m/s). 서버 이동 속도와 맞춘다.</summary>
-    public const float WalkSpeed = 3.0f;
+    // Warrior Pack Bundle 2 FREE (ExplosiveLLC) 의 Knight 세트.
+    //
+    // 처음에는 RPG Animations Pack 의 "One Hand Up" 을 썼는데, 그쪽은 한손 무기를 든
+    // 전투 자세라 몸통이 24도쯤 앞으로 숙여져 있다. 임포트 설정을 고쳐도 그대로다 —
+    // 굽기 설정 문제가 아니라 동작 자체가 그렇게 만들어져 있다.
+    // 키 큰 이 캐릭터에 리타게팅하면 더 과장돼서 웅크린 채 달리는 것처럼 보였다.
+    // Knight 세트는 똑바로 선 기본 이동이라 이쪽이 맞다.
+    const string PackRoot = "Assets/ExplosiveLLC/Warrior Pack Bundle 2 FREE/" +
+                            "Knight Warrior Mecanim Animation Pack/Animations";
 
-    // ── 걷기 사이클 진폭 (근육 단위, -1..1) ──
-    const float CycleLength   = 1.0f;   // 한 바퀴 = 두 걸음
-    const int   SampleCount   = 24;     // 한 바퀴를 몇 키프레임으로 쪼갤지
+    /// <summary>블렌드 트리에 넣을 클립. 문턱값은 클립에서 실측해 정하므로 여기 적지 않는다.</summary>
+    class Entry
+    {
+        public string Name;
+        public string Fbx;
+        /// <summary>제자리 클립(대기)은 이동 속도가 0 이라 실측 대상이 아니다.</summary>
+        public bool Stationary;
+    }
 
-    const float HipSwing      = 0.42f;  // 허벅지 앞뒤 흔들기
-    const float KneeBend      = 0.45f;  // 무릎 굽힘 최대치
-    // 다리가 뒤에서 앞으로 넘어오는 구간(유각기)에서 가장 많이 굽어야 발이 땅에 끌리지 않는다.
-    const float KneeBendPhase = 1.75f * Mathf.PI;
-    const float AnkleSwing    = 0.22f;  // 발목
-    const float ArmSwing      = 0.28f;  // 팔 앞뒤 흔들기
-    const float SpineLean     = 0.06f;  // 살짝 앞으로
+    static readonly Entry[] Clips =
+    {
+        new Entry { Name = "Idle", Fbx = PackRoot + "/Knight@Idle.FBX", Stationary = true },
+        new Entry { Name = "Walk", Fbx = PackRoot + "/Knight@Walk.FBX" },
+        new Entry { Name = "Run",  Fbx = PackRoot + "/Knight@Run.FBX" },
+    };
 
-    // ── 정지 자세 보정 ──
-    // Humanoid 근육이 전부 0이면 팔이 옆으로 벌어진 자세가 된다. 차렷에 가깝게 내려 준다.
-    const float ArmRest       = -0.62f; // "Arm Down-Up" : 음수가 아래
-
-    /// <summary>
-    /// 팔꿈치("Forearm Stretch"). <b>양수가 펴는 방향</b>이다(무릎과 같은 규칙).
-    /// 어깨~손 거리 실측: -0.6 → 0.21m, 0 → 0.39m, +0.9 → 0.53m.
-    /// 0.5 면 0.49m 로, 완전히 펴지 않은 자연스러운 팔이 된다.
-    /// </summary>
-    const float ElbowRest     = 0.5f;
-
-    /// <summary>
-    /// 루트 높이(RootT.y). 이 커브가 없으면 휴머노이드 클립은 <b>엉덩이를</b> 원점에 놓아서
-    /// 캐릭터가 허리까지 땅에 묻힌다. 클립을 손으로 만들 때 반드시 같이 넣어야 한다.
-    ///
-    /// 값은 이 리그에서 실측해 구했다(모델을 바꾸면 다시 재야 한다):
-    ///   RootT.y 0 → 발목 y = -0.696, 기울기 = 1.017 m/단위, 기본 자세 발목 y = 0.108
-    ///   ⇒ (0.108 + 0.696) / 1.017 = 0.790
-    /// Rebuild 끝의 검증이 실제로 발이 지면에 오는지 다시 확인한다.
-    /// </summary>
-    const float RootHeight    = 0.790f;
-
-    // 근육 이름 (HumanTrait.MuscleName 과 철자까지 동일해야 한다)
-    const string LHip = "Left Upper Leg Front-Back";
-    const string RHip = "Right Upper Leg Front-Back";
-    const string LKnee = "Left Lower Leg Stretch";
-    const string RKnee = "Right Lower Leg Stretch";
-    const string LAnkle = "Left Foot Up-Down";
-    const string RAnkle = "Right Foot Up-Down";
-    const string LArmDU = "Left Arm Down-Up";
-    const string RArmDU = "Right Arm Down-Up";
-    const string LArmFB = "Left Arm Front-Back";
-    const string RArmFB = "Right Arm Front-Back";
-    const string LElbow = "Left Forearm Stretch";
-    const string RElbow = "Right Forearm Stretch";
-    const string Spine = "Spine Front-Back";
-    /// <summary>근육이 아니라 루트 이동 커브. 이름 그대로 써야 한다.</summary>
-    const string RootY = "RootT.y";
+    /// <summary>서버가 쓰는 캐릭터 이동 속도(Engine/Actor/Character.cpp). 문턱값 상한 점검용.</summary>
+    public const float ServerMoveSpeed = 4.5f;
 
     static void Log(string m) => Debug.Log("[CharacterAnim] " + m);
 
-    [MenuItem("Tools/Character Resource/Rebuild Locomotion Clips")]
-    public static void RebuildMenu() => Rebuild();
+    [MenuItem("Tools/Character Resource/Rebuild Locomotion")]
+    public static void RebuildMenu() => RebuildAll();
 
-    /// <summary>클립 두 개와 컨트롤러를 다시 만든다. CLI 진입점.</summary>
+    /// <summary>
+    /// 컨트롤러를 다시 만든 뒤 프리팹까지 다시 연결한다. 보통은 이쪽을 부르면 된다.
+    ///
+    /// 컨트롤러는 지웠다 새로 만들기 때문에 GUID 가 바뀐다. 프리팹은 GUID 로 참조하므로
+    /// 이어서 ApplyAll 을 돌리지 않으면 Animator 의 컨트롤러가 끊긴 채로 남는다.
+    /// </summary>
+    public static void RebuildAll()
+    {
+        Rebuild();
+        CharacterResourceTool.ApplyAll();
+
+        // 접지 검증은 반드시 프리팹을 다시 연결한 뒤에 해야 한다.
+        // Rebuild 시점에는 컨트롤러 참조가 끊긴 상태라 검사가 통째로 건너뛰어진다.
+        if (!VerifyFeetOnGround())
+        {
+            Debug.LogError("[CharacterAnim] 접지 검증 실패");
+            if (Application.isBatchMode) EditorApplication.Exit(1);
+        }
+    }
+
     public static void Rebuild()
     {
         try
         {
+            // 예전에 코드로 만들어 쓰던 클립은 더 이상 쓰지 않는다.
+            foreach (var stale in new[] { OutputDir + "/Walk.anim", OutputDir + "/Idle.anim" })
+                if (AssetDatabase.LoadAssetAtPath<AnimationClip>(stale) != null)
+                {
+                    AssetDatabase.DeleteAsset(stale);
+                    Log("직접 만들었던 클립 삭제: " + stale);
+                }
+
             EnsureFolder(OutputDir);
 
-            var walk = BuildWalk();
-            var idle = BuildIdle();
-            SaveClip(walk, WalkPath);
-            SaveClip(idle, IdlePath);
+            ConfigureImporters();
 
-            BuildController(idle, walk);
+            var loaded = new List<(Entry entry, AnimationClip clip)>();
+            foreach (var e in Clips)
+            {
+                var clip = FindClip(e.Fbx);
+                if (clip == null)
+                {
+                    Debug.LogError($"[CharacterAnim] 클립을 찾을 수 없음: {e.Fbx}\n" +
+                                   "RPG Animations Pack FREE 를 먼저 임포트해야 한다.");
+                    if (Application.isBatchMode) EditorApplication.Exit(1);
+                    return;
+                }
+                loaded.Add((e, clip));
+                Log($"클립 확보 {e.Name}: {clip.name} (길이 {clip.length:F2}s, humanMotion={clip.humanMotion}, loop={clip.isLooping})");
+            }
+
+            // 각 클립이 실제로 몇 m/s 로 걷는지 재서 블렌드 문턱값으로 쓴다.
+            // 문턱값이 클립 속도와 어긋난 만큼 발이 땅에서 미끄러진다.
+            var speeds = MeasureClipSpeeds(loaded);
+
+            BuildController(loaded, speeds);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -108,74 +127,119 @@ public static class CharacterAnimationTool
     }
 
     /// <summary>
-    /// 걷기 한 바퀴. 왼발과 오른발은 위상을 반대로 두고, 팔은 같은 쪽 다리와 반대로 흔든다.
+    /// 팩 클립의 임포트 설정을 이 프로젝트에 맞게 고친다.
+    ///
+    /// 팩 기본값은 루트 회전을 <b>Original 기준</b>으로 포즈에 굽는다. 그러면 원본이 갖고 있던
+    /// 기울기가 그대로 남아 몸통이 20~30도 앞으로 쏠린 채 달린다(실측으로 확인).
+    /// Body Orientation 기준으로 바꾸면 몸통이 바로 선다.
+    ///
+    /// 위치는 XZ 까지 포즈에 구워 완전한 제자리 클립으로 만든다. 이동은 서버가 준 좌표로만 한다.
+    /// 높이는 발 기준으로 맞춰야 리타게팅 후에도 지면에 선다.
     /// </summary>
-    static AnimationClip BuildWalk()
+    static void ConfigureImporters()
     {
-        var clip = new AnimationClip { frameRate = 30f };
+        foreach (var e in Clips)
+        {
+            var imp = AssetImporter.GetAtPath(e.Fbx) as ModelImporter;
+            if (imp == null) { Debug.LogError("[CharacterAnim] 임포터 없음: " + e.Fbx); continue; }
 
-        // 다리: 왼쪽 기준 위상 0, 오른쪽은 반 바퀴 뒤
-        SetCurve(clip, LHip, t => HipSwing * Mathf.Sin(Tau(t)));
-        SetCurve(clip, RHip, t => HipSwing * Mathf.Sin(Tau(t) + Mathf.PI));
+            var clips = imp.clipAnimations.Length > 0 ? imp.clipAnimations : imp.defaultClipAnimations;
+            if (clips.Length == 0) { Debug.LogError("[CharacterAnim] 클립 정의 없음: " + e.Fbx); continue; }
 
-        // 무릎: 한 바퀴에 한 번, 뒤로 찬 직후에 가장 많이 굽는다.
-        SetCurve(clip, LKnee, t => Bend(Tau(t)));
-        SetCurve(clip, RKnee, t => Bend(Tau(t) + Mathf.PI));
+            bool changed = false;
+            foreach (var c in clips)
+            {
+                if (!c.loopTime)                 { c.loopTime = true;                 changed = true; }
+                if (!c.lockRootRotation)         { c.lockRootRotation = true;         changed = true; }
+                if (c.keepOriginalOrientation)   { c.keepOriginalOrientation = false; changed = true; }
+                if (!c.lockRootHeightY)          { c.lockRootHeightY = true;          changed = true; }
+                if (c.keepOriginalPositionY)     { c.keepOriginalPositionY = false;   changed = true; }
+                if (!c.heightFromFeet)           { c.heightFromFeet = true;           changed = true; }
+                if (!c.lockRootPositionXZ)       { c.lockRootPositionXZ = true;       changed = true; }
+                if (c.keepOriginalPositionXZ)    { c.keepOriginalPositionXZ = false;  changed = true; }
+            }
 
-        // 발목: 허벅지보다 1/4 바퀴 늦게 따라온다.
-        SetCurve(clip, LAnkle, t => AnkleSwing * Mathf.Sin(Tau(t) - Mathf.PI * 0.5f));
-        SetCurve(clip, RAnkle, t => AnkleSwing * Mathf.Sin(Tau(t) + Mathf.PI * 0.5f));
+            if (!changed) { Log($"임포트 설정 이미 맞음: {e.Name}"); continue; }
 
-        // 팔: 같은 쪽 다리와 반대로.
-        SetCurve(clip, LArmFB, t => -ArmSwing * Mathf.Sin(Tau(t)));
-        SetCurve(clip, RArmFB, t => ArmSwing * Mathf.Sin(Tau(t)));
-
-        // 팔은 계속 내린 채로 유지 — 대기 자세와 같은 값이라 블렌드해도 튀지 않는다.
-        SetConstant(clip, LArmDU, ArmRest);
-        SetConstant(clip, RArmDU, ArmRest);
-        SetConstant(clip, LElbow, ElbowRest);
-        SetConstant(clip, RElbow, ElbowRest);
-        SetConstant(clip, Spine, SpineLean);
-
-        // 발을 지면에 올려 놓는다 — 없으면 허리까지 묻힌다.
-        SetConstant(clip, RootY, RootHeight);
-
-        MakeLooping(clip);
-        return clip;
+            imp.clipAnimations = clips;
+            imp.SaveAndReimport();
+            Log($"임포트 설정 교정: {e.Name} (루트 회전=몸통 기준, 높이=발 기준, XZ 제자리, 루프 켬)");
+        }
     }
 
-    /// <summary>대기. 숨쉬기만 아주 약하게 넣는다.</summary>
-    static AnimationClip BuildIdle()
+    /// <summary>FBX 안의 AnimationClip 서브에셋을 꺼낸다(미리보기용 __preview__ 는 거른다).</summary>
+    static AnimationClip FindClip(string fbxPath)
     {
-        var clip = new AnimationClip { frameRate = 30f };
-        const float breathLen = 3.0f;
-
-        SetConstant(clip, LArmDU, ArmRest, breathLen);
-        SetConstant(clip, RArmDU, ArmRest, breathLen);
-        SetConstant(clip, LElbow, ElbowRest, breathLen);
-        SetConstant(clip, RElbow, ElbowRest, breathLen);
-        SetConstant(clip, RootY, RootHeight, breathLen);
-
-        // 숨쉬기: 3초에 한 번 아주 얕게
-        var breath = new AnimationCurve();
-        for (int i = 0; i <= 12; i++)
-        {
-            float t = i / 12f;
-            breath.AddKey(t * breathLen, 0.03f * Mathf.Sin(t * Mathf.PI * 2f));
-        }
-        Smooth(breath);
-        clip.SetCurve("", typeof(Animator), Spine, breath);
-
-        MakeLooping(clip);
-        return clip;
+        var subs = AssetDatabase.LoadAllAssetRepresentationsAtPath(fbxPath);
+        if (subs == null) return null;
+        return subs.OfType<AnimationClip>()
+                   .FirstOrDefault(c => !c.name.StartsWith("__preview__"));
     }
 
     /// <summary>
-    /// Speed(m/s) 하나로 대기↔걷기를 섞는 블렌드 트리.
-    /// 상태 전이 대신 트리를 쓰면 가감속에서 끊기지 않는다.
+    /// 클립이 암시하는 전진 속도를 잰다.
+    /// 디딘 발(더 낮은 쪽)이 뒤로 흐르는 속도가 곧 그 클립의 보행 속도다.
     /// </summary>
-    static void BuildController(AnimationClip idle, AnimationClip walk)
+    static Dictionary<string, float> MeasureClipSpeeds(List<(Entry entry, AnimationClip clip)> loaded)
     {
+        var result = new Dictionary<string, float>();
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Character2.prefab");
+        if (prefab == null)
+        {
+            Log("속도 실측 건너뜀: Character2 프리팹이 없다. 문턱값은 기본값을 쓴다.");
+            foreach (var (e, _) in loaded) result[e.Name] = e.Stationary ? 0f : 1f;
+            return result;
+        }
+
+        var root = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+        try
+        {
+            root.transform.position = Vector3.zero;
+            root.transform.rotation = Quaternion.identity;
+            var animator = root.GetComponentInChildren<Animator>();
+            var animGo = animator.gameObject;
+            var lf = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
+            var rf = animator.GetBoneTransform(HumanBodyBones.RightFoot);
+
+            foreach (var (e, clip) in loaded)
+            {
+                if (e.Stationary) { result[e.Name] = 0f; continue; }
+
+                const int Steps = 60;
+                float dt = clip.length / Steps;
+                float sum = 0f; int n = 0;
+                float prevZ = 0f; bool have = false;
+
+                for (int i = 0; i <= Steps; i++)
+                {
+                    clip.SampleAnimation(animGo, i * dt);
+                    bool leftPlanted = lf.position.y <= rf.position.y;
+                    float z = leftPlanted ? lf.position.z : rf.position.z;
+                    if (have)
+                    {
+                        float dz = z - prevZ;
+                        // 디딘 발이 바뀌는 순간에는 z 가 크게 튄다 — 그 표본은 버린다.
+                        if (Mathf.Abs(dz) < 0.2f) { sum += -dz / dt; n++; }
+                    }
+                    prevZ = z; have = true;
+                }
+
+                float speed = n > 0 ? sum / n : 1f;
+                // 캐릭터가 +Z 를 보도록 만들어 두었지만, 팩이 반대로 만들었다면 부호가 뒤집힌다.
+                speed = Mathf.Abs(speed);
+                result[e.Name] = speed;
+                Log($"실측 {e.Name}: 약 {speed:F2} m/s (표본 {n}개)");
+            }
+        }
+        finally { UnityEngine.Object.DestroyImmediate(root); }
+
+        return result;
+    }
+
+    /// <summary>Speed(m/s) 하나로 대기→걷기→달리기를 섞는 블렌드 트리.</summary>
+    static void BuildController(List<(Entry entry, AnimationClip clip)> loaded, Dictionary<string, float> speeds)
+    {
+        AssetDatabase.DeleteAsset(ControllerPath);
         var controller = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
         controller.AddParameter("Speed", AnimatorControllerParameterType.Float);
 
@@ -188,8 +252,10 @@ public static class CharacterAnimationTool
         };
         AssetDatabase.AddObjectToAsset(tree, controller);
 
-        tree.AddChild(idle, 0f);
-        tree.AddChild(walk, WalkSpeed);
+        // 문턱값은 실측 속도. 오름차순이어야 블렌드 트리가 받는다.
+        var ordered = loaded.OrderBy(x => speeds[x.entry.Name]).ToList();
+        foreach (var (e, clip) in ordered)
+            tree.AddChild(clip, speeds[e.Name]);
 
         var layer = controller.layers[0];
         var state = layer.stateMachine.AddState("Locomotion");
@@ -197,59 +263,17 @@ public static class CharacterAnimationTool
         layer.stateMachine.defaultState = state;
 
         EditorUtility.SetDirty(controller);
-        Log($"컨트롤러 생성: {ControllerPath} (Speed 0 → 대기, {WalkSpeed} → 걷기)");
+        Log("컨트롤러 생성: " + ControllerPath + " — " +
+            string.Join(", ", ordered.Select(x => $"{x.entry.Name}@{speeds[x.entry.Name]:F2}")));
+
+        float top = ordered.Max(x => speeds[x.entry.Name]);
+        if (top < ServerMoveSpeed - 0.5f)
+            Debug.LogWarning($"[CharacterAnim] 가장 빠른 클립이 {top:F2} m/s 인데 서버 이동 속도는 " +
+                             $"{ServerMoveSpeed} m/s 다. 그 차이만큼 발이 미끄러진다 — " +
+                             "Actor 가 재생 속도를 보정하도록 되어 있는지 확인할 것.");
     }
 
     // ── 도우미 ──
-
-    static float Tau(float t) => t / CycleLength * Mathf.PI * 2f;
-
-    /// <summary>
-    /// 무릎 굽힘: 한 바퀴에 한 번만 솟는 곡선(0..-KneeBend).
-    /// "Lower Leg Stretch" 는 <b>양수가 무릎을 편다</b>(발이 앞아래로 밀린다). 실측으로 확인했으니
-    /// 굽히려면 음수여야 한다 — 부호를 뒤집으면 다리가 뻣뻣해지고 발이 땅을 뚫는다.
-    /// </summary>
-    static float Bend(float theta) =>
-        -KneeBend * 0.5f * (1f - Mathf.Cos(theta - KneeBendPhase));
-
-    static void SetCurve(AnimationClip clip, string muscle, Func<float, float> f)
-    {
-        var curve = new AnimationCurve();
-        for (int i = 0; i <= SampleCount; i++)
-        {
-            float t = i / (float)SampleCount * CycleLength;
-            curve.AddKey(t, f(t));
-        }
-        Smooth(curve);
-        clip.SetCurve("", typeof(Animator), muscle, curve);
-    }
-
-    static void SetConstant(AnimationClip clip, string muscle, float v, float length = CycleLength)
-    {
-        var curve = AnimationCurve.Constant(0f, length, v);
-        clip.SetCurve("", typeof(Animator), muscle, curve);
-    }
-
-    /// <summary>키 사이를 부드럽게. 끝점 접선을 맞춰 한 바퀴가 이어지게 한다.</summary>
-    static void Smooth(AnimationCurve curve)
-    {
-        for (int i = 0; i < curve.length; i++)
-            curve.SmoothTangents(i, 0f);
-    }
-
-    static void MakeLooping(AnimationClip clip)
-    {
-        var s = AnimationUtility.GetAnimationClipSettings(clip);
-        s.loopTime = true;
-        AnimationUtility.SetAnimationClipSettings(clip, s);
-    }
-
-    static void SaveClip(AnimationClip clip, string path)
-    {
-        AssetDatabase.DeleteAsset(path);
-        AssetDatabase.CreateAsset(clip, path);
-        Log($"클립 저장: {path} (길이 {clip.length:F2}s, humanMotion={clip.humanMotion})");
-    }
 
     static void EnsureFolder(string path)
     {
@@ -264,25 +288,9 @@ public static class CharacterAnimationTool
         }
     }
 
-    /// <summary>디스크에서 다시 읽어 실제로 쓸 수 있는 상태인지 본다.</summary>
     static void Verify()
     {
         bool ok = true;
-
-        foreach (var path in new[] { WalkPath, IdlePath })
-        {
-            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
-            if (clip == null) { Debug.LogError("[CharacterAnim] 클립 없음 " + path); ok = false; continue; }
-
-            var bindings = AnimationUtility.GetCurveBindings(clip);
-            var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            Log($"검증 {System.IO.Path.GetFileName(path)}: 커브 {bindings.Length}개, " +
-                $"humanMotion={clip.humanMotion}, loop={settings.loopTime}, 길이 {clip.length:F2}s");
-
-            // humanMotion 이 false 면 근육 이름을 잘못 적은 것이다 — 조용히 아무 일도 안 일어난다.
-            if (!clip.humanMotion) { Debug.LogError("[CharacterAnim] " + path + " 가 휴머노이드 클립이 아니다"); ok = false; }
-            if (bindings.Length == 0) { Debug.LogError("[CharacterAnim] " + path + " 에 커브가 없다"); ok = false; }
-        }
 
         var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
         if (ctrl == null) { Debug.LogError("[CharacterAnim] 컨트롤러 없음"); ok = false; }
@@ -295,55 +303,62 @@ public static class CharacterAnimationTool
     }
 
     /// <summary>
-    /// 실제 Animator 로 걷기를 한 바퀴 돌리며 발이 지면 근처에 머무는지 본다.
-    /// RootT.y 를 빠뜨리면 허리까지 묻히는데, 클립 자체는 멀쩡해 보여서 이 검사로만 잡힌다.
+    /// 실제 Animator 로 걷기를 돌리며 발이 지면 근처에 머무는지 본다.
+    /// 팩 클립은 루트 높이가 들어 있지만, 리타게팅 결과까지 맞는지는 돌려 봐야 안다.
     /// </summary>
     static bool VerifyFeetOnGround()
     {
-        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Character2.prefab");
-        if (prefab == null) { Log("검증 건너뜀: Character2 프리팹이 아직 없다"); return true; }
+        const string PrefabPath = "Assets/Resources/Character2.prefab";
+
+        // 직전에 ApplyAll 이 저장한 내용을 확실히 읽도록 다시 임포트한다.
+        // 이게 없으면 예전에 메모리에 올라온 프리팹을 잡아 컨트롤러가 없다고 나온다.
+        AssetDatabase.ImportAsset(PrefabPath, ImportAssetOptions.ForceUpdate);
+
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+        if (prefab == null) { Log("접지 검증 건너뜀: Character2 프리팹이 없다"); return true; }
 
         var root = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
         try
         {
             root.transform.position = Vector3.zero;
             var animator = root.GetComponentInChildren<Animator>();
-            if (animator == null || animator.runtimeAnimatorController == null)
+            if (animator == null)
             {
-                Log("검증 건너뜀: 프리팹에 Animator/컨트롤러가 아직 없다");
+                Log("접지 검증 건너뜀: 프리팹에 Animator 가 없다");
                 return true;
+            }
+            if (animator.runtimeAnimatorController == null)
+            {
+                Debug.LogError("[CharacterAnim] 프리팹 Animator 에 컨트롤러가 붙어 있지 않다 — " +
+                               "컨트롤러를 새로 만든 뒤 ApplyAll 로 다시 연결했는지 확인할 것.");
+                return false;
             }
 
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             animator.Rebind();
-            animator.SetFloat("Speed", WalkSpeed);
+            animator.SetFloat("Speed", ServerMoveSpeed);
             animator.Update(0f);
 
+            var lf = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
+            var rf = animator.GetBoneTransform(HumanBodyBones.RightFoot);
+
             float lowest = float.MaxValue, highest = float.MinValue;
-            const int Steps = 20;
-            for (int i = 0; i < Steps; i++)
+            for (int i = 0; i < 40; i++)
             {
-                animator.Update(CycleLength / Steps);
-                var lf = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
-                var rf = animator.GetBoneTransform(HumanBodyBones.RightFoot);
+                animator.Update(1f / 30f);
                 float low = Mathf.Min(lf.position.y, rf.position.y);
                 lowest = Mathf.Min(lowest, low);
                 highest = Mathf.Max(highest, low);
             }
 
-            // 기본 자세의 발목 높이(실측 0.108m)를 기준으로 삼는다. 걷는 동안 무릎이 굽으므로
-            // 위아래로 어느 정도는 움직이는 게 정상이고, 땅을 뚫는지만 본다.
-            Log($"검증 접지: 걷기 한 바퀴 동안 발목 최저 {lowest:F3}m, 최고 {highest:F3}m");
+            Log($"검증 접지: 발목 최저 {lowest:F3}m, 최고 {highest:F3}m");
             if (lowest < -0.1f)
             {
-                Debug.LogError($"[CharacterAnim] 발이 지면 아래로 내려간다({lowest:F3}m). RootT.y({RootHeight}) 재보정 필요.");
+                Debug.LogError($"[CharacterAnim] 발이 지면 아래로 내려간다({lowest:F3}m).");
                 return false;
             }
             return true;
         }
-        finally
-        {
-            UnityEngine.Object.DestroyImmediate(root);
-        }
+        finally { UnityEngine.Object.DestroyImmediate(root); }
     }
 }
