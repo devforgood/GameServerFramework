@@ -20,16 +20,64 @@ public class Actor : MonoBehaviour
     public HealthBar healthBar;
     private Session session;
     private DamageTextManager damageTextManager;
-    
+
     // Damage text cooldown to prevent spam
     private float lastDamageTime = 0f;
     private const float DAMAGE_TEXT_COOLDOWN = 0.1f; // 100ms cooldown
+
+    // ── 로코모션(걷기) ──
+    // 서버는 속도도 바라보는 방향도 보내지 않는다. 그래서 '실제로 그려진 위치가
+    // 프레임 사이에 얼마나 움직였는가'를 재서 애니메이션을 고른다.
+    // 이렇게 하면 누가 transform 을 움직였든(서버 동기화, 점프 연출) 똑같이 동작한다.
+    private Animator locomotionAnimator;
+    private Vector3 lastFramePos;
+    private float smoothedSpeed;
+    private static readonly int SpeedParam = Animator.StringToHash("Speed");
+
+    /// <summary>이 속도 아래는 멈춘 것으로 본다. 보간 지터로 발이 떠는 것을 막는다.</summary>
+    private const float MoveEpsilon = 0.05f;
+    /// <summary>속도 평활 계수. 클수록 빨리 반응한다.</summary>
+    private const float SpeedDamping = 12f;
+    /// <summary>바라보는 방향이 도는 속도(도/초).</summary>
+    private const float TurnSpeed = 720f;
 
     void Awake()
     {
         CreateHealthBar();
         session = FindObjectOfType<Session>();
         damageTextManager = DamageTextManager.Instance;
+
+        // 모델은 자식으로 붙어 있고 Animator 도 거기 있다. 캡슐 프리팹이면 null 이라 그냥 건너뛴다.
+        locomotionAnimator = GetComponentInChildren<Animator>();
+        lastFramePos = transform.position;
+    }
+
+    /// <summary>
+    /// 위치는 Session.Update 안의 ActorSync.Tick 이 쓴다. 그 뒤에 도는 LateUpdate 에서
+    /// 이번 프레임 이동량을 재야 한 프레임 밀리지 않는다.
+    /// </summary>
+    void LateUpdate()
+    {
+        if (locomotionAnimator == null) return;
+
+        Vector3 delta = transform.position - lastFramePos;
+        delta.y = 0f; // 오르막을 걷는다고 더 빨리 걷는 것처럼 보이면 안 된다
+        lastFramePos = transform.position;
+
+        float instant = Time.deltaTime > 0f ? delta.magnitude / Time.deltaTime : 0f;
+        if (instant < MoveEpsilon) instant = 0f;
+
+        // 서버 갱신은 10Hz 라 프레임별 이동량이 고르지 않다. 그대로 넣으면 걷기가 깜빡인다.
+        smoothedSpeed = Mathf.Lerp(smoothedSpeed, instant, 1f - Mathf.Exp(-SpeedDamping * Time.deltaTime));
+        locomotionAnimator.SetFloat(SpeedParam, smoothedSpeed);
+
+        // 서버가 방향을 안 보내므로 이동 방향으로 직접 돌린다.
+        // 이게 없으면 걷는 자세 그대로 옆으로 미끄러진다.
+        if (instant > 0f)
+        {
+            var look = Quaternion.LookRotation(delta.normalized, Vector3.up);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, look, TurnSpeed * Time.deltaTime);
+        }
     }
 
     void CreateHealthBar()
@@ -158,11 +206,18 @@ public class Actor : MonoBehaviour
     protected virtual void ShowDeathEffect()
     {
         // 사망 시 시각적 효과
-        var renderer = GetComponent<MeshRenderer>();
-        if (renderer != null)
+        // 캡슐 시절에는 루트에 MeshRenderer 가 있었지만, 실제 캐릭터 모델은
+        // 자식 SkinnedMeshRenderer 로 그려진다. 둘 다 잡으려고 자식까지 훑는다.
+        var renderers = GetComponentsInChildren<Renderer>();
+        foreach (var renderer in renderers)
         {
+            if (renderer == null) continue;
             // 회색으로 변경하여 사망 상태 표시
-            renderer.material.color = Color.gray;
+            foreach (var mat in renderer.materials)
+            {
+                if (mat != null && mat.HasProperty("_Color"))
+                    mat.color = Color.gray;
+            }
         }
         
         // HealthBar 숨기기
