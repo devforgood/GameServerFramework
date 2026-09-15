@@ -258,12 +258,15 @@ public static class MapPipeline
     /// 자기 밑에 붙인다(`NavMeshPolygon_*/PolygonMesh`). 그런데 그것이 씬에 저장돼 있으면
     /// **다음 굽기의 입력으로 들어간다** — 지난번 navmesh 표면(바닥보다 0.1m 위)이 지형인
     /// 척하며 다시 구워지는 셈이다. 씬 하나에 100개씩 들어 있어 정점 예산도 그만큼 먹는다.
+    ///
+    /// 보기 전용 배경(EnvironmentDressing)도 뺀다. 같이 구우면 울타리 바깥 언덕·건물이 걸을 수 있는 땅이 된다.
     /// </summary>
-    private static MeshFilter[] BakeableMeshes()
+    public static MeshFilter[] BakeableMeshes()
     {
         return Object.FindObjectsOfType<MeshFilter>()
             .Where(mf => mf != null && mf.sharedMesh != null
-                         && mf.GetComponentInParent<RecastNavigation.Unity.NavMeshVisualizer>() == null)
+                         && mf.GetComponentInParent<RecastNavigation.Unity.NavMeshVisualizer>() == null
+                         && mf.GetComponentInParent<EnvironmentDressing>() == null)
             .ToArray();
     }
 
@@ -677,10 +680,12 @@ public static class MapPipeline
         };
     }
 
-    /// <summary>씬의 모든 Renderer 를 감싸는 경계(맵 크기 계산용). 없으면 null.</summary>
+    /// <summary>씬의 모든 Renderer 를 감싸는 경계(맵 크기 계산용). 없으면 null. 보기 전용 배경은 뺀다.</summary>
     public static Bounds? SceneBounds()
     {
-        var renderers = Object.FindObjectsOfType<Renderer>();
+        var renderers = Object.FindObjectsOfType<Renderer>()
+            .Where(r => r.GetComponentInParent<EnvironmentDressing>() == null)
+            .ToArray();
         if (renderers.Length == 0)
             return null;
 

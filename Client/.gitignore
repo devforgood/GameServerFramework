@@ -76,3 +76,8 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+# 에셋스토어 대용량 배경 팩(2.6GB). 저장소에 넣지 않는다 — 에셋스토어에서 받아 임포트.
+# 받은 뒤 PostProcessing 폴더는 삭제해야 컴파일된다(RESOURCE_HISTORY.md 7장).
+/Assets/Flooded_Grounds/
+/Assets/Flooded_Grounds.meta

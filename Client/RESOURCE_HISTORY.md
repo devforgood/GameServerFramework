@@ -1,9 +1,9 @@
-# 캐릭터·몬스터 리소스 적용 기록
+# 캐릭터·몬스터·배경 리소스 적용 기록
 
-에셋스토어 모델과 애니메이션을 게임 프리팹에 입힌 과정을 정리한 문서입니다.
+에셋스토어 모델·애니메이션·배경을 게임에 입힌 과정을 정리한 문서입니다.
 다음에 모델을 바꾸거나 새 팩을 붙일 때 같은 시행착오를 반복하지 않도록, 결론·절차·함정을 함께 적었습니다.
 
-- 대상: `Client/Assets/Resources/Character2.prefab`, `Client/Assets/Resources/Monster.prefab`
+- 대상: `Client/Assets/Resources/Character2.prefab`, `Client/Assets/Resources/Monster.prefab`, 맵 씬 배경(→ 9장)
 - 기간: 2026-09-15 ~ 2026-09-16
 
 ---
@@ -38,6 +38,7 @@
 | 캐릭터 애니 재생성 + 프리팹 재조립 + 검증 | Tools > Character Resource > Rebuild Locomotion | `CharacterAnimationTool.RebuildAll` |
 | 몬스터 애니 재생성 + 프리팹 재조립 + 검증 | Tools > Character Resource > Rebuild Monster | `MonsterAnimationTool.RebuildAll` |
 | 프리팹만 재조립(모델 교체 등) | Tools > Character Resource > Apply All | `CharacterResourceTool.ApplyAll` |
+| Starting Village 배경 재생성 + 검증 + 미리보기 | Tools > Environment > Dress Starting Village | `EnvironmentDressingTool.BuildStartingVillage -previewDir <폴더>` |
 
 ```powershell
 & "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -quit -nographics `
@@ -175,6 +176,8 @@ Character2 / Monster      루트: CapsuleCollider + Character/Monster 스크립�
 | `Assets/ExplosiveLLC/Warrior FREE/Code/WarriorController.cs` (87행) | `AnimatorUpdateMode.AnimatePhysics` → `AnimatorUpdateMode.Fixed` | CS0619 (Unity 6 에서 제거된 API) |
 | `Assets/ExplosiveLLC/Editor/SetupInputLayers.cs` | 삭제(빈 `Editor` 폴더도 삭제) | 에셋이 임포트될 때마다 "Load Input and Tag Presets" 창을 띄움. 데모 컨트롤러용 안내라 클립만 쓰는 우리와 무관 |
 | `Assets/DungeonCharacters/Skeletons_demo/models/Materials/DS_skeleton_standard.mat`, `DemoEquipment.mat` | 셰이더 URP Lit → Standard | Built-in 파이프라인에서 분홍색. 도구가 자동 수정 |
+| `Assets/Flooded_Grounds/PostProcessing/` | **폴더째 삭제** | 2018년에 폐기된 Post Processing Stack v1. 에디터 코드가 Unity 6 에서 컴파일되지 않고(CS0619·CS0104, 고치면 다음 에러가 연쇄로 나옴) 프로젝트 전체를 막았다. 데모 `Scene_A` 카메라에 빈 스크립트 참조가 남지만 게임과 무관 |
+| `Assets/_TerrainAutoUpgrade/` | 지우지 말 것 | Unity 가 `Scene_A` 지형을 열며 만든 TerrainLayer 3개. 우리 배경 지형이 이 레이어를 쓴다 |
 | Knight 클립 FBX 메타(Idle/Walk/Run) | 루프, 루트 회전·높이·XZ 굽기 설정 | 도구(`ConfigureImporters`)가 자동 수정 |
 | Dungeon Skeletons 공격 클립 FBX 메타 | `loopTime` 켬 | 도구가 자동 수정 |
 
@@ -189,3 +192,67 @@ Character2 / Monster      루트: CapsuleCollider + Character/Monster 스크립�
 - **몬스터 상태별 색 표시가 동작하지 않습니다.** `ActorSync.UpdateMonsterVisuals` 는 루트 `MeshRenderer` 를 찾는데, 모델 프리팹에는 없습니다.
 - **스켈레톤(2.56 m)이 캐릭터(2.16 m)보다 큽니다.** 크기를 맞추려면 `Model` 자식의 스케일을 조정하도록 도구에 반영하세요.
 - **`Assets/DoubleL`(RPG Animations Pack) 은 미사용**입니다. 필요 없으면 삭제해도 됩니다.
+
+---
+
+## 9. 배경 (Flooded Grounds)
+
+### 원칙: 게임 지오메트리는 건드리지 않고 덧입힌다
+
+서버 이동은 씬의 바닥·장애물·경사로로 구운 navmesh 를 따릅니다. 그래서 배경 작업은 **그 오브젝트의 렌더러만 끄고** 같은 자리에 보기 좋은 껍데기를 올립니다.
+MeshFilter·콜라이더는 남기므로 NavMesh 재굽기와 클릭 이동은 그대로입니다. 서버 데이터(Map.json, navmesh)는 바뀌지 않습니다.
+
+| 게임 지오메트리 | 배경 |
+|---|---|
+| 바닥 `BasePlane` (50×50 m) | Terrain 240 m. 플레이 영역 +3 m 까지 높이 정확히 0, 바깥은 북쪽 언덕 / 남쪽 침수지 |
+| 장애물 큐브 2 m | 둥근 바위(CobbleRock A/E)를 큐브의 1.2배 크기로 + 자갈 |
+| 경사로(한 장짜리 사면) | 사면과 똑같은 윗면에 뒷벽·옆면을 막은 흙 둔덕 + 자갈 |
+| 경계 | 울타리(북·동·서 높은 것, 남 낮은 것), 게이트 자리는 돌 아치와 바깥으로 이어지는 둑길 |
+| 바깥 | 나무 420그루(Terrain 나무), 풀, 오두막·초소·라디오탑, 서쪽 묘지, 동쪽 전봇대·폐차, 남쪽 물·배·난파선, 원경 공장(안개 속) |
+
+- 생성물은 씬 루트 `Environment`(`EnvironmentDressing` 컴포넌트) 밑과 `Assets/Environment/{씬 이름}/`(지형·물 메시), `Assets/Environment/Materials/` 에 모입니다.
+- 도구는 **매번 통째로 다시 만듭니다**(시드는 씬 이름이라 결과는 같음). 배치를 바꾸려면 `EnvironmentDressingTool.cs` 를 고치세요.
+- 실행 시 검증: NavMesh 입력 메시 수 유지, 맵 크기(x·z) 유지, 켜진 콜라이더 0개, 플레이 영역 지형 높이 = 바닥 높이. 하나라도 어긋나면 종료 코드 1.
+- `MapPipeline.BakeableMeshes`·`SceneBounds` 는 `EnvironmentDressing` 밑을 건너뜁니다. 같이 구우면 울타리 바깥 언덕이 걸을 수 있는 땅이 됩니다.
+
+### 설계에서 지킨 것
+
+- **남쪽에는 키 큰 것을 두지 않습니다.** 카메라(`DiabloCamera`, yaw 0)가 남쪽에서 내려다봐서 남쪽 가장자리의 나무·건물은 캐릭터를 가립니다. 남쪽 32 m 안에는 나무가 없고, 저지대라 물에 잠겨 있습니다.
+- **배경 콜라이더는 전부 끕니다.** 클릭 이동은 마우스 레이가 처음 맞은 점으로 가므로 지붕·나무에 맞으면 엉뚱한 곳으로 갑니다. Terrain 에도 콜라이더가 없어 울타리 바깥을 클릭하면 예전처럼 반응하지 않습니다.
+- **분위기 값은 Scene_A 에서 가져와 탑뷰에 맞게 조정했습니다.** 안개 원본 0~400 m → 30~130 m(카메라 거리 10~24 m 에서 원본은 안 보임), 환경광 Skybox → Trilight(조명을 굽지 않은 씬에서 안정), 해 고도 25° → 50°(그림자가 캐릭터를 덮지 않게).
+
+### 2026-09-16 · Starting Village
+
+| 단계 | 한 일 | 결과 / 교훈 |
+|---|---|---|
+| 1 | 범위 결정 | Scene_A(1024 m 지형)로 맵을 통째로 바꾸는 대신 **기존 맵 꾸미기**를 택함. navmesh·Map.json·서버 데이터를 다시 만들 필요가 없다 |
+| 2 | 팩 임포트 후 컴파일 에러 | PostProcessing v1 에디터 코드. 두 곳을 고치자 다음 에러가 나와 폴더째 삭제 |
+| 3 | 프리팹 배치 | 팩 프리팹 루트에 원본 씬 좌표(수백 m)가 박혀 있다. 루트가 아니라 **렌더러 경계의 바닥 중심**으로 맞춘다(`Place`) |
+| 4 | 플레이 영역이 물에 잠겨 보임 | 처음엔 Terrain LOD 를 의심했으나, 물을 끄고 찍어 보니 지형은 정상. `FG_PBR_Water` 가 파도를 **오브젝트 공간 높이**로 만들어, Plane 을 43배 키우자 파도가 ±4 m 가 됐다. 실제 크기 격자 메시를 스케일 1 로 사용 |
+| 5 | 경사로에 판자(WoodPath) 얹기 | 허공에 뜬 것처럼 보이고 받침돌이 판자를 뚫어 폐기. 닫힌 흙 둔덕으로 교체 |
+| 6 | 장애물에 Rock_A | 세로로 긴 판석이라 탑뷰에서 비석처럼 보여 뺌 |
+| 7 | 미리보기 렌더가 `ProjectSettings/EditorSettings.asset` 을 다시 씀 | `EditorSettings.asyncShaderCompilation` 은 파일에 저장된다. 세션 한정인 `ShaderUtil.allowAsyncCompilation` 으로 교체 |
+
+### 배경 트러블슈팅
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| 캐릭터가 물에 잠겨 보임, 물 경계가 긴 직선 | 물 셰이더 파도가 오브젝트 스케일만큼 커짐 | 물은 스케일 1 메시로(`BuildWater`). 원인을 가를 땐 물을 끈 샷(`env_overview_nowater.png`)과 비교 |
+| 미리보기 전경이 회색뿐 | 안개 끝(130 m)보다 먼 카메라 | 전경 샷만 안개를 끄고 찍음(씬은 이미 저장된 뒤) |
+| 소품이 엉뚱한 곳(수백 m 밖)에 생김 | 팩 프리팹 루트 좌표 | `Place` 가 경계 기준으로 옮김. 직접 배치할 때도 같은 방식을 쓸 것 |
+| 배경을 클릭하면 이상한 곳으로 이동 | 켜진 콜라이더 | 도구가 끄고 검증함. 손으로 추가한 오브젝트는 직접 끌 것 |
+| CLI 후 `ProjectSettings/*.json`·`UserSettings` 가 바뀜 | Unity 가 열 때 파일을 새 형식으로 다시 씀 | 의도한 변경이 아니면 `git checkout` 으로 되돌림 |
+
+### 다른 맵에 적용할 때
+
+- `BuildStartingVillage` 는 씬 경로만 고정돼 있고 `Dress(scene)` 는 씬의 가장 넓은 메시를 바닥, `Cube` 메시를 장애물, 나머지를 경사로로 읽습니다. Field1 은 같은 구조(`Generated_Simple_SimplePlane_Terrain`)라 그대로 됩니다.
+- **Field2·Dark Forest 는 구조가 달라**(`BasePlane` 이 없음) 먼저 씬 구성을 확인해야 합니다.
+- 건물 배치(`PlanBuildings`)는 플레이 영역 기준 상대 좌표입니다. 게이트 길을 막는 건물은 자동으로 빠집니다.
+- 맵마다 분위기를 다르게 하려면 `ApplyAtmosphere` 와 지형 경향(`TerrainShape.RawHeight` 의 북/남 높이)을 인자로 빼세요.
+
+### 배경의 한계
+
+- **팩(2.6 GB)은 저장소에 없습니다**(`Client/.gitignore`). 새 PC 에서는 에셋스토어에서 Flooded Grounds 를 받아 임포트하고 `PostProcessing` 폴더를 지워야 씬 배경이 보입니다. 에셋 GUID 는 패키지 메타에 고정돼 있어 다시 임포트해도 씬 참조가 이어집니다.
+  `_TerrainAutoUpgrade` 의 TerrainLayer 3개(작음)는 커밋했습니다. Unity 가 새로 만들면 GUID 가 달라져 지형 텍스처 참조가 끊기기 때문입니다.
+- 경사로 둔덕은 게임 지오메트리 모양 그대로라 각진 상자처럼 보입니다. 자연스럽게 하려면 `TerrainBuilder` 경사로 자체를 바꾸고 navmesh 를 다시 구워야 합니다.
+- 씬에 원래 있던 게이트(파란 원기둥)·스폰 지점(빨간 원기둥) 마커 메시는 그대로 보입니다.
