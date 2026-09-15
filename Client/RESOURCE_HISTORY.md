@@ -173,6 +173,7 @@ Character2 / Monster      루트: CapsuleCollider + Character/Monster 스크립�
 |---|---|---|
 | `Assets/ExplosiveLLC/SuperCharacterController/SuperCharacterController/Core/SuperCharacterController.cs` | `public struct Ground` 위의 `[SerializeField]` 제거 | CS0592 (구조체에 붙일 수 없음) |
 | `Assets/ExplosiveLLC/Warrior FREE/Code/WarriorController.cs` (87행) | `AnimatorUpdateMode.AnimatePhysics` → `AnimatorUpdateMode.Fixed` | CS0619 (Unity 6 에서 제거된 API) |
+| `Assets/ExplosiveLLC/Editor/SetupInputLayers.cs` | 삭제(빈 `Editor` 폴더도 삭제) | 에셋이 임포트될 때마다 "Load Input and Tag Presets" 창을 띄움. 데모 컨트롤러용 안내라 클립만 쓰는 우리와 무관 |
 | `Assets/DungeonCharacters/Skeletons_demo/models/Materials/DS_skeleton_standard.mat`, `DemoEquipment.mat` | 셰이더 URP Lit → Standard | Built-in 파이프라인에서 분홍색. 도구가 자동 수정 |
 | Knight 클립 FBX 메타(Idle/Walk/Run) | 루프, 루트 회전·높이·XZ 굽기 설정 | 도구(`ConfigureImporters`)가 자동 수정 |
 | Dungeon Skeletons 공격 클립 FBX 메타 | `loopTime` 켬 | 도구가 자동 수정 |
