@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: c0c0c0db812bfcc48834306aa6695c0b
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 71087
+  packageName: Dungeon Skeletons Demo
+  packageVersion: 1.0
+  assetPath: Assets/DungeonCharacters/Skeletons_demo/DungeonSkeleton_demoPrefab.prefab
+  uploadId: 982350

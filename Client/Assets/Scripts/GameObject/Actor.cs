@@ -29,7 +29,7 @@ public class Actor : MonoBehaviour
     // 서버는 속도도 바라보는 방향도 보내지 않는다. 그래서 '실제로 그려진 위치가
     // 프레임 사이에 얼마나 움직였는가'를 재서 애니메이션을 고른다.
     // 이렇게 하면 누가 transform 을 움직였든(서버 동기화, 점프 연출) 똑같이 동작한다.
-    private Animator locomotionAnimator;
+    protected Animator locomotionAnimator;
     private Vector3 lastFramePos;
     private float smoothedSpeed;
     private static readonly int SpeedParam = Animator.StringToHash("Speed");
@@ -69,7 +69,8 @@ public class Actor : MonoBehaviour
     /// </summary>
     void LateUpdate()
     {
-        if (locomotionAnimator == null) return;
+        // 사망 연출로 애니메이터를 꺼 둔 경우 — 멈춘 포즈를 유지한다.
+        if (locomotionAnimator == null || !locomotionAnimator.enabled) return;
 
         Vector3 delta = transform.position - lastFramePos;
         delta.y = 0f; // 오르막을 걷는다고 더 빨리 걷는 것처럼 보이면 안 된다
@@ -102,7 +103,11 @@ public class Actor : MonoBehaviour
     {
         GameObject healthBarObj = new GameObject("HealthBar");
         healthBarObj.transform.SetParent(transform);
-        healthBarObj.transform.localPosition = new Vector3(0, 2f, 0);
+        // 모델마다 키가 달라(캐릭터 2.16m, 스켈레톤 2.56m) 콜라이더 높이 위에 띄운다.
+        // 콜라이더는 CharacterResourceTool 이 모델 경계에 맞춰 둔다.
+        var capsule = GetComponent<CapsuleCollider>();
+        float barHeight = capsule != null ? capsule.center.y + capsule.height * 0.5f + 0.2f : 2f;
+        healthBarObj.transform.localPosition = new Vector3(0, barHeight, 0);
         healthBarObj.transform.localRotation = Quaternion.identity;
         
         healthBar = healthBarObj.AddComponent<HealthBar>();

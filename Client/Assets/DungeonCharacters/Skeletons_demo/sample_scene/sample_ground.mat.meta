@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 459dc54ae6665a6429ccb6ab4b18e6a2
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 71087
+  packageName: Dungeon Skeletons Demo
+  packageVersion: 1.0
+  assetPath: Assets/DungeonCharacters/Skeletons_demo/sample_scene/sample_ground.mat
+  uploadId: 982350

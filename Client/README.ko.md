@@ -59,6 +59,13 @@ Tools > Pathfinding Test Manager
 - 타겟 랜덤화
 - 성능 모니터링
 
+### Character Resource
+```
+Tools > Character Resource
+```
+- 에셋스토어 모델·애니메이션을 `Character2` / `Monster` 프리팹에 적용
+- 적용 절차, 시행착오, 트러블슈팅: [RESOURCE_HISTORY.md](RESOURCE_HISTORY.md)
+
 ## 🚀 사용 방법
 
 ### 1. 지형 생성

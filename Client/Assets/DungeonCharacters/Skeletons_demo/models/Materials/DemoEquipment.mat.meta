@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e5e81676514139d4c85683994e6378df
+timeCreated: 1473217894
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 71087
+  packageName: Dungeon Skeletons Demo
+  packageVersion: 1.0
+  assetPath: Assets/DungeonCharacters/Skeletons_demo/models/Materials/DemoEquipment.mat
+  uploadId: 982350

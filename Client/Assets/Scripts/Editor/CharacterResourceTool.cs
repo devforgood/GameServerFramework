@@ -45,7 +45,7 @@ public static class CharacterResourceTool
     const float MaxRadiusRatio = 0.2f;
 
     /// <summary>
-    /// 적용 표. 몬스터(슬라임/늑대)는 이 팩에 맞는 모델이 없어 캡슐 그대로 둔다.
+    /// 적용 표. 클라이언트는 몬스터 종류를 구분하지 않고 전부 "Monster" 하나로 그린다.
     /// </summary>
     static readonly Binding[] Bindings =
     {
@@ -56,6 +56,13 @@ public static class CharacterResourceTool
             ScriptType = "Character",
             // 팩에 딸린 컨트롤러는 정지 포즈 하나뿐이라, 코드로 만든 로코모션을 쓴다.
             Controller = CharacterAnimationTool.ControllerPath,
+        },
+        new Binding
+        {
+            Source     = MonsterAnimationTool.ModelPrefab,
+            Target     = MonsterAnimationTool.PrefabPath,
+            ScriptType = "Monster",
+            Controller = MonsterAnimationTool.ControllerPath,
         },
     };
 
@@ -107,6 +114,8 @@ public static class CharacterResourceTool
             model.transform.SetParent(root.transform, false);
             model.transform.localPosition = Vector3.zero;
             model.transform.localRotation = Quaternion.identity;
+
+            FixPipelineMaterials(model, targetName);
 
             // 3. 애니메이터 컨트롤러 연결. 없으면 T 포즈로 서 있게 된다.
             var animator = model.GetComponent<Animator>();
@@ -185,6 +194,43 @@ public static class CharacterResourceTool
         finally
         {
             if (root != null) UnityEngine.Object.DestroyImmediate(root);
+        }
+    }
+
+    /// <summary>
+    /// 이 프로젝트는 Built-in 렌더 파이프라인이다. URP 로 만들어진 팩(Dungeon Skeletons 등)은
+    /// 머티리얼 셰이더가 없는 URP Lit 을 가리켜 분홍색으로 그려진다.
+    /// 셰이더를 잃은 머티리얼만 Standard 로 바꾸고 텍스처·색은 옮겨 준다.
+    /// 팩 머티리얼 에셋 자체를 고치므로 한 번 바꾸면 이후엔 건드리지 않는다.
+    /// </summary>
+    static void FixPipelineMaterials(GameObject model, string targetName)
+    {
+        var standard = Shader.Find("Standard");
+        if (standard == null) { Warn("Standard 셰이더를 찾지 못해 머티리얼 교정을 건너뛴다"); return; }
+
+        var mats = model.GetComponentsInChildren<Renderer>(true)
+            .SelectMany(r => r.sharedMaterials)
+            .Where(m => m != null)
+            .Distinct();
+
+        foreach (var mat in mats)
+        {
+            bool broken = mat.shader == null || mat.shader.name == "Hidden/InternalErrorShader";
+            if (!broken) continue;
+
+            // URP 는 _BaseMap/_BaseColor, Standard 는 _MainTex/_Color 를 읽는다.
+            var tex = mat.HasProperty("_BaseMap") ? mat.GetTexture("_BaseMap") : null;
+            if (tex == null && mat.HasProperty("_MainTex")) tex = mat.GetTexture("_MainTex");
+            var color = mat.HasProperty("_BaseColor") ? mat.GetColor("_BaseColor") : Color.white;
+            float smooth = mat.HasProperty("_Smoothness") ? mat.GetFloat("_Smoothness") : 0.2f;
+
+            mat.shader = standard;
+            if (tex != null) mat.SetTexture("_MainTex", tex);
+            mat.SetColor("_Color", color);
+            mat.SetFloat("_Glossiness", smooth);
+            mat.SetFloat("_Metallic", 0f);
+            EditorUtility.SetDirty(mat);
+            Log($"{targetName}: 머티리얼 {mat.name} 셰이더를 Standard 로 교정(텍스처 {(tex != null ? tex.name : "없음")})");
         }
     }
 
