@@ -85,12 +85,10 @@ public class InputManager : MonoBehaviour
         if (MainCamera == null)
             return false; // 아직 메인 카메라가 없음(씬 로드 중 등)
 
-        Vector3 mousePos = Input.mousePosition;
-        mousePos.z = MainCamera.farClipPlane;
-
-        Vector3 dir = MainCamera.ScreenToWorldPoint(mousePos);
-
-        isHit = Physics.Raycast(MainCamera.transform.position, dir, out currentHit, mousePos.z);
+        // 예전에는 화면 점을 월드 좌표로 바꾼 값을 그대로 방향으로 썼다. 카메라가 원점 근처에
+        // 고정돼 있을 때는 티가 안 났지만, 캐릭터를 따라 움직이면 원점에서 먼 곳일수록 클릭이 어긋난다.
+        Ray ray = MainCamera.ScreenPointToRay(Input.mousePosition);
+        isHit = Physics.Raycast(ray, out currentHit, MainCamera.farClipPlane);
         if (isHit && !string.IsNullOrEmpty(tag))
         {
             return currentHit.transform.CompareTag(tag);
