@@ -6,7 +6,7 @@
     "max_damage": 20,
     "range": 2,
     "angle": 90,
-    "cooldown": 0.5,
+    "cooldown": 0.1,
     "starter": true,
     "name_id": "normal_attack_name",
     "desc_id": "normal_attack_desc",
@@ -24,7 +24,7 @@
     "type": "active",
     "height": 3,
     "duration": 1,
-    "cooldown": 3.0,
+    "cooldown": 0.3,
     "starter": true,
     "name_id": "jump_name",
     "desc_id": "jump_desc",
@@ -106,7 +106,7 @@
     "min_damage": 6,
     "max_damage": 12,
     "radius": 2,
-    "cooldown": 0.4,
+    "cooldown": 0.1,
     "name_id": "fire_bolt_name",
     "desc_id": "fire_bolt_desc",
     "effects": [
@@ -123,7 +123,7 @@
     "min_damage": 18,
     "max_damage": 36,
     "radius": 4,
-    "cooldown": 1.0,
+    "cooldown": 0.1,
     "name_id": "fireball_name",
     "desc_id": "fireball_desc",
     "effects": [
@@ -140,7 +140,7 @@
     "min_damage": 60,
     "max_damage": 120,
     "radius": 6,
-    "cooldown": 6.0,
+    "cooldown": 0.6,
     "name_id": "meteor_name",
     "desc_id": "meteor_desc",
     "effects": [
@@ -157,7 +157,7 @@
     "min_damage": 40,
     "max_damage": 70,
     "radius": 7,
-    "cooldown": 5.0,
+    "cooldown": 0.5,
     "name_id": "frozen_orb_name",
     "desc_id": "frozen_orb_desc",
     "effects": [
@@ -175,7 +175,7 @@
     "max_damage": 40,
     "range": 6,
     "angle": 360,
-    "cooldown": 1.2,
+    "cooldown": 0.12,
     "name_id": "nova_name",
     "desc_id": "nova_desc",
     "effects": [
@@ -192,7 +192,7 @@
     "min_damage": 30,
     "max_damage": 60,
     "radius": 8,
-    "cooldown": 6.0,
+    "cooldown": 0.6,
     "name_id": "blizzard_name",
     "desc_id": "blizzard_desc",
     "effects": [
@@ -206,7 +206,7 @@
   {
     "id": 106,
     "type": "active",
-    "cooldown": 1.0,
+    "cooldown": 0.1,
     "name_id": "teleport_name",
     "desc_id": "teleport_desc",
     "effects": [
@@ -223,7 +223,7 @@
     "max_damage": 16,
     "range": 7,
     "angle": 360,
-    "cooldown": 0.8,
+    "cooldown": 0.1,
     "name_id": "static_field_name",
     "desc_id": "static_field_desc",
     "effects": [
@@ -241,7 +241,7 @@
     "max_damage": 30,
     "range": 9,
     "angle": 20,
-    "cooldown": 0.6,
+    "cooldown": 0.1,
     "name_id": "bone_spear_name",
     "desc_id": "bone_spear_desc",
     "effects": [
@@ -259,7 +259,7 @@
     "max_damage": 25,
     "range": 5,
     "angle": 360,
-    "cooldown": 2.5,
+    "cooldown": 0.25,
     "name_id": "poison_nova_name",
     "desc_id": "poison_nova_desc",
     "effects": [
@@ -276,7 +276,7 @@
     "min_damage": 25,
     "max_damage": 55,
     "radius": 4,
-    "cooldown": 1.5,
+    "cooldown": 0.15,
     "name_id": "corpse_explosion_name",
     "desc_id": "corpse_explosion_desc",
     "effects": [
@@ -294,7 +294,7 @@
     "max_damage": 28,
     "range": 4,
     "angle": 360,
-    "cooldown": 0.5,
+    "cooldown": 0.1,
     "name_id": "blessed_hammer_name",
     "desc_id": "blessed_hammer_desc",
     "effects": [
@@ -309,7 +309,7 @@
     "id": 112,
     "type": "active",
     "heal": 40,
-    "cooldown": 3.0,
+    "cooldown": 0.3,
     "name_id": "prayer_name",
     "desc_id": "prayer_desc",
     "effects": [
@@ -327,7 +327,7 @@
     "max_damage": 18,
     "range": 3,
     "angle": 100,
-    "cooldown": 0.35,
+    "cooldown": 0.1,
     "name_id": "zeal_name",
     "desc_id": "zeal_desc",
     "effects": [
@@ -345,7 +345,7 @@
     "max_damage": 26,
     "range": 3,
     "angle": 360,
-    "cooldown": 0.3,
+    "cooldown": 0.1,
     "name_id": "whirlwind_name",
     "desc_id": "whirlwind_desc",
     "effects": [
@@ -364,7 +364,7 @@
     "min_damage": 30,
     "max_damage": 50,
     "radius": 3,
-    "cooldown": 4.0,
+    "cooldown": 0.4,
     "name_id": "leap_attack_name",
     "desc_id": "leap_attack_desc",
     "effects": [
@@ -390,7 +390,7 @@
     "max_damage": 24,
     "range": 3,
     "angle": 120,
-    "cooldown": 0.5,
+    "cooldown": 0.1,
     "name_id": "bash_name",
     "desc_id": "bash_desc",
     "effects": [
@@ -407,7 +407,7 @@
     "min_damage": 20,
     "max_damage": 45,
     "radius": 5,
-    "cooldown": 1.0,
+    "cooldown": 0.1,
     "name_id": "lightning_fury_name",
     "desc_id": "lightning_fury_desc",
     "effects": [
@@ -425,7 +425,7 @@
     "max_damage": 14,
     "range": 3,
     "angle": 60,
-    "cooldown": 0.25,
+    "cooldown": 0.1,
     "name_id": "jab_name",
     "desc_id": "jab_desc",
     "effects": [
@@ -444,7 +444,7 @@
     "range": 12,
     "radius": 3,
     "duration": 1,
-    "cooldown": 5.0,
+    "cooldown": 0.5,
     "name_id": "charge_name",
     "desc_id": "charge_desc",
     "effects": [
@@ -472,7 +472,7 @@
     "range": 3,
     "angle": 90,
     "knockback": 3,
-    "cooldown": 0.8,
+    "cooldown": 0.1,
     "name_id": "smite_name",
     "desc_id": "smite_desc",
     "effects": [
@@ -493,7 +493,7 @@
     "max_damage": 30,
     "range": 10,
     "angle": 15,
-    "cooldown": 0.5,
+    "cooldown": 0.1,
     "name_id": "holy_bolt_name",
     "desc_id": "holy_bolt_desc",
     "effects": [
@@ -510,7 +510,7 @@
     "min_damage": 55,
     "max_damage": 90,
     "radius": 5,
-    "cooldown": 4.0,
+    "cooldown": 0.4,
     "name_id": "fist_of_heavens_name",
     "desc_id": "fist_of_heavens_desc",
     "effects": [
@@ -529,7 +529,7 @@
     "range": 6,
     "angle": 360,
     "knockback": 4,
-    "cooldown": 3.0,
+    "cooldown": 0.3,
     "name_id": "war_cry_name",
     "desc_id": "war_cry_desc",
     "effects": [
@@ -550,7 +550,7 @@
     "max_damage": 20,
     "range": 3,
     "angle": 180,
-    "cooldown": 0.4,
+    "cooldown": 0.1,
     "name_id": "double_swing_name",
     "desc_id": "double_swing_desc",
     "effects": [
@@ -568,7 +568,7 @@
     "max_damage": 55,
     "range": 4,
     "angle": 120,
-    "cooldown": 1.2,
+    "cooldown": 0.12,
     "name_id": "berserk_name",
     "desc_id": "berserk_desc",
     "effects": [
@@ -586,7 +586,7 @@
     "max_damage": 20,
     "range": 12,
     "angle": 60,
-    "cooldown": 0.7,
+    "cooldown": 0.1,
     "name_id": "multiple_shot_name",
     "desc_id": "multiple_shot_desc",
     "effects": [
@@ -604,7 +604,7 @@
     "max_damage": 22,
     "range": 12,
     "angle": 25,
-    "cooldown": 0.3,
+    "cooldown": 0.1,
     "name_id": "strafe_name",
     "desc_id": "strafe_desc",
     "effects": [
@@ -622,7 +622,7 @@
     "max_damage": 70,
     "range": 4,
     "angle": 30,
-    "cooldown": 1.5,
+    "cooldown": 0.15,
     "name_id": "impale_name",
     "desc_id": "impale_desc",
     "effects": [
@@ -640,7 +640,7 @@
     "max_damage": 34,
     "range": 3,
     "angle": 60,
-    "cooldown": 0.6,
+    "cooldown": 0.1,
     "name_id": "charged_strike_name",
     "desc_id": "charged_strike_desc",
     "effects": [
@@ -656,7 +656,7 @@
     "type": "active",
     "range": 8,
     "duration": 1,
-    "cooldown": 4.0,
+    "cooldown": 0.4,
     "name_id": "vault_name",
     "desc_id": "vault_desc",
     "effects": [
@@ -679,7 +679,7 @@
     "max_damage": 45,
     "range": 12,
     "angle": 30,
-    "cooldown": 1.0,
+    "cooldown": 0.1,
     "name_id": "chain_lightning_name",
     "desc_id": "chain_lightning_desc",
     "effects": [
@@ -697,7 +697,7 @@
     "max_damage": 26,
     "range": 5,
     "angle": 360,
-    "cooldown": 1.5,
+    "cooldown": 0.15,
     "name_id": "frost_nova_name",
     "desc_id": "frost_nova_desc",
     "effects": [
@@ -714,7 +714,7 @@
     "min_damage": 24,
     "max_damage": 40,
     "radius": 3,
-    "cooldown": 1.0,
+    "cooldown": 0.1,
     "name_id": "glacial_spike_name",
     "desc_id": "glacial_spike_desc",
     "effects": [
@@ -732,7 +732,7 @@
     "max_damage": 12,
     "range": 4,
     "angle": 45,
-    "cooldown": 0.25,
+    "cooldown": 0.1,
     "name_id": "inferno_name",
     "desc_id": "inferno_desc",
     "effects": [
@@ -750,7 +750,7 @@
     "max_damage": 60,
     "range": 14,
     "angle": 12,
-    "cooldown": 0.4,
+    "cooldown": 0.1,
     "name_id": "lightning_name",
     "desc_id": "lightning_desc",
     "effects": [
@@ -768,7 +768,7 @@
     "max_damage": 16,
     "range": 8,
     "angle": 40,
-    "cooldown": 0.5,
+    "cooldown": 0.1,
     "name_id": "teeth_name",
     "desc_id": "teeth_desc",
     "effects": [
@@ -785,7 +785,7 @@
     "min_damage": 30,
     "max_damage": 50,
     "radius": 3,
-    "cooldown": 1.2,
+    "cooldown": 0.12,
     "name_id": "bone_spirit_name",
     "desc_id": "bone_spirit_desc",
     "effects": [
@@ -803,7 +803,7 @@
     "max_damage": 20,
     "range": 2,
     "angle": 60,
-    "cooldown": 0.4,
+    "cooldown": 0.1,
     "name_id": "poison_dagger_name",
     "desc_id": "poison_dagger_desc",
     "effects": [
@@ -820,7 +820,7 @@
     "min_damage": 28,
     "max_damage": 48,
     "radius": 4,
-    "cooldown": 1.0,
+    "cooldown": 0.1,
     "name_id": "tornado_name",
     "desc_id": "tornado_desc",
     "effects": [
@@ -837,7 +837,7 @@
     "min_damage": 20,
     "max_damage": 35,
     "radius": 5,
-    "cooldown": 1.5,
+    "cooldown": 0.15,
     "name_id": "firestorm_name",
     "desc_id": "firestorm_desc",
     "effects": [
@@ -854,7 +854,7 @@
     "min_damage": 70,
     "max_damage": 130,
     "radius": 8,
-    "cooldown": 8.0,
+    "cooldown": 0.8,
     "name_id": "armageddon_name",
     "desc_id": "armageddon_desc",
     "effects": [
@@ -873,7 +873,7 @@
     "range": 5,
     "angle": 90,
     "knockback": 5,
-    "cooldown": 2.5,
+    "cooldown": 0.25,
     "name_id": "shock_wave_name",
     "desc_id": "shock_wave_desc",
     "effects": [
@@ -894,7 +894,7 @@
     "max_damage": 15,
     "range": 2,
     "angle": 60,
-    "cooldown": 0.3,
+    "cooldown": 0.1,
     "name_id": "dragon_talon_name",
     "desc_id": "dragon_talon_desc",
     "effects": [
@@ -912,7 +912,7 @@
     "max_damage": 24,
     "range": 10,
     "angle": 15,
-    "cooldown": 0.4,
+    "cooldown": 0.1,
     "name_id": "blade_fury_name",
     "desc_id": "blade_fury_desc",
     "effects": [
@@ -930,7 +930,7 @@
     "max_damage": 48,
     "range": 5,
     "angle": 360,
-    "cooldown": 2.0,
+    "cooldown": 0.2,
     "name_id": "phoenix_strike_name",
     "desc_id": "phoenix_strike_desc",
     "effects": [
@@ -947,7 +947,7 @@
     "min_damage": 30,
     "max_damage": 50,
     "radius": 3,
-    "cooldown": 4.0,
+    "cooldown": 0.4,
     "name_id": "dragon_flight_name",
     "desc_id": "dragon_flight_desc",
     "effects": [
