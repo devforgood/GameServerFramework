@@ -496,7 +496,7 @@ TEST_F(CheatCommandTest, ListFindsDataByKindAndFilter)
 }
 
 //---------------------------------------------------------------------------------------
-// goto 는 맵 하나로는 검증할 수 없다. 이동은 "이전 맵에서 빼고 → 목적지 맵에 캐릭터를 새로
+// map 은 맵 하나로는 검증할 수 없다. 이동은 "이전 맵에서 빼고 → 목적지 맵에 캐릭터를 새로
 // 만들고 → 클라에 통보" 까지가 한 묶음(World::ForceMove)이라 월드가 있어야 한다.
 //---------------------------------------------------------------------------------------
 class CheatMapMoveTest : public ::testing::Test
@@ -524,7 +524,7 @@ protected:
 		world_.reset();
 	}
 
-	// 상시 맵 중 player_spawn 마커가 있는 것(= goto 의 도착 지점이 될 수 있는 맵).
+	// 상시 맵 중 player_spawn 마커가 있는 것(= map 의 기본 도착 지점이 될 수 있는 맵).
 	std::vector<Map*> MapsWithSpawn() const
 	{
 		std::vector<Map*> found;
@@ -538,7 +538,7 @@ protected:
 	}
 };
 
-TEST_F(CheatMapMoveTest, GotoMovesCharacterToAnotherMap)
+TEST_F(CheatMapMoveTest, MapMovesCharacterToAnotherMap)
 {
 	std::vector<Map*> maps = MapsWithSpawn();
 	ASSERT_GE(maps.size(), 2u) << "player_spawn 이 있는 상시 맵이 둘 이상 있어야 검증할 수 있다";
@@ -553,7 +553,7 @@ TEST_F(CheatMapMoveTest, GotoMovesCharacterToAnotherMap)
 
 	const int oldActorId = player->GetCharacter()->GetActorId();
 
-	const cheat::Result result = cheat::Execute(player.get(), "/goto " + std::to_string(to->GetMapId()));
+	const cheat::Result result = cheat::Execute(player.get(), "/map " + std::to_string(to->GetMapId()));
 	ASSERT_TRUE(result.handled);
 
 	auto character = player->GetCharacter();
@@ -565,7 +565,36 @@ TEST_F(CheatMapMoveTest, GotoMovesCharacterToAnotherMap)
 	EXPECT_NE(to->FindActor(character->GetActorId()), nullptr);
 }
 
-TEST_F(CheatMapMoveTest, GotoRejectsUnknownMapAndCurrentMap)
+// player_spawn 없이 게이트로만 들어오는 맵도 갈 수 있어야 한다(첫 게이트에 도착).
+TEST_F(CheatMapMoveTest, MapArrivesAtGateWhenMapHasNoPlayerSpawn)
+{
+	std::vector<Map*> maps = MapsWithSpawn();
+	ASSERT_FALSE(maps.empty());
+	Map* from = maps[0];
+
+	Map* to = nullptr;
+	for (Map* map : world_->GetMaps())
+	{
+		const gamedata::Map* data = map != nullptr ? map->GetMapData() : nullptr;
+		if (data != nullptr && data->spawn_points.player_spawn.empty() && !data->gates.empty())
+		{
+			to = map;
+			break;
+		}
+	}
+	ASSERT_NE(to, nullptr) << "player_spawn 없이 게이트만 있는 상시 맵이 데이터에 없다(Dark Forest, Field2 가 그렇다)";
+
+	auto player = std::make_shared<Player>();
+	const syncnet::Vec3 spawn = from->GetPlayerSpawnPos();
+	ASSERT_NE(from->OnAddAgent(player, syncnet::GameObjectType_Character, &spawn), nullptr);
+	from->Enter(player);
+
+	const cheat::Result result = cheat::Execute(player.get(), "/map " + std::to_string(to->GetMapId()));
+	ASSERT_NE(player->GetCharacter(), nullptr) << result.reply;
+	EXPECT_EQ(player->GetCharacter()->GetMap()->GetMapId(), to->GetMapId()) << result.reply;
+}
+
+TEST_F(CheatMapMoveTest, MapRejectsUnknownMapAndCurrentMap)
 {
 	std::vector<Map*> maps = MapsWithSpawn();
 	ASSERT_FALSE(maps.empty());
@@ -577,12 +606,12 @@ TEST_F(CheatMapMoveTest, GotoRejectsUnknownMapAndCurrentMap)
 	ASSERT_NE(from->OnAddAgent(player, syncnet::GameObjectType_Character, &spawn), nullptr);
 	from->Enter(player);
 
-	cheat::Execute(player.get(), "/goto 999999");
+	cheat::Execute(player.get(), "/map 999999");
 	EXPECT_EQ(player->GetCharacter()->GetMap()->GetMapId(), from->GetMapId());
 
 	// 지금 있는 맵으로 가라고 하면 캐릭터를 다시 만들지 않는다(할 일이 없다).
 	const int actorId = player->GetCharacter()->GetActorId();
-	cheat::Execute(player.get(), "/goto " + std::to_string(from->GetMapId()));
+	cheat::Execute(player.get(), "/map " + std::to_string(from->GetMapId()));
 	EXPECT_EQ(player->GetCharacter()->GetActorId(), actorId);
 }
 

@@ -125,7 +125,7 @@ Press **Enter** in the client to open the chat window. The line is sent as `sync
 | `gold <amount>` / `item <itemId> [count]` | Grants gold (negative to spend) and items. |
 | `skill <skillId>` / `allskill` | Learns one skill, or every player skill in `skill.json` (monster-only skills excluded). Learned skills load onto the character immediately. |
 | `quest <accept\|complete\|reset> <questId>` | Sets quest state, skipping the normal condition checks. |
-| `tp <x> [y] <z>` / `goto <mapId>` | Teleports within the current map, or moves to another map (coordinates are in client space). |
+| `tp <x> [y] <z>` / `map <mapId>` | Teleports within the current map, or moves to another map (coordinates are in client space). |
 | `where` / `list <kind> [filter]` | Shows the current map, position, health and level, or looks up ids in `monster`/`item`/`skill`/`map`/`quest` data. |
 | `help [command]` | Lists the commands, or shows the usage of one. |
 

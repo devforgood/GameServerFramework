@@ -528,49 +528,56 @@ namespace
 
 	// mapId 로 갈 수 있는 도착 지점(마커 id)을 찾는다. 맵 이동은 게이트와 같은 규칙으로
 	// 마커 id 하나를 따라가므로(World::ChangeMap), 맵의 player_spawn 을 목적지로 쓴다.
+	//
+	// player_spawn 이 없는 맵(Dark Forest, Field2 처럼 게이트로만 들어오는 맵)은 첫 게이트에
+	// 도착한다. 게이트로 넘어왔을 때와 같은 자리라 클라도 같은 흐름으로 받는다.
 	int FindMapArrivalMarker(int mapId)
 	{
 		const gamedata::Map* data = ResourceLoader::Instance().GetMap(mapId);
-		if (data == nullptr || data->spawn_points.player_spawn.empty())
+		if (data == nullptr)
 			return 0;
 
-		return data->spawn_points.player_spawn.front().id;
+		if (!data->spawn_points.player_spawn.empty())
+			return data->spawn_points.player_spawn.front().id;
+		if (!data->gates.empty())
+			return data->gates.front().id;
+		return 0;
 	}
 
-	cheat::Result Goto(Context& ctx)
+	cheat::Result MoveMap(Context& ctx)
 	{
 		long long mapId = 0;
 		if (!ctx.ArgInt(0, mapId))
-			return Reply("치트 goto: 맵 id 가 필요합니다. 예) /goto 2  ('/list map' 으로 확인)");
+			return Reply("치트 map: 맵 id 가 필요합니다. 예) /map 2  ('/list map' 으로 확인)");
 
 		if (ctx.character == nullptr || ctx.map == nullptr || ctx.player == nullptr)
-			return NeedCharacter("goto");
+			return NeedCharacter("map");
 
 		const gamedata::Map* destination = ResourceLoader::Instance().GetMap(static_cast<long>(mapId));
 		if (destination == nullptr)
-			return Reply("치트 goto: Map.json 에 맵 " + std::to_string(mapId) + " 이 없습니다.");
+			return Reply("치트 map: Map.json 에 맵 " + std::to_string(mapId) + " 이 없습니다.");
 
 		if (ctx.map->GetMapId() == static_cast<int>(mapId))
-			return Reply("치트 goto: 이미 " + destination->name + " 에 있습니다.");
+			return Reply("치트 map: 이미 " + destination->name + " 에 있습니다.");
 
 		const int targetId = FindMapArrivalMarker(static_cast<int>(mapId));
 		if (targetId == 0)
-			return Reply("치트 goto: " + destination->name + " 에 player_spawn 마커가 없어 도착 지점을 정할 수 없습니다.");
+			return Reply("치트 map: " + destination->name + " 에 player_spawn 도 게이트도 없어 도착 지점을 정할 수 없습니다.");
 
 		World* world = ctx.map->world();
 		if (world == nullptr)
-			return Reply("치트 goto: 월드가 없어 이동할 수 없습니다.");
+			return Reply("치트 map: 월드가 없어 이동할 수 없습니다.");
 
 		// 이동은 캐릭터 재생성 + 클라 통보까지 한 묶음이다(World::ForceMove).
 		// 여기서 shared_ptr 을 다시 찾는 이유는 맵이 그 소유권을 들고 있기 때문이다.
 		auto player = ctx.map->FindPlayer(ctx.player->GetPlayerId());
 		if (player == nullptr)
-			return Reply("치트 goto: 맵에서 플레이어를 찾지 못했습니다.");
+			return Reply("치트 map: 맵에서 플레이어를 찾지 못했습니다.");
 
 		if (!world->ForceMove(player, targetId))
-			return Reply("치트 goto: " + destination->name + " 으로 이동하지 못했습니다(로그를 확인하세요).");
+			return Reply("치트 map: " + destination->name + " 으로 이동하지 못했습니다(로그를 확인하세요).");
 
-		return Reply("치트 goto: " + destination->name + "(" + std::to_string(mapId) + ") 으로 이동했습니다.");
+		return Reply("치트 map: " + destination->name + "(" + std::to_string(mapId) + ") 으로 이동했습니다.");
 	}
 
 	cheat::Result Where(Context& ctx)
@@ -716,7 +723,7 @@ namespace
 		{ { "allskill","",                             "플레이어가 쓸 수 있는 모든 스킬을 습득한다",   ""        }, &AllSkill },
 		{ { "quest",   "<accept|complete|reset> <questId>", "퀘스트 상태를 직접 세운다",               "quest"   }, &QuestCheat },
 		{ { "tp",      "<x> [y] <z>",                  "같은 맵 안에서 좌표로 순간이동한다",           ""        }, &Teleport },
-		{ { "goto",    "<mapId>",                      "다른 맵으로 이동한다",                         "map"     }, &Goto },
+		{ { "map",     "<mapId>",                      "다른 맵으로 이동한다",                         "map"     }, &MoveMap },
 		{ { "where",   "",                             "지금 맵/좌표/체력/레벨을 보여 준다",           ""        }, &Where },
 		{ { "list",    "<monster|item|skill|map|quest> [검색어]", "데이터 id 를 찾아본다",              ""        }, &List },
 	};

@@ -125,7 +125,7 @@ dotnet run --project Chat\Chat.csproj
 | `gold <amount>` / `item <itemId> [count]` | 골드(음수면 차감)와 아이템을 지급합니다. |
 | `skill <skillId>` / `allskill` | 스킬 하나 또는 `skill.json` 의 플레이어 스킬(몬스터 전용 제외) 전부를 습득합니다. 습득한 스킬은 그 자리에서 캐릭터에 실려 바로 시전할 수 있습니다. |
 | `quest <accept\|complete\|reset> <questId>` | 조건 검사를 건너뛰고 퀘스트 상태를 세웁니다. |
-| `tp <x> [y] <z>` / `goto <mapId>` | 같은 맵 안에서 좌표로 순간이동하거나 다른 맵으로 이동합니다(좌표는 클라 좌표계). |
+| `tp <x> [y] <z>` / `map <mapId>` | 같은 맵 안에서 좌표로 순간이동하거나 다른 맵으로 이동합니다(좌표는 클라 좌표계). |
 | `where` / `list <종류> [검색어]` | 지금 맵·좌표·체력·레벨을 보거나, `monster`/`item`/`skill`/`map`/`quest` 데이터에서 id 를 찾습니다. |
 | `help [명령]` | 명령 목록 또는 한 명령의 사용법을 보여 줍니다. |
 
