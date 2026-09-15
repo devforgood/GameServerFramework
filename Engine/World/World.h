@@ -175,6 +175,11 @@ public:
 	void join(std::shared_ptr<Player> player);
 	void leave(std::shared_ptr<Player> player);
 
+	// 로그인으로 스폰 맵이 정해진 플레이어를 그 맵의 브로드캐스트 목록으로 옮기고 전체 상태를 보낸다.
+	// 접속 시 join 은 스폰 맵을 모르는 채 기본 맵에 등록하므로, 이게 없으면 다른 맵으로 로그인한
+	// 클라가 기본 맵 액터를 받아 스폰 맵 액터와 id 가 뒤섞인다.
+	void EnterSpawnMap(std::shared_ptr<Player> player);
+
 	// 세션 끊김 처리. 캐릭터가 맵에 있으면 즉시 제거하지 않고 유예 시간 동안 캐릭터를
 	// 유지(핸드오버 대기, 키=플레이어 uuid)한다. 그 외에는 즉시 정리한다.
 	void BeginDisconnect(std::shared_ptr<Player> player);

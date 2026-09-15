@@ -164,6 +164,8 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 	if (player_->GetCharacter() != nullptr)
 	{
 		LOG.warn("AddAgent 거부: 플레이어 {} 는 이미 캐릭터를 가지고 있다", player_->GetPlayerId());
+		// 기존 캐릭터 id 를 실어 보낸다. actor id 는 0 부터라, 재접속 유예 중이던 캐릭터가 0 번이면
+		// 로그인 응답(actorId 0 = 신규)으로는 재접속을 알릴 수 없어 클라가 여기로 온다.
 		player_->Send(
 			syncnet::CreateAddAgent
 			, syncnet::GameMessages::GameMessages_AddAgent
@@ -171,7 +173,7 @@ void PlayerController::handle(const syncnet::AddAgent* msg)
 			, syncnet::StatusCode::StatusCode_AlreadyExists
 			, syncnet::GameObjectType::GameObjectType_Character
 			, msg->pos()
-			, 0
+			, player_->GetCharacter()->GetActorId()
 		);
 		return;
 	}
@@ -518,6 +520,10 @@ void PlayerController::SendLoginSuccess(const std::string& userId, int messageId
 		, uuid.c_str()
 		, nullptr /* authToken: 응답에는 담지 않는다 */
 	);
+
+	// 응답 뒤에 스폰 맵 상태를 보낸다. 클라는 응답을 받는 순간 이전에 받은 액터(접속 때
+	// 등록된 기본 맵 것)를 버리므로, 순서가 바뀌면 방금 보낸 상태까지 지워진다.
+	world_->EnterSpawnMap(player_);
 }
 
 void PlayerController::handle(const syncnet::UseSkill* msg)

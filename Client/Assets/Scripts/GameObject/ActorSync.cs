@@ -30,6 +30,18 @@ public class ActorSync
         locallyAnimated.Clear();
     }
 
+    /// <summary>
+    /// 씬에 남아 있는 액터 오브젝트까지 모두 파괴한다. 로그인 응답을 받을 때 쓴다 —
+    /// 그 전에 받은 액터는 접속 때 등록된 기본 맵 것이라, 다른 맵으로 로그인하면 id 가 겹친다.
+    /// </summary>
+    public void DestroyAll()
+    {
+        foreach (var gameObject in Objects.Values)
+            if (gameObject != null)
+                Object.Destroy(gameObject);
+        Clear();
+    }
+
     /// <summary>클라 연출이 이 액터의 transform 을 소유하는 구간의 시작/끝.</summary>
     public void BeginLocalAnimation(int actorId) { locallyAnimated.Add(actorId); }
     public void EndLocalAnimation(int actorId) { locallyAnimated.Remove(actorId); }
@@ -46,7 +58,20 @@ public class ActorSync
             GameObject gameObject = null;
             Actor actor = null;
 
-            if (!Objects.TryGetValue(actorId, out gameObject))
+            // 서버 actor id 는 내비 에이전트 슬롯 번호라 액터가 사라지면 재사용된다.
+            // 같은 id 로 다른 종류가 오면 옛 오브젝트를 버리고 새로 만든다 — 그대로 쓰면
+            // 내 캐릭터가 몬스터 모델로 움직인다.
+            if (Objects.TryGetValue(actorId, out gameObject) && !MatchesType(gameObject, updatedActor.GameObjectType))
+            {
+                Debug.LogWarning($"Actor {actorId} changed type to {updatedActor.GameObjectType}, recreating");
+                Objects.Remove(actorId);
+                locallyAnimated.Remove(actorId);
+                if (gameObject != null)
+                    Object.Destroy(gameObject);
+                gameObject = null;
+            }
+
+            if (gameObject == null)
             {
                 if (updatedActor.Pos.HasValue)
                     pos = new Vector3(updatedActor.Pos.Value.X, updatedActor.Pos.Value.Y, updatedActor.Pos.Value.Z);
@@ -133,6 +158,20 @@ public class ActorSync
             {
 
             }
+        }
+    }
+
+    /// <summary>이미 있는 오브젝트가 서버가 말한 종류와 같은가. 파괴된 참조는 다른 것으로 본다.</summary>
+    private static bool MatchesType(GameObject gameObject, GameObjectType type)
+    {
+        if (gameObject == null)
+            return false;
+
+        switch (type)
+        {
+            case GameObjectType.Character: return gameObject.GetComponent<Character>() != null;
+            case GameObjectType.Monster: return gameObject.GetComponent<Monster>() != null;
+            default: return true; // 클라가 그리지 않는 종류는 판단하지 않는다
         }
     }
 

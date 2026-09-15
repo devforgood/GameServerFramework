@@ -25,6 +25,7 @@ public class LoginController
     private readonly MapTransition mapTransition;
     private readonly Action<int> setPlayerActorId;
     private readonly Action<Vector3> spawnCharacter;
+    private readonly Action discardActors;
 
     private string reconnectToken = "";
 
@@ -38,12 +39,13 @@ public class LoginController
     public Vector3 SpawnPos { get; private set; } = Vector3.zero;
 
     public LoginController(ServerConnection connection, MapTransition mapTransition,
-        Action<int> setPlayerActorId, Action<Vector3> spawnCharacter)
+        Action<int> setPlayerActorId, Action<Vector3> spawnCharacter, Action discardActors)
     {
         this.connection = connection;
         this.mapTransition = mapTransition;
         this.setPlayerActorId = setPlayerActorId;
         this.spawnCharacter = spawnCharacter;
+        this.discardActors = discardActors;
     }
 
     /// <summary>재접속 토큰을 영속 저장소에서 복원한다(Session.Awake 시점).</summary>
@@ -76,6 +78,12 @@ public class LoginController
                 Debug.Log("Login Fail");
                 return;
             }
+
+            // 접속 직후 서버는 스폰 맵을 모르는 채 기본 맵에 등록해 그 맵 액터를 보낸다.
+            // 로그인 맵이 다르면 그 액터들이 로그인 맵 액터와 id 가 겹쳐, 내 캐릭터 id 에
+            // 기본 맵 몬스터 오브젝트가 붙는다. 서버가 응답 직후 로그인 맵 상태를 새로 보내므로
+            // 여기서 전부 버린다.
+            discardActors();
 
             MapId = login.MapId;
             if (login.Pos.HasValue)

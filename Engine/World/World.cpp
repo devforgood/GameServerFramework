@@ -477,9 +477,36 @@ void World::leave(std::shared_ptr<Player> player)
 	}
 	else if (!mapList_.empty())
 	{
-		// 빙의된 캐릭터/맵이 없으면(로그인 직후 등) 기본 맵의 브로드캐스트 목록에서만 제거.
-		mapList_.begin()->get()->leave(player);
+		// 빙의된 캐릭터/맵이 없으면(로그인 직후 등) 브로드캐스트 목록에서만 제거한다.
+		// 로그인했다면 EnterSpawnMap 이 스폰 맵으로 옮겨 두었으니 그쪽을 먼저 본다.
+		Map* spawnMap = FindMap(player->GetSpawnMapId());
+		if (spawnMap != nullptr && spawnMap->FindPlayer(player->GetPlayerId()) != nullptr)
+			spawnMap->leave(player);
+		else
+			mapList_.begin()->get()->leave(player);
 	}
+}
+
+void World::EnterSpawnMap(std::shared_ptr<Player> player)
+{
+	if (player == nullptr || mapList_.empty())
+		return;
+
+	Map* primary = GetPrimaryMap();
+	Map* spawnMap = FindMap(player->GetSpawnMapId());
+	if (spawnMap == nullptr)
+		spawnMap = primary;
+
+	const long playerId = player->GetPlayerId();
+
+	if (spawnMap != primary && primary->FindPlayer(playerId) != nullptr)
+		primary->leave(player);
+
+	// 스폰 맵이 기본 맵이어도 전체 상태를 다시 보낸다. 클라는 로그인 응답을 받으면
+	// 그 전에 받은 액터를 모두 버리므로(어느 맵 것인지 알 수 없다) 여기서 새로 채워 줘야 한다.
+	if (spawnMap->FindPlayer(playerId) == nullptr)
+		spawnMap->Enter(player);
+	spawnMap->SendStateTo(player);
 }
 
 int World::SaveAllPlayers()
@@ -778,14 +805,20 @@ std::shared_ptr<Actor> World::OnAddAgent(std::shared_ptr<Player> player, syncnet
 	auto actor = map->OnAddAgent(player, type, pos);
 
 	// 스폰 맵이 기본 맵과 다르면 브로드캐스트 등록을 스폰 맵으로 옮긴다.
-	// (접속 시 World::join 이 기본 맵의 players_ 에 등록해 두었기 때문.)
+	// 보통은 로그인 응답 때 EnterSpawnMap 이 이미 옮겨 두었다. 그 경로를 거치지 않은
+	// 호출(도구·테스트)을 위해 남겨 두되, 이미 옮겼으면 중복 등록하지 않는다.
 	if (actor != nullptr
 		&& type == syncnet::GameObjectType::GameObjectType_Character
 		&& player != nullptr
 		&& map != GetPrimaryMap())
 	{
-		GetPrimaryMap()->leave(player);
-		map->Enter(player);
+		const long playerId = player->GetPlayerId();
+		if (map->FindPlayer(playerId) == nullptr)
+		{
+			if (GetPrimaryMap()->FindPlayer(playerId) != nullptr)
+				GetPrimaryMap()->leave(player);
+			map->Enter(player);
+		}
 		map->SendStateTo(player);
 	}
 

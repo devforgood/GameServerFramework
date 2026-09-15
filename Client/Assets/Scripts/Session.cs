@@ -36,8 +36,12 @@ public class Session : MonoBehaviour
     /// <summary>NPC 에게 말을 거는 키. 근처에 NPC 가 없으면 아무 일도 하지 않는다.</summary>
     public KeyCode interactKey = KeyCode.F;
 
-    /// <summary>내 캐릭터의 actor id. 로그인/스폰/게이트 이동 응답으로 갱신된다.</summary>
-    public int player_actor_id = 0;
+    /// <summary>
+    /// 내 캐릭터의 actor id. 로그인/스폰/게이트 이동 응답으로 갱신된다.
+    /// 서버 actor id 는 0 부터 시작하므로(맵의 첫 몬스터가 0) "아직 없음"은 -1 이다.
+    /// </summary>
+    public const int NoActor = -1;
+    public int player_actor_id = NoActor;
 
     /// <summary>
     /// 내 레벨과 누적 경험치. 서버가 로그인 직후와 레벨이 오를 때 알려 준다(PlayerStatSync).
@@ -104,7 +108,8 @@ public class Session : MonoBehaviour
         chat = new ChatWindow(SendChat, cheats, RequestCheatList);
         login = new LoginController(connection, mapTransition,
             actorId => player_actor_id = actorId,
-            pos => AddAgent(0, pos, GameObjectType.Character));
+            pos => AddAgent(0, pos, GameObjectType.Character),
+            () => { actors.DestroyAll(); player_actor_id = NoActor; });
 
         // 연결되면(최초/재접속 공통) 자동 로그인한다.
         connection.Connected += login.Login;
@@ -340,13 +345,31 @@ public class Session : MonoBehaviour
                 return;
             }
 
+            var body = response.Msg<AddAgent>();
+            if (!body.HasValue)
+            {
+                Debug.Log("AddAgent Fail: empty response");
+                return;
+            }
+            AddAgent addAgent = body.Value;
+
+            // 이미 캐릭터가 있다는 거절: 재접속 유예 중이던 캐릭터의 id 가 0 이면 로그인 응답의
+            // actorId(0 = 신규 로그인)로는 구분되지 않아 여기로 온다. 서버가 실어 준 기존 id 를 채택한다.
+            if (response.Result == StatusCode.AlreadyExists
+                && addAgent.GameObjectType == GameObjectType.Character
+                && addAgent.ActorId >= 0)
+            {
+                player_actor_id = addAgent.ActorId;
+                Debug.Log($"AddAgent: character already exists, adopt actorId {player_actor_id}");
+                return;
+            }
+
             if (response.Result != StatusCode.Success)
             {
                 Debug.Log("AddAgent Fail");
                 return;
             }
 
-            AddAgent addAgent = response.Msg<AddAgent>().Value;
             Debug.Log("AddAgent Success");
             if (addAgent.GameObjectType == (int)GameObjectType.Character)
             {
