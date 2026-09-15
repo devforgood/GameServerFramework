@@ -154,6 +154,8 @@ Character2 / Monster      루트: CapsuleCollider + Character/Monster 스크립�
 | 루프마다 몸이 뒤로 튐 | 제자리가 아닌 클립(루트가 전진) | Humanoid 는 `lockRootPositionXZ`. Generic 은 `MonsterAnimationTool` 이 루트 이동량을 경고하니 InPlace 클립으로 교체 |
 | 옆으로 미끄러지며 걸음 | 이동 방향으로 회전하지 않음 | `Actor.LateUpdate` 가 이동 방향으로 회전. 모델이 -Z 를 보면 실측 로그의 속도 부호가 음수로 나옴 |
 | 체력바가 몸에 묻힘 | 고정 높이 | 콜라이더 높이 기준으로 배치(현재 적용됨) |
+| 캐릭터·몬스터가 바닥에서 약 0.2 m 떠 있음 | **모델 크기 문제가 아니라 navmesh 높이.** Recast 가 바닥을 복셀로 쌓으며 높이를 한 칸(`cellHeight` 0.2) 올림해 navmesh 표면이 바닥보다 높다. 서버 y 가 평지에서 전부 0.2(실측 3000점 중 앙값 0.2) | `Actor.GroundedPosition`/`SnapToGround` 가 그릴 때만 바닥 콜라이더 높이에 붙인다. 차이가 −0.25~+0.35 m 를 벗어나면(다른 면을 맞힘) 서버 y 유지. 점프 착지점도 같은 기준 |
+| 경사로에서 캐릭터가 파묻힘/뜸 | 옛 `TerrainBuilder` 경사로에 콜라이더가 없어 레이가 밑의 평지에 닿음 | 배경 도구가 경사로에 MeshCollider 를 채운다. 가파른 경사로 일부(약 4%)는 navmesh 세부 높이 오차로 서버 y 를 그대로 쓴다 |
 | 렌더 PNG 에서 다리가 잘림 | 카메라 종횡비 미설정 | `cam.aspect` 를 명시하고 렌더러 경계로 프레이밍 |
 
 ### 직접 휴머노이드 클립을 만들어야 할 때

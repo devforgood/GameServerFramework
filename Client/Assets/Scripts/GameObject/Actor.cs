@@ -146,7 +146,7 @@ public class Actor : MonoBehaviour
         if (first || jumped)
         {
             prevPos = next;
-            transform.position = next;
+            transform.position = GroundedPosition(next);
         }
         else
         {
@@ -166,6 +166,74 @@ public class Actor : MonoBehaviour
 
         float t = posInterval > 0f ? (Time.time - posReceivedTime) / posInterval : 1f;
         return Vector3.Lerp(prevPos, pos, Mathf.Clamp01(t));
+    }
+
+    // ── 바닥 붙이기 ──
+    // 서버 좌표의 y 는 navmesh 표면 높이다. Recast 는 바닥을 복셀로 쌓으며 높이를 최소 한 칸
+    // (cellHeight, 지금 0.2 m) 올림하므로 평지에서도 navmesh 가 실제 바닥보다 떠 있다(서버 로그의 y 가
+    // 전부 0.2 인 이유). 경사로에서는 detail mesh 오차까지 더해진다. 그 y 를 그대로 쓰면 캐릭터가 뜬다.
+    //
+    // 그래서 그릴 때만 서버 위치 근처의 실제 바닥 콜라이더 높이에 발을 붙인다. 이동 판정은 여전히
+    // 서버 navmesh 가 하므로 x/z 는 건드리지 않는다. 바닥 콜라이더가 없는 씬에서는 서버 y 를 그대로 쓴다.
+    private const float GroundProbeUp = 1f;
+    private const float GroundProbeDown = 1f;
+
+    // 바닥으로 인정하는 navmesh 와의 차이. navmesh 는 바닥보다 최대 한 칸(0.2) 남짓 높다.
+    // 그보다 크게 벌어지면 서 있는 면이 아니라 그 밑의 다른 면을 맞힌 것이다 — Starting Village 의
+    // 경사로는 콜라이더가 없어서 레이가 밑의 평지에 닿는데, 거기 붙이면 캐릭터가 경사로에 파묻힌다
+    // (실측: 평지 차이 0.2, 경사로에서 밑바닥까지 0.3~1.0). 그럴 때는 서버 y 를 그대로 쓴다.
+    private const float MaxNavMeshAboveGround = 0.35f;
+    private const float MaxNavMeshBelowGround = 0.25f;
+    private static readonly RaycastHit[] groundHits = new RaycastHit[8];
+
+    // 멈춰 있을 때까지 매 프레임 레이를 쏘지 않도록 마지막으로 잰 자리와 결과를 기억한다.
+    private Vector3 lastGroundProbe = new Vector3(float.NaN, 0f, 0f);
+    private float lastGroundY;
+
+    public Vector3 GroundedPosition(Vector3 serverPos)
+    {
+        if (!(Mathf.Abs(serverPos.x - lastGroundProbe.x) < 0.01f &&
+              Mathf.Abs(serverPos.z - lastGroundProbe.z) < 0.01f &&
+              Mathf.Abs(serverPos.y - lastGroundProbe.y) < 0.01f))
+        {
+            lastGroundProbe = serverPos;
+            lastGroundY = SnapToGround(serverPos).y;
+        }
+        return new Vector3(serverPos.x, lastGroundY, serverPos.z);
+    }
+
+    /// <summary>서버 위치 바로 아래(또는 조금 위)의 바닥 높이로 y 를 맞춘다. 못 찾으면 그대로 돌려준다.</summary>
+    public static Vector3 SnapToGround(Vector3 serverPos)
+    {
+        int count = Physics.RaycastNonAlloc(serverPos + Vector3.up * GroundProbeUp, Vector3.down, groundHits,
+            GroundProbeUp + GroundProbeDown, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+
+        bool found = false;
+        float groundY = serverPos.y;
+        float bestGap = float.MaxValue;
+        for (int i = 0; i < count; i++)
+        {
+            RaycastHit hit = groundHits[i];
+            if (hit.normal.y < 0.5f)
+                continue; // 벽·장애물 옆면
+            if (hit.collider.GetComponentInParent<Actor>() != null)
+                continue; // 겹쳐 선 다른 캐릭터·몬스터 머리 위에 올라서면 안 된다
+
+            float above = serverPos.y - hit.point.y;
+            if (above > MaxNavMeshAboveGround || above < -MaxNavMeshBelowGround)
+                continue;
+
+            // 범위 안에 면이 둘이면(겹친 바닥) 서버 높이에 가까운 쪽이 서 있는 곳이다.
+            float gap = Mathf.Abs(above);
+            if (gap < bestGap)
+            {
+                bestGap = gap;
+                groundY = hit.point.y;
+                found = true;
+            }
+        }
+
+        return found ? new Vector3(serverPos.x, groundY, serverPos.z) : serverPos;
     }
 
     public void TakeDamage(int damage)

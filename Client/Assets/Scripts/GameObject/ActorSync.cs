@@ -152,7 +152,8 @@ public class ActorSync
                 if (locallyAnimated.Contains(actor.actor_id))
                     continue;
 
-                gameObject.transform.position = actor.InterpolatedPosition();
+                // 서버 y 는 navmesh 높이라 바닥보다 떠 있다. 그릴 때만 실제 바닥에 붙인다(Actor.GroundedPosition).
+                gameObject.transform.position = actor.GroundedPosition(actor.InterpolatedPosition());
             }
             catch
             {

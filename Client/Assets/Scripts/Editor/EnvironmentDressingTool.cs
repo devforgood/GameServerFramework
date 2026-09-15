@@ -586,6 +586,15 @@ public static class EnvironmentDressingTool
                 r.enabled = false;
         }
 
+        // 옛 TerrainBuilder 로 만든 씬은 경사로에 콜라이더가 없다(지금 TerrainBuilder 는 붙인다).
+        // 없으면 클릭이 경사로 밑 평지에 맞고, 캐릭터 바닥 붙이기(Actor.SnapToGround)도 경사로를 못 찾는다.
+        // 게임 지오메트리 쪽 콜라이더라 NavMesh 입력(MeshFilter)은 그대로다.
+        foreach (var ramp in layout.ramps)
+        {
+            if (ramp.GetComponent<Collider>() == null)
+                ramp.gameObject.AddComponent<MeshCollider>().sharedMesh = ramp.sharedMesh;
+        }
+
         // 지난 굽기 결과를 반투명 폴리곤으로 덮어 두던 시각화. 배경을 가린다.
         foreach (var viz in Object.FindObjectsByType<RecastNavigation.Unity.NavMeshVisualizer>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             viz.gameObject.SetActive(false);

@@ -178,6 +178,10 @@ public class SkillController
 
         var actor = gameObject.GetComponent<Actor>();
         actor.input_locked = true; // 서버 통보 전까지의 선반영(시전 차단용). 위치 동기화와는 무관하다.
+
+        // 착지점은 서버 좌표(navmesh 높이)라 바닥보다 떠 있다. 동기화와 같은 기준으로 바닥에 붙여야
+        // 착지 순간 뜬 채로 멈췄다가 다음 프레임에 툭 떨어지지 않는다.
+        end = Actor.SnapToGround(end);
         actors.BeginLocalAnimation(actor.actor_id);
 
         try
