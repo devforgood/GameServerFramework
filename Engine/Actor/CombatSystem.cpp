@@ -38,7 +38,7 @@ int ComputeDamage(double rolledDamage, int attackerAttack, int targetDefense)
 	return result > 0 ? result : 1; // 아무리 단단해도 최소 1 은 들어간다
 }
 
-void ApplyDamage(Actor* attacker, IGridActor* target, double damage)
+void ApplyDamage(Actor* attacker, IGridActor* target, double damage, AttackBonus bonus)
 {
 	if (attacker == nullptr || target == nullptr)
 		return;
@@ -48,14 +48,15 @@ void ApplyDamage(Actor* attacker, IGridActor* target, double damage)
 	if (target->IsInvincible())
 		return;
 
-	const int finalDamage = ComputeDamage(damage, attacker->GetAttack(), target->GetDefense());
+	const int attackPower = (bonus == AttackBonus::Include) ? attacker->GetAttack() : 0;
+	const int finalDamage = ComputeDamage(damage, attackPower, target->GetDefense());
 
 	// 사망 시 킬러를 추적할 수 있도록 마지막 공격자를 데미지보다 먼저 기록한다.
 	target->SetLastAttacker(attacker->GetActorId());
 	target->DecrementHealth(finalDamage);
 }
 
-int ApplyAoEDamage(Actor* attacker, const std::vector<IGridActor*>& targets, double damage)
+int ApplyAoEDamage(Actor* attacker, const std::vector<IGridActor*>& targets, double damage, AttackBonus bonus)
 {
 	int hitCount = 0;
 	for (IGridActor* target : targets)
@@ -63,7 +64,7 @@ int ApplyAoEDamage(Actor* attacker, const std::vector<IGridActor*>& targets, dou
 		if (target == nullptr || target == static_cast<IGridActor*>(attacker))
 			continue;
 
-		ApplyDamage(attacker, target, damage);
+		ApplyDamage(attacker, target, damage, bonus);
 		++hitCount;
 	}
 	return hitCount;

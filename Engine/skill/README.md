@@ -100,12 +100,19 @@ cd GameDataFlow && python GameDataFlow.py
 |------|------|------|-----------|
 | `damage` | 캐스터(부채꼴) | 목표 방향 range/angle 안에 데미지. 회전 판정 포함 | `min/max_damage`, `range`, `angle` |
 | `aoe_damage` | 목표 지점(원형) | 시전 지점 중심 반경에 데미지(메테오/블리자드) | `min/max_damage`, `radius`(없으면 `range`) |
-| `aura_damage` | 캐스터(원형) | 캐스터를 따라다니는 원형 데미지. 회전 없음(오라 pulse용) | `min/max_damage`, `radius` |
+| `aura_damage` | 캐스터(원형) | 캐스터를 따라다니는 원형 데미지. 회전 없음(오라 pulse용). **공격력 보정 없음**(아래) | `min/max_damage`, `radius` |
 | `heal` | 캐스터 | 자신 체력 회복 | `heal` |
 | `teleport` | 목표 지점 | 목표 지점으로 순간이동 | (targetPos) |
 | `dash` | 캐스터→목표 | 목표 방향으로 `range` 만큼(더 가까우면 목표까지) **전진**. 속도는 `range/duration` 고정이라 가까운 목표는 일찍 도착하고 **도착 즉시 Active 가 끝난다**. 도착 지점을 `state.targetPos` 에 되써서 `end` 효과가 착지 지점에 적용된다 | `range`, `duration` |
 | `knockback` | 캐스터(원형) | 반경 안의 대상을 캐스터 반대 방향으로 밀어냄(네비메시 스냅으로 벽 통과 없음) | `knockback`, `radius`(없으면 `range`) |
 | `input_lock` | 캐스터 | 입력 잠금(Active 종료 시 자동 해제) | — |
+
+> **오라 피해에는 공격력을 더하지 않는다**(`combat::AttackBonus::Exclude`). 데미지 공식은
+> `(굴림값 + 공격자 공격력) × 100/(100+방어력)` 인데, 시전도 쿨다운도 없이 0.5~2초마다 저절로
+> 터지는 패시브에 공격력을 통째로 더하면 레벨과 함께 폭주한다(레벨 20 공격력 130 × 초당 여러 번).
+> 실제로 `/allskill` 로 오라 3개를 가진 캐릭터가 가만히 서 있기만 해도 접근하는 몬스터가 전부
+> 녹아서, 몬스터 공격 모션조차 볼 수 없었다. 오라의 세기는 데이터의 `min/max_damage` 로만 잡는다.
+> 고정 테스트: `SkillSystemTest.AuraDamageIgnoresAttackPower`.
 
 > `dash` 는 효과가 목적지/속도만 정하고 실제 전진은 Active 동안 `Skill::Tick`(`skill_dash::Step`)이
 > 매 틱 처리한다. 위치는 네비 에이전트가 권위이므로 이동 중에도 그대로 동기화된다(순간이동 `teleport` 와 다른 점).

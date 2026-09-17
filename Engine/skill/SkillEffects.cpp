@@ -103,7 +103,8 @@ public:
 
 		float radius = static_cast<float>(data.radius > 0 ? data.radius : data.range);
 		auto targets = map->get_actors_in_radius(caster->GetVecter2X(), caster->GetVecter2Y(), radius);
-		combat::ApplyAoEDamage(caster, targets, damage);
+		// 오라는 공격력 보정 없이 데이터에 적힌 피해량만 넣는다(combat::AttackBonus 설명 참고).
+		combat::ApplyAoEDamage(caster, targets, damage, combat::AttackBonus::Exclude);
 
 		return CastResult::Success;
 	}

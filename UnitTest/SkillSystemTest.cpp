@@ -569,6 +569,35 @@ TEST_F(SkillSystemTest, PassiveAuraAutoPulsesDamageWithoutCasting)
 	EXPECT_EQ(victim->GetLastAttackerActorId(), caster->GetActorId());
 }
 
+// 오라 피해는 공격력을 타지 않는다.
+//
+// 데미지 공식은 (굴림값 + 공격자 공격력) 이라, 오라에도 그대로 적용하면 시전도 쿨다운도 없이
+// 0.5~2초마다 저절로 터지는 패시브가 레벨과 함께 폭주한다(레벨 20 공격력 130).
+// 실제로 치트로 전 스킬을 배운 캐릭터가 가만히 서 있기만 해도 접근하는 몬스터가 전부 녹았다.
+TEST_F(SkillSystemTest, AuraDamageIgnoresAttackPower)
+{
+	auto caster = SpawnCharacter();
+	auto victim = SpawnMonster(1.0f, 0.0f);
+	ASSERT_NE(caster, nullptr);
+	ASSERT_NE(victim, nullptr);
+
+	GrantSkill(caster, 200); // Holy Fire: 4~8 피해, 0.5초마다
+	const gamedata::Skill* aura = ResourceLoader::Instance().GetSkill(200);
+	ASSERT_NE(aura, nullptr);
+
+	// 공격력을 터무니없이 올린다. 보정이 들어간다면 한 방에 체력이 날아간다.
+	caster->SetCombatStats(1000, 1000, 0, false);
+	victim->SetCombatStats(100000, 0, 0, true);
+
+	const int before = victim->GetHealth();
+	caster->GetSkillSet().Update(caster.get(), 0.5f); // pulse 1회
+	const int dealt = before - victim->GetHealth();
+
+	EXPECT_GT(dealt, 0) << "오라가 아예 들어가지 않았습니다";
+	EXPECT_LE(dealt, aura->max_damage)
+		<< "오라 피해에 공격력이 더해졌습니다(데이터 최대 " << aura->max_damage << ")";
+}
+
 // 패시브(Prayer 오라): 보유만으로 pulse 마다 캐스터 체력을 회복한다.
 TEST_F(SkillSystemTest, PassiveAuraAutoPulsesHeal)
 {
