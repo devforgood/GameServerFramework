@@ -410,6 +410,9 @@ void monsterai::MonsterAISystem::RunDead(AIAgentComponent* agents)
 			agent.flags |= kDeadHandled;
 			agent.destroyAt = worldTime_ + kDestroyDelaySec;
 			agent.nextState = static_cast<uint8_t>(syncnet::AIState_Dead);
+			// 추격하던 이동을 여기서 끊는다. 안 그러면 시체가 소멸까지 계속 걸어온다
+			// (클라이언트는 사망 포즈로 굳으므로 굳은 자세로 미끄러져 보인다).
+			nav_->Stop(agent.actorId);
 			agent.owner->NotifyKilledBy(); // 킬한 플레이어에게 사망 이벤트 발행(최초 1회)
 			LOG.info("Monster dead");
 			continue;

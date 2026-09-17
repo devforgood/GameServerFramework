@@ -308,6 +308,9 @@ namespace monsterbt
 		TickResult Tick(Monster* monster)
 		{
 			monster->SetState(syncnet::AIState::AIState_Dead);
+			// 죽은 몬스터는 추격하던 경로를 그대로 이어 간다 — 멈추지 않으면 시체가 계속 걸어온다.
+			// 클라이언트는 사망 시 포즈를 정지시키므로 '굳은 자세로 미끄러지는' 모습이 된다.
+			monster->StopMoving();
 			monster->NotifyKilledBy(); // 킬한 플레이어에게 사망 이벤트 발행(최초 1회)
 			LOG.info("Monster dead");
 			return Success("dead state applied");

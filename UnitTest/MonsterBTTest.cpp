@@ -244,6 +244,50 @@ TEST_P(MonsterBTTest, SwitchesToDeadBranchWhenHealthDepleted)
 	EXPECT_EQ(monster->GetState(), syncnet::AIState_Dead);
 }
 
+// 죽은 몬스터는 그 자리에 멈춘다. 추격하던 이동을 끊지 않으면 시체가 소멸까지 계속 걸어오고,
+// 클라이언트는 사망 포즈로 굳으므로 "굳은 자세로 미끄러져 오는" 몬스터가 된다.
+TEST_P(MonsterBTTest, DeadMonsterStopsMoving)
+{
+	auto victim = SpawnCharacter();
+	ASSERT_NE(victim, nullptr);
+
+	// 공격 사거리(3m) 밖에서 죽어야 한다 — 공격 중이면 이미 멈춰 있어(Monster::Attack 이 Stop)
+	// 이 버그가 드러나지 않는다. 탐지 범위 안이면서 사거리 밖인 거리에서 시작한다.
+	auto monster = SpawnMonster(8.0f, 0.0f);
+	ASSERT_NE(monster, nullptr);
+
+	// 이 테스트는 실제로 움직여야 하므로 이동 시뮬레이션까지 돈다(UpdateActors 는 AI 만 틱한다).
+	auto tick = [this]()
+	{
+		map_->UpdateActors(kTickDt);
+		map_->UpdateMovement(kTickDt);
+		map_->UpdateSystems(kTickDt);
+	};
+
+	// 추격을 시작할 때까지 돌린다(탐지는 몇 틱에 한 번이라 여유를 둔다).
+	for (int i = 0; i < 60 && monster->GetState() != syncnet::AIState_Detect; ++i)
+		tick();
+	ASSERT_EQ(monster->GetState(), syncnet::AIState_Detect) << "몬스터가 추격을 시작하지 않았습니다";
+
+	const Vector3 beforeChase = monster->GetPosition();
+	for (int i = 0; i < 20; ++i)   // 여러 번 사고하며 추격 목표를 새로 잡게 둔다
+		tick();
+	const Vector3 chasing = monster->GetPosition();
+	ASSERT_GT((chasing - beforeChase).length(), 0.05f) << "추격 중인데 움직이지 않습니다";
+
+	ASSERT_EQ(monster->GetState(), syncnet::AIState_Detect) << "추격 중에 죽어야 하는 시나리오입니다";
+	monster->SetHealth(0);
+	tick();
+	ASSERT_EQ(monster->GetState(), syncnet::AIState_Dead);
+
+	const Vector3 atDeath = monster->GetPosition();
+	for (int i = 0; i < 30; ++i)   // 시체가 소멸되기 전 1초 동안 움직이는지 본다
+		tick();
+
+	EXPECT_LT((monster->GetPosition() - atDeath).length(), 0.05f)
+		<< "죽은 뒤에도 계속 이동했습니다(시체가 걸어옵니다)";
+}
+
 //---------------------------------------------------------------------------------------
 // 성향(monster.json 의 "ai")도 백엔드를 가리지 않는다.
 //

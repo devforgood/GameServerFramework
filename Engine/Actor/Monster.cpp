@@ -130,7 +130,7 @@ int Monster::Attack()
 
 int Monster::Attack(int skillId)
 {
-	map_->GetNavMap()->Stop(GetActorId());
+	StopMoving();
 
 	// 추격 대상 방향으로 스킬을 시전한다 — 플레이어와 동일한 스킬 파이프라인.
 	// 쿨다운 등으로 거부되면 이번 틱은 공격하지 않는다(BT 가 다음 틱에 재시도).
@@ -145,6 +145,12 @@ int Monster::Attack(int skillId)
 	}
 	return 0;
 }
+void Monster::StopMoving()
+{
+	if (map_ != nullptr)
+		map_->GetNavMap()->Stop(GetActorId());
+}
+
 int Monster::Resume()
 {
 	map_->GetNavMap()->Resume(GetActorId());
