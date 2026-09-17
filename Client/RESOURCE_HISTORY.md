@@ -79,10 +79,12 @@ Character2 / Monster      루트: CapsuleCollider + Character/Monster 스크립�
 1. `Session.Update` 안의 `ActorSync.Tick` 이 서버 좌표를 보간해 `transform.position` 에 넣습니다.
 2. `Actor.LateUpdate` 가 프레임 사이 이동량으로 속도를 재서 다음을 합니다.
    - `Speed` 파라미터에 넣습니다. 블렌드 트리가 대기·걷기·달리기를 섞습니다.
-   - 속도가 최고 클립 속도(`locomotionTopSpeed`)를 넘으면 `animator.speed` 를 올려 발 미끄러짐을 메웁니다. 상한은 1.8배입니다.
+   - 속도가 최고 클립 속도(`locomotionTopSpeed`)를 넘으면 `animator.speed` 를 올려 발 미끄러짐을 메웁니다. 상한은 2배이고,
+     이동이 아닌 동작(몬스터 공격)에는 걸지 않습니다(`ScalePlaybackWithSpeed`).
    - 이동 방향으로 몸을 돌립니다. 서버가 방향을 보내지 않기 때문입니다.
 3. `Monster.UpdateState` 는 서버 상태가 `AIState.Attack` 인 동안 `Attack` bool 을 켭니다. 서버는 사거리 안 교전 내내 Attack 상태이므로 공격 클립을 반복합니다.
 4. 사망 시에는 렌더러를 칠하고(캐릭터 회색, 몬스터 빨강), 몬스터는 Animator 를 꺼서 포즈를 멈춥니다. 사망 모션은 없습니다.
+   actor id 는 재사용되므로, 그 오브젝트에 살아 있는 상태가 다시 오면 `Monster` 가 색·Animator·체력바를 되돌립니다.
 
 `locomotionTopSpeed` 는 `[HideInInspector]` 필드이고 도구가 컨트롤러의 블렌드 문턱값을 읽어 프리팹에 기록합니다. 손으로 고치지 마세요.
 
@@ -107,7 +109,7 @@ Character2 / Monster      루트: CapsuleCollider + Character/Monster 스크립�
 ### 애니메이션 팩 고르는 기준
 
 - **InPlace(제자리) 클립**이거나 루트 이동을 구워 없앨 수 있어야 합니다. 위치는 서버가 줍니다.
-- **보행 속도가 서버 속도에 가까울수록** 좋습니다. 차이가 1.8배를 넘으면 발이 미끄러집니다.
+- **보행 속도가 서버 속도에 가까울수록** 좋습니다. 차이가 2배를 넘으면 발이 미끄러집니다.
 - **전투 자세(몸을 숙인 One Hand Up 등)가 아닌 기본 이동**을 고릅니다.
 - 판단이 서지 않으면 **팩 원본 모델에 같은 클립을 걸어 비교**하세요. 가장 빠른 판별법입니다.
 
@@ -126,6 +128,20 @@ Character2 / Monster      루트: CapsuleCollider + Character/Monster 스크립�
 | 5 | **Warrior Pack Bundle 2 FREE**(ExplosiveLLC) 의 Knight 세트로 교체 | 채택. 데모 스크립트 컴파일 에러 2건 수정 |
 | 6 | 발 미끄러짐 대응 | 클립 보행 속도 실측을 블렌드 문턱값으로 사용하고, `Actor` 가 재생 속도로 보정 |
 | 7 | Knight 도 기울어 보여 리타게팅 오류를 의심 | 원본 Knight 모델 29.2도, 우리 캐릭터 23.9도로 **리타게팅은 정상**. 측면 렌더의 착시였음 |
+
+### 2026-09-18 · 몬스터 애니메이션 점검
+
+"추격·공격 애니메이션이 이상하다"를 Play Mode 테스트(`-runTests -testPlatform PlayMode`)로 재현해 가며 확인했다.
+에디터에서 클립을 직접 샘플링하는 것만으로는 런타임 문제를 못 잡는다 — 실제 게임 루프에서 재야 한다.
+
+| 확인한 것 | 결과 |
+|---|---|
+| 클립·컨트롤러·전이 | 정상. 공격 클립 1.50초(서버 쿨타임 1.5초와 같음), 루트 이동 0, 전이 0.08초 |
+| 서버 10Hz + 보간 경로 | 정상. Speed 3.49~3.50, 걷기 클립 재생, 발뼈 36.5도 움직임 |
+| 추격 배속 | 필요 1.98배인데 상한 1.8배로 막혀 디딘 발이 0.24 m/s 끌렸다 → 상한 2배로 |
+| 공격 배속 | 추격 배속 1.80이 공격까지 이어졌다 → 이동 동작에만 배속 |
+| 상태 깜빡임 | Attack 0.1초 뒤 Detect 가 와도 공격이 1.40초 재생되도록 전이 수정 |
+| Animator 컬링 | `CullUpdateTransforms` 라 렌더러가 안 보이면 **포즈가 전혀 갱신되지 않는다**(뼈 0도). 상태 기계는 계속 돈다 — 화면 밖 몬스터가 굳은 자세로 미끄러지는 이유 |
 
 ### 2026-09-16 · 몬스터
 
@@ -154,6 +170,9 @@ Character2 / Monster      루트: CapsuleCollider + Character/Monster 스크립�
 | 루프마다 몸이 뒤로 튐 | 제자리가 아닌 클립(루트가 전진) | Humanoid 는 `lockRootPositionXZ`. Generic 은 `MonsterAnimationTool` 이 루트 이동량을 경고하니 InPlace 클립으로 교체 |
 | 옆으로 미끄러지며 걸음 | 이동 방향으로 회전하지 않음 | `Actor.LateUpdate` 가 이동 방향으로 회전. 모델이 -Z 를 보면 실측 로그의 속도 부호가 음수로 나옴 |
 | 체력바가 몸에 묻힘 | 고정 높이 | 콜라이더 높이 기준으로 배치(현재 적용됨) |
+| 몬스터 공격 동작이 너무 빠름 | `animator.speed` 는 컨트롤러 **전체**에 걸린다. 걷기 보정 배속(최대 2배)이 공격 클립에도 그대로 남았다(실측 1.80배) | `Actor.ScalePlaybackWithSpeed` 로 이동 동작에만 배속을 건다. 몬스터는 Attack 상태에서 등속 |
+| 몬스터 공격 동작이 보이지 않음 | 서버는 사거리 안팎을 오갈 때 Attack ↔ Detect 를 한 틱(0.1초) 단위로 뒤집는다. 예전 전이는 상태가 풀리는 즉시 공격을 끊어 1.5초짜리 공격이 보이기 전에 사라졌다 | 컨트롤러의 Attack → Locomotion 전이에 `hasExitTime`(0.9) — 한 번 시작한 공격은 끝까지 재생 |
+| 죽었던 자리의 몬스터가 대기 자세로 미끄러지고 공격도 안 함 | actor id 는 재사용된다. 사망 연출이 애니메이터를 끄고 몸을 빨갛게 칠해 둔 오브젝트를 새 몬스터가 물려받았다 | `Monster.UpdateState` 가 살아 있는 상태를 받으면 색·애니메이터·체력바를 되돌린다 |
 | 캐릭터·몬스터가 바닥에서 약 0.2 m 떠 있음 | **모델 크기 문제가 아니라 navmesh 높이.** Recast 가 바닥을 복셀로 쌓으며 높이를 한 칸(`cellHeight` 0.2) 올림해 navmesh 표면이 바닥보다 높다. 서버 y 가 평지에서 전부 0.2(실측 3000점 중 앙값 0.2) | `Actor.GroundedPosition`/`SnapToGround` 가 그릴 때만 바닥 콜라이더 높이에 붙인다. 차이가 −0.25~+0.35 m 를 벗어나면(다른 면을 맞힘) 서버 y 유지. 점프 착지점도 같은 기준 |
 | 경사로에서 캐릭터가 파묻힘/뜸 | 옛 `TerrainBuilder` 경사로에 콜라이더가 없어 레이가 밑의 평지에 닿음 | 배경 도구가 경사로에 MeshCollider 를 채운다. 가파른 경사로 일부(약 4%)는 navmesh 세부 높이 오차로 서버 y 를 그대로 쓴다 |
 | 렌더 PNG 에서 다리가 잘림 | 카메라 종횡비 미설정 | `cam.aspect` 를 명시하고 렌더러 경계로 프레이밍 |

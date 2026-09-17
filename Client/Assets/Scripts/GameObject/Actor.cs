@@ -49,8 +49,10 @@ public class Actor : MonoBehaviour
     // 직접 고치지 말 것 — 컨트롤러를 다시 만들면 덮어쓴다.
     [HideInInspector] public float locomotionTopSpeed = 1.69f;
 
-    /// <summary>재생 속도 배율 상한. 이보다 올리면 다리가 우스울 만큼 빨라진다.</summary>
-    private const float MaxPlaybackScale = 1.8f;
+    /// <summary>재생 속도 배율 상한. 이보다 올리면 다리가 우스울 만큼 빨라진다.
+    /// 몬스터는 서버 3.5 m/s ÷ 걷기 클립 1.77 m/s = 1.98 배가 필요하다(실측). 1.8 로 막으면
+    /// 디딘 발이 초당 0.24 m 끌린다 — 딱 필요한 만큼만 열어 둔다.</summary>
+    private const float MaxPlaybackScale = 2f;
 
     void Awake()
     {
@@ -60,6 +62,12 @@ public class Actor : MonoBehaviour
 
         // 모델은 자식으로 붙어 있고 Animator 도 거기 있다. 캡슐 프리팹이면 null 이라 그냥 건너뛴다.
         locomotionAnimator = GetComponentInChildren<Animator>();
+        if (locomotionAnimator != null && locomotionAnimator.runtimeAnimatorController == null)
+        {
+            // 컨트롤러가 없으면 파라미터를 넣어도 아무 일도 일어나지 않는다(대기 포즈로 미끄러진다).
+            // 조용히 지나가면 "애니메이션이 안 나온다"의 원인을 찾는 데 한참 걸린다.
+            Debug.LogWarning($"{name}: Animator 에 컨트롤러가 없어 애니메이션이 재생되지 않습니다.");
+        }
         lastFramePos = transform.position;
     }
 
@@ -85,8 +93,11 @@ public class Actor : MonoBehaviour
 
         // 문턱값 안쪽은 블렌드 트리가 보폭을 맞춰 주므로 등속으로 재생한다.
         // 그 위로는 클립이 따라오지 못하니 재생 속도로 메운다(상한까지).
+        //
+        // animator.speed 는 컨트롤러 전체에 걸린다. 걷기 보정용 배속을 그대로 두면 이동과
+        // 무관한 동작(몬스터 공격 등)까지 같이 빨라지므로, 그런 상태에서는 등속으로 되돌린다.
         float scale = 1f;
-        if (locomotionTopSpeed > 0.01f && smoothedSpeed > locomotionTopSpeed)
+        if (ScalePlaybackWithSpeed && locomotionTopSpeed > 0.01f && smoothedSpeed > locomotionTopSpeed)
             scale = Mathf.Min(smoothedSpeed / locomotionTopSpeed, MaxPlaybackScale);
         locomotionAnimator.speed = scale;
 
@@ -98,6 +109,9 @@ public class Actor : MonoBehaviour
             transform.rotation = Quaternion.RotateTowards(transform.rotation, look, TurnSpeed * Time.deltaTime);
         }
     }
+
+    /// <summary>이동 속도에 맞춰 재생 속도를 보정해도 되는 상태인가(보폭을 맞추는 보정이라 이동 동작에만 쓴다).</summary>
+    protected virtual bool ScalePlaybackWithSpeed { get { return true; } }
 
     void CreateHealthBar()
     {

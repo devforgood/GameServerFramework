@@ -209,8 +209,12 @@ public static class MonsterAnimationTool
         toAttack.duration = 0.1f;
         toAttack.AddCondition(AnimatorConditionMode.If, 0f, AttackParam);
 
+        // 공격은 한 번 시작하면 끝까지 재생한다(hasExitTime). 서버는 사거리 안팎을 오갈 때
+        // Attack ↔ Detect 를 한 틱(0.1초) 단위로 뒤집을 수 있는데, 즉시 끊으면 1.5초짜리
+        // 공격 동작이 보이기도 전에 사라져 "공격 모션이 안 나온다"가 된다.
         var toLoco = atk.AddTransition(loco);
-        toLoco.hasExitTime = false;
+        toLoco.hasExitTime = true;
+        toLoco.exitTime = 0.9f;
         toLoco.duration = 0.15f;
         toLoco.AddCondition(AnimatorConditionMode.IfNot, 0f, AttackParam);
 
@@ -218,7 +222,7 @@ public static class MonsterAnimationTool
         Log($"컨트롤러 생성: {ControllerPath} — Idle@0.00, Walk@{walkSpeed:F2}, Attack(bool)");
 
         if (walkSpeed < ServerMoveSpeed - 0.5f)
-            Log($"걷기 클립 {walkSpeed:F2} m/s < 서버 {ServerMoveSpeed} m/s — Actor 가 재생 속도로 메운다(상한 1.8배).");
+            Log($"걷기 클립 {walkSpeed:F2} m/s < 서버 {ServerMoveSpeed} m/s — Actor 가 재생 속도로 메운다(상한 2배).");
     }
 
     /// <summary>저장된 프리팹에 컨트롤러가 붙었고, 걷고 공격할 때 발이 지면 근처에 있는지 본다.</summary>
