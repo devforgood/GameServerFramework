@@ -11,6 +11,9 @@ using UnityEngine;
 //   - 캐스터 로컬 재생: Session.UseSkill (브로드캐스트에서 캐스터가 제외되므로 직접 재생)
 //   - 원격 관전자 재생: Session.HandleUseSkillNotify
 // 두 경로가 같은 함수를 써서 자신과 남에게 동일한 연출이 보인다.
+//
+// 이펙트 본체는 에셋 팩 파티클(Vfx.Play, 키는 VfxLibraryTool.Catalog)이다. 범위를 알려 주는 지면 선(호·링)은
+// 판정 범위를 그대로 보여 주므로 함께 남긴다. 라이브러리에 키가 없으면 예전 절차적 도형(SkillFx)으로 대신한다.
 public static class SkillFxDispatcher
 {
     // 반환값은 이 연출의 본체 코루틴이다. 캐스터가 낙관적으로 재생한 연출을 서버가 거부했을 때
@@ -31,8 +34,8 @@ public static class SkillFxDispatcher
             case "meteor":     return host.StartCoroutine(Meteor(data, targetPos, host));
             case "nova":       Nova(data, caster, host); return null;
             case "teleport":   Teleport(caster, targetPos, host); return null;
-            case "impact":     return host.StartCoroutine(SkillFx.Burst(targetPos, Radius(data, 3f), 0.4f, Tint(data, new Color(1f, 0.9f, 0.3f))));
-            case "heal":       return host.StartCoroutine(SkillFx.Burst(caster.transform.position, 1.6f, 0.5f, new Color(0.3f, 1f, 0.4f)));
+            case "impact":     Explode(data, targetPos, Radius(data, 3f), new Color(1f, 0.9f, 0.3f), host); return null;
+            case "heal":       Heal(caster, host); return null;
             case "slash":      return host.StartCoroutine(Slash(data, caster, targetPos, host));
             case "charge":     return host.StartCoroutine(Charge(data, caster, targetPos, host));
             case "chain":      return host.StartCoroutine(Chain(data, caster, targetPos, host));
@@ -74,6 +77,17 @@ public static class SkillFxDispatcher
         var color = Tint(data, new Color(1f, 1f, 0.85f));
         var lr = SkillFx.Arc(center, radius, baseDeg - angle / 2f, baseDeg + angle / 2f, color);
 
+        // 전방위 베기는 회전 베기라 방향 없이 캐스터 중심 파동으로 보여 준다.
+        Vector3 facing = Quaternion.Euler(0f, baseDeg, 0f) * Vector3.forward;
+        if (angle >= 300f)
+        {
+            string nova = Key("nova", data);
+            Vfx.Play(nova, center + Vector3.up * 0.3f, radius, KeyTint(nova, "nova", data, color));
+        }
+        else
+            // 베기 이펙트(Eric 팩)는 색이 텍스처에 구워져 있어 속성 색을 곱하면 탁해진다. 원색(금빛)으로 둔다.
+            Vfx.PlayFacing("slash", center + Vector3.up * 1f + facing * radius * 0.4f, facing, radius);
+
         float t = 0f; const float dur = 0.25f;
         while (t < dur)
         {
@@ -93,13 +107,69 @@ public static class SkillFxDispatcher
         return fallback;
     }
 
+    // ── 에셋 이펙트 헬퍼 ──
+
+    // "용도.속성" 키가 있으면 그것, 없으면 "용도". 둘 다 없으면 null.
+    private static string Key(string use, Gamedata.Skill data)
+    {
+        if (!string.IsNullOrEmpty(data.element) && Vfx.Has(use + "." + data.element))
+            return use + "." + data.element;
+        return Vfx.Has(use) ? use : null;
+    }
+
+    // 속성 키가 따로 있으면 그 이펙트의 원색을 쓰고, 공용 키로 떨어졌을 때만 속성 색을 입힌다.
+    private static Color? KeyTint(string key, string use, Gamedata.Skill data, Color fallback)
+    {
+        if (key == null || key != use || string.IsNullOrEmpty(data.element) || data.element == "physical")
+            return null;
+        return Tint(data, fallback);
+    }
+
+    // 착탄 폭발: 화염(또는 속성 없음)은 폭발, 그 외 속성은 속성 피격 이펙트. 반경만큼 키운다.
+    private static void Explode(Gamedata.Skill data, Vector3 pos, float radius, Color fallback, MonoBehaviour host)
+    {
+        bool fire = data.element == "fire" || string.IsNullOrEmpty(data.element);
+        string use = fire ? "explosion" : "hit";
+        string key = Key(use, data);
+        if (key != null)
+            Vfx.Play(key, pos, radius, KeyTint(key, use, data, fallback));
+        else
+            host.StartCoroutine(SkillFx.Burst(pos, radius, 0.4f, Tint(data, fallback)));
+    }
+
+    private static void Heal(GameObject caster, MonoBehaviour host)
+    {
+        var green = new Color(0.4f, 1f, 0.5f);
+        if (Vfx.Play("heal", caster.transform.position + Vector3.up * 0.2f, Quaternion.identity, 1f, null, caster.transform) == null)
+            host.StartCoroutine(SkillFx.Burst(caster.transform.position, 1.6f, 0.5f, green));
+    }
+
+    private static Vector3 Flat(Vector3 v)
+    {
+        v.y = 0f;
+        return v.sqrMagnitude > 0.0001f ? v : Vector3.forward;
+    }
+
     // 투사체: 캐스터에서 목표까지 발광 구체가 날아가 착탄 지점에서 폭발(파이어볼/파이어볼트/라이트닝 퓨리).
     private static IEnumerator Projectile(Gamedata.Skill data, GameObject caster, Vector3 target, MonoBehaviour host)
     {
         var color = Tint(data, new Color(1f, 0.5f, 0.1f));
         Vector3 start = caster.transform.position + Vector3.up * 1f;
         target.y = start.y;
-        var orb = SkillFx.Orb(start, color, 0.4f);
+
+        // 몸체 이펙트를 빈 오브젝트에 붙여 날린다. 없으면 발광 구체.
+        GameObject orb;
+        string body = Key("projectile", data);
+        if (body != null)
+        {
+            orb = new GameObject("Projectile");
+            orb.transform.SetPositionAndRotation(start, Quaternion.LookRotation(Flat(target - start)));
+            Vfx.Play(body, start, orb.transform.rotation, 1f, KeyTint(body, "projectile", data, color), orb.transform, looping: true);
+            // 서버 거부로 이 코루틴이 중간에 멈추면 아래 Destroy 에 닿지 못한다. 반복 이펙트가 영영 남지 않게 한다.
+            Object.Destroy(orb, 5f);
+        }
+        else
+            orb = SkillFx.Orb(start, color, 0.4f);
 
         const float speed = 20f;
         while (orb != null && Vector3.Distance(orb.transform.position, target) > 0.3f)
@@ -108,7 +178,7 @@ public static class SkillFxDispatcher
             yield return null;
         }
         if (orb != null) Object.Destroy(orb);
-        host.StartCoroutine(SkillFx.Burst(target, Radius(data, 4f), 0.35f, color));
+        Explode(data, target, Radius(data, 4f), new Color(1f, 0.5f, 0.1f), host);
     }
 
     // 낙하 광역: 목표 지점 텔레그래프 링 → 하늘에서 코어 낙하 → 착탄 폭발 + 파문(메테오/블리자드/프로즌 오브).
@@ -117,10 +187,21 @@ public static class SkillFxDispatcher
         float radius = Radius(data, 6f);
         var color = Tint(data, new Color(1f, 0.35f, 0.05f));
         var ring = SkillFx.Ring(target, radius, color);
+        Vfx.Play("circle", target + Vector3.up * 0.1f, radius);
 
         yield return new WaitForSeconds(0.5f); // 낙하 예고
 
-        var core = SkillFx.Orb(target + Vector3.up * 20f, color, 1.2f);
+        GameObject core;
+        string body = Key("projectile", data);
+        if (body != null)
+        {
+            core = new GameObject("MeteorCore");
+            core.transform.SetPositionAndRotation(target + Vector3.up * 20f, Quaternion.LookRotation(Vector3.down));
+            Vfx.Play(body, core.transform.position, core.transform.rotation, 2.5f, KeyTint(body, "projectile", data, color), core.transform, looping: true);
+            Object.Destroy(core, 5f);   // 코루틴이 취소돼도 남지 않게(투사체와 같은 이유)
+        }
+        else
+            core = SkillFx.Orb(target + Vector3.up * 20f, color, 1.2f);
         float t = 0f; const float fall = 0.4f;
         Vector3 s = core.transform.position;
         while (t < fall)
@@ -132,7 +213,10 @@ public static class SkillFxDispatcher
         if (core != null) Object.Destroy(core);
         if (ring != null) Object.Destroy(ring.gameObject);
 
-        host.StartCoroutine(SkillFx.Burst(target, radius, 0.4f, color));
+        if (data.element == "fire" && Vfx.Has("explosion.big"))
+            Vfx.Play("explosion.big", target, radius);
+        else
+            Explode(data, target, radius, new Color(1f, 0.35f, 0.05f), host);
         host.StartCoroutine(SkillFx.ExpandRing(target, radius, 0.5f, color));
     }
 
@@ -141,8 +225,13 @@ public static class SkillFxDispatcher
     {
         float radius = Radius(data, 6f);
         var color = Tint(data, new Color(0.4f, 0.8f, 1f));
-        host.StartCoroutine(SkillFx.ExpandRing(caster.transform.position, radius, 0.4f, color));
-        host.StartCoroutine(SkillFx.Burst(caster.transform.position, radius * 0.5f, 0.3f, color));
+        Vector3 center = caster.transform.position;
+        host.StartCoroutine(SkillFx.ExpandRing(center, radius, 0.4f, color));
+        string key = Key("nova", data);
+        if (key != null)
+            Vfx.Play(key, center + Vector3.up * 0.3f, radius, KeyTint(key, "nova", data, color));
+        else
+            host.StartCoroutine(SkillFx.Burst(center, radius * 0.5f, 0.3f, color));
     }
 
     // 돌진(차지/볼트): 캐스터가 지나온 자리에 잔상 링을 남기고 도착 지점에서 충격파를 터뜨린다.
@@ -167,14 +256,23 @@ public static class SkillFxDispatcher
             t += Time.deltaTime;
             if (t >= nextTrail)
             {
-                nextTrail += 0.06f;
-                host.StartCoroutine(SkillFx.ExpandRing(caster.transform.position, 1.2f, 0.3f, color));
+                // 흙먼지는 자주 뿌리면 겹쳐 뭉개져서 링보다 간격을 넓힌다.
+                if (Vfx.Has("dash"))
+                {
+                    nextTrail += 0.12f;
+                    Vfx.PlayFacing("dash", caster.transform.position, -dir);
+                }
+                else
+                {
+                    nextTrail += 0.06f;
+                    host.StartCoroutine(SkillFx.ExpandRing(caster.transform.position, 1.2f, 0.3f, color));
+                }
             }
             yield return null;
         }
 
         float radius = Radius(data, 3f);
-        host.StartCoroutine(SkillFx.Burst(dest, radius, 0.4f, color));
+        Explode(data, dest, radius, new Color(1f, 0.85f, 0.5f), host);
         host.StartCoroutine(SkillFx.ExpandRing(dest, radius, 0.45f, color));
     }
 
@@ -186,6 +284,7 @@ public static class SkillFxDispatcher
         Vector3 to = new Vector3(target.x, from.y, target.z);
 
         var lr = SkillFx.Bolt(from, to, color);
+        Vfx.Play(Key("hit", data), from, 0.6f);
         float t = 0f; const float dur = 0.3f;
         while (t < dur)
         {
@@ -196,7 +295,9 @@ public static class SkillFxDispatcher
             yield return null;
         }
         if (lr != null) Object.Destroy(lr.gameObject);
-        host.StartCoroutine(SkillFx.Burst(to, 1.5f, 0.25f, color));
+        if (Vfx.Play("strike", new Vector3(to.x, to.y - 1f, to.z)) == null)
+            host.StartCoroutine(SkillFx.Burst(to, 1.5f, 0.25f, color));
+        Vfx.Play(Key("hit", data), to);
     }
 
     // 심판의 빛기둥: 목표 지점 예고 링 → 하늘에서 내리꽂히는 빛기둥 → 폭발 + 파문(천상의 주먹).
@@ -205,14 +306,20 @@ public static class SkillFxDispatcher
         float radius = Radius(data, 4f);
         var color = Tint(data, new Color(1f, 0.93f, 0.55f));
         var ring = SkillFx.Ring(target, radius, color);
+        Vfx.Play("circle", target + Vector3.up * 0.1f, radius);
 
         yield return new WaitForSeconds(0.25f); // 강림 예고
 
-        var column = SkillFx.Column(target, radius * 0.35f, 14f, color);
-        yield return host.StartCoroutine(SkillFx.FadeOut(column, 0.45f, color));
+        if (Vfx.Play("strike.holy", target, radius * 0.5f) != null)
+            yield return new WaitForSeconds(0.2f);
+        else
+        {
+            var column = SkillFx.Column(target, radius * 0.35f, 14f, color);
+            yield return host.StartCoroutine(SkillFx.FadeOut(column, 0.45f, color));
+        }
         if (ring != null) Object.Destroy(ring.gameObject);
 
-        host.StartCoroutine(SkillFx.Burst(target, radius, 0.35f, color));
+        Explode(data, target, radius, new Color(1f, 0.93f, 0.55f), host);
         host.StartCoroutine(SkillFx.ExpandRing(target, radius, 0.4f, color));
     }
 
@@ -228,11 +335,19 @@ public static class SkillFxDispatcher
         for (int i = 0; i < ringCount; i++)
             rings[i] = SkillFx.Ring(target, radius * 0.3f, color);
 
-        float t = 0f;
+        float t = 0f, nextDust = 0f;
         while (t < dur)
         {
             t += Time.deltaTime;
             float k = t / dur;
+            if (t >= nextDust && Vfx.Has("tornado"))
+            {
+                // 반경 안을 돌며 흙먼지를 감아 올린다.
+                nextDust += 0.15f;
+                float a = k * Mathf.PI * 4f;
+                Vfx.Play("tornado", target + new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a)) * radius * 0.4f,
+                         Quaternion.Euler(0f, a * Mathf.Rad2Deg, 0f), radius * 0.5f);
+            }
             for (int i = 0; i < ringCount; i++)
             {
                 float height = ((k * 2f + i * 0.25f) % 1f) * 5f;                       // 위로 흘러 올라간다
@@ -262,6 +377,12 @@ public static class SkillFxDispatcher
         float baseDeg = (dir.sqrMagnitude > 0.001f) ? Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg : 0f;
 
         var lr = SkillFx.Arc(center, 0.2f, baseDeg - angle / 2f, baseDeg + angle / 2f, color);
+        Vector3 facing = Quaternion.Euler(0f, baseDeg, 0f) * Vector3.forward;
+        string flame = Key("cone", data);
+        if (flame != null)
+            for (int i = 1; i <= 3; i++)   // 분사 길이를 따라 불꽃을 세 번 터뜨린다
+                Vfx.PlayFacing(flame, center + Vector3.up * 0.8f + facing * range * (0.25f * i), facing,
+                               range * 0.2f * i, KeyTint(flame, "cone", data, color));
         float t = 0f; const float dur = 0.3f;
         while (t < dur)
         {
@@ -287,7 +408,10 @@ public static class SkillFxDispatcher
     {
         var color = new Color(0.7f, 0.4f, 1f);
         Vector3 from = caster.transform.position;
-        host.StartCoroutine(SkillFx.Burst(from, 1.5f, 0.25f, color));                                  // 출발 지점 섬광
-        host.StartCoroutine(SkillFx.Burst(new Vector3(target.x, from.y, target.z), 1.5f, 0.25f, color)); // 도착 지점 섬광
+        Vector3 to = new Vector3(target.x, from.y, target.z);
+        if (Vfx.Play("teleport.out", from) == null)
+            host.StartCoroutine(SkillFx.Burst(from, 1.5f, 0.25f, color)); // 출발 지점 섬광
+        if (Vfx.Play("teleport.in", to) == null)
+            host.StartCoroutine(SkillFx.Burst(to, 1.5f, 0.25f, color));   // 도착 지점 섬광
     }
 }

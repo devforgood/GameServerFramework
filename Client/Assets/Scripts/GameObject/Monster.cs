@@ -47,6 +47,10 @@ public class Monster : Actor
 
     protected override void ShowDeathEffect()
     {
+        // 사라지는 연기. 칠해 둔 색이 없을 때만 — 이미 죽은 상태를 다시 받으면(재동기화) 또 피우지 않는다.
+        if (originalColors.Count == 0)
+            Vfx.Play("death", transform.position);
+
         // 몬스터 전용 사망 효과
         // 모델은 자식 SkinnedMeshRenderer 로 그려지므로 자식까지 훑는다.
         foreach (var renderer in GetComponentsInChildren<Renderer>())

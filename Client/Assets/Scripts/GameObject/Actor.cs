@@ -24,6 +24,8 @@ public class Actor : MonoBehaviour
     // Damage text cooldown to prevent spam
     private float lastDamageTime = 0f;
     private const float DAMAGE_TEXT_COOLDOWN = 0.1f; // 100ms cooldown
+    private float lastHitEffectTime = -1f;
+    private const float HIT_EFFECT_COOLDOWN = 0.25f;
 
     // ── 로코모션(걷기) ──
     // 서버는 속도도 바라보는 방향도 보내지 않는다. 그래서 '실제로 그려진 위치가
@@ -254,11 +256,28 @@ public class Actor : MonoBehaviour
     {
         // Show damage text UI with cooldown check
         ShowDamageText(damage);
+        ShowHitEffect();
         
         // Optional: Add screen shake or other effects
         // AddScreenShake(damage);
     }
     
+    /// <summary>
+    /// 맞은 자리에 피격 이펙트. 체력 감소만 보고 부르므로 무슨 공격인지 모른다 — 속성 없이 기본 타격만 쓴다.
+    /// 오라처럼 매 틱 깎이는 피해가 이펙트를 겹겹이 쌓지 않도록 간격을 둔다.
+    /// </summary>
+    private void ShowHitEffect()
+    {
+        if (Time.time - lastHitEffectTime < HIT_EFFECT_COOLDOWN)
+            return;
+        lastHitEffectTime = Time.time;
+
+        // 몸통 한가운데(콜라이더 중심). 콜라이더가 없으면 사람 키의 절반쯤.
+        var body = GetComponent<CapsuleCollider>();
+        Vector3 center = body != null ? transform.TransformPoint(body.center) : transform.position + Vector3.up * 1f;
+        Vfx.Play("hit.physical", center);
+    }
+
     private void ShowDamageText(int damage)
     {
         // Check cooldown to prevent spam

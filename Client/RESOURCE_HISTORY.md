@@ -1,10 +1,10 @@
-# 캐릭터·몬스터·배경 리소스 적용 기록
+# 캐릭터·몬스터·배경·이펙트 리소스 적용 기록
 
-에셋스토어 모델·애니메이션·배경을 게임에 입힌 과정을 정리한 문서입니다.
+에셋스토어 모델·애니메이션·배경·이펙트를 게임에 입힌 과정을 정리한 문서입니다.
 다음에 모델을 바꾸거나 새 팩을 붙일 때 같은 시행착오를 반복하지 않도록, 결론·절차·함정을 함께 적었습니다.
 
-- 대상: `Client/Assets/Resources/Character2.prefab`, `Client/Assets/Resources/Monster.prefab`, 맵 씬 배경(→ 9장)
-- 기간: 2026-09-15 ~ 2026-09-16
+- 대상: `Client/Assets/Resources/Character2.prefab`, `Client/Assets/Resources/Monster.prefab`, 맵 씬 배경(→ 9장), 스킬·피격 이펙트(→ 10장)
+- 기간: 2026-09-15 ~ 2026-09-19
 
 ---
 
@@ -39,6 +39,8 @@
 | 몬스터 애니 재생성 + 프리팹 재조립 + 검증 | Tools > Character Resource > Rebuild Monster | `MonsterAnimationTool.RebuildAll` |
 | 프리팹만 재조립(모델 교체 등) | Tools > Character Resource > Apply All | `CharacterResourceTool.ApplyAll` |
 | Starting Village 배경 재생성 + 검증 + 미리보기 | Tools > Environment > Dress Starting Village | `EnvironmentDressingTool.BuildStartingVillage -previewDir <폴더>` |
+| 이펙트 라이브러리 재생성 + 검증 + 미리보기 | Tools > VFX > Build Library | `VfxLibraryTool.BuildAll -previewDir <폴더>` |
+| 팩 이펙트 전부 찍어 보기(고를 때) | — | `VfxLibraryTool.RenderCandidates -previewDir <폴더>` |
 
 ```powershell
 & "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -quit -nographics `
@@ -198,6 +200,7 @@ Character2 / Monster      루트: CapsuleCollider + Character/Monster 스크립�
 | `Assets/ExplosiveLLC/Editor/SetupInputLayers.cs` | 삭제(빈 `Editor` 폴더도 삭제) | 에셋이 임포트될 때마다 "Load Input and Tag Presets" 창을 띄움. 데모 컨트롤러용 안내라 클립만 쓰는 우리와 무관 |
 | `Assets/DungeonCharacters/Skeletons_demo/models/Materials/DS_skeleton_standard.mat`, `DemoEquipment.mat` | 셰이더 URP Lit → Standard | Built-in 파이프라인에서 분홍색. 도구가 자동 수정 |
 | `Assets/Flooded_Grounds/PostProcessing/` | **폴더째 삭제** | 2018년에 폐기된 Post Processing Stack v1. 에디터 코드가 Unity 6 에서 컴파일되지 않고(CS0619·CS0104, 고치면 다음 에러가 연쇄로 나옴) 프로젝트 전체를 막았다. 데모 `Scene_A` 카메라에 빈 스크립트 참조가 남지만 게임과 무관 |
+| `Assets/VFX/Eric VFX Studio/Resource/Materials/*.mat` (5개) | 셰이더 URP Particles/Unlit → Legacy Shaders/Particles/Alpha Blended, `_BaseMap` → `_MainTex` | Built-in 파이프라인에서 분홍색. `VfxLibraryTool` 이 자동 수정 |
 | `Assets/_TerrainAutoUpgrade/` | 지우지 말 것 | Unity 가 `Scene_A` 지형을 열며 만든 TerrainLayer 3개. 우리 배경 지형이 이 레이어를 쓴다 |
 | Knight 클립 FBX 메타(Idle/Walk/Run) | 루프, 루트 회전·높이·XZ 굽기 설정 | 도구(`ConfigureImporters`)가 자동 수정 |
 | Dungeon Skeletons 공격 클립 FBX 메타 | `loopTime` 켬 | 도구가 자동 수정 |
@@ -277,3 +280,62 @@ MeshFilter·콜라이더는 남기므로 NavMesh 재굽기와 클릭 이동은 �
   `_TerrainAutoUpgrade` 의 TerrainLayer 3개(작음)는 커밋했습니다. Unity 가 새로 만들면 GUID 가 달라져 지형 텍스처 참조가 끊기기 때문입니다.
 - 경사로 둔덕은 게임 지오메트리 모양 그대로라 각진 상자처럼 보입니다. 자연스럽게 하려면 `TerrainBuilder` 경사로 자체를 바꾸고 navmesh 를 다시 구워야 합니다.
 - 씬에 원래 있던 게이트(파란 원기둥)·스폰 지점(빨간 원기둥) 마커 메시는 그대로 보입니다.
+
+---
+
+## 10. 이펙트 (VFX)
+
+### 현재 상태
+
+`Assets/VFX` 의 세 팩 중 두 개를 쓴다.
+
+| 팩 | 셰이더 | 사용 |
+|---|---|---|
+| Vefects Flipbook VFX Bundle Lite (Combat / Flipbook / Pixel Craft) | 팩 자체 BIRP 셰이더 | 피격·파동·번개·흙먼지·사망 등 대부분. Pixel Craft 는 도트 그림이라 화염 투사체·순간이동 연기만 |
+| Eric VFX Studio Free RPG Sprite Sheet | URP → Legacy 파티클로 교정 | 베기·폭발·마법진·신성 타격 |
+| Free Slash VFX | URP 전용 Shader Graph | **미사용**. Scene Color/Depth(왜곡)에 기대서 Built-in 타깃을 붙여도 같은 모양이 안 나온다. 프로젝트를 URP 로 옮기기 전엔 못 쓴다 |
+
+### 구조
+
+```
+VfxLibraryTool.Catalog (코드 표: 키 → 프리팹, 목표 크기, recolor)
+   └ Tools > VFX > Build Library → Resources/VfxLibrary.asset (실측으로 배율 계산)
+        └ 런타임 Vfx.Play(key, 위치, 배율, 색)
+             ├ SkillFxDispatcher  스킬 fx·element 별 연출(지면 호·링 선은 판정 범위 표시로 유지)
+             ├ Actor.TakeDamage   피격 "hit.physical" (액터당 0.25초 간격)
+             └ Monster.ShowDeathEffect  사망 "death"
+```
+
+- 키 규약은 `용도.속성`(예 `hit.fire`, `nova`). 디스패처는 `용도.속성` 이 있으면 그것, 없으면 `용도` 에 속성 색을 입혀 쓴다.
+- **라이브러리에 키가 없으면 예전 절차적 도형(`SkillFx`)으로 대신한다.** 그래서 에셋이 빠져도 연출이 사라지지 않는다.
+- 크기: 카탈로그의 `size` 는 배율 1 에서의 크기(m)다. 광역(폭발·파동·마법진)은 2 m 라서 반경을 넘기면 지름 = 2 × 반경.
+- `Vfx.Play` 는 인스턴스마다 반복을 끄고(한 주기), `scalingMode` 를 Hierarchy 로, 수명이 끝나면 파괴한다. 팩 프리팹 원본은 건드리지 않는다.
+  투사체 몸체처럼 끝을 호출 측이 정하는 것은 `looping: true` + `follow` 로 붙이고 그 오브젝트를 파괴한다.
+
+### 2026-09-19 · 적용
+
+| 단계 | 한 일 | 결과 / 교훈 |
+|---|---|---|
+| 1 | 팩 임포트가 URP·Shader Graph 패키지를 manifest 에 추가함 | 렌더 파이프라인은 여전히 Built-in(`m_CustomRenderPipeline` 0). URP 머티리얼은 분홍색 |
+| 2 | 후보 62개를 게임 카메라 각도로 렌더 | 처음엔 대부분 빈 화면 — **수명 비율로 샘플링해서 타격 이펙트(수명 0.3초)가 이미 사라진 뒤를 찍었다.** 절대 시각(0.08/0.18/0.32/0.55초)으로 바꿔 해결 |
+| 3 | 배율 자동 계산 | 렌더러 `bounds` 는 최대 크기로 잡혀 실제의 몇 배(불꽃 1 m → 12 m). **살아 있는 파티클 위치 ± 현재 크기**로 잰다 |
+| 4 | 속성별 색 입히기 | 파티클 `startColor` 로는 안 바뀐다. **Vefects 셰이더는 색을 머티리얼 `_R/_G/_B/_Outline` 에서 읽고 정점색은 투명도에만 쓴다.** MaterialPropertyBlock 으로 색 속성을 바꾼다(밝기 유지, 색조만). Eric 팩은 색이 텍스처에 구워져 있어 칠할 수 없다 |
+| 5 | 플레이 모드 스모크(임시 스크립트, 배치모드) | 24개 키 전부 재생·정리, 스킬 연출 49개 예외 없음. 반복 주기 10초짜리 번개 투사체가 남아 `emitTime`·`looping` 도입. 버스트 없이 흘리는 번개 파동은 제외 |
+
+### 이펙트 트러블슈팅
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| 이펙트가 분홍색 | URP 셰이더 머티리얼 | Eric 팩은 도구가 Legacy 로 교정. Free Slash 는 못 씀. 새 팩은 `RenderProblems` 검증이 실패로 알려 준다 |
+| 미리보기에 아무것도 안 찍힘 | 샘플 시각이 파티클 수명 뒤 | 로그의 `파티클 수 0.08s:1 ...` 를 본다. 0 이면 시뮬레이션·시각 문제, 있는데 안 보이면 셰이더·크기 문제 |
+| 속성 색이 안 먹거나 탁해짐 | 색이 텍스처에 구워진 이펙트(Eric)에 색을 곱함 | 흰/단색 Vefects 이펙트에 `recolor` 를 쓰고, Eric 이펙트엔 색을 넘기지 않는다 |
+| 이펙트가 끝나지 않고 남음 | 팩 프리팹의 한 주기가 김(10초) | 카탈로그 `emitTime` 으로 방출을 자른다 |
+| Poison_Burst 가 분홍 | 팩에 머티리얼 참조가 빠져 있음(GUID 없음) | 사용 안 함. 독은 흰 고리를 초록으로 칠한다 |
+
+### 이펙트의 한계
+
+- **피격 이펙트는 속성을 모른다.** 클라는 체력 감소만 보고 피격을 알기 때문에 항상 `hit.physical` 이다. 속성 피격을 보이려면 서버가 피해 알림에 스킬 id 나 속성을 실어야 한다.
+- **몬스터 공격(서버 AI 상태)에는 이펙트가 없다.** 피격 쪽 이펙트로만 보인다.
+- 팩 프리팹에 붙은 `AudioSource`(타격음 등)도 같이 재생된다. 소리가 거슬리면 `Vfx.Play` 에서 끄거나 볼륨을 맞춘다.
+- **Vefects 데모의 `Demo/Resources` 폴더(HDRI 약 49 MB)는 `Resources` 라 빌드에 통째로 들어간다.** 데모 씬을 안 볼 거면 `Assets/VFX/Vefects/Flipbook VFX Bundle Lite/Demo` 를 지우는 게 좋다.
+- 원형 마법진(Eric)은 파랑 고정이다(색이 텍스처에 있음).
