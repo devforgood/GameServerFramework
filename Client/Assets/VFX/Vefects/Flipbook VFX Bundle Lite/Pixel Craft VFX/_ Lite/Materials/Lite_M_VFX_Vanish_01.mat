@@ -1,0 +1,114 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Lite_M_VFX_Vanish_01
+  m_Shader: {fileID: 4800000, guid: 92e3624181bf0ee4180a0e1ed1dae869, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 0
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _DistortionSecond:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DistortionTexture:
+        m_Texture: {fileID: 2800000, guid: 98c3d568d9032a34eb5b038e20fea05d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTexture:
+        m_Texture: {fileID: 2800000, guid: 4f2cd0d837bb61a439a50e52fd7be954, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _VertexDistortionNoise_tex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _disolveMap:
+        m_Texture: {fileID: 2800000, guid: 98c3d568d9032a34eb5b038e20fea05d, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _texcoord:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AlphaCutoff: 0.5
+    - _Cull: 2
+    - _DissolveMapScale: 1
+    - _DistortionLerp: 0
+    - _Dst: 10
+    - _Emissive: 1
+    - _ErosionSmoothness: 0
+    - _FlatColor: 0
+    - _FlipbookX: 7
+    - _FlipbookY: 1
+    - _Float0: 3.45
+    - _Float4: 0
+    - _HueShift: 0
+    - _IntensG: 1
+    - _Intensity: 0.59
+    - _IntensityR: 1.56
+    - _Pixelate: 0
+    - _PixelsMultiplier: 0.69
+    - _PixelsX: 224
+    - _PixelsY: 32
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    - _ReceiveShadows: 0
+    - _SaturationMultiply: 1
+    - _SecondDistortionAmount: 0.5
+    - _SecondDistortionLerp: 0.5
+    - _Src: 5
+    - _VertexDistortion_Scale: 0
+    - _VertexDistortion_Speed: 0
+    - _ZTest: 2
+    - _ZWrite: 0
+    - __dirty: 0
+    - _intenceB: 1.08
+    m_Colors:
+    - _B: {r: 0, g: 2.5589602, b: 5.278032, a: 0}
+    - _Color01: {r: 1, g: 0.43921572, b: 0, a: 0}
+    - _Color02: {r: 1, g: 0.2627451, b: 0, a: 0}
+    - _Color03: {r: 1, g: 0, b: 0.14508247, a: 0}
+    - _Color04: {r: 1, g: 0, b: 0.28442144, a: 0}
+    - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
+    - _G: {r: 0, g: 0.29986405, b: 1, a: 0}
+    - _Outline: {r: 0, g: 0.34683514, b: 1, a: 0}
+    - _OverallTint: {r: 1, g: 1, b: 1, a: 0}
+    - _R: {r: 0, g: 0.083200455, b: 1, a: 0}
+    - _UVDP: {r: 0.05, g: -0.05, b: 0, a: 0}
+    - _UVDP1: {r: 0.1, g: -0.2, b: 0, a: 0}
+    - _UVDS: {r: 7, g: 1, b: 0, a: 0}
+    - _UVDS1: {r: 1, g: 1, b: 0, a: 0}
+    - _UVP: {r: 0, g: 0, b: 0, a: 0}
+    - _UVS: {r: 1, g: 1, b: 0, a: 0}
+  m_BuildTextureStacks: []

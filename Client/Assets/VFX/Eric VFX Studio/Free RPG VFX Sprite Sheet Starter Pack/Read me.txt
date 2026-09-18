@@ -1,0 +1,41 @@
+## Free RPG VFX Sprite Sheet Starter Pack
+
+Add ready-to-use RPG visual effects to your Unity project with this free starter pack.
+
+This package includes 5 selected effects from the full **RPG VFX Sprite Sheet Collection**, allowing you to preview the visual quality, animation style, and workflow before purchasing the complete collection.
+
+### Included Effects
+
+* 1 Slash Effects
+* 1 Hit Effect
+* 2 Explosion Effect
+* 1 Magic Circle Effect
+
+### Features
+
+* 5 ready-to-use RPG visual effects
+* Sprite Sheet textures included
+* Particle System prefabs included
+* Demo scene included
+* Compatible with all render pipelines
+(The example uses URP materials, but the images can be applied to both Built-in and HDRP pipelines.)
+
+## Get the Full Collection
+
+Need more effects and variations?
+
+The full **RPG VFX Sprite Sheet Collection** includes 50 visual effects across the following categories:
+
+* Slash Effects
+* Hit Effects
+* Explosion Effects
+* Magic Circle Effects
+
+The complete collection provides more colors, styles, shapes, and variations for creating RPG combat skills, attacks, impacts, explosions, and magic abilities.
+
+**View the Full RPG VFX Sprite Sheet Collection:**
+https://assetstore.unity.com/packages/vfx/rpg-vfx-sprite-sheet-collection-slash-hit-exp-magic-circle-389428
+
+Thank you for downloading this free pack.
+
+Created by **ERIC VFX Studio**

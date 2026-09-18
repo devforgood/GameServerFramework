@@ -1,0 +1,30 @@
+fileFormatVersion: 2
+guid: bd6e64f2ae718bd449417e6aeca63ba9
+AudioImporter:
+  externalObjects: {}
+  serializedVersion: 7
+  defaultSettings:
+    serializedVersion: 2
+    loadType: 0
+    sampleRateSetting: 0
+    sampleRateOverride: 44100
+    compressionFormat: 1
+    quality: 1
+    conversionMode: 0
+    preloadAudioData: 0
+  platformSettingOverrides: {}
+  forceToMono: 0
+  normalize: 1
+  loadInBackground: 0
+  ambisonic: 0
+  3D: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 395530
+  packageName: Free - Flipbook VFX Bundle Lite
+  packageVersion: 1.0
+  assetPath: Assets/Vefects/Flipbook VFX Bundle Lite/Combat Flipbook VFX/Audio/WAV/Sergi/SFX_Vefects_Hit_04_One_Shot.wav
+  uploadId: 974724

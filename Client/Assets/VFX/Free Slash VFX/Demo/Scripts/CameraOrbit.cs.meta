@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 511d2b577fca56e4b86ba7daa5ee285a
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 309498
+  packageName: Free Slash VFX
+  packageVersion: 1.0
+  assetPath: Assets/Free Slash VFX/Demo/Scripts/CameraOrbit.cs
+  uploadId: 738318

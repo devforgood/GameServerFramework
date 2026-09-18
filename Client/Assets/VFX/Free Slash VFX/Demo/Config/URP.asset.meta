@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: e0ab5ce0f120df34ea53c9549524d1a1
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 309498
+  packageName: Free Slash VFX
+  packageVersion: 1.0
+  assetPath: Assets/Free Slash VFX/Demo/Config/URP.asset
+  uploadId: 738318

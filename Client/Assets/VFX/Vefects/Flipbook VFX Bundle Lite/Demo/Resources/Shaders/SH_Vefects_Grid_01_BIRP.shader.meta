@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 628e9c068de3eb2488430512c04abc6d
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _Normal: {fileID: 2800000, guid: a6c07b142c14fe64097eb43b7eb9ea05, type: 3}
+  - _Masks: {fileID: 2800000, guid: da13cff96126c2142a4282f9b0b912f2, type: 3}
+  - _Texture: {fileID: 2800000, guid: 7a3526d3c2b6d7f4bb01239c99c63abd, type: 3}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 395530
+  packageName: Free - Flipbook VFX Bundle Lite
+  packageVersion: 1.0
+  assetPath: Assets/Vefects/Flipbook VFX Bundle Lite/Demo/Resources/Shaders/SH_Vefects_Grid_01_BIRP.shader
+  uploadId: 974724

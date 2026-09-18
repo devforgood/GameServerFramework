@@ -1,8 +1,15 @@
 fileFormatVersion: 2
 guid: 79459efec17a4d00a321bdcc27bbc385
 timeCreated: 1484172856
-licenseType: Pro
+licenseType: Store
 NativeFormatImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 309498
+  packageName: Free Slash VFX
+  packageVersion: 1.0
+  assetPath: Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF - Outline.mat
+  uploadId: 738318

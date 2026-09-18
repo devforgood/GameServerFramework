@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 75c365dabbe897b499c6ddc7e013d494
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 309498
+  packageName: Free Slash VFX
+  packageVersion: 1.0
+  assetPath: Assets/Free Slash VFX/Demo/Scripts/SlashDecal.cs
+  uploadId: 738318

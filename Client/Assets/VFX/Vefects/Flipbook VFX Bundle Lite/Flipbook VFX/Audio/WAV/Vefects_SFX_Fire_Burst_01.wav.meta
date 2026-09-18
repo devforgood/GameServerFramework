@@ -1,0 +1,29 @@
+fileFormatVersion: 2
+guid: 3989b987d2b839448a485c420a838652
+AudioImporter:
+  externalObjects: {}
+  serializedVersion: 6
+  defaultSettings:
+    loadType: 0
+    sampleRateSetting: 0
+    sampleRateOverride: 44100
+    compressionFormat: 1
+    quality: 1
+    conversionMode: 0
+  platformSettingOverrides: {}
+  forceToMono: 0
+  normalize: 1
+  preloadAudioData: 1
+  loadInBackground: 0
+  ambisonic: 0
+  3D: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 395530
+  packageName: Free - Flipbook VFX Bundle Lite
+  packageVersion: 1.0
+  assetPath: Assets/Vefects/Flipbook VFX Bundle Lite/Flipbook VFX/Audio/WAV/Vefects_SFX_Fire_Burst_01.wav
+  uploadId: 974724

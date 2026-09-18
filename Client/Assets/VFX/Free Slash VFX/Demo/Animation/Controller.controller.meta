@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 39ce779fd46ee954d88198abe465143b
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 309498
+  packageName: Free Slash VFX
+  packageVersion: 1.0
+  assetPath: Assets/Free Slash VFX/Demo/Animation/Controller.controller
+  uploadId: 738318

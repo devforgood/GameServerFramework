@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: c6643c81ee520244096aa377a9f9fc7b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 309498
+  packageName: Free Slash VFX
+  packageVersion: 1.0
+  assetPath: Assets/Free Slash VFX/Demo/Scripts/ParticleAnimationEvent.cs
+  uploadId: 738318

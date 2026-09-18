@@ -1,8 +1,15 @@
 fileFormatVersion: 2
 guid: 8f05276190cf498a8153f6cbe761d4e6
 timeCreated: 1480316860
-licenseType: Pro
+licenseType: Store
 TextScriptImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 309498
+  packageName: Free Slash VFX
+  packageVersion: 1.0
+  assetPath: Assets/TextMesh Pro/Sprites/EmojiOne.json
+  uploadId: 738318

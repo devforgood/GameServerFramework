@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 88c603468fe9a4c4796d5c72ce94efd5
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 112000000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 309498
+  packageName: Free Slash VFX
+  packageVersion: 1.0
+  assetPath: Assets/Free Slash VFX/Demo/Scenes/SampleScene/LightingData.asset
+  uploadId: 738318

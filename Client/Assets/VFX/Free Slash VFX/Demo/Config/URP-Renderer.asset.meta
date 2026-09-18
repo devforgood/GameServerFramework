@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4c142b5ee684b6b4f8e793fb4991e1dd
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 309498
+  packageName: Free Slash VFX
+  packageVersion: 1.0
+  assetPath: Assets/Free Slash VFX/Demo/Config/URP-Renderer.asset
+  uploadId: 738318

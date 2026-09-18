@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 967b656b87dccfd4eb8a47bcd93dd07c
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _MainTexture: {instanceID: 0}
+  - _DistortionTexture: {instanceID: 0}
+  - _DistortionSecond: {instanceID: 0}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 395530
+  packageName: Free - Flipbook VFX Bundle Lite
+  packageVersion: 1.0
+  assetPath: Assets/Vefects/Flipbook VFX Bundle Lite/Flipbook VFX/_ Lite/Shaders/Lite_SH_Vefects_Unlit_Flipbook_BIRP_New.shader
+  uploadId: 974724

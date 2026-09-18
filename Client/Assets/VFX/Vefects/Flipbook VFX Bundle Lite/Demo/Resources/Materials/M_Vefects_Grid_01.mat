@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_Vefects_Grid_01
+  m_Shader: {fileID: 4800000, guid: 628e9c068de3eb2488430512c04abc6d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Masks:
+        m_Texture: {fileID: 2800000, guid: da13cff96126c2142a4282f9b0b912f2, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Normal:
+        m_Texture: {fileID: 2800000, guid: a6c07b142c14fe64097eb43b7eb9ea05, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Texture:
+        m_Texture: {fileID: 2800000, guid: 7a3526d3c2b6d7f4bb01239c99c63abd, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _texcoord:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AlphaCutoff: 0.5
+    - _EnvironmentReflections: 1
+    - _MasksTileOverall: 1
+    - _NormalIntensity: 2
+    - _ParallaxScale: 1
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    - _RandomTileColorsMax: 1
+    - _ReceiveShadows: 1
+    - _RoughnessMax: 0
+    - _RoughnessMin: 0.3
+    - _Specular: 0.01
+    - _SpecularHighlights: 1
+    - _TextureTileOverall: 1
+    - _TileOverall: 400
+    - _TileX: 1
+    - _TileY: 1
+    - __dirty: 0
+    m_Colors:
+    - _Color01: {r: 1, g: 1, b: 1, a: 0}
+    - _Color02: {r: 0.7924528, g: 0.7924528, b: 0.7924528, a: 0}
+    - _ColorOverall: {r: 0.2, g: 0.2, b: 0.2, a: 0}
+    - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
