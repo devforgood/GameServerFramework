@@ -7,17 +7,19 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 /// <summary>
-/// Assets/VFX 에셋 팩 이펙트를 게임에 연결한다.
+/// 이펙트를 게임에 연결한다.
 ///
 ///   1. 팩 머티리얼 교정: URP 전용 셰이더 → Built-in 파티클 셰이더(이 프로젝트는 Built-in 파이프라인)
-///   2. Catalog 표대로 Resources/VfxLibrary.asset 을 다시 채운다(런타임 Vfx.Play 가 읽는다)
-///   3. 검증: 프리팹 존재, 모든 렌더러가 Built-in 에서 그려지는 셰이더인지
-///   4. (선택) 미리보기 PNG: 게임 카메라 각도로 캐릭터 옆에 재생 중간 프레임을 찍는다
+///   2. 게임 전용 이펙트 저작(VfxAuthoringTool → Assets/VFX/Game)
+///   3. Catalog 표대로 Resources/VfxLibrary.asset 을 다시 채운다(런타임 Vfx.Play 가 읽는다)
+///   4. 검증: 프리팹 존재, 모든 렌더러가 Built-in 에서 그려지는 셰이더인지
+///   5. (선택) 미리보기 PNG: 게임 카메라 각도로 캐릭터 옆에 재생 중간 프레임을 찍는다
 ///
 /// 에셋은 매번 표로 다시 만든다. 인스펙터에서 고치지 말고 Catalog 를 고쳐라.
 ///
 /// CLI: -executeMethod VfxLibraryTool.BuildAll [-previewDir 경로]
 ///      -executeMethod VfxLibraryTool.RenderCandidates -previewDir 경로   (팩 프리팹 전부를 찍어 고를 때)
+///      -executeMethod VfxLibraryTool.RenderInScene -previewDir 경로      (실제 맵 조명·안개 속에서 볼 때)
 ///      (-nographics 를 빼야 PNG 가 나온다)
 /// </summary>
 public static class VfxLibraryTool
@@ -25,84 +27,49 @@ public static class VfxLibraryTool
     private const string LibraryPath = "Assets/Resources/" + VfxLibrary.ResourcePath + ".asset";
     private const string PackRoot = "Assets/VFX";
 
-    private const string Vefects = "Assets/VFX/Vefects/Flipbook VFX Bundle Lite/";
-    private const string Combat = Vefects + "Combat Flipbook VFX/_ Lite/Particles/Lite_VFX_";
-    private const string Flip = Vefects + "Flipbook VFX/_ Lite/Prefabs/Lite_VFX_";
-    private const string Pixel = Vefects + "Pixel Craft VFX/_ Lite/Prefabs/Lite_VFX_";
-    private const string Eric = "Assets/VFX/Eric VFX Studio/Free RPG VFX Sprite Sheet Starter Pack/Prefabs/";
-
     // Free Slash VFX 는 쓰지 않는다. 셰이더가 URP 전용 Shader Graph 이고 Scene Color/Depth(왜곡)에 기대는데,
     // Built-in 에는 불투명 텍스처가 없어 타깃을 추가해도 같은 모양이 나오지 않는다.
 
-    // 색 상수(recolor). 팩 원색 대신 칠할 때 쓴다. Color.clear = 원색 유지.
     private static readonly Color Keep = Color.clear;
-    private static readonly Color Cold = new Color(0.55f, 0.85f, 1f);
-    private static readonly Color Poison = new Color(0.5f, 1f, 0.35f);
-    private static readonly Color Holy = new Color(1f, 0.92f, 0.55f);
-    private static readonly Color Arcane = new Color(0.75f, 0.5f, 1f);
-    private static readonly Color Life = new Color(0.45f, 1f, 0.55f);
+    private static string Game(string name) => VfxAuthoringTool.PrefabPath(name);
 
     /// <summary>
     /// 키 → 프리팹. 키 규약: 용도.속성(속성 없는 것은 용도만). SkillFxDispatcher·Actor 가 이 키를 부른다.
     ///
-    /// size 는 배율 1 에서의 크기(m, 재생 중 파티클 사각형 경계의 가장 긴 변)다. 도구가 실측해 배율을 맞춘다.
-    /// 그림이 사각형의 일부만 채우는 이펙트(불꽃·신성 타격)는 눈에 보이는 크기가 맞도록 size 를 크게 잡았다.
-    /// recolor 는 머티리얼 색 속성을 바꾸므로 색이 텍스처에 구워진 Eric 팩에는 먹지 않는다(Vefects 전용).
-    /// 광역(폭발·파동·마법진·빛기둥·분사·회오리) 은 2 m 로 두어 호출 측이 반경을 곱하면 지름이 2 × 반경이 되게 한다.
+    /// 전부 VfxAuthoringTool 이 만든 게임 전용 이펙트(Assets/VFX/Game)다. 받아 둔 팩(Vefects 셀 셰이딩·도트)은
+    /// 사실적인 맵에서 스티커처럼 떠 보여 뺐고(2026-09-19, 씬 미리보기로 비교), Eric 화염 구만 폭발 안에 넣어 쓴다.
     ///
-    /// 고른 기준(후보 전부를 RenderCandidates 로 찍어 비교, 2026-09-19):
-    ///   - Vefects Combat/Flipbook(셀 셰이딩) 과 Eric(스프라이트 시트) 를 쓴다. 둘 다 탑뷰 카메라에서 형태가 또렷하다.
-    ///   - Vefects Pixel Craft 는 도트 그림이라 다른 이펙트와 섞이면 어색해 투사체 하나만 쓴다.
-    ///   - Poison_Burst 는 머티리얼 참조가 팩에서 빠져 있어(분홍) 못 쓴다. 독은 흰 계열 이펙트를 초록으로 칠한다.
-    ///   - Electric_Impact Bunch 는 버스트 없이 초당 7개를 흘려 첫 번개가 언제 나올지 들쭉날쭉하다. 번개 파동은 흰 고리를 물들인다.
+    /// size 0 = 미터 단위로 저작한 크기를 그대로 쓴다(재배율 없음). 광역(폭발·파동·마법진)은 지름 2 m 라서
+    /// 호출 측이 반경을 곱하면 지름 = 2 × 반경이 된다. size 를 주면 실측 크기를 그 값에 맞춘다(외부 팩용).
+    /// 흰색으로 만든 것(nova·circle·projectile)은 호출 측이 속성 색을 곱한다.
     /// </summary>
     private static readonly (string key, string prefab, float size, float emitTime, Color recolor)[] Catalog =
     {
-        // 피격(맞은 자리, 몸통 높이). 속성별로 다른 모양.
-        ("hit.physical",   Combat + "Hit_04_Loop.prefab",                                        1.4f, 0f, Keep),
-        ("hit.fire",       Flip + "Flame_Burst_01.prefab",                                       2.6f, 0f, Keep),
-        ("hit.lightning",  Combat + "Electric_Impact_01_Loop_CV_02.prefab",                      1.6f, 0f, Keep),
-        ("hit.cold",       Flip + "Charge_01.prefab",                                            1.4f, 0.3f, Keep),
-        ("hit.poison",     Combat + "Radial_Charge_Skill_01_Random_Rotate_Loop.prefab",          1.4f, 0f, Poison),
-        ("hit.holy",       Eric + "Magic Hit 01.prefab",                                         2.4f, 0f, Keep),
+        ("hit.physical",    Game("hit_physical"),    0f, 0f, Keep),
+        ("hit.fire",        Game("hit_fire"),        0f, 0f, Keep),
+        ("hit.cold",        Game("hit_cold"),        0f, 0f, Keep),
+        ("hit.lightning",   Game("hit_lightning"),   0f, 0f, Keep),
+        ("hit.poison",      Game("hit_poison"),      0f, 0f, Keep),
+        ("hit.holy",        Game("hit_holy"),        0f, 0f, Keep),
 
-        // 근접 베기(캐스터 정면). 호출 측이 사거리(반경)를 곱한다.
-        ("slash",          Eric + "Magic Slash 01.prefab",                                       2f, 0f, Keep),
+        ("slash",           Game("slash"),           0f, 0f, Keep),
+        ("explosion",       Game("explosion"),       0f, 0f, Keep),
+        ("nova",            Game("nova"),            0f, 0f, Keep),
+        ("circle",          Game("circle"),          0f, 0f, Keep),
 
-        // 폭발(착탄·낙하·돌진 끝).
-        ("explosion",      Eric + "Explosion 01.prefab",                                         2f, 0f, Keep),
-        ("explosion.big",  Eric + "Explosion 02.prefab",                                         2f, 0f, Keep),
+        ("projectile",      Game("projectile"),      0f, 0f, Keep),
+        ("projectile.fire", Game("projectile_fire"), 0f, 0f, Keep),
 
-        // 캐스터 중심 파동. 흰 고리라 속성 색을 곱하면 그대로 물든다.
-        ("nova",           Combat + "Radial_Charge_Skill_01_GS_Random_Rotate_Bunch_01_Loop.prefab", 2f, 0f, Keep),
-        ("nova.fire",      Combat + "Radial_Spiky_Hit_01_Random_Rotate_Bunch_Loop.prefab",       2f, 0f, Keep),
+        ("strike",          Game("strike"),          0f, 0f, Keep),
+        ("strike.holy",     Game("pillar"),          0f, 0f, Keep),
+        ("cone.fire",       Game("cone"),            0f, 0f, Keep),
 
-        // 예고 마법진(낙하·강림 전). 색이 텍스처에 구워져 있어(파랑) 다시 칠할 수 없다 — 원색으로 쓴다.
-        ("circle",         Eric + "Magic Circle 01.prefab",                                      2f, 0f, Keep),
-
-        // 투사체 몸체(날아가는 동안 따라다님).
-        ("projectile.fire",      Pixel + "Fireball_Projectile_01_Color_Loop_Static.prefab",      1.2f, 0f, Keep),
-        ("projectile.lightning", Combat + "Lightning_Projectile_02_Billboard_Bunch_Loop_01_CV_02.prefab", 1.2f, 1f, Keep),   // 한 주기 10초
-        ("projectile",           Flip + "Charge_02.prefab",                                      2f, 0f, Color.white),
-
-        // 번개 줄기 끝·빛기둥.
-        ("strike",         Flip + "Lightning_05.prefab",                                         2.2f, 0f, Keep),
-        ("strike.holy",    Flip + "Lightning_08.prefab",                                         2f, 0f, Holy),
-
-        // 분사(인페르노). 불꽃 덩어리를 분사 길이를 따라 여러 번 터뜨린다.
-        ("cone.fire",      Flip + "Flame_Burst_01.prefab",                                       3.5f, 0f, Keep),
-
-        // 이동 계열.
-        ("teleport.out",   Pixel + "Vanish_01_Color_Bunch_Loop.prefab",                          2.6f, 0f, Arcane),
-        ("teleport.in",    Combat + "Radial_Charge_Skill_01_Random_Rotate_Loop.prefab",          1.8f, 0f, Arcane),
-        ("dash",           Flip + "Dust_Directional_Small_01.prefab",                            1.4f, 0.3f, Keep),
-        ("tornado",        Flip + "Dust_Directional_01.prefab",                                  2f, 0.3f, Keep),
-
-        // 회복(캐스터에 붙음).
-        ("heal",           Combat + "Radial_Charge_Skill_01_GS_Random_Rotate_Bunch_01_Loop.prefab", 2f, 0f, Life),
-
-        // 몬스터 사망(해골이 부서지는 흙먼지).
-        ("death",          Combat + "Explosion_02_Pivot_Loop.prefab",                            2.2f, 0f, Keep),
+        ("teleport.out",    Game("teleport_out"),    0f, 0f, Keep),
+        ("teleport.in",     Game("teleport_in"),     0f, 0f, Keep),
+        ("dash",            Game("dash"),            0f, 0f, Keep),
+        ("tornado",         Game("tornado"),         0f, 0f, Keep),
+        ("heal",            Game("heal"),            0f, 0f, Keep),
+        ("death",           Game("death"),           0f, 0f, Keep),
     };
 
     [MenuItem("Tools/VFX/Build Library")]
@@ -173,12 +140,143 @@ public static class VfxLibraryTool
             EditorApplication.Exit(ok ? 0 : 1);
     }
 
+    /// <summary>
+    /// CLI: 실제 맵(Starting Village)의 조명·안개 속에서 게임 기본 카메라(피치 53°, 거리 17.7 m)로 이펙트를 찍는다.
+    /// 회색 바닥 미리보기로는 배경과 어울리는지 판단할 수 없어서 따로 둔다. 씬은 저장하지 않는다.
+    /// </summary>
+    public static void RenderInScene()
+    {
+        bool ok = false;
+        try
+        {
+            string previewDir = CommandLineValue("-previewDir") ?? "VfxInScene";
+            ok = CanRender();
+            if (ok)
+            {
+                var library = AssetDatabase.LoadAssetAtPath<VfxLibrary>(LibraryPath);
+                RenderScene(library.entries.Select(e => (e.key, e)).ToList(), previewDir);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+            ok = false;
+        }
+
+        if (Application.isBatchMode)
+            EditorApplication.Exit(ok ? 0 : 1);
+    }
+
+    private static void RenderScene(List<(string name, VfxLibrary.Entry entry)> items, string dir)
+    {
+        Directory.CreateDirectory(dir);
+        var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(EnvironmentDressingTool.StartingVillageScene);
+
+        // 플레이 영역 = 가장 넓은 콜라이더(바닥).
+        var floor = Object.FindObjectsByType<Collider>(FindObjectsSortMode.None)
+            .Where(c => c.enabled)
+            .OrderByDescending(c => c.bounds.size.x * c.bounds.size.z)
+            .First();
+        Vector3 c0 = floor.bounds.center;
+        c0.y = floor.bounds.max.y;
+
+        bool asyncShaders = ShaderUtil.allowAsyncCompilation;
+        ShaderUtil.allowAsyncCompilation = false;
+        var temp = new List<Object>();
+        try
+        {
+            var camGo = new GameObject("VfxSceneCamera") { hideFlags = HideFlags.DontSave };
+            temp.Add(camGo);
+            var cam = camGo.AddComponent<Camera>();
+            cam.fieldOfView = 40f;
+            cam.farClipPlane = 1000f;
+            cam.aspect = 16f / 9f;
+            cam.useOcclusionCulling = false;
+
+            GameObject Place(string resource, Vector3 at, float yaw)
+            {
+                var prefab = Resources.Load<GameObject>(resource);
+                var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
+                go.hideFlags = HideFlags.DontSave;
+                go.transform.SetPositionAndRotation(at, Quaternion.Euler(0, yaw, 0));
+                temp.Add(go);
+                return go;
+            }
+            Vector3 hero = c0 + new Vector3(-3f, 0f, 0f);   // 경사로(흙 둔덕) 옆은 지형이 높아 바닥 이펙트가 묻힌다
+            Vector3 foe = c0 + new Vector3(1.5f, 0f, 1f);
+            Place("Character2", hero, 45f);
+            Place("Monster", foe, 225f);
+
+            // 게임 기본 줌(0.55): 피치 53.25°, 거리 17.7 m, 초점은 캐릭터 1 m 위.
+            Quaternion rot = Quaternion.Euler(53.25f, 0f, 0f);
+            Vector3 focus = c0 + Vector3.up;
+            cam.transform.SetPositionAndRotation(focus - rot * Vector3.forward * 17.7f, rot);
+
+            // 게임에서 부르는 모양대로 놓는다(SkillFxDispatcher 기준). 키 → (위치, 방향, 배율, 시각) 목록.
+            Vector3 toFoe = (foe - hero).normalized;
+            Quaternion face = Quaternion.LookRotation(toFoe);
+            var chest = Vector3.up;
+            (Vector3 at, Quaternion rot, float scale, float t)[] ShotsFor(string key)
+            {
+                switch (key)
+                {
+                    case "slash":        return new[] { (hero + Vector3.up * 0.9f, face, 2.5f, 0.07f) };
+                    case "cone.fire":    return new[] { (hero + Vector3.up * 0.8f, face, 2f, 0.2f) };
+                    case "explosion":    return new[] { (foe, Quaternion.identity, 3f, 0.12f) };
+                    case "nova":
+                    case "circle":       return new[] { (foe, Quaternion.identity, 3f, 0.3f) };
+                    case "strike":       return new[] { (foe, Quaternion.identity, 1f, 0.06f) };
+                    case "strike.holy":  return new[] { (foe, Quaternion.identity, 1.6f, 0.12f) };
+                    case "heal":         return new[] { (hero, Quaternion.identity, 1f, 0.35f) };
+                    case "death":        return new[] { (foe, Quaternion.identity, 1f, 0.3f) };
+                    case "tornado":      return new[] { (foe, Quaternion.identity, 2f, 0.3f) };
+                    case "dash":         return new[] { (hero, Quaternion.LookRotation(-toFoe), 1f, 0.25f) };
+                    case "teleport.out": return new[] { (hero, Quaternion.identity, 1f, 0.22f) };
+                    case "teleport.in":  return new[] { (foe, Quaternion.identity, 1f, 0.12f) };
+                    case "projectile":
+                    case "projectile.fire":
+                        return new[] { (Vector3.Lerp(hero, foe, 0.5f) + Vector3.up, face, 1f, 0.5f) };
+                    default:             // 타격: 몬스터 몸통, 두 시점
+                        return new[] { (foe + chest, Quaternion.identity, 1f, 0.05f), (foe + new Vector3(2.5f, 1f, -1.5f), Quaternion.identity, 1f, 0.15f) };
+                }
+            }
+
+            var files = new List<string>();
+            foreach (var (name, entry) in items)
+            {
+                var spawned = new List<GameObject>();
+                foreach (var s in ShotsFor(name))
+                {
+                    var go = Spawn(entry, s.at, s.rot);
+                    go.transform.localScale *= s.scale;
+                    Vfx.Prepare(go, entry, null, name.StartsWith("projectile"));
+                    SimulateTo(go, s.t);
+                    spawned.Add(go);
+                }
+                Debug.Log($"[VfxLibrary] 씬 {name} 파티클 수 {string.Join(" ", spawned.Select(g => g.GetComponentsInChildren<ParticleSystem>().Sum(p => p.particleCount)))} 위치 {string.Join(" ", spawned.Select(g => g.transform.position))}");
+                string file = Path.Combine(dir, Sanitize(name) + ".png");
+                SavePng(cam, file, 1280, 720);
+                files.Add(file);
+                foreach (var go in spawned)
+                    Object.DestroyImmediate(go);
+            }
+            Debug.Log($"[VfxLibrary] 씬 미리보기 {files.Count}장 저장: {dir}");
+        }
+        finally
+        {
+            foreach (var o in temp)
+                if (o != null) Object.DestroyImmediate(o);
+            ShaderUtil.allowAsyncCompilation = asyncShaders;
+        }
+    }
+
     private static bool Build(out string report)
     {
         var log = new List<string>();
         bool ok = true;
 
         FixPipelineMaterials(log);
+        log.AddRange(VfxAuthoringTool.Author());
 
         var library = AssetDatabase.LoadAssetAtPath<VfxLibrary>(LibraryPath);
         if (library == null)
@@ -222,7 +320,8 @@ public static class VfxLibraryTool
                 entry.scale = 1f;
             }
             else
-                entry.scale = c.size / measured;
+                entry.scale = c.size > 0f ? c.size / measured : 1f;
+            entry.size = c.size > 0f ? c.size : measured;
             library.entries.Add(entry);
 
             log.Add($"{c.key,-22} {Path.GetFileNameWithoutExtension(c.prefab),-62} 실측 {measured,5:F2} m → 배율 {entry.scale:F2}");

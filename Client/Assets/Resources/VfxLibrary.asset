@@ -14,146 +14,128 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::VfxLibrary
   entries:
   - key: hit.physical
-    prefab: {fileID: 4748681987041982144, guid: 8de8be961d6f89b4ca99a04653ee712e, type: 3}
-    scale: 0.7
-    size: 1.4
+    prefab: {fileID: 1596988243895891028, guid: d0712236761659b409fdf80f28edaa89, type: 3}
+    scale: 1
+    size: 3.0512185
     emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: hit.fire
-    prefab: {fileID: 3952708904848852155, guid: 1d578c757cfdb6c46ad49e2dc5699977, type: 3}
-    scale: 0.52
-    size: 2.6
-    emitTime: 0
-    recolor: {r: 0, g: 0, b: 0, a: 0}
-  - key: hit.lightning
-    prefab: {fileID: 4748681987041982144, guid: 7528a4b1b31ed214a829644dfb3e3b8b, type: 3}
-    scale: 0.8
-    size: 1.6
+    prefab: {fileID: 8269410755824242880, guid: ad59323481b87ee4fb0177f54465b86f, type: 3}
+    scale: 1
+    size: 4.048542
     emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: hit.cold
-    prefab: {fileID: 3492086563444611750, guid: e74dbb04a4ab47246a2d9006f70a9751, type: 3}
-    scale: 0.3043478
-    size: 1.4
-    emitTime: 0.3
+    prefab: {fileID: 7520297461327969731, guid: 9169e8e143274ef48805410da3a07147, type: 3}
+    scale: 1
+    size: 4.0738277
+    emitTime: 0
+    recolor: {r: 0, g: 0, b: 0, a: 0}
+  - key: hit.lightning
+    prefab: {fileID: 4640217770083777207, guid: b10ce5d8b6def3c4da0139fe02db3b29, type: 3}
+    scale: 1
+    size: 5.6386127
+    emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: hit.poison
-    prefab: {fileID: 4748681987041982144, guid: d18ca156810de4641b02c5ce06b41900, type: 3}
-    scale: 0.7
-    size: 1.4
+    prefab: {fileID: 5797491654658638388, guid: 78b45c48a6a8f3e458ff544ceb30498b, type: 3}
+    scale: 1
+    size: 5.817567
     emitTime: 0
-    recolor: {r: 0.5, g: 1, b: 0.35, a: 1}
+    recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: hit.holy
-    prefab: {fileID: 562406965832795679, guid: 678f58297b2593f46a9f9180a025f5db, type: 3}
-    scale: 0.6857143
-    size: 2.4
+    prefab: {fileID: 1492014581009689808, guid: caec67c388aa5b341bc50c5bf53a4d47, type: 3}
+    scale: 1
+    size: 2.967271
     emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: slash
-    prefab: {fileID: 3005786366994476738, guid: 197de9ef543e5f4419d9b627cf07bec0, type: 3}
-    scale: 0.5714286
-    size: 2
+    prefab: {fileID: 1960141594896469094, guid: 3de0181984372b24fb9efd7b7e0eaa45, type: 3}
+    scale: 1
+    size: 2.7806878
     emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: explosion
-    prefab: {fileID: 5901503514571082588, guid: 8e122721c4e46844b9e9045eb954e470, type: 3}
-    scale: 0.5714286
-    size: 2
-    emitTime: 0
-    recolor: {r: 0, g: 0, b: 0, a: 0}
-  - key: explosion.big
-    prefab: {fileID: 7276292554753924425, guid: 28959f423afe7dd4b9eb496bb760a138, type: 3}
-    scale: 0.5714286
-    size: 2
+    prefab: {fileID: 7631701775027691557, guid: 75e175c15fdf3f642be2f6a0e37585a3, type: 3}
+    scale: 1
+    size: 10.343884
     emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: nova
-    prefab: {fileID: 4748681987041982144, guid: dde51b8b56976db40be060d84e282004, type: 3}
-    scale: 0.5769686
-    size: 2
-    emitTime: 0
-    recolor: {r: 0, g: 0, b: 0, a: 0}
-  - key: nova.fire
-    prefab: {fileID: 4748681987041982144, guid: 75c32b83b82f23f4ea48db55672e5f20, type: 3}
-    scale: 0.7221459
-    size: 2
+    prefab: {fileID: 296624056610972780, guid: 4cd126186479088429786a3587917522, type: 3}
+    scale: 1
+    size: 3.1225905
     emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: circle
-    prefab: {fileID: 1976075193162793776, guid: ee8557478fb28bd4da20a21b5c6072c9, type: 3}
-    scale: 0.5714286
-    size: 2
+    prefab: {fileID: 7972568535242833050, guid: 864379cfd95b51548a8e814ea74c5db1, type: 3}
+    scale: 1
+    size: 2.1
+    emitTime: 0
+    recolor: {r: 0, g: 0, b: 0, a: 0}
+  - key: projectile
+    prefab: {fileID: 7096102450665354057, guid: 21170fc88b9d6d548a0ad34984b9141f, type: 3}
+    scale: 1
+    size: 1.0702922
     emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: projectile.fire
-    prefab: {fileID: 6384911962671773633, guid: 6f9add8b0491f824bae6293a0bb42eed, type: 3}
-    scale: 1.2
-    size: 1.2
+    prefab: {fileID: 7912985729345061247, guid: 1bc35a888748b1f4b84c3c79cc72eed7, type: 3}
+    scale: 1
+    size: 1.049496
     emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
-  - key: projectile.lightning
-    prefab: {fileID: 4748681987041982144, guid: a0fc510eb0a10a94780fee7a3c681042, type: 3}
-    scale: 0.4306634
-    size: 1.2
-    emitTime: 1
-    recolor: {r: 0, g: 0, b: 0, a: 0}
-  - key: projectile
-    prefab: {fileID: 9048577567042440302, guid: 1e46be1152fea1a4ea7b061b7d8d690b, type: 3}
-    scale: 0.4
-    size: 2
-    emitTime: 0
-    recolor: {r: 1, g: 1, b: 1, a: 1}
   - key: strike
-    prefab: {fileID: 267411365671275766, guid: e52b27f5f59ce25498170c090a09d44c, type: 3}
-    scale: 1.1
-    size: 2.2
+    prefab: {fileID: 3137828601344472012, guid: b58128b665732b14495caf35e7e35f93, type: 3}
+    scale: 1
+    size: 4.2814713
     emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: strike.holy
-    prefab: {fileID: 2204298500379440734, guid: 663f0696c77c91249b2e0cd33e65b688, type: 3}
-    scale: 0.4
-    size: 2
+    prefab: {fileID: 3193184580384361094, guid: 1fad4797f75b46b4482591a41f188b67, type: 3}
+    scale: 1
+    size: 14.9
     emitTime: 0
-    recolor: {r: 1, g: 0.92, b: 0.55, a: 1}
+    recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: cone.fire
-    prefab: {fileID: 3952708904848852155, guid: 1d578c757cfdb6c46ad49e2dc5699977, type: 3}
-    scale: 0.7
-    size: 3.5
+    prefab: {fileID: 1251743002658021096, guid: dabb7c61b289a3e4f890b06754b2cce3, type: 3}
+    scale: 1
+    size: 2.7784982
     emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: teleport.out
-    prefab: {fileID: 4677952160816672926, guid: cf2638155f12bd341b4186fc95402419, type: 3}
-    scale: 1.4422685
-    size: 2.6
+    prefab: {fileID: 6672525345867330146, guid: a7dd94fd2fae2b54895f32052b70eb92, type: 3}
+    scale: 1
+    size: 2.3001711
     emitTime: 0
-    recolor: {r: 0.75, g: 0.5, b: 1, a: 1}
+    recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: teleport.in
-    prefab: {fileID: 4748681987041982144, guid: d18ca156810de4641b02c5ce06b41900, type: 3}
-    scale: 0.9
-    size: 1.8
+    prefab: {fileID: 3520796081621026415, guid: d2fdbe3510214324999ee6dc060001e7, type: 3}
+    scale: 1
+    size: 4.497733
     emitTime: 0
-    recolor: {r: 0.75, g: 0.5, b: 1, a: 1}
+    recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: dash
-    prefab: {fileID: 1167571271092652598, guid: 6bc442c01cd9c1c4cb1d9190a81eb392, type: 3}
-    scale: 0.7297404
-    size: 1.4
-    emitTime: 0.3
+    prefab: {fileID: 6279722084436545044, guid: 588825024924a7d439d0b0e004de874d, type: 3}
+    scale: 1
+    size: 2.1713617
+    emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: tornado
-    prefab: {fileID: 927721798668684304, guid: f9ff32d93bc95864fb9f459824d5ef50, type: 3}
-    scale: 0.556971
-    size: 2
-    emitTime: 0.3
+    prefab: {fileID: 2576367449976385951, guid: d9cfa333b7c81714aa81410e7377ca17, type: 3}
+    scale: 1
+    size: 2.530707
+    emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: heal
-    prefab: {fileID: 4748681987041982144, guid: dde51b8b56976db40be060d84e282004, type: 3}
-    scale: 0.6152768
-    size: 2
+    prefab: {fileID: 3810812360752631558, guid: 0de5d0e89b5e98044b62f94ad449c1c4, type: 3}
+    scale: 1
+    size: 4.0493503
     emitTime: 0
-    recolor: {r: 0.45, g: 1, b: 0.55, a: 1}
+    recolor: {r: 0, g: 0, b: 0, a: 0}
   - key: death
-    prefab: {fileID: 4748681987041982144, guid: 27d9d2e1e3ad07a439c9c7c4dc433e7f, type: 3}
-    scale: 1.1
-    size: 2.2
+    prefab: {fileID: 1920884203722144297, guid: 1da6ad38914253c44bf8a93273878500, type: 3}
+    scale: 1
+    size: 12.267278
     emitTime: 0
     recolor: {r: 0, g: 0, b: 0, a: 0}

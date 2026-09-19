@@ -41,6 +41,8 @@
 | Starting Village 배경 재생성 + 검증 + 미리보기 | Tools > Environment > Dress Starting Village | `EnvironmentDressingTool.BuildStartingVillage -previewDir <폴더>` |
 | 이펙트 라이브러리 재생성 + 검증 + 미리보기 | Tools > VFX > Build Library | `VfxLibraryTool.BuildAll -previewDir <폴더>` |
 | 팩 이펙트 전부 찍어 보기(고를 때) | — | `VfxLibraryTool.RenderCandidates -previewDir <폴더>` |
+| 실제 맵 조명·안개 속에서 이펙트 보기 | — | `VfxLibraryTool.RenderInScene -previewDir <폴더>` |
+| 게임 전용 이펙트만 다시 저작 | Tools > VFX > Author Game Effects | (Build Library 가 먼저 부름) |
 
 ```powershell
 & "C:\Program Files\Unity\Hub\Editor\6000.6.0f1\Editor\Unity.exe" -batchmode -quit -nographics `
@@ -287,19 +289,28 @@ MeshFilter·콜라이더는 남기므로 NavMesh 재굽기와 클릭 이동은 �
 
 ### 현재 상태
 
-`Assets/VFX` 의 세 팩 중 두 개를 쓴다.
+**게임 전용 이펙트를 코드로 만들어 쓴다**(`VfxAuthoringTool` → `Assets/VFX/Game`, 약 4 MB, 저장소에 포함). 받아 둔 팩은 폭발 속 화염 구(Eric) 하나만 쓴다.
 
-| 팩 | 셰이더 | 사용 |
+| 출처 | 셰이더 | 사용 |
 |---|---|---|
-| Vefects Flipbook VFX Bundle Lite (Combat / Flipbook / Pixel Craft) | 팩 자체 BIRP 셰이더 | 피격·파동·번개·흙먼지·사망 등 대부분. Pixel Craft 는 도트 그림이라 화염 투사체·순간이동 연기만 |
-| Eric VFX Studio Free RPG Sprite Sheet | URP → Legacy 파티클로 교정 | 베기·폭발·마법진·신성 타격 |
+| `Assets/VFX/Game` (직접 저작) | Built-in Legacy 파티클(가산·알파) | 전부. 절차적 텍스처(발광·불꽃·연기 2×2·고리·초승달·광선) + 파티클 조립 + 순간 점광원 |
+| Eric VFX Studio Free RPG Sprite Sheet | URP → Legacy 파티클로 교정 | `Explosion 01` 을 폭발 프리팹 안에 중첩 |
+| Vefects Flipbook VFX Bundle Lite | 팩 자체 BIRP 셰이더 | **미사용**(아래 이력). 196 MB — 필요 없으면 지워도 된다 |
 | Free Slash VFX | URP 전용 Shader Graph | **미사용**. Scene Color/Depth(왜곡)에 기대서 Built-in 타깃을 붙여도 같은 모양이 안 나온다. 프로젝트를 URP 로 옮기기 전엔 못 쓴다 |
+
+직접 만든 이펙트의 규칙:
+
+- 텍스처는 흰색 + 알파 모양만 갖는다. 색은 파티클 색으로 입혀서 속성 색(`Vfx.Play` 의 tint)이 그대로 먹는다. `nova`·`circle`·`projectile` 은 흰색으로 두고 호출 측이 칠한다.
+- 크기는 실제 미터로 저작한다(카탈로그 size 0 = 재배율 없음). 광역은 지름 2 m, 베기 초승달은 피벗이 호의 중심(캐스터)이다.
+- 바닥에 눕히는 층(고리·초승달)은 25 cm 띄운다. 먼지·연기는 밝은 풀밭보다 확실히 어둡게 한다(→ 이력 3).
+- 번쩍임에만 파티클 조명 모듈(최대 1개)을 달아 주변 바닥을 잠깐 밝힌다. 폭발·파동·낙뢰·빛기둥·순간이동.
 
 ### 구조
 
 ```
+VfxAuthoringTool (코드로 텍스처·머티리얼·프리팹 저작 → Assets/VFX/Game)
 VfxLibraryTool.Catalog (코드 표: 키 → 프리팹, 목표 크기, recolor)
-   └ Tools > VFX > Build Library → Resources/VfxLibrary.asset (실측으로 배율 계산)
+   └ Tools > VFX > Build Library → 저작 → Resources/VfxLibrary.asset
         └ 런타임 Vfx.Play(key, 위치, 배율, 색)
              ├ SkillFxDispatcher  스킬 fx·element 별 연출(지면 호·링 선은 판정 범위 표시로 유지)
              ├ Actor.TakeDamage   피격 "hit.physical" (액터당 0.25초 간격)
@@ -322,6 +333,17 @@ VfxLibraryTool.Catalog (코드 표: 키 → 프리팹, 목표 크기, recolor)
 | 4 | 속성별 색 입히기 | 파티클 `startColor` 로는 안 바뀐다. **Vefects 셰이더는 색을 머티리얼 `_R/_G/_B/_Outline` 에서 읽고 정점색은 투명도에만 쓴다.** MaterialPropertyBlock 으로 색 속성을 바꾼다(밝기 유지, 색조만). Eric 팩은 색이 텍스처에 구워져 있어 칠할 수 없다 |
 | 5 | 플레이 모드 스모크(임시 스크립트, 배치모드) | 24개 키 전부 재생·정리, 스킬 연출 49개 예외 없음. 반복 주기 10초짜리 번개 투사체가 남아 `emitTime`·`looping` 도입. 버스트 없이 흘리는 번개 파동은 제외 |
 
+### 2026-09-19 · 팩 이펙트 → 직접 저작으로 교체
+
+"게임과 어울리지 않는다"는 피드백. 이 PC 에 받아 둔 다른 이펙트 팩은 없었다(에셋스토어 캐시에 세 팩뿐).
+
+| 단계 | 한 일 | 결과 / 교훈 |
+|---|---|---|
+| 1 | **실제 맵(Starting Village) 조명·안개 속**에서 게임 기본 카메라로 찍는 `RenderInScene` 추가 | 회색 바닥 미리보기로는 어울림을 판단할 수 없었다. 맵은 사실적인 PBR(바위·풀·해골·갑옷)인데 Vefects 는 검은 외곽선 셀 셰이딩·도트라 **스티커처럼 떠 보였다** |
+| 2 | 발광·불꽃 튐·연기·충격파·점광원으로 21개 이펙트를 코드로 조립 | 빛이 바닥을 물들여 맵에 녹아든다. Eric 화염 구는 사실적이라 폭발 안에 남김 |
+| 3 | 씬 미리보기에서 고리·먼지 일부가 안 보임 | **바닥 콜라이더 높이(0)보다 실제 지형 표면이 조금 높아 8 cm 에 눕힌 고리가 묻혔다**(0.3 m 올려 찍어 확인) → 25 cm. 먼지는 햇빛 받은 풀밭과 명도가 같아 사라짐 → 어둡게, 사망엔 떠나는 빛(영혼)을 더함 |
+| 4 | 플레이 모드 스모크 | 키 21개 재생·정리, 스킬 연출 49개 예외 없음, 6초 뒤 남은 파티클·조명 없음 |
+
 ### 이펙트 트러블슈팅
 
 | 증상 | 원인 | 해결 |
@@ -330,12 +352,14 @@ VfxLibraryTool.Catalog (코드 표: 키 → 프리팹, 목표 크기, recolor)
 | 미리보기에 아무것도 안 찍힘 | 샘플 시각이 파티클 수명 뒤 | 로그의 `파티클 수 0.08s:1 ...` 를 본다. 0 이면 시뮬레이션·시각 문제, 있는데 안 보이면 셰이더·크기 문제 |
 | 속성 색이 안 먹거나 탁해짐 | 색이 텍스처에 구워진 이펙트(Eric)에 색을 곱함 | 흰/단색 Vefects 이펙트에 `recolor` 를 쓰고, Eric 이펙트엔 색을 넘기지 않는다 |
 | 이펙트가 끝나지 않고 남음 | 팩 프리팹의 한 주기가 김(10초) | 카탈로그 `emitTime` 으로 방출을 자른다 |
-| Poison_Burst 가 분홍 | 팩에 머티리얼 참조가 빠져 있음(GUID 없음) | 사용 안 함. 독은 흰 고리를 초록으로 칠한다 |
+| Poison_Burst 가 분홍 | 팩에 머티리얼 참조가 빠져 있음(GUID 없음) | 사용 안 함 |
+| 바닥 고리가 어떤 자리에선 안 보임 | 지형 표면이 바닥 콜라이더보다 높음(특히 경사로 둔덕 근처) | 바닥 층을 25 cm 띄움. 미리보기 캐릭터도 둔덕에서 떨어뜨려 세움 |
+| 먼지·연기가 안 보임 | 밝은 풀밭과 명도가 비슷함 | 바닥보다 확실히 어두운 색 + 진한 알파. 회색 바닥 미리보기에선 보여서 놓치기 쉽다 — `RenderInScene` 으로 확인 |
 
 ### 이펙트의 한계
 
 - **피격 이펙트는 속성을 모른다.** 클라는 체력 감소만 보고 피격을 알기 때문에 항상 `hit.physical` 이다. 속성 피격을 보이려면 서버가 피해 알림에 스킬 id 나 속성을 실어야 한다.
 - **몬스터 공격(서버 AI 상태)에는 이펙트가 없다.** 피격 쪽 이펙트로만 보인다.
-- 팩 프리팹에 붙은 `AudioSource`(타격음 등)도 같이 재생된다. 소리가 거슬리면 `Vfx.Play` 에서 끄거나 볼륨을 맞춘다.
-- **Vefects 데모의 `Demo/Resources` 폴더(HDRI 약 49 MB)는 `Resources` 라 빌드에 통째로 들어간다.** 데모 씬을 안 볼 거면 `Assets/VFX/Vefects/Flipbook VFX Bundle Lite/Demo` 를 지우는 게 좋다.
-- 원형 마법진(Eric)은 파랑 고정이다(색이 텍스처에 있음).
+- 이펙트 소리가 없다(직접 만든 이펙트엔 AudioSource 가 없다).
+- **Vefects 팩은 이제 쓰지 않지만 `Demo/Resources` 폴더(HDRI 약 49 MB)는 `Resources` 라 빌드에 통째로 들어간다.** 팩째(`Assets/VFX/Vefects`) 지우는 게 좋다.
+- 파티클 조명은 Forward 렌더링에서 픽셀 조명 하나씩을 더 쓴다. 광역 스킬이 한꺼번에 많이 터지면 비용이 오른다(번쩍임 수명 0.2초 안팎이라 짧다).

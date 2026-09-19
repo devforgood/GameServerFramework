@@ -85,8 +85,8 @@ public static class SkillFxDispatcher
             Vfx.Play(nova, center + Vector3.up * 0.3f, radius, KeyTint(nova, "nova", data, color));
         }
         else
-            // 베기 이펙트(Eric 팩)는 색이 텍스처에 구워져 있어 속성 색을 곱하면 탁해진다. 원색(금빛)으로 둔다.
-            Vfx.PlayFacing("slash", center + Vector3.up * 1f + facing * radius * 0.4f, facing, radius);
+            // 초승달의 중심이 피벗이라 캐스터 위치에 놓고 사거리를 곱하면 호가 판정 범위를 따라간다.
+            Vfx.PlayFacing("slash", center + Vector3.up * 0.9f, facing, radius, KeyTint("slash", "slash", data, color));
 
         float t = 0f; const float dur = 0.25f;
         while (t < dur)
@@ -125,16 +125,23 @@ public static class SkillFxDispatcher
         return Tint(data, fallback);
     }
 
-    // 착탄 폭발: 화염(또는 속성 없음)은 폭발, 그 외 속성은 속성 피격 이펙트. 반경만큼 키운다.
+    // 착탄: 화염(또는 속성 없음)은 반경만 한 폭발. 그 외 속성은 반경만 한 파동(속성 색) + 가운데 속성 타격.
+    // 타격 이펙트를 반경만큼 키우면 불꽃 튐까지 커져 어색해서 파동으로 범위를 보여 준다.
     private static void Explode(Gamedata.Skill data, Vector3 pos, float radius, Color fallback, MonoBehaviour host)
     {
         bool fire = data.element == "fire" || string.IsNullOrEmpty(data.element);
-        string use = fire ? "explosion" : "hit";
-        string key = Key(use, data);
-        if (key != null)
-            Vfx.Play(key, pos, radius, KeyTint(key, use, data, fallback));
-        else
-            host.StartCoroutine(SkillFx.Burst(pos, radius, 0.4f, Tint(data, fallback)));
+        if (fire && Vfx.Has("explosion"))
+        {
+            Vfx.Play("explosion", pos, radius);
+            return;
+        }
+        if (!fire && Vfx.Has("nova"))
+        {
+            Vfx.Play("nova", pos, radius, Tint(data, fallback));
+            Vfx.Play(Key("hit", data), pos + Vector3.up * 0.8f, 1.3f);
+            return;
+        }
+        host.StartCoroutine(SkillFx.Burst(pos, radius, 0.4f, Tint(data, fallback)));
     }
 
     private static void Heal(GameObject caster, MonoBehaviour host)
@@ -187,7 +194,7 @@ public static class SkillFxDispatcher
         float radius = Radius(data, 6f);
         var color = Tint(data, new Color(1f, 0.35f, 0.05f));
         var ring = SkillFx.Ring(target, radius, color);
-        Vfx.Play("circle", target + Vector3.up * 0.1f, radius);
+        Vfx.Play("circle", target, radius, color);
 
         yield return new WaitForSeconds(0.5f); // 낙하 예고
 
@@ -213,10 +220,7 @@ public static class SkillFxDispatcher
         if (core != null) Object.Destroy(core);
         if (ring != null) Object.Destroy(ring.gameObject);
 
-        if (data.element == "fire" && Vfx.Has("explosion.big"))
-            Vfx.Play("explosion.big", target, radius);
-        else
-            Explode(data, target, radius, new Color(1f, 0.35f, 0.05f), host);
+        Explode(data, target, radius, new Color(1f, 0.35f, 0.05f), host);
         host.StartCoroutine(SkillFx.ExpandRing(target, radius, 0.5f, color));
     }
 
@@ -306,11 +310,11 @@ public static class SkillFxDispatcher
         float radius = Radius(data, 4f);
         var color = Tint(data, new Color(1f, 0.93f, 0.55f));
         var ring = SkillFx.Ring(target, radius, color);
-        Vfx.Play("circle", target + Vector3.up * 0.1f, radius);
+        Vfx.Play("circle", target, radius, color);
 
         yield return new WaitForSeconds(0.25f); // 강림 예고
 
-        if (Vfx.Play("strike.holy", target, radius * 0.5f) != null)
+        if (Vfx.Play("strike.holy", target, radius * 0.4f) != null)
             yield return new WaitForSeconds(0.2f);
         else
         {
@@ -379,10 +383,8 @@ public static class SkillFxDispatcher
         var lr = SkillFx.Arc(center, 0.2f, baseDeg - angle / 2f, baseDeg + angle / 2f, color);
         Vector3 facing = Quaternion.Euler(0f, baseDeg, 0f) * Vector3.forward;
         string flame = Key("cone", data);
-        if (flame != null)
-            for (int i = 1; i <= 3; i++)   // 분사 길이를 따라 불꽃을 세 번 터뜨린다
-                Vfx.PlayFacing(flame, center + Vector3.up * 0.8f + facing * range * (0.25f * i), facing,
-                               range * 0.2f * i, KeyTint(flame, "cone", data, color));
+        if (flame != null)   // 길이 2 m 로 만든 분사라 사거리의 절반을 곱한다
+            Vfx.PlayFacing(flame, center + Vector3.up * 0.8f, facing, range * 0.5f, KeyTint(flame, "cone", data, color));
         float t = 0f; const float dur = 0.3f;
         while (t < dur)
         {
