@@ -67,6 +67,7 @@ public static class VfxLibraryTool
         ("teleport.out",    Game("teleport_out"),    0f, 0f, Keep),
         ("teleport.in",     Game("teleport_in"),     0f, 0f, Keep),
         ("dash",            Game("dash"),            0f, 0f, Keep),
+        ("land",            Game("land"),            0f, 0f, Keep),
         ("tornado",         Game("tornado"),         0f, 0f, Keep),
         ("heal",            Game("heal"),            0f, 0f, Keep),
         ("death",           Game("death"),           0f, 0f, Keep),
@@ -230,7 +231,9 @@ public static class VfxLibraryTool
                     case "heal":         return new[] { (hero, Quaternion.identity, 1f, 0.35f) };
                     case "death":        return new[] { (foe, Quaternion.identity, 1f, 0.3f) };
                     case "tornado":      return new[] { (foe, Quaternion.identity, 2f, 0.3f) };
-                    case "dash":         return new[] { (hero, Quaternion.LookRotation(-toFoe), 1f, 0.25f) };
+                    // 흙먼지는 그늘에서 잘 안 보여 밝은 쪽(몬스터 자리)에서 찍는다.
+                    case "dash":         return new[] { (foe, Quaternion.LookRotation(-toFoe), 1f, 0.25f) };
+                    case "land":         return new[] { (foe, Quaternion.identity, 1f, 0.2f) };
                     case "teleport.out": return new[] { (hero, Quaternion.identity, 1f, 0.22f) };
                     case "teleport.in":  return new[] { (foe, Quaternion.identity, 1f, 0.12f) };
                     case "projectile":

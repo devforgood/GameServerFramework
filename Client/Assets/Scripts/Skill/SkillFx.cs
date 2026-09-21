@@ -2,10 +2,27 @@ using System.Collections;
 using UnityEngine;
 
 // 스킬 연출용 절차적 VFX 헬퍼.
-// 아트 에셋 없이 프리미티브/LineRenderer 로 즉석 생성한다(기존 ExplosionNoPhysics/DrawArc 스타일).
+// 아트 에셋 없이 프리미티브/LineRenderer 로 즉석 생성한다.
+//
+// 지금은 두 가지 용도로만 쓴다.
+//   - 번개 줄기(Bolt): 두 점을 잇는 연출이라 파티클보다 LineRenderer 가 맞다
+//   - 폴백: 이펙트 라이브러리에 키가 없을 때 대신 그린다(에셋이 빠져도 연출이 사라지지 않게)
+// 평소 연출은 전부 파티클이다(Vfx.Play) — 여기 도형을 파티클 위에 겹쳐 그리지 말 것.
+//
 // 모든 오브젝트는 수명이 끝나면 스스로 Destroy 되므로 호출 측이 정리할 필요가 없다.
 public static class SkillFx
 {
+    // 발광(가산) 머티리얼. 번개처럼 빛나야 하는 선에 쓴다. 셰이더는 이펙트 머티리얼과 같은 것이라 빌드에 포함된다.
+    public static Material AdditiveColor(Color c)
+    {
+        var shader = Shader.Find("Legacy Shaders/Particles/Additive");
+        if (shader == null)
+            return UnlitColor(c);
+        var mat = new Material(shader);
+        mat.SetColor("_TintColor", new Color(c.r * 0.5f, c.g * 0.5f, c.b * 0.5f, 0.5f));
+        return mat;
+    }
+
     // 반투명 언릿 컬러 머티리얼. LineRenderer/프리미티브 공용.
     public static Material UnlitColor(Color c)
     {
@@ -26,55 +43,12 @@ public static class SkillFx
         return go;
     }
 
-    // 지면 원(반경 ring). 반환된 LineRenderer 로 코루틴에서 반경/색을 갱신할 수 있다.
-    public static LineRenderer Ring(Vector3 center, float radius, Color color, float width = 0.15f, int segments = 48)
-    {
-        var go = new GameObject("SkillRing");
-        var lr = go.AddComponent<LineRenderer>();
-        lr.material = UnlitColor(color);
-        lr.startColor = lr.endColor = color;
-        lr.startWidth = lr.endWidth = width;
-        lr.useWorldSpace = true;
-        lr.loop = true;
-        lr.positionCount = segments;
-        SetRing(lr, center, radius);
-        return lr;
-    }
-
-    // 지면 호(arc): center 중심 반경 radius 로 fromDeg→toDeg 부채꼴 테두리를 그린다(비-loop).
-    // 각도 규약은 게임과 동일: 0도 = +Z, x=sin, z=cos (NormalAttackSkill 의 Atan2(x,z) 와 일치).
-    public static LineRenderer Arc(Vector3 center, float radius, float fromDeg, float toDeg, Color color, int segments = 24, float width = 0.2f)
-    {
-        var go = new GameObject("SkillArc");
-        var lr = go.AddComponent<LineRenderer>();
-        lr.material = UnlitColor(color);
-        lr.startColor = lr.endColor = color;
-        lr.startWidth = lr.endWidth = width;
-        lr.useWorldSpace = true;
-        lr.loop = false;
-        lr.positionCount = segments;
-        SetArc(lr, center, radius, fromDeg, toDeg);
-        return lr;
-    }
-
-    // LineRenderer 정점을 center 중심 반경 radius 의 호로 다시 배치(반경/중심이 변하는 연출용).
-    public static void SetArc(LineRenderer lr, Vector3 center, float radius, float fromDeg, float toDeg)
-    {
-        int n = lr.positionCount;
-        for (int i = 0; i < n; i++)
-        {
-            float deg = Mathf.Lerp(fromDeg, toDeg, n > 1 ? (float)i / (n - 1) : 0f);
-            float a = deg * Mathf.Deg2Rad;
-            lr.SetPosition(i, center + new Vector3(Mathf.Sin(a) * radius, 0.1f, Mathf.Cos(a) * radius));
-        }
-    }
-
     // 지그재그 번개 줄기(체인 라이트닝/라이트닝). SetBolt 로 매 프레임 다시 흔들면 번쩍이는 느낌이 난다.
     public static LineRenderer Bolt(Vector3 from, Vector3 to, Color color, int segments = 12, float width = 0.12f)
     {
         var go = new GameObject("SkillBolt");
         var lr = go.AddComponent<LineRenderer>();
-        lr.material = UnlitColor(color);
+        lr.material = AdditiveColor(color);
         lr.startColor = lr.endColor = color;
         lr.startWidth = lr.endWidth = width;
         lr.useWorldSpace = true;
@@ -127,8 +101,23 @@ public static class SkillFx
         if (go != null) Object.Destroy(go);
     }
 
+    // 지면 원(반경 ring). 지금은 ExpandRing 전용이다.
+    private static LineRenderer Ring(Vector3 center, float radius, Color color, float width = 0.15f, int segments = 48)
+    {
+        var go = new GameObject("SkillRing");
+        var lr = go.AddComponent<LineRenderer>();
+        lr.material = UnlitColor(color);
+        lr.startColor = lr.endColor = color;
+        lr.startWidth = lr.endWidth = width;
+        lr.useWorldSpace = true;
+        lr.loop = true;
+        lr.positionCount = segments;
+        SetRing(lr, center, radius);
+        return lr;
+    }
+
     // LineRenderer 정점을 center 중심 반경 radius 의 원으로 배치.
-    public static void SetRing(LineRenderer lr, Vector3 center, float radius)
+    private static void SetRing(LineRenderer lr, Vector3 center, float radius)
     {
         int n = lr.positionCount;
         for (int i = 0; i < n; i++)

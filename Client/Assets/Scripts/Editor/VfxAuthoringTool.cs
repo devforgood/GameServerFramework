@@ -84,6 +84,7 @@ public static class VfxAuthoringTool
         Save("teleport_out", TeleportOut());
         Save("teleport_in", TeleportIn());
         Save("dash", DashDust());
+        Save("land", LandDust());
         Save("tornado", Tornado());
         Save("heal", Heal());
         Save("death", Death());
@@ -442,7 +443,23 @@ public static class VfxAuthoringTool
     private static GameObject DashDust()
     {
         var root = new GameObject("Dash");
-        SmokePuffs(root, 4, Dust, 0.8f, 1.8f, 0.6f, 0.85f, rise: 0.3f, radius: 0.25f, height: 0.4f, forward: 1.5f);
+        SmokePuffs(root, 5, Dust, 1f, 2.2f, 0.6f, 0.9f, rise: 0.3f, radius: 0.3f, height: 0.4f, forward: 1.5f);
+        return root;
+    }
+
+    /// <summary>착지(점프·도약): 발밑에서 사방으로 퍼지는 흙먼지와 튀는 부스러기.</summary>
+    private static GameObject LandDust()
+    {
+        var root = new GameObject("Land");
+        SmokePuffs(root, 8, Dust, 0.9f, 2.2f, 0.7f, 0.9f, rise: 0.25f, radius: 0.5f, height: 0.3f);
+
+        var bits = Sys(root, "Bits", matAlpha, world: true);
+        Burst(bits, 10);
+        Life(bits, 0.35f, 0.6f); Speed(bits, 1.5f, 3.5f); Size(bits, 0.05f, 0.09f);
+        Col(bits, new Color(0.32f, 0.28f, 0.22f, 1f));
+        var sh = Shape(bits, ParticleSystemShapeType.Circle, 0.2f); sh.rotation = new Vector3(90f, 0f, 0f);
+        var bm = bits.main; bm.gravityModifier = 2.5f;
+        Fade(bits, (0f, 1f), (1f, 0f));
         return root;
     }
 
@@ -452,7 +469,9 @@ public static class VfxAuthoringTool
         var root = new GameObject("Tornado");
         var d = Sys(root, "Swirl", matAlpha);
         var main = d.main; main.duration = 0.3f;
+        // 시작 버스트가 없으면 첫 프레임에 아무것도 없어 회오리가 늦게 뜬다(흘리는 방출만으로는 한 박자 느리다).
         var em = d.emission; em.rateOverTime = 45f;
+        em.SetBursts(new[] { new ParticleSystem.Burst(0f, 5) });
         Life(d, 0.6f, 0.9f); Speed(d, 0f, 0.2f); Size(d, 0.6f, 1.1f); Col(d, new Color(Dust.r, Dust.g, Dust.b, 0.8f));
         var sh = Shape(d, ParticleSystemShapeType.Circle, 0.8f); sh.rotation = new Vector3(90f, 0f, 0f);
         var vel = d.velocityOverLifetime; vel.enabled = true; vel.space = ParticleSystemSimulationSpace.Local;
@@ -514,7 +533,7 @@ public static class VfxAuthoringTool
     private static GameObject Death()
     {
         var root = new GameObject("Death");
-        SmokePuffs(root, 8, new Color(0.34f, 0.3f, 0.26f), 1f, 2f, 1.2f, 0.85f, rise: 0.6f, radius: 0.5f, height: 0.7f);
+        SmokePuffs(root, 9, new Color(0.34f, 0.3f, 0.26f), 1.2f, 2.4f, 1.2f, 0.9f, rise: 0.6f, radius: 0.55f, height: 0.7f);
         SmokePuffs(root, 4, Smoke, 1.2f, 2.4f, 1.6f, 0.6f, delay: 0.1f, rise: 1f, radius: 0.4f, height: 0.6f);
 
         // 몸에서 빠져나가는 희미한 빛(영혼). 흙먼지만으로는 밝은 바닥에서 눈에 잘 안 띈다.
@@ -884,14 +903,18 @@ public static class VfxAuthoringTool
         // _TintColor 는 2배로 곱해진다. 0.5 = 원색, 1 = 두 배(번쩍임이 바닥을 하얗게 태우도록).
         matAdd = WriteMaterial("fx_add", add, texSpark, 0.5f);
         matAddHot = WriteMaterial("fx_add_hot", add, texGlow, 0.9f);
-        matAlpha = WriteMaterial("fx_smoke", alpha, texSmoke, 0.5f);
+        // 연기는 알파를 두 배로 진하게 쓴다. 텍스처가 부드러워(평균 알파 0.27) 기본값으로는
+        // 햇빛 받은 바닥 위에서 거의 보이지 않는다(씬 미리보기 차이 비교로 확인).
+        matAlpha = WriteMaterial("fx_smoke", alpha, texSmoke, 0.5f, 1f);
         matSmokeAdd = WriteMaterial("fx_smoke_add", add, texSmoke, 0.5f);
         matRing = WriteMaterial("fx_ring", add, texRing, 0.6f);
         matCrescent = WriteMaterial("fx_crescent", add, texCrescent, 0.75f);
         matBeam = WriteMaterial("fx_beam", add, texBeam, 0.8f);
     }
 
-    private static Material WriteMaterial(string name, Shader shader, Texture tex, float tint)
+    /// <param name="tint">_TintColor 의 RGB. Legacy 파티클은 2를 곱하므로 0.5 가 원색이다.</param>
+    /// <param name="alpha">_TintColor 의 알파. 역시 2배로 곱해진다 — 0.5 가 원래 투명도, 1 이면 두 배 진하다.</param>
+    private static Material WriteMaterial(string name, Shader shader, Texture tex, float tint, float alpha = 0.5f)
     {
         string path = $"{MatDir}/{name}.mat";
         var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -902,7 +925,7 @@ public static class VfxAuthoringTool
         }
         mat.shader = shader;
         mat.SetTexture("_MainTex", tex);
-        mat.SetColor("_TintColor", new Color(tint, tint, tint, 0.5f));
+        mat.SetColor("_TintColor", new Color(tint, tint, tint, alpha));
         EditorUtility.SetDirty(mat);
         return mat;
     }

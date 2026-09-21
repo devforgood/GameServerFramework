@@ -12,8 +12,11 @@ using UnityEngine;
 //   - 원격 관전자 재생: Session.HandleUseSkillNotify
 // 두 경로가 같은 함수를 써서 자신과 남에게 동일한 연출이 보인다.
 //
-// 이펙트 본체는 에셋 팩 파티클(Vfx.Play, 키는 VfxLibraryTool.Catalog)이다. 범위를 알려 주는 지면 선(호·링)은
-// 판정 범위를 그대로 보여 주므로 함께 남긴다. 라이브러리에 키가 없으면 예전 절차적 도형(SkillFx)으로 대신한다.
+// 이펙트 본체는 파티클(Vfx.Play, 키는 VfxLibraryTool.Catalog)이다.
+// 라이브러리에 키가 없을 때만 예전 절차적 도형(SkillFx)으로 대신한다 — 평소에는 그리지 않는다.
+//
+// 여기를 타는 것은 플레이어 스킬뿐이다. 몬스터의 시전은 서버가 브로드캐스트하지 않으므로(Monster::Attack →
+// SkillSet::TryCast) 몬스터 공격 연출은 Monster 가 AIState.Attack 을 보고 직접 재생한다.
 public static class SkillFxDispatcher
 {
     // 반환값은 이 연출의 본체 코루틴이다. 캐스터가 낙관적으로 재생한 연출을 서버가 거부했을 때
@@ -36,12 +39,12 @@ public static class SkillFxDispatcher
             case "teleport":   Teleport(caster, targetPos, host); return null;
             case "impact":     Explode(data, targetPos, Radius(data, 3f), new Color(1f, 0.9f, 0.3f), host); return null;
             case "heal":       Heal(caster, host); return null;
-            case "slash":      return host.StartCoroutine(Slash(data, caster, targetPos, host));
+            case "slash":      Slash(data, caster, targetPos, host); return null;
             case "charge":     return host.StartCoroutine(Charge(data, caster, targetPos, host));
             case "chain":      return host.StartCoroutine(Chain(data, caster, targetPos, host));
             case "holy":       return host.StartCoroutine(Holy(data, targetPos, host));
             case "tornado":    return host.StartCoroutine(Tornado(data, targetPos, host));
-            case "cone":       return host.StartCoroutine(Cone(data, caster, targetPos, host));
+            case "cone":       Cone(data, caster, targetPos, host); return null;
             default:
                 Debug.Log($"[SkillFx] skill {data.id} 에 fx 가 없어 연출을 생략합니다(fx='{fx}').");
                 return null;
@@ -65,8 +68,8 @@ public static class SkillFxDispatcher
         }
     }
 
-    // 근접 베기: 캐스터가 목표를 향한 부채꼴(range/angle) 호를 순간 그렸다 페이드(일반공격/광란/휠윈드 등).
-    private static IEnumerator Slash(Gamedata.Skill data, GameObject caster, Vector3 target, MonoBehaviour host)
+    // 근접 베기: 캐스터 정면으로 초승달이 지나간다(일반공격/광란/휠윈드 등).
+    private static void Slash(Gamedata.Skill data, GameObject caster, Vector3 target, MonoBehaviour host)
     {
         float radius = data.range > 0 ? data.range : 2f;
         float angle = data.angle > 0 ? data.angle : 90f;
@@ -75,28 +78,18 @@ public static class SkillFxDispatcher
         float baseDeg = (dir.sqrMagnitude > 0.001f) ? Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg : 0f;
 
         var color = Tint(data, new Color(1f, 1f, 0.85f));
-        var lr = SkillFx.Arc(center, radius, baseDeg - angle / 2f, baseDeg + angle / 2f, color);
 
         // 전방위 베기는 회전 베기라 방향 없이 캐스터 중심 파동으로 보여 준다.
         Vector3 facing = Quaternion.Euler(0f, baseDeg, 0f) * Vector3.forward;
         if (angle >= 300f)
         {
             string nova = Key("nova", data);
-            Vfx.Play(nova, center + Vector3.up * 0.3f, radius, KeyTint(nova, "nova", data, color));
+            if (Vfx.Play(nova, center + Vector3.up * 0.3f, radius, KeyTint(nova, "nova", data, color)) == null)
+                host.StartCoroutine(SkillFx.Burst(center, radius * 0.5f, 0.3f, color));
         }
-        else
-            // 초승달의 중심이 피벗이라 캐스터 위치에 놓고 사거리를 곱하면 호가 판정 범위를 따라간다.
-            Vfx.PlayFacing("slash", center + Vector3.up * 0.9f, facing, radius, KeyTint("slash", "slash", data, color));
-
-        float t = 0f; const float dur = 0.25f;
-        while (t < dur)
-        {
-            t += Time.deltaTime;
-            var c = color; c.a = Mathf.Clamp01(1f - t / dur);
-            lr.startColor = lr.endColor = c;
-            yield return null;
-        }
-        if (lr != null) Object.Destroy(lr.gameObject);
+        // 초승달의 중심이 피벗이라 캐스터 위치에 놓고 사거리를 곱하면 호가 판정 범위를 따라간다.
+        else if (Vfx.PlayFacing("slash", center + Vector3.up * 0.9f, facing, radius, KeyTint("slash", "slash", data, color)) == null)
+            host.StartCoroutine(SkillFx.Burst(center + facing * radius * 0.5f, radius * 0.4f, 0.25f, color));
     }
 
     // radius(우선) → range → 폴백. 클라 연출 크기용.
@@ -193,7 +186,6 @@ public static class SkillFxDispatcher
     {
         float radius = Radius(data, 6f);
         var color = Tint(data, new Color(1f, 0.35f, 0.05f));
-        var ring = SkillFx.Ring(target, radius, color);
         Vfx.Play("circle", target, radius, color);
 
         yield return new WaitForSeconds(0.5f); // 낙하 예고
@@ -218,10 +210,8 @@ public static class SkillFxDispatcher
             yield return null;
         }
         if (core != null) Object.Destroy(core);
-        if (ring != null) Object.Destroy(ring.gameObject);
 
         Explode(data, target, radius, new Color(1f, 0.35f, 0.05f), host);
-        host.StartCoroutine(SkillFx.ExpandRing(target, radius, 0.5f, color));
     }
 
     // 캐스터 중심 확장 파문(노바/스태틱 필드/포이즌 노바/전투 함성).
@@ -230,7 +220,6 @@ public static class SkillFxDispatcher
         float radius = Radius(data, 6f);
         var color = Tint(data, new Color(0.4f, 0.8f, 1f));
         Vector3 center = caster.transform.position;
-        host.StartCoroutine(SkillFx.ExpandRing(center, radius, 0.4f, color));
         string key = Key("nova", data);
         if (key != null)
             Vfx.Play(key, center + Vector3.up * 0.3f, radius, KeyTint(key, "nova", data, color));
@@ -275,9 +264,7 @@ public static class SkillFxDispatcher
             yield return null;
         }
 
-        float radius = Radius(data, 3f);
-        Explode(data, dest, radius, new Color(1f, 0.85f, 0.5f), host);
-        host.StartCoroutine(SkillFx.ExpandRing(dest, radius, 0.45f, color));
+        Explode(data, dest, Radius(data, 3f), new Color(1f, 0.85f, 0.5f), host);
     }
 
     // 번개 줄기: 캐스터에서 목표까지 지그재그 줄기를 매 프레임 흔들어 번쩍이게 한다(체인 라이트닝/라이트닝).
@@ -309,7 +296,6 @@ public static class SkillFxDispatcher
     {
         float radius = Radius(data, 4f);
         var color = Tint(data, new Color(1f, 0.93f, 0.55f));
-        var ring = SkillFx.Ring(target, radius, color);
         Vfx.Play("circle", target, radius, color);
 
         yield return new WaitForSeconds(0.25f); // 강림 예고
@@ -321,85 +307,52 @@ public static class SkillFxDispatcher
             var column = SkillFx.Column(target, radius * 0.35f, 14f, color);
             yield return host.StartCoroutine(SkillFx.FadeOut(column, 0.45f, color));
         }
-        if (ring != null) Object.Destroy(ring.gameObject);
-
         Explode(data, target, radius, new Color(1f, 0.93f, 0.55f), host);
-        host.StartCoroutine(SkillFx.ExpandRing(target, radius, 0.4f, color));
     }
 
-    // 회오리: 목표 지점에서 반경이 맥동하며 위로 감아 올라가는 링 다발(토네이도).
+    // 회오리: 목표 지점 반경 안을 돌며 흙먼지가 위로 감겨 올라간다(토네이도).
     private static IEnumerator Tornado(Gamedata.Skill data, Vector3 target, MonoBehaviour host)
     {
         float radius = Radius(data, 4f);
         var color = Tint(data, new Color(0.85f, 0.9f, 0.95f));
 
-        const int ringCount = 4;
-        const float dur = 0.9f;
-        var rings = new LineRenderer[ringCount];
-        for (int i = 0; i < ringCount; i++)
-            rings[i] = SkillFx.Ring(target, radius * 0.3f, color);
+        if (!Vfx.Has("tornado"))
+        {
+            host.StartCoroutine(SkillFx.Burst(target, radius, 0.3f, color));
+            yield break;
+        }
 
+        const float dur = 0.9f;
         float t = 0f, nextDust = 0f;
         while (t < dur)
         {
             t += Time.deltaTime;
-            float k = t / dur;
-            if (t >= nextDust && Vfx.Has("tornado"))
+            if (t >= nextDust)
             {
-                // 반경 안을 돌며 흙먼지를 감아 올린다.
                 nextDust += 0.15f;
-                float a = k * Mathf.PI * 4f;
+                float a = (t / dur) * Mathf.PI * 4f;
                 Vfx.Play("tornado", target + new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a)) * radius * 0.4f,
                          Quaternion.Euler(0f, a * Mathf.Rad2Deg, 0f), radius * 0.5f);
             }
-            for (int i = 0; i < ringCount; i++)
-            {
-                float height = ((k * 2f + i * 0.25f) % 1f) * 5f;                       // 위로 흘러 올라간다
-                float r = radius * (0.25f + 0.18f * i) * (0.7f + 0.3f * Mathf.Sin((k * 6f + i) * Mathf.PI));
-                SkillFx.SetRing(rings[i], target + Vector3.up * height, r);
-                var c = color; c.a = Mathf.Clamp01(1f - k);
-                rings[i].startColor = rings[i].endColor = c;
-            }
             yield return null;
         }
-
-        foreach (var lr in rings)
-            if (lr != null) Object.Destroy(lr.gameObject);
-
-        host.StartCoroutine(SkillFx.Burst(target, radius, 0.3f, color));
     }
 
-    // 원뿔 분사: 캐스터 정면 부채꼴(range/angle)이 뻗어 나가는 화염 방사(인페르노).
-    private static IEnumerator Cone(Gamedata.Skill data, GameObject caster, Vector3 target, MonoBehaviour host)
+    // 원뿔 분사: 캐스터 정면으로 불꽃을 뿜는다(인페르노).
+    private static void Cone(Gamedata.Skill data, GameObject caster, Vector3 target, MonoBehaviour host)
     {
         float range = data.range > 0 ? data.range : 4f;
-        float angle = data.angle > 0 ? data.angle : 45f;
         var color = Tint(data, new Color(1f, 0.5f, 0.1f));
 
         Vector3 center = caster.transform.position;
         Vector3 dir = target - center; dir.y = 0f;
         float baseDeg = (dir.sqrMagnitude > 0.001f) ? Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg : 0f;
-
-        var lr = SkillFx.Arc(center, 0.2f, baseDeg - angle / 2f, baseDeg + angle / 2f, color);
         Vector3 facing = Quaternion.Euler(0f, baseDeg, 0f) * Vector3.forward;
-        string flame = Key("cone", data);
-        if (flame != null)   // 길이 2 m 로 만든 분사라 사거리의 절반을 곱한다
-            Vfx.PlayFacing(flame, center + Vector3.up * 0.8f, facing, range * 0.5f, KeyTint(flame, "cone", data, color));
-        float t = 0f; const float dur = 0.3f;
-        while (t < dur)
-        {
-            t += Time.deltaTime;
-            float k = t / dur;
-            SkillFx.SetArc(lr, center, Mathf.Lerp(0.2f, range, k), baseDeg - angle / 2f, baseDeg + angle / 2f);
-            var c = color; c.a = Mathf.Clamp01(1f - k);
-            lr.startColor = lr.endColor = c;
-            yield return null;
-        }
-        if (lr != null) Object.Destroy(lr.gameObject);
 
-        // 분사 끝단의 불꽃 덩어리.
-        float rad = baseDeg * Mathf.Deg2Rad;
-        host.StartCoroutine(SkillFx.Burst(center + new Vector3(Mathf.Sin(rad), 0.5f, Mathf.Cos(rad)) * range * 0.7f, 1.2f, 0.25f, color));
+        string flame = Key("cone", data);
+        // 길이 2 m 로 만든 분사라 사거리의 절반을 곱한다.
+        if (flame == null || Vfx.PlayFacing(flame, center + Vector3.up * 0.8f, facing, range * 0.5f, KeyTint(flame, "cone", data, color)) == null)
+            host.StartCoroutine(SkillFx.Burst(center + facing * range * 0.7f + Vector3.up * 0.5f, 1.2f, 0.25f, color));
     }
 
     // 순간이동: 출발/도착 지점 섬광만 재생한다.

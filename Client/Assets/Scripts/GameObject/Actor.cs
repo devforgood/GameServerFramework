@@ -27,6 +27,9 @@ public class Actor : MonoBehaviour
     private float lastHitEffectTime = -1f;
     private const float HIT_EFFECT_COOLDOWN = 0.25f;
 
+    /// <summary>사망 이펙트를 이미 재생했는지. 죽은 상태를 다시 받아도(재동기화) 두 번 피우지 않는다.</summary>
+    protected bool deathFxPlayed;
+
     // ── 로코모션(걷기) ──
     // 서버는 속도도 바라보는 방향도 보내지 않는다. 그래서 '실제로 그려진 위치가
     // 프레임 사이에 얼마나 움직였는가'를 재서 애니메이션을 고른다.
@@ -327,8 +330,19 @@ public class Actor : MonoBehaviour
         }
     }
 
+    /// <summary>쓰러지는 자리에 흙먼지와 빠져나가는 빛. 캐릭터·몬스터 공용이라 파생 클래스에서도 부른다.</summary>
+    protected void PlayDeathEffect()
+    {
+        if (deathFxPlayed)
+            return;
+        deathFxPlayed = true;
+        Vfx.Play("death", transform.position);
+    }
+
     protected virtual void ShowDeathEffect()
     {
+        PlayDeathEffect();
+
         // 사망 시 시각적 효과
         // 캡슐 시절에는 루트에 MeshRenderer 가 있었지만, 실제 캐릭터 모델은
         // 자식 SkinnedMeshRenderer 로 그려진다. 둘 다 잡으려고 자식까지 훑는다.

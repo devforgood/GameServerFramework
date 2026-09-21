@@ -183,6 +183,7 @@ public class SkillController
         // 착지 순간 뜬 채로 멈췄다가 다음 프레임에 툭 떨어지지 않는다.
         end = Actor.SnapToGround(end);
         actors.BeginLocalAnimation(actor.actor_id);
+        Vfx.Play("land", start, 0.7f);   // 박차고 뛰는 흙먼지(착지보다 작게)
 
         try
         {
@@ -210,6 +211,7 @@ public class SkillController
 
             // 마지막 위치는 착지점
             gameObject.transform.position = end;
+            Vfx.Play("land", end);
             Debug.Log($"JumpToPosition End: {gameObject.name}, pos({end.x}, {end.y}, {end.z}), timestamp({timestamp})");
         }
         finally
